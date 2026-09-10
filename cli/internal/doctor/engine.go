@@ -481,11 +481,13 @@ func applyFixers(repoRoot string, mctx *MutateContext, env *DetectEnv, findings 
 		res, err := fx.Fix(mctx.WithFixer(fixerID), env, fs)
 		actions += res.ActionsTaken
 		skipped = append(skipped, res.Skipped...)
-		if err != nil || !res.Fixed {
+		if err != nil || res.Err != nil {
 			failed = true
 			continue
 		}
-		fixed += len(fs)
+		if res.Fixed {
+			fixed += len(fs)
+		}
 	}
 	return actions, fixed, failed, skipped
 }
@@ -680,8 +682,8 @@ type UndoResult struct {
 }
 
 // Undo reads a run's actions.jsonl in reverse and restores each mutated file
-// from backups/. Under strict mode (default) it fails if a backup is missing
-// or the restored hash does not match the recorded before_hash.
+// from backups/. All required backups are validated before any restoration.
+// Under strict mode (default), missing backups and rename conflicts also fail.
 func Undo(repoRoot, runID string, strict, dryRun bool) (*UndoResult, error) {
 	runDir, err := resolveRunDir(repoRoot, runID)
 	if err != nil {
@@ -692,68 +694,21 @@ func Undo(repoRoot, runID string, strict, dryRun bool) (*UndoResult, error) {
 		return &UndoResult{RunID: runID, ExitCode: ExitFixFailed}, err
 	}
 	res := &UndoResult{RunID: filepath.Base(runDir), ExitCode: ExitHealthy}
-	for i := len(records) - 1; i >= 0; i-- {
-		rec := records[i]
-		if err := undoOne(repoRoot, runDir, rec, strict, dryRun, res); err != nil {
+	prepared, err := prepareUndo(runDir, records, strict)
+	if err != nil {
+		res.ExitCode = ExitFixFailed
+		res.StrictError = err.Error()
+		return res, err
+	}
+	locks := NewLockManager(filepath.Join(repoRoot, ".doctor", "locks"))
+	for i := len(prepared) - 1; i >= 0; i-- {
+		if err := undoOne(repoRoot, prepared[i], locks, strict, dryRun, res); err != nil {
 			res.ExitCode = ExitFixFailed
 			res.StrictError = err.Error()
 			return res, err
 		}
 	}
 	return res, nil
-}
-
-// undoOne reverses a single action record.
-func undoOne(repoRoot, runDir string, rec ActionRecord, strict, dryRun bool, res *UndoResult) error {
-	target := filepath.Join(repoRoot, rec.Path)
-	if rec.Op == "Rename" && rec.RenameTo != "" {
-		// Reverse the move: rename the quarantined file back.
-		if dryRun {
-			fmt.Fprintf(os.Stderr, "[dry-run] would restore (un-rename) %s\n", target)
-			res.Skipped++
-			return nil
-		}
-		if err := os.Rename(rec.RenameTo, target); err != nil {
-			if strict {
-				return fmt.Errorf("doctor: un-rename %s: %w", target, err)
-			}
-			res.Skipped++
-			return nil
-		}
-		res.Restored++
-		return nil
-	}
-	backup := filepath.Join(runDir, "backups", rec.Path)
-	if _, err := os.Stat(backup); err != nil {
-		if !rec.Existed {
-			// The file did not exist before; undo leaves it (created files are
-			// the user's to inspect; we never delete).
-			res.Skipped++
-			return nil
-		}
-		if strict {
-			return fmt.Errorf("doctor: missing backup for %s", rec.Path)
-		}
-		res.Skipped++
-		return nil
-	}
-	if dryRun {
-		fmt.Fprintf(os.Stderr, "[dry-run] would restore %s from backup\n", target)
-		res.Skipped++
-		return nil
-	}
-	if err := copyVerbatim(backup, target); err != nil {
-		return fmt.Errorf("doctor: restore %s: %w", target, err)
-	}
-	restored, err := os.ReadFile(target)
-	if err != nil {
-		return fmt.Errorf("doctor: read restored %s: %w", target, err)
-	}
-	if strict && sha256Hex(restored) != rec.BeforeHash {
-		return fmt.Errorf("doctor: restored hash mismatch for %s", rec.Path)
-	}
-	res.Restored++
-	return nil
 }
 
 // readActions reads and parses a run's actions.jsonl.

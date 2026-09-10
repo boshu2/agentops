@@ -99,7 +99,7 @@ func TestKnowledgeCorruptIndexLines_DetectFixUndo(t *testing.T) {
 		t.Fatalf("post-fix index = %q, want %q", got, want)
 	}
 	// Backup is byte-identical to the corrupt original.
-	backup := filepath.Join(ra.BackupsDir(), ".agents", "ao", "index", "search-index.jsonl")
+	backup := recordedBackup(t, ra, 0)
 	bgot, err := os.ReadFile(backup)
 	if err != nil {
 		t.Fatalf("backup missing: %v", err)
@@ -189,7 +189,7 @@ func TestKnowledgeTornAppendLine_DetectFixUndo(t *testing.T) {
 		t.Fatalf("post-fix index = %q, want %q", got, want)
 	}
 	// Backup byte-identical to torn original.
-	backup := filepath.Join(ra.BackupsDir(), ".agents", "ao", "index", "search-index.jsonl")
+	backup := recordedBackup(t, ra, 0)
 	bgot, err := os.ReadFile(backup)
 	if err != nil {
 		t.Fatalf("backup missing: %v", err)

@@ -56,8 +56,8 @@ func DecodeEdges(r io.Reader) ([]Edge, error) {
 		if len(trimSpace(raw)) == 0 {
 			continue
 		}
-		var e Edge
-		if err := json.Unmarshal(raw, &e); err != nil {
+		e, err := decodeEdge(raw)
+		if err != nil {
 			return nil, fmt.Errorf("ledger line %d: invalid JSON: %w", line, err)
 		}
 		edges = append(edges, e)
@@ -206,7 +206,7 @@ func (s *Store) writeLine(e Edge) error {
 			return fmt.Errorf("create ledger dir: %w", err)
 		}
 	}
-	f, err := os.OpenFile(s.Path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	f, err := os.OpenFile(s.Path, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0o644)
 	if err != nil {
 		return fmt.Errorf("open ledger for append: %w", err)
 	}
@@ -217,6 +217,21 @@ func (s *Store) writeLine(e Edge) error {
 		return fmt.Errorf("marshal edge: %w", err)
 	}
 	b = append(b, '\n')
+	info, err := f.Stat()
+	if err != nil {
+		return fmt.Errorf("inspect ledger ending: %w", err)
+	}
+	if info.Size() > 0 {
+		var last [1]byte
+		if _, err := f.ReadAt(last[:], info.Size()-1); err != nil {
+			return fmt.Errorf("read ledger ending: %w", err)
+		}
+		// Read accepts an unterminated final record. Preserve all prior bytes
+		// and append its missing separator in the same write as the new row.
+		if last[0] != '\n' {
+			b = append([]byte{'\n'}, b...)
+		}
+	}
 	if _, err := f.Write(b); err != nil {
 		return fmt.Errorf("write edge: %w", err)
 	}

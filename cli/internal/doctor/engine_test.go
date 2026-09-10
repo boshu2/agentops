@@ -1,10 +1,36 @@
 package doctor
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 )
+
+func TestFixHygieneReportsUnresolvedFindings(t *testing.T) {
+	for _, linked := range []bool{false, true} {
+		t.Run(map[bool]string{false: "manual-only", true: "mixed"}[linked], func(t *testing.T) {
+			repo, home := t.TempDir(), t.TempDir()
+			writeSkillsFile(t, filepath.Join(repo, "skills", "sample", "SKILL.md"), "---\nname: sample\ndescription: sample\n---\nBody.\n")
+			wantActions := 0
+			if linked {
+				writeSkillsFile(t, filepath.Join(repo, "skills", "sample", "references", "detail.md"), "detail")
+				wantActions = 1
+			}
+			report, err := Fix(Options{RepoRoot: repo, CWD: repo, HomeDir: home, Only: []string{"fm-skills-integrity-hygiene"}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if report.OK || report.ExitCode != ExitFixPartial || report.ActionsTaken != wantActions {
+				t.Fatalf("Fix=%+v, want unresolved partial result with %d actions", report, wantActions)
+			}
+			post, err := skillsIntegrityHygieneDetector{}.Detect(&DetectEnv{RepoRoot: repo, HomeDir: home})
+			if err != nil || len(post) != 1 {
+				t.Fatalf("Detect=%+v err=%v, want manual finding retained", post, err)
+			}
+		})
+	}
+}
 
 // TestHealthLineReportsEverySeverityBucket guards novice edge 4b: the health
 // one-liner once printed only P0 and P2, silently dropping P1 — the worst

@@ -46,6 +46,45 @@ func writeLines(t *testing.T, path string, lines []string) {
 	}
 }
 
+func TestLedgerReaders_RejectAmbiguousOrIncompleteRecords(t *testing.T) {
+	tests := []struct {
+		name   string
+		mutate func(string) string
+	}{
+		{"duplicate field", func(s string) string { return `{"from_id":"forged",` + s[1:] }},
+		{"unknown field", func(s string) string { return `{"evidence":{"verdict":"PASS"},` + s[1:] }},
+		{"wrong field case", func(s string) string { return strings.Replace(s, `"from_id":`, `"FROM_ID":`, 1) }},
+		{"missing genesis prev_hash", func(s string) string { return strings.Replace(s, `"prev_hash":"",`, "", 1) }},
+		{"null genesis prev_hash", func(s string) string { return strings.Replace(s, `"prev_hash":""`, `"prev_hash":null`, 1) }},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			store, path := seedVerifyLedger(t)
+			lines := readLines(t, path)
+			lines[0] = tt.mutate(lines[0])
+			writeLines(t, path, lines)
+			before, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			result, err := store.VerifyFile()
+			if err != nil || result.Pass || result.FirstBrokenLine != 1 {
+				t.Errorf("VerifyFile accepted malformed first record: %+v, %v", result, err)
+			}
+			if _, err := DecodeEdges(strings.NewReader(string(before))); err == nil {
+				t.Error("shared decoder accepted malformed record")
+			}
+			if _, err := store.Append(validEdge()); err == nil {
+				t.Error("append accepted malformed existing record")
+			}
+			after, err := os.ReadFile(path)
+			if err != nil || string(after) != string(before) {
+				t.Fatalf("rejected append changed ledger bytes: %v", err)
+			}
+		})
+	}
+}
+
 // TestVerifyFile_IntactChainPasses is the GREEN baseline: two appended edges
 // form an intact chain and VerifyFile reports Pass with the right count.
 func TestVerifyFile_IntactChainPasses(t *testing.T) {

@@ -30,6 +30,11 @@ func (w Writer) nowUTC() time.Time {
 // the same directory are untouched. The merged Artifact is returned.
 func (w Writer) Append(projectRoot, runID string, iteration int, newResults []ScenarioResult) (*Artifact, error) {
 	path := filepath.Join(projectRoot, filepath.FromSlash(ArtifactRelPath))
+	for i, result := range newResults {
+		if defect := validateResult(result); defect != "" {
+			return nil, fmt.Errorf("scenario results %s: incoming results[%d] %s", path, i, defect)
+		}
+	}
 
 	existing, err := w.readExisting(path)
 	if err != nil {
@@ -62,9 +67,9 @@ func (w Writer) readExisting(path string) ([]ScenarioResult, error) {
 		}
 		return nil, fmt.Errorf("read existing scenario results %s: %w", path, err)
 	}
-	var prior Artifact
-	if err := json.Unmarshal(data, &prior); err != nil {
-		return nil, fmt.Errorf("parse existing scenario results %s: %w", path, err)
+	prior, err := parseAndValidate(path, data)
+	if err != nil {
+		return nil, err
 	}
 	return prior.Results, nil
 }
@@ -99,13 +104,13 @@ func keepLatest(byID map[string]ScenarioResult, r ScenarioResult) {
 	}
 }
 
-// resultIsNewer reports whether candidate judged at-or-after current. Ties and
-// unparseable timestamps favor the candidate (last write wins).
+// resultIsNewer reports whether candidate judged at-or-after current. Callers
+// validate timestamps before merging; unorderable values never displace a result.
 func resultIsNewer(candidate, current ScenarioResult) bool {
 	ct, cerr := time.Parse(time.RFC3339, candidate.JudgedAt)
 	pt, perr := time.Parse(time.RFC3339, current.JudgedAt)
 	if cerr != nil || perr != nil {
-		return true
+		return false
 	}
 	return !ct.Before(pt)
 }

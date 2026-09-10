@@ -244,7 +244,7 @@ func workspaceGCTTL() time.Duration {
 // actions.jsonl record.
 //
 // A directory Rename needs no byte backup or content hash to be reversible:
-// engine.undoOne reverses a Rename record with a bare rename-back and never
+// undoOne reverses a Rename record under both endpoint locks and never
 // consults backups or hashes, and the renamed tree IS the preserved copy,
 // byte for byte. Hash fields record the empty-content hash for journal-shape
 // consistency (the same value Mutate records for an absent file).
@@ -451,9 +451,8 @@ func workspaceAppendActionStaged(ctx *MutateContext, rec ActionRecord) (wrote bo
 // The action is journaled with the same record shape Mutate writes for a
 // Rename (Op "Rename", RenameTo=dest, before-hash of the source content,
 // empty after-hash at the vacated source path): it IS the move it performed,
-// only executed differently. engine.undoOne replays a Rename record with a
-// reverse os.Rename(RenameTo, Path), which works identically after
-// link+remove — the source is gone and the destination exists, exactly as
+// only executed differently. undoOne replays a Rename record with a reverse
+// no-clobber move: the source is gone and the destination exists, exactly as
 // after a plain rename.
 func workspaceFileMoveNoClobber(ctx *MutateContext, path, dest string) (collided bool, err error) {
 	op := Rename{To: dest}
@@ -494,9 +493,11 @@ func workspaceFileMoveNoClobber(ctx *MutateContext, path, dest string) (collided
 	}
 
 	// Step 4 — verbatim backup (same as Mutate for an existing file).
+	backupPath := ""
 	if !ctx.DryRun {
-		if err := workspaceWriteVerifiedBackup(ctx, path, beforeBytes, info); err != nil {
-			return false, err
+		backupPath, err = writeActionBackup(ctx, beforeBytes, info)
+		if err != nil {
+			return false, fmt.Errorf("doctor: backup %s: %w", path, err)
 		}
 	}
 
@@ -517,23 +518,7 @@ func workspaceFileMoveNoClobber(ctx *MutateContext, path, dest string) (collided
 	// Step 7/8 — fsync'd action record; same execute-before-journal parity and
 	// crash exposure as workspaceDirRename (see the comment there), and the
 	// same staged write/sync recovery split.
-	return false, workspaceJournalFileMove(ctx, root, pathRel, destRel, path, dest, info, op, beforeHash, startedNS)
-}
-
-func workspaceWriteVerifiedBackup(ctx *MutateContext, path string, beforeBytes []byte, info os.FileInfo) error {
-	rel, relErr := filepath.Rel(ctx.RepoRoot, path)
-	if relErr != nil {
-		rel = filepath.Base(path)
-	}
-	backup := filepath.Join(ctx.RunDir, "backups", rel)
-	if err := writeWorkspaceBackup(backup, beforeBytes, info); err != nil {
-		return fmt.Errorf("doctor: backup %s: %w", path, err)
-	}
-	backupBytes, err := os.ReadFile(backup)
-	if err != nil || !bytes.Equal(beforeBytes, backupBytes) {
-		return fmt.Errorf("backup verify failed (cmp-strict mismatch for %s)", path)
-	}
-	return nil
+	return false, workspaceJournalFileMove(ctx, root, pathRel, destRel, path, dest, info, op, beforeHash, backupPath, startedNS)
 }
 
 func workspaceExecuteFileMoveNoClobber(root *os.Root, pathRel, destRel, path, dest string, info os.FileInfo) (bool, error) {
@@ -585,7 +570,7 @@ func workspaceFileMoveIdentityChanged(root *os.Root, pathRel, destRel string, ex
 		!os.SameFile(expected, destInfo) || !os.SameFile(expected, sourceInfo)
 }
 
-func workspaceJournalFileMove(ctx *MutateContext, root *os.Root, pathRel, destRel, path, dest string, info os.FileInfo, op Rename, beforeHash string, startedNS int64) error {
+func workspaceJournalFileMove(ctx *MutateContext, root *os.Root, pathRel, destRel, path, dest string, info os.FileInfo, op Rename, beforeHash, backupPath string, startedNS int64) error {
 	rel, relErr := filepath.Rel(ctx.RepoRoot, path)
 	if relErr != nil {
 		rel = path
@@ -596,6 +581,7 @@ func workspaceJournalFileMove(ctx *MutateContext, root *os.Root, pathRel, destRe
 		BeforeHash:   beforeHash,
 		AfterHash:    sha256Hex(nil), // the source path is empty after the move, matching Mutate's read-back
 		BeforeMode:   fmt.Sprintf("%o", info.Mode().Perm()),
+		BackupPath:   backupPath,
 		StartedAtNS:  startedNS,
 		FinishedAtNS: time.Since(ctx.start).Nanoseconds(),
 		RunID:        ctx.RunID,
@@ -728,31 +714,6 @@ func readWorkspaceRootRegular(root *os.Root, name string) (os.FileInfo, []byte, 
 		return nil, nil, fmt.Errorf("changed while reading (refused_unsafe)")
 	}
 	return openedAfter, first, nil
-}
-
-func writeWorkspaceBackup(path string, data []byte, info os.FileInfo) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return err
-	}
-	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
-	if err != nil {
-		return err
-	}
-	if _, err := file.Write(data); err != nil {
-		_ = file.Close()
-		return err
-	}
-	if err := file.Sync(); err != nil {
-		_ = file.Close()
-		return err
-	}
-	if err := file.Close(); err != nil {
-		return err
-	}
-	if err := os.Chmod(path, info.Mode()); err != nil {
-		return err
-	}
-	return os.Chtimes(path, info.ModTime(), info.ModTime())
 }
 
 // workspaceQuarantineDirByName validates name as a bare path element (a

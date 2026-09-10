@@ -103,11 +103,17 @@ func runHandoff(cmd *cobra.Command, args []string) error {
 }
 
 func collectHandoffState(cwd string) *handoffState {
+	files, err := gitChangedFiles(cwd, 20)
+	if err != nil {
+		// State is optional: absence means unavailable, whereas an emitted
+		// git_dirty=false must represent an actual successful observation.
+		return nil
+	}
 	state := &handoffState{}
 	if branch, err := getCurrentBranch(cwd); err == nil {
 		state.GitBranch = branch
 	}
-	state.ModifiedFiles = gitChangedFiles(cwd, 20)
+	state.ModifiedFiles = files
 	state.GitDirty = len(state.ModifiedFiles) > 0
 	command := exec.Command("git", "log", "--oneline", "-5", "--no-decorate")
 	command.Dir = cwd

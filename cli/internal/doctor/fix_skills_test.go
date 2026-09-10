@@ -97,7 +97,7 @@ func TestSkillsStaleCommandRefsFixer(t *testing.T) {
 	}
 
 	// Backup exists, byte-identical to original.
-	backup := filepath.Join(ra.BackupsDir(), "skills", "sample", "SKILL.md")
+	backup := recordedBackupForPath(t, ra, "skills/sample/SKILL.md")
 	bgot, err := os.ReadFile(backup)
 	if err != nil {
 		t.Fatalf("backup missing: %v", err)
@@ -440,8 +440,8 @@ func TestSkillsIntegrityHygieneFixer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Fix: %v", err)
 	}
-	if !res.Fixed || res.ActionsTaken != 1 {
-		t.Fatalf("Fix Fixed=%t ActionsTaken=%d, want true/1", res.Fixed, res.ActionsTaken)
+	if res.Fixed || res.ActionsTaken != 1 {
+		t.Fatalf("Fix Fixed=%t ActionsTaken=%d, want false/1 while manual findings remain", res.Fixed, res.ActionsTaken)
 	}
 
 	got, _ := os.ReadFile(skillMD)
@@ -477,7 +477,6 @@ func TestSkillsIntegrityHygieneFixer(t *testing.T) {
 	}
 }
 
-// TestSkillsIntegrityHygieneReportOnlyNoMutate verifies that when the only
 // TestSkillsHygiene_PlaceholderLinkNotDeadRef pins the DEAD_REF placeholder
 // exclusion: a template link like [text](references/<topic>.md) in skill docs
 // (showing the link FORMAT, e.g. skill-builder's "move section bodies to
@@ -524,8 +523,8 @@ func TestHasAnglePlaceholder(t *testing.T) {
 	}
 }
 
-// hygiene violations are report-only, the fixer takes no action and does not
-// refuse (a clean run with nothing safely fixable).
+// TestSkillsIntegrityHygieneReportOnlyNoMutate verifies that report-only
+// hygiene findings remain unresolved without being mistaken for an error.
 func TestSkillsIntegrityHygieneReportOnlyNoMutate(t *testing.T) {
 	repo := t.TempDir()
 	home := t.TempDir()
@@ -541,8 +540,8 @@ func TestSkillsIntegrityHygieneReportOnlyNoMutate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("report-only run should not refuse: %v", err)
 	}
-	if !res.Fixed || res.ActionsTaken != 0 {
-		t.Fatalf("report-only run: Fixed=%t ActionsTaken=%d, want true/0", res.Fixed, res.ActionsTaken)
+	if res.Fixed || res.ActionsTaken != 0 {
+		t.Fatalf("report-only run: Fixed=%t ActionsTaken=%d, want false/0", res.Fixed, res.ActionsTaken)
 	}
 	recs, _ := readActions(ra.ActionsPath())
 	if len(recs) != 0 {

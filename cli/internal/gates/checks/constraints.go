@@ -49,6 +49,13 @@ func init() {
 		Run:        runConstraintEnforceGate,
 		RepairHint: "ao constraint list — fix the change to satisfy the active constraint, or `ao constraint retire <id>` if the rule is wrong",
 	})
+	gates.Register(gates.Check{
+		ID:         "constraints.shadow",
+		Tiers:      gates.Fast | gates.Full,
+		Blocking:   false,
+		Run:        runConstraintShadowGate,
+		RepairHint: "review the reported shadow detector observations before activating the constraint",
+	})
 }
 
 // constraintSchemaVersion is the only index schema this gate knows how to
@@ -62,12 +69,23 @@ const constraintSchemaVersion = 1
 var errFailClosed = errors.New("constraint could not be evaluated")
 
 func runConstraintEnforceGate(_ context.Context, rc gates.RunContext) (ports.GateVerdict, error) {
+	return runConstraints(rc, "active"), nil
+}
+
+func runConstraintShadowGate(_ context.Context, rc gates.RunContext) (ports.GateVerdict, error) {
+	return runConstraints(rc, "shadow"), nil
+}
+
+// Active enforcement and shadow observation are separate registered results.
+// The registry retains blocking semantics for malformed indexes, scan failures
+// and active evaluation failures; shadow observations cannot stop fail-fast.
+func runConstraints(rc gates.RunContext, status string) ports.GateVerdict {
 	idx, missing, parseErr := loadConstraintIndexAt(rc.RepoRoot)
 	if missing {
 		return ports.GateVerdict{
 			Status: ports.GateStatusPass,
 			Reason: "no constraint index — nothing to enforce",
-		}, nil
+		}
 	}
 	if parseErr != nil {
 		// Parse error / unknown schema = gate fail, never skip (EM-ENF acceptance).
@@ -75,7 +93,7 @@ func runConstraintEnforceGate(_ context.Context, rc gates.RunContext) (ports.Gat
 			Status:  ports.GateStatusFail,
 			Reason:  "constraint index malformed — failing closed",
 			LogTail: fmt.Sprintf("%s: %v", constraintindex.ConstraintIndexPath(), parseErr),
-		}, nil
+		}
 	}
 
 	// Candidate file set. Fast mode routes to the changed files; full mode gets
@@ -89,40 +107,35 @@ func runConstraintEnforceGate(_ context.Context, rc gates.RunContext) (ports.Gat
 				Status:  ports.GateStatusFail,
 				Reason:  "could not enumerate repo files for full-mode enforcement — failing closed",
 				LogTail: err.Error(),
-			}, nil
+			}
 		}
 		files = walked
 	}
 
 	var (
-		active       int
-		shadow       int
-		violations   []string
-		broken       []string
-		shadowHits   []string
-		shadowBroken []string
+		evaluated  int
+		violations []string
+		broken     []string
 	)
 	for i := range idx.Constraints {
 		c := idx.Constraints[i]
-		if c.Status != "active" && c.Status != "shadow" {
+		if c.Status != status {
 			continue
 		}
+		evaluated++
 		hits, err := evalConstraint(c, rc.RepoRoot, files)
-		if c.Status == "shadow" {
-			shadow++
-			if err != nil {
-				shadowBroken = append(shadowBroken, fmt.Sprintf("%s (%s): %v", c.ID, c.Title, err))
-			} else {
-				shadowHits = append(shadowHits, hits...)
-			}
-			continue
-		}
-		active++
 		if err != nil {
 			broken = append(broken, fmt.Sprintf("%s (%s): %v", c.ID, c.Title, err))
 			continue
 		}
 		violations = append(violations, hits...)
+	}
+	if status == "shadow" && (len(violations) > 0 || len(broken) > 0) {
+		return ports.GateVerdict{
+			Status:  ports.GateStatusWarn,
+			Reason:  fmt.Sprintf("%d shadow constraint(s) evaluated in warn-only mode", evaluated),
+			LogTail: strings.Join(append(broken, violations...), "\n"),
+		}
 	}
 
 	// Fail-closed takes precedence: a constraint we cannot evaluate is a hole in
@@ -132,26 +145,19 @@ func runConstraintEnforceGate(_ context.Context, rc gates.RunContext) (ports.Gat
 			Status:  ports.GateStatusFail,
 			Reason:  fmt.Sprintf("%d active constraint(s) could not be evaluated — failing closed", len(broken)),
 			LogTail: strings.Join(append(broken, violations...), "\n"),
-		}, nil
+		}
 	}
 	if len(violations) > 0 {
 		return ports.GateVerdict{
 			Status:  ports.GateStatusFail,
 			Reason:  fmt.Sprintf("%d constraint violation(s) in changed files", len(violations)),
 			LogTail: strings.Join(violations, "\n"),
-		}, nil
-	}
-	if len(shadowHits) > 0 || len(shadowBroken) > 0 {
-		return ports.GateVerdict{
-			Status:  ports.GateStatusWarn,
-			Reason:  fmt.Sprintf("%d shadow constraint(s) evaluated in warn-only mode", shadow),
-			LogTail: strings.Join(append(shadowBroken, shadowHits...), "\n"),
-		}, nil
+		}
 	}
 	return ports.GateVerdict{
 		Status: ports.GateStatusPass,
-		Reason: fmt.Sprintf("%d active constraint(s) enforced and %d shadow constraint(s) observed, no violations", active, shadow),
-	}, nil
+		Reason: fmt.Sprintf("%d %s constraint(s) evaluated, no violations", evaluated, status),
+	}
 }
 
 // loadConstraintIndexAt reads the index relative to root. It separates the three

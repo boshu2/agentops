@@ -134,10 +134,13 @@ repository-owned checks instead.
 ## Applicability Inputs
 
 Constraint applicability is resolved from concrete repository files. The Go
-`constraints.enforce` check evaluates changed files in fast mode and enumerates
-repository files in full mode, then applies `applies_to.path_globs`. Shadow
-detector hits or evaluation errors WARN. Active detector hits or evaluation
-errors FAIL closed.
+`constraints.enforce` and `constraints.shadow` checks evaluate changed files in
+fast mode and enumerate repository files in full mode, then apply
+`applies_to.path_globs`. Shadow detector hits or evaluation errors produce an
+advisory WARN under `constraints.shadow`; they do not fail the run or stop
+fail-fast execution. `constraints.enforce` remains blocking: active detector
+hits, active evaluation errors, malformed indexes and file enumeration errors
+FAIL closed.
 
 ## Supported Detector Kinds
 

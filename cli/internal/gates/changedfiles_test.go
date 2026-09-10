@@ -66,7 +66,7 @@ func TestScopeArgs_Range(t *testing.T) {
 	if err != nil {
 		t.Fatalf("scopeArgs range: %v", err)
 	}
-	want := []string{"diff", "--name-only", "origin/main..HEAD"}
+	want := []string{"diff", "--name-only", "-z", "origin/main..HEAD"}
 	if !reflect.DeepEqual(args, want) {
 		t.Fatalf("scopeArgs range = %v, want %v", args, want)
 	}
@@ -343,4 +343,93 @@ func equalSet(a, b []string) bool {
 		}
 	}
 	return true
+}
+
+func runDiscoveryGit(t *testing.T, root string, args ...string) {
+	t.Helper()
+	cmd := exec.Command("git", args...)
+	cmd.Dir = root
+	cmd.Env = append(ScrubbedGitEnv(), "GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_SYSTEM=/dev/null",
+		"GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@example.com",
+		"GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@example.com")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git %v: %v\n%s", args, err, out)
+	}
+}
+
+func TestGitChangedFiles_MergeUsesFirstParent(t *testing.T) {
+	root, base, _, _ := gitCommits(t)
+	runDiscoveryGit(t, root, "checkout", "-q", "-b", "side", base)
+	if err := os.MkdirAll(filepath.Join(root, "scripts"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "scripts/new.sh"), []byte("#!/bin/sh\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	runDiscoveryGit(t, root, "add", "-A")
+	runDiscoveryGit(t, root, "commit", "-qm", "side script")
+	runDiscoveryGit(t, root, "checkout", "-q", "-b", "mainline", base)
+	if err := os.WriteFile(filepath.Join(root, "mainline.txt"), []byte("mainline only\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	runDiscoveryGit(t, root, "add", "-A")
+	runDiscoveryGit(t, root, "commit", "-qm", "mainline")
+	runDiscoveryGit(t, root, "merge", "--no-ff", "-m", "merge side", "side")
+
+	got, err := NewGitChangedFiles(root).Changed(context.Background(), ScopeHead)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !equalSet(got, []string{"scripts/new.sh"}) {
+		t.Fatalf("merge head files = %q, want first-parent addition scripts/new.sh", got)
+	}
+	if !PathMatchesAny([]string{"**/*.sh"}, got[0]) {
+		t.Fatal("merge addition did not select the shell gate")
+	}
+}
+
+func TestGitChangedFiles_RootCommit(t *testing.T) {
+	root, base, _, _ := gitCommits(t)
+	runDiscoveryGit(t, root, "checkout", "-q", base)
+	got, err := NewGitChangedFiles(root).Changed(context.Background(), ScopeHead)
+	if err != nil || !equalSet(got, []string{"README.md"}) {
+		t.Fatalf("root head files = %q, error = %v", got, err)
+	}
+}
+
+func TestGitChangedFiles_PreservesExactPaths(t *testing.T) {
+	root, _, _, base := gitCommits(t)
+	want := []string{"scripts/café.sh", "scripts/new\nline.sh", "scripts/tab\tfile.sh", " leading.sh", "trailing.sh ", "scripts/quote\".sh", "scripts/back\\slash.sh"}
+	for _, rel := range want {
+		full := filepath.Join(root, rel)
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(full, []byte("#!/bin/sh\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	runDiscoveryGit(t, root, "add", "-A")
+	assertScope := func(scope Scope) {
+		t.Helper()
+		got, err := NewGitChangedFiles(root).Changed(context.Background(), scope)
+		if err != nil || !equalSet(got, want) {
+			t.Fatalf("scope %s: files = %q, want %q; error = %v", scope, got, want, err)
+		}
+		for _, file := range got {
+			if !PathMatchesAny([]string{file}, file) {
+				t.Errorf("exact path %q failed routing", file)
+			}
+		}
+	}
+	assertScope(ScopeStaged)
+	assertScope(ScopeWorktree)
+	runDiscoveryGit(t, root, "commit", "-qm", "unusual paths")
+	assertScope(ScopeHead)
+	assertScope(Scope(ScopeRangePrefix + base + "..HEAD"))
+	runDiscoveryGit(t, root, "config", "remote.origin.url", root)
+	runDiscoveryGit(t, root, "config", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*")
+	runDiscoveryGit(t, root, "update-ref", "refs/remotes/origin/main", base)
+	runDiscoveryGit(t, root, "branch", "--set-upstream-to", "origin/main")
+	assertScope(ScopeUpstream)
 }

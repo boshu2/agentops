@@ -3,7 +3,6 @@ package doctor
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"sync"
@@ -77,6 +76,7 @@ type ActionRecord struct {
 	BeforeHash   string `json:"before_hash"`
 	AfterHash    string `json:"after_hash"`
 	BeforeMode   string `json:"before_mode,omitempty"`
+	BackupPath   string `json:"backup_path,omitempty"` // immutable, relative to the owning run
 	StartedAtNS  int64  `json:"started_at_ns"`
 	FinishedAtNS int64  `json:"finished_at_ns"`
 	RunID        string `json:"run_id"`
@@ -95,57 +95,6 @@ func readOrEmpty(path string) ([]byte, error) {
 		return nil, nil
 	}
 	return b, err
-}
-
-// copyVerbatim copies src to dst preserving mode and mtime.
-func copyVerbatim(src, dst string) error {
-	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-		return err
-	}
-	info, err := os.Stat(src)
-	if err != nil {
-		return err
-	}
-	in, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = in.Close() }()
-	out, err := os.OpenFile(dst, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
-	if err != nil {
-		return err
-	}
-	if _, err := io.Copy(out, in); err != nil {
-		_ = out.Close()
-		return err
-	}
-	if err := out.Sync(); err != nil {
-		_ = out.Close()
-		return err
-	}
-	if err := out.Close(); err != nil {
-		return err
-	}
-	if err := os.Chmod(dst, info.Mode()); err != nil {
-		return err
-	}
-	return os.Chtimes(dst, info.ModTime(), info.ModTime())
-}
-
-// cmpStrict verifies that two files are byte-identical.
-func cmpStrict(a, b string) error {
-	ba, err := os.ReadFile(a)
-	if err != nil {
-		return err
-	}
-	bb, err := os.ReadFile(b)
-	if err != nil {
-		return err
-	}
-	if string(ba) != string(bb) {
-		return fmt.Errorf("backup verify failed (cmp-strict mismatch for %s)", a)
-	}
-	return nil
 }
 
 // Mutate is the single chokepoint through which every `fix`/`undo` disk write
@@ -185,17 +134,16 @@ func Mutate(ctx *MutateContext, path string, op Op) (ActionResult, error) {
 		return ActionResult{Err: err}, err
 	}
 
-	// Step 4 — verbatim backup (skip in dry-run; skip if file absent).
+	// Step 4 — one immutable backup per action, contained within this run.
+	backupPath := ""
 	if !ctx.DryRun && existed {
-		rel, relErr := filepath.Rel(ctx.RepoRoot, path)
-		if relErr != nil {
-			rel = filepath.Base(path)
-		}
-		backup := filepath.Join(ctx.RunDir, "backups", rel)
-		if err := copyVerbatim(path, backup); err != nil {
+		backupPath, err = writeActionBackup(ctx, beforeBytes, info)
+		if err != nil {
 			return ActionResult{Err: err}, fmt.Errorf("doctor: backup %s: %w", path, err)
 		}
-		if err := cmpStrict(path, backup); err != nil {
+		current, readErr := os.ReadFile(path)
+		if readErr != nil || sha256Hex(current) != beforeHash {
+			err := fmt.Errorf("doctor: source changed while backing up %s", path)
 			return ActionResult{Err: err}, err
 		}
 	}
@@ -228,6 +176,7 @@ func Mutate(ctx *MutateContext, path string, op Op) (ActionResult, error) {
 		BeforeHash:   beforeHash,
 		AfterHash:    afterHash,
 		BeforeMode:   beforeMode,
+		BackupPath:   backupPath,
 		StartedAtNS:  startedNS,
 		FinishedAtNS: time.Since(ctx.start).Nanoseconds(),
 		RunID:        ctx.RunID,
