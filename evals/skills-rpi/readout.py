@@ -216,6 +216,25 @@ def validation_cases(rows):
     return result
 
 
+def trial_work(work, trial, directory_count):
+    """Present the Go reader's explicit association, never infer one from reward."""
+    if (isinstance(work, dict) and work.get("association") == "trial"
+            and work.get("trial_directory") == trial.get("directory") and directory_count == 1
+            and work.get("author_context_id") in trial.get("session_ids", [])
+            and work.get("status") in ("accepted", "failed", "not_proven")):
+        return deepcopy(work)
+    return {"status": "not_proven", "problems": ["independent work not supplied or not uniquely associated with this trial"]}
+
+
+def work_counts(rows, denominator):
+    statuses = Counter(row["independent_work"]["status"] for row in rows)
+    accepted = statuses["accepted"]
+    return {"known_accepted": accepted, "known_failed": statuses["failed"], "not_proven": statuses["not_proven"],
+            "unobserved_assignments": max(0, denominator - len(rows)) if denominator is not None else None,
+            "denominator": denominator,
+            "known_accepted_rate_all_assignments": accepted / denominator if denominator else None}
+
+
 def uncertainty(pairs, *, n_required=None, resamples=10000):
     if not pairs:
         return {"status": "unavailable", "reason": "no comparable endpoint pairs"}
@@ -268,6 +287,7 @@ def build(report, receipts=None, *, control="control", treatment="treatment", n_
             if (copy.get("accounting") or {}).get("diagnostics"):
                 suspect_sessions.add(session.get("id"))
     seen_jobs = Counter(Path(job["directory"]).name for job in report.get("jobs", []))
+    seen_trials = Counter(trial.get("directory") for job in report.get("jobs", []) for trial in job.get("trials", []))
     for job in report.get("jobs", []):
         arm = job.get("arm", "")
         arms[arm].append(job)
@@ -301,6 +321,7 @@ def build(report, receipts=None, *, control="control", treatment="treatment", n_
                    "native_rewards": (native.get("verifier_result") or {}).get("rewards"),
                    "verifier_mode_source": verifier_mode_source(trial, receipt),
                    "verifier_grade": grade,
+                   "independent_work": trial_work(report.get("work"), trial, seen_trials[trial.get("directory")]),
                    "native_phase_endpoints": {key: native.get(key) for key in
                                               ("environment_setup", "agent_setup", "agent_execution", "verifier")},
                    "session_ids": trial.get("session_ids", []),
@@ -371,6 +392,7 @@ def build(report, receipts=None, *, control="control", treatment="treatment", n_
         denominator = max(expected_total, len(rows)) if expected_total is not None else None
         successes = sum(row["outcome"] == "success" for row in rows)
         costs = distribution([(row["harbor_agent_result"] or {}).get("cost_usd") for row in rows])
+        independent = work_counts(rows, denominator)
         summaries[arm] = {"expected": expected_total, "expected_known_subtotal": sum(n for n in expected if isinstance(n, int) and n >= 0),
                           "observed": len(rows), "started": sum(job.get("counts", {}).get("started", 0) for job in jobs),
                           "unobserved_expected": max(0, expected_total - len(rows)) if expected_total is not None else None,
@@ -378,7 +400,8 @@ def build(report, receipts=None, *, control="control", treatment="treatment", n_
                           "all_assigned_or_observed_denominator": denominator,
                           "endpoint_successes": successes,
                           "endpoint_success_rate_all_assignments": successes / denominator if denominator else None,
-                          "independently_completed_outcomes": None,
+                          "independently_completed_outcomes": independent["known_accepted"] if denominator == len(rows) and not independent["not_proven"] else None,
+                          "independent_work": independent,
                           "validation_cases": validation_cases(rows),
                           "comparison_eligible_attempts": sum(not row["comparison_exclusions"] for row in rows),
                           "harbor_cost_usd": costs, "elapsed_seconds": distribution([row["elapsed_seconds"] for row in rows]),
@@ -390,16 +413,17 @@ def build(report, receipts=None, *, control="control", treatment="treatment", n_
                              **{key: (copy.get("accounting") or {}).get(key) for key in
                                 ("parent_id", "usage", "first_timestamp", "last_timestamp", "latest_turn_state", "diagnostics")}}
                             for copy in session.get("copies", [])]} for session in report.get("sessions", [])]
-    unmeasured = ["feasibility and substantiated blocking", "worker false completion", "independent semantic acceptance",
+    unmeasured = ["feasibility and substantiated blocking", "worker false completion",
+                  "independent acceptance outside the explicitly joined subject" if report.get("work") else "independent semantic acceptance",
                   "scope/acceptance drift, recovery, stopping and budget overrun", "content delivery and relevant action",
                   "total billing, orchestration and experimental grading cost"]
     if not any(summary["validation_cases"]["case_results"] for summary in summaries.values()):
         unmeasured.extend(["validator false acceptance", "needless blocking on clean candidates"])
     return {"recommendation": "insufficient-evidence",
-            "recommendation_reason": "This pilot readout supports a scoped human maintenance decision; it does not establish held-out benefit, semantic acceptance, equivalence, or complete billed cost.",
+            "recommendation_reason": "This pilot readout supports a scoped human maintenance decision; it does not establish held-out benefit, equivalence, or complete billed cost. Independent work status applies only to the explicitly joined subject.",
             "arms": summaries, "paired_outcomes": pairs, "pair_dispositions": pair_dispositions,
             "uncertainty": uncertainty(pairs, n_required=n_required, resamples=resamples),
-            "attempts": attempts, "native_sessions": sessions,
+            "attempts": attempts, "native_sessions": sessions, "native_work": deepcopy(report.get("work")),
             "receipt_diagnostics": receipts.get("diagnostics", []),
             "unobserved_receipt_jobs": sorted(name for name in by_job if name not in seen_jobs),
             "unmeasured": unmeasured,
@@ -413,6 +437,7 @@ def build(report, receipts=None, *, control="control", treatment="treatment", n_
                 "Harbor cost values and ratios are incomplete estimates, even when every attempt has a scalar: the adapter may omit nested sessions. They are separate from native usage and do not establish billing. Missing usage or billing is unknown; zero accepted outcomes makes cost per accepted outcome undefined.",
                 "Infrastructure, missing and ambiguous endpoints are excluded from paired inference, retained in overall assignment accounting. Execution errors count as unsuccessful endpoints when identity is intact.",
                 "Validation case metrics use only receipt-valid, separately captured verifier grades, including failed endpoints. Missing cases or grades remain unknown; recorded case judgments do not establish worker false completion or independent workflow completion.",
+                "Independent work presents the native Go reader's explicit judgment join; this renderer does not issue or revalidate semantic verdicts. Known accepted counts cover only uniquely associated trials. Missing proof and unobserved assignments stay separate, and total accepted outcomes remain unknown until coverage is complete. Standalone native work has no invented trial or billing assignment.",
                 "Numeric repetition IDs pair observations, not provider randomness. No live enforcement or general uplift claim follows from replay fixtures."]}
 
 
@@ -425,6 +450,29 @@ def markdown(result):
     for arm, row in result["arms"].items():
         cost = row["harbor_cost_usd"]
         lines.append(f"| {arm} | {show(row['expected'])} | {row['observed']} | {row['endpoint_successes']} / {show(row['all_assigned_or_observed_denominator'])} | {json.dumps(row['outcomes'], sort_keys=True)} | ${cost['known_sum']:.4f} / {cost['unknown']} |")
+    lines += ["", "Independent work from explicitly supplied native judgment evidence:", "",
+              "| Arm | Known accepted | Known failed | Observed without proof | Unobserved assignments | Denominator |",
+              "|---|---:|---:|---:|---:|---:|"]
+    for arm, row in result["arms"].items():
+        counts = row["independent_work"]
+        lines.append(f"| {arm} | " + " | ".join(show(counts[key]) for key in
+                     ("known_accepted", "known_failed", "not_proven", "unobserved_assignments", "denominator")) + " |")
+    work = result.get("native_work")
+    if work:
+        lines += ["", f"Selected native work: {work.get('status', 'not_proven')}; execution {work.get('execution', 'unknown')}; association {work.get('association', 'unknown')}.",
+                  "Author: " + str(work.get("author_context_id") or "unknown") + "."]
+        judgment = work.get("judgments") or {}
+        if judgment.get("subject_manifest_digest"):
+            lines.append("Subject manifest: " + judgment["subject_manifest_digest"] + "; acceptance: " + str(judgment.get("acceptance_digest")) + ".")
+        if judgment.get("required_criteria"):
+            lines.append("Required acceptance IDs: " + ", ".join(judgment["required_criteria"]) + ".")
+        for leg in judgment.get("legs", []):
+            lines.append(f"- {leg.get('id', 'unknown')}: original {leg.get('verdict', 'unknown')}; " + "; ".join(leg.get("problems", [])))
+        problems = work.get("problems", []) + judgment.get("problems", [])
+        if problems:
+            lines.append("Unproven evidence/association: " + "; ".join(problems) + ".")
+    else:
+        lines += ["", "Selected native work: not_proven; no independent judgment join supplied."]
     lines += ["", "Paired task outcomes (control → treatment):"]
     lines += [f"- {pair['task']} rep {pair['rep']}: {pair['control_outcome']} → {pair['treatment_outcome']}" for pair in result["paired_outcomes"]] or ["- None."]
     lines += ["", "Uncertainty: " + json.dumps(result["uncertainty"], sort_keys=True), "",

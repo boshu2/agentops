@@ -1,5 +1,5 @@
 // Package quickstart owns Cobra presentation for the `ao quick-start` command.
-// The command prints a static RPI workflow summary, so it performs no
+// The command prints a static native execution brief, so it performs no
 // filesystem, process, or clock effect.
 package quickstart
 
@@ -41,22 +41,35 @@ func (Module) Contract() clicontract.CommandContract {
 func (Module) Command() *cobra.Command {
 	return &cobra.Command{
 		Use:   "quick-start",
-		Short: "Show the AgentOps RPI workflow",
-		Long: `AgentOps is a small semantic evidence layer around agent work.
+		Short: "Show the native AgentOps execution brief",
+		Long: `Use your native coding agent and shell to complete the accepted work.
+Read the repository's brief and follow its scope, checks and delivery policy.
+No skill installation, workflow-skill loading, bootstrap or init is required.
 
-Run the RPI skill for one traversal:
-  Plan -> Implement -> fresh Validate -> repair to convergence -> report
-
-The CLI does not claim work, retry, manage Git, or deliver changes. Use
-ao gate check for deterministic repository checks and ao provenance for
-generic evidence inspection.`,
+Use ao gate check for deterministic repository checks. A fresh independent
+context judges the exact final change against unchanged acceptance; the
+Validate skill is an optional way to conduct that required judgment.
+Specialists and machine-readable evidence persistence are optional.`,
 		Args:    cobra.NoArgs,
 		GroupID: "start",
 		Run: func(cmd *cobra.Command, _ []string) {
-			fmt.Fprintln(cmd.OutOrStdout(), "RPI -> Plan -> Implement -> fresh Validate -> repair to convergence -> report")
-			fmt.Fprintln(cmd.OutOrStdout(), "Deterministic checks: ao gate check")
-			fmt.Fprintln(cmd.OutOrStdout(), "Semantic judgment: invoke the Validate skill from a fresh context")
-			fmt.Fprintln(cmd.OutOrStdout(), "Artifact persistence: optional; request verdict.v2 only for machine-readable evidence")
+			fmt.Fprintln(cmd.OutOrStdout(), `NATIVE AGENTOPS
+
+1. Read the repository brief; keep accepted behavior and write scope fixed.
+2. Use your native agent and shell to implement, run checks and repair known failures.
+3. Run required repository checks; ao gate check supplies deterministic facts.
+4. Obtain fresh independent judgment of the exact final change against unchanged acceptance.
+5. Report the result, checked and not_checked scope, and follow repository delivery policy.
+
+No skills, bootstrap or ao init are required. Missing independent judgment or
+unchecked acceptance means NOT_PROVEN; passing checks alone do not prove completion.
+Specialists, including the Validate skill, are optional. From an AgentOps checkout:
+  ao skills find "your task"             # discover an optional specialist
+  ao skills link --skill security        # install only a selected specialist
+  ao demo --rpi                          # show the optional full workflow
+
+Artifact persistence: optional; ao provenance provides explicit evidence tools.
+Git, work tracking and delivery remain with the caller and repository.`)
 		},
 	}
 }

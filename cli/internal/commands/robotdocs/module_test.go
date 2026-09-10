@@ -3,6 +3,7 @@ package robotdocs
 
 import (
 	"bytes"
+	"errors"
 	"strings"
 	"testing"
 
@@ -60,13 +61,50 @@ func TestRenderHandbook_ContainsContractSections(t *testing.T) {
 		"## Output contract",
 		"## Exit codes",
 		"## Machine-readable surfaces",
-		"## Canonical agent workflow",
+		"## Native execution",
+		"## AO operations on demand",
 		"## Command surface",
 		"Run `ao <command> --help` for the flags and arguments of any command.",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("handbook missing %q", want)
 		}
+	}
+}
+
+func TestRenderHandbookKeepsSkillsAndStartupOperationsOptional(t *testing.T) {
+	out := RenderHandbook(newTestRoot(t))
+	for _, want := range []string{
+		"native coding agent",
+		"fresh independent judgment",
+		"exact final change",
+		"unchanged acceptance",
+		"workflow skills are optional",
+		"NOT_PROVEN",
+		"ao status --json",
+		"ao doctor --robot-triage",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("native handbook missing %q", want)
+		}
+	}
+	for _, forbidden := range []string{"read it once", "Run this first", "Canonical agent workflow", "no verdict = not done"} {
+		if strings.Contains(out, forbidden) {
+			t.Errorf("optional handbook introduced mandatory workflow %q", forbidden)
+		}
+	}
+}
+
+type failedHandbookWriter struct{ err error }
+
+func (w failedHandbookWriter) Write([]byte) (int, error) { return 0, w.err }
+
+func TestCommandReportsHandbookOutputFailure(t *testing.T) {
+	command := NewModule().Command()
+	want := errors.New("consumer closed output")
+	command.SetOut(failedHandbookWriter{err: want})
+	if err := command.RunE(command, nil); !errors.Is(err, want) {
+		t.Fatalf("output failure reported as success: %v", err)
 	}
 }
 

@@ -186,7 +186,7 @@ nav:
       - RPI Traversal: architecture/rpi-traversal.md
       - Operating Loop (former name): architecture/operating-loop.md
       - Go CLI Architecture: architecture/go-cli.md
-      - Gas City Factory: architecture/gas-city-factory.md
+      - Gas City Reliability: operations/gas-city-reliability.md
       - How It Works: how-it-works.md
       - Architecture Overview: ARCHITECTURE.md
       - Component Map: architecture/component-map.md

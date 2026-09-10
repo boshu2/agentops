@@ -34,7 +34,7 @@ func TestModule_CommandAttributes(t *testing.T) {
 
 func TestDemoShowsBoundedRepairBoundary(t *testing.T) {
 	var out bytes.Buffer
-	if err := quickDemo(&out); err != nil {
+	if err := rpiDemo(&out); err != nil {
 		t.Fatal(err)
 	}
 	for _, want := range []string{"AGENTOPS RPI DEMO", "existing intent source", "runtime derives", "subject-manifest.v1", "fresh validation result", "persistence is optional", "convergence law"} {
@@ -54,7 +54,7 @@ func TestDemoConceptsExcludeLifecycleAuthority(t *testing.T) {
 	if err := showConcepts(&out); err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"fresh independent judgment", "does not own retries", "Git", "delivery"} {
+	for _, want := range []string{"independent judgment", "does not own retries", "Git", "delivery", "native coding agent", "optional"} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("concepts missing %q:\n%s", want, out.String())
 		}
@@ -69,8 +69,10 @@ func TestPublishedDemoQuick(t *testing.T) {
 	if err := command.Execute(); err != nil {
 		t.Fatalf("ao demo --quick failed: %v\n%s", err, out.String())
 	}
-	if !strings.Contains(out.String(), "AGENTOPS RPI DEMO") {
-		t.Fatalf("demo output missing the RPI example:\n%s", out.String())
+	for _, want := range []string{"AGENTOPS NATIVE DEMO", "ao gate check", "fresh independent context", "binding PASS", "unchanged acceptance", "NOT_PROVEN", "checked/not_checked", "ao demo --rpi"} {
+		if !strings.Contains(out.String(), want) {
+			t.Fatalf("demo output missing %q:\n%s", want, out.String())
+		}
 	}
 }
 

@@ -61,7 +61,7 @@ PY
   done
 
   require_text AGENTS.md \
-    "RPI charter -> on-demand Plan -> Implement and checks -> fresh Validate -> finish"
+    "Accepted intent -> native implementation and checks -> fresh independent judgment -> finish"
   require_text AGENTS.md \
     "Persist machine evidence only for"
   require_text PRODUCT.md \

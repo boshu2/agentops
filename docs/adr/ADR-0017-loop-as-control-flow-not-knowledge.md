@@ -1,11 +1,34 @@
 # ADR-0017: The Loop Is Control Flow, Not Knowledge
 
-- **Status:** Accepted, amended for review selection 2026-09-08 (2026-09-03)
+- **Status:** Accepted, amended for native execution 2026-09-10 (2026-09-03)
 - **Author:** AgentOps maintainers
 - **Builds on:** [ADR-0004](ADR-0004-corpus-moat-unproven-position-on-the-system.md) (corpus moat unproven, position on the verification system), [ADR-0011](ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md) (escape-corpus compounding demoted to hypothesis)
 - **Origin:** `docs/plans/2026-09-03-loop-restore.md` (this decision's intent source), and the 2026-09-02 Train 1 run, where the repair loop had to be improvised by hand
 
-## Active lean-harness amendment — 2026-09-09
+## Active native-default amendment — 2026-09-10
+
+The caller selected native agent execution with zero mandatory AgentOps skills.
+This supersedes RPI as the default entrypoint, not the exact-content judgment
+bar. A native goal carries continuity, BD carries work and handoffs, and the
+model chooses useful actions within accepted scope. AO provides deterministic
+tools on demand. A fresh author-distinct reviewer judges the final change;
+invoking the Validate skill is optional.
+
+Keep the existing skill library and explicit full installations. Selective
+linking makes individual guidance available without requiring a bundle. RPI
+remains an explicitly selected workflow; its dependency graph is unchanged.
+No new scheduler, aggregate controller, knowledge platform or lifecycle command
+is authorized. Native limits must be real runtime controls; goal prose cannot
+claim enforcement. Historical missing-proof outcomes remain unwaived.
+
+This amendment responds to observed process overhead and the caller's decision
+to test direct execution. A native coding demonstration establishes usability,
+not comparative skill uplift. Evaluation must distinguish endpoint checks from
+independently accepted work, retain failures and missing proof, and make
+association and evidence-verification limits visible. Subsequent comparative
+evidence may justify selectively adding or removing guidance.
+
+## Lean-harness amendment — 2026-09-09
 
 The caller approved a short RPI charter with on-demand Plan, Implement,
 Validate and Memory. This supersedes the once-only phase lock, mandatory

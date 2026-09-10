@@ -3,7 +3,7 @@
 AgentOps now owns one small product boundary:
 
 ```text
-RPI charter -> Plan if needed -> Implement and check -> fresh Validate -> finish
+Accepted intent -> native implementation and checks -> fresh independent judgment -> finish
 ```
 
 (The 3.0 through 3.6 releases stopped after one validation; ADR-0017 added the
@@ -12,7 +12,19 @@ bounded repair phase.)
 Known defects can be repaired directly and an approach can change within the
 accepted outcome, scope and real allowance. The caller owns changes to that
 acceptance, new allowances, scheduling, trackers, Git and delivery. Deterministic repository checks stay
-under `ao gate check`; semantic judgment is the Validate skill.
+under `ao gate check`; semantic judgment belongs to a fresh reviewer.
+
+## Native default — 2026-09-10
+
+The default requires zero AgentOps skills. `ao quick-start` and `ao demo` give
+read-only native guidance. `ao demo --rpi` retains the explicit workflow example.
+`ao init` remains optional evidence setup. No session bootstrap is required.
+
+The skill sources, explicit full plugins and no-selector `ao skills link` are
+preserved. From a checkout, repeat `--skill NAME` to link selected skills only.
+Selection does not uninstall existing links or rewrite user configuration.
+The optional RPI and Validate skills retain their contracts; native work uses
+the same exact-content, author-distinct judgment bar without invoking them.
 
 ## Removed responsibilities
 

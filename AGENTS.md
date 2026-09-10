@@ -2,18 +2,23 @@
 
 Detailed workflow mechanics: [docs/agent-workflow-reference.md](docs/agent-workflow-reference.md).
 
-AgentOps is the operations layer for agentic engineering: skills and evidence
+AgentOps is the operations layer for agentic engineering: tools, optional skills and evidence
 contracts that make one coding-agent change independently judgeable. Your
 tracker, Git, and coding agents keep owning work, history, and execution;
 AgentOps joins them as a federated integration graph and adds the judgment
-step, one RPI traversal at a time:
+step. The default is native execution with zero mandatory AgentOps skills:
 
 ```text
-RPI charter -> on-demand Plan -> Implement and checks -> fresh Validate -> finish
+Accepted intent -> native implementation and checks -> fresh independent judgment -> finish
 ```
 
 No fresh independent judgment over the exact subject means the experiment is
 not proven.
+
+Use the existing issue or conversation, edit the smallest useful change, run
+the repository's checks, and have a fresh context judge acceptance. Load a
+skill only for a concrete uncertainty or an explicitly selected workflow.
+Native goals supply continuity; BD keeps work and handoffs. Neither needs RPI.
 
 ## Repository map and mechanics
 
@@ -147,7 +152,7 @@ Skill logic ships in Go via `ao`;
 `skills/*/scripts/**/*.py`. Skill tests retain their documented exemption
 (ADR-0016, gate-enforced).
 
-## Lean RPI operating charter
+## Native execution and optional Lean RPI operating charter
 
 Own the authorized outcome through finish. Use the existing accepted intent and
 scope; a clear trivial change needs no Plan, Recall or Learn worksheet. Take the
@@ -178,19 +183,15 @@ out-of-scope change or failed acceptance means `FAIL`. Repair known findings
 within authority and real bounds, then revalidate the changed exact subject.
 Persist machine evidence only for a caller request or declared consumer.
 
-[Memory](skills/memory/SKILL.md) is optional and on demand: recall applicable
-reviewed external topic pages, or separately budget mining/learning and curation.
-BD owns work/status/handoffs, Git content, and native/CASS systems episodes.
-Reuse existing topic pages; entries give applicability, action, support, limits
-and invalidation. One incident supports a narrow observation; stronger rules
-need stronger evidence. Preserve rare useful constraints and legacy `.agents/`
-evidence; no blind TTL/deletion. Learning may remove rules and no-change is valid.
-Benefit requires later work evidence, not saved pages. This lean path accepts
-public or already-cleared trial inputs only and claims no native enforcement
-for restricted sources. Protected external drafts and exact independent support
+[Memory](skills/memory/SKILL.md) optionally recalls reviewed external topic pages
+or separately mines and curates them. Its contract owns support, applicability,
+invalidation and preservation; no blind TTL/deletion. Benefit needs later work
+evidence. Public or already-cleared inputs only: this path supplies no native
+restricted-source enforcement. Protected external drafts and independent support
 and destination-disclosure review precede Git import (ADR-0016).
 
-The [RPI skill](skills/rpi/SKILL.md) owns the charter; the
+The [RPI skill](skills/rpi/SKILL.md) packages this charter when explicitly selected;
+it is not a prerequisite for native execution or independent review. The
 [architecture reference](docs/architecture/rpi-traversal.md) owns exact evidence
 semantics. Optional outer-goal guidance and the grandfathered fixed-dispatch
 reference adapter stay outside the native core. No scheduler or new AO command

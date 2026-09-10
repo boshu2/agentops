@@ -45,13 +45,17 @@ type JudgmentReceipt struct {
 // The helper is a local reader: it never transmits bytes or authorizes a model
 // launch. The invoking runtime must enforce disclosure policy before dispatch.
 type JudgmentOptions struct {
-	Root             string
-	EvidenceRoot     string
-	Manifest         string
-	BaseManifest     string
-	Intent           string
-	AuthorContextID  string
-	Required         []JudgeProfile
+	Root            string
+	EvidenceRoot    string
+	Manifest        string
+	BaseManifest    string
+	Intent          string
+	AuthorContextID string
+	Required        []JudgeProfile
+	// RequiredCriteria is the caller's complete acceptance ID set. Nil retains
+	// legacy provenance behavior; a selected set must be nonempty and unique.
+	// IDs are never derived from candidate verdicts or parsed from intent prose.
+	RequiredCriteria []string
 	AllowedProviders []string
 	Verdicts         []string
 }
@@ -72,6 +76,7 @@ type JudgmentResult struct {
 	Satisfied             bool          `json:"satisfied"`
 	SubjectManifestDigest string        `json:"subject_manifest_digest"`
 	AcceptanceDigest      string        `json:"acceptance_digest"`
+	RequiredCriteria      []string      `json:"required_criteria,omitempty"`
 	Legs                  []JudgmentLeg `json:"legs"`
 	Problems              []string      `json:"problems"`
 }
