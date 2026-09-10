@@ -318,7 +318,7 @@ func TestBridgesSnapshotTornLatestFix(t *testing.T) {
 	}
 
 	// Backup of the torn latest.json exists and matches the pre-fix torn bytes.
-	backup := filepath.Join(ra.RunDir, "backups", openclaw.SnapshotDirRel, "latest.json")
+	backup := recordedBackup(t, ra, 0)
 	backupBytes, err := os.ReadFile(backup)
 	if err != nil {
 		t.Fatalf("torn-latest backup missing: %v", err)

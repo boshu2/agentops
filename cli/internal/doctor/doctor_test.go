@@ -74,7 +74,7 @@ func TestMutate_RoundTrip(t *testing.T) {
 		t.Fatalf("file content = %q, want %q", got, newContent)
 	}
 	// Backup exists and is byte-identical to original.
-	backup := filepath.Join(ra.BackupsDir(), ".agents", "ao", "thing.txt")
+	backup := recordedBackup(t, ra, 0)
 	bgot, err := os.ReadFile(backup)
 	if err != nil {
 		t.Fatalf("backup missing: %v", err)

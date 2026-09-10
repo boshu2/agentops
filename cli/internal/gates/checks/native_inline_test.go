@@ -29,6 +29,11 @@ func TestMain(m *testing.M) {
 // repo root. `git diff --name-only origin/main...HEAD` in it yields [addFile].
 func initRepoWithOriginMain(t *testing.T, addFile string) string {
 	t.Helper()
+	return initRepoWithOriginMainFiles(t, map[string]string{addFile: "x\n"})
+}
+
+func initRepoWithOriginMainFiles(t *testing.T, files map[string]string) string {
+	t.Helper()
 	root := t.TempDir()
 	run := func(args ...string) string {
 		c := exec.Command("git", args...)
@@ -58,16 +63,17 @@ func initRepoWithOriginMain(t *testing.T, addFile string) string {
 	run("commit", "-q", "-m", "base")
 	base := run("rev-parse", "HEAD")
 	run("update-ref", "refs/remotes/origin/main", base)
-	write(addFile, "x\n")
+	for rel, body := range files {
+		write(rel, body)
+	}
 	run("add", "-A")
-	run("commit", "-q", "-m", "add "+addFile)
+	run("commit", "-q", "-m", "add files")
 	return root
 }
 
 // TestChangedFilesFor_PollutedGitDirFallbackResolvesCorrectRepo is the
-// acceptance for the SECURITY-MED fix on the changedFilesFor fallback path
-// (the `git diff origin/main...HEAD` run when the orchestrator did not route):
-// a leaked GIT_DIR must not route the fallback change set at the wrong repo.
+// acceptance for the SECURITY-MED fix on full-mode change discovery:
+// a leaked GIT_DIR must not route the fallback diff at the wrong repo.
 func TestChangedFilesFor_PollutedGitDirFallbackResolvesCorrectRepo(t *testing.T) {
 	correct := initRepoWithOriginMain(t, "correct.sh")
 	polluted := initRepoWithOriginMain(t, "wrong.sh")
@@ -75,7 +81,10 @@ func TestChangedFilesFor_PollutedGitDirFallbackResolvesCorrectRepo(t *testing.T)
 	// Simulate git's hook-injected discovery env pointing at a DIFFERENT repo.
 	t.Setenv("GIT_DIR", filepath.Join(polluted, ".git"))
 
-	got := changedFilesFor(context.Background(), gates.RunContext{RepoRoot: correct})
+	got, err := changedFilesFor(context.Background(), gates.RunContext{RepoRoot: correct, Mode: gates.Full})
+	if err != nil {
+		t.Fatal(err)
+	}
 	want := []string{"correct.sh"}
 	if !equalSetChecks(got, want) {
 		t.Fatalf("polluted GIT_DIR routed fallback change set to %v, want %v (from cmd.Dir repo)", got, want)
@@ -335,5 +344,111 @@ func TestRunChangelogSync_ReadFailureFailsClosed(t *testing.T) {
 	}
 	if !strings.Contains(verdict.Reason, "docs/CHANGELOG.md") {
 		t.Fatalf("reason = %q, want missing evidence path", verdict.Reason)
+	}
+}
+
+func installRecordingShellcheck(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	marker := filepath.Join(dir, "arguments")
+	t.Setenv("SHELLCHECK_TEST_ARGUMENTS", marker)
+	if err := os.WriteFile(filepath.Join(dir, "shellcheck"), []byte("#!/bin/sh\nprintf '%s\\0' \"$@\" >> \"$SHELLCHECK_TEST_ARGUMENTS\"\nexit 1\n"), 0o755); err != nil { // #nosec G306 -- executable test fixture.
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	return marker
+}
+
+func TestNativeChecks_FullModeEvaluatesExactChangedFiles(t *testing.T) {
+	marker := installRecordingShellcheck(t)
+	script := "scripts/café\n deploy.sh"
+	learning := ".agents/ao/learnings/café\n note.md"
+	root := initRepoWithOriginMainFiles(t, map[string]string{script: shellcheckTriggeringScript, learning: "missing frontmatter\n"})
+	rc := gates.RunContext{RepoRoot: root, Mode: gates.Full}
+	for name, run := range map[string]gates.CheckFunc{"shellcheck": runShellcheckChanged, "learning": runLearningCoherence} {
+		v, err := run(context.Background(), rc)
+		if err != nil || v.Status != ports.GateStatusFail {
+			t.Errorf("%s full check = %+v, error = %v; want evaluated FAIL", name, v, err)
+		}
+	}
+	args, err := os.ReadFile(marker)
+	if err != nil || !strings.Contains(string(args), script+"\x00") {
+		t.Errorf("shellcheck did not receive exact filename %q: %q, error = %v", script, args, err)
+	}
+}
+
+func TestNativeChecks_FullDiscoveryFailureCannotPass(t *testing.T) {
+	installRecordingShellcheck(t)
+	for fixture, root := range map[string]string{
+		"non-repository":      t.TempDir(),
+		"missing-origin-main": initRepoWithHeadCommit(t, map[string]string{"scripts/bad.sh": shellcheckTriggeringScript}),
+	} {
+		for name, run := range map[string]gates.CheckFunc{"shellcheck": runShellcheckChanged, "learning": runLearningCoherence} {
+			t.Run(fixture+"/"+name, func(t *testing.T) {
+				v, err := run(context.Background(), gates.RunContext{RepoRoot: root, Mode: gates.Full})
+				if err == nil {
+					t.Fatalf("failed Git discovery must report an evaluation error: %+v", v)
+				}
+				report := gates.Report{Results: []gates.CheckResult{{Check: gates.Check{ID: name, Blocking: true}, Verdict: v, Err: err}}}
+				if report.ExitCode() != 1 {
+					t.Fatal("discovery failure did not block the run")
+				}
+			})
+		}
+	}
+}
+
+func TestNativeChecks_FullModeValidEmptyDiff(t *testing.T) {
+	marker := installRecordingShellcheck(t)
+	root := initRepoWithHeadCommit(t, map[string]string{
+		"scripts/bad.sh":              shellcheckTriggeringScript,
+		".agents/ao/learnings/bad.md": "missing frontmatter\n",
+	})
+	cmd := exec.Command("git", "update-ref", "refs/remotes/origin/main", "HEAD")
+	cmd.Dir = root
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("update-ref: %v: %s", err, out)
+	}
+	for name, run := range map[string]gates.CheckFunc{"shellcheck": runShellcheckChanged, "learning": runLearningCoherence} {
+		v, err := run(context.Background(), gates.RunContext{RepoRoot: root, Mode: gates.Full})
+		if err != nil || v.Status != ports.GateStatusPass {
+			t.Errorf("%s valid empty diff = %+v, error = %v", name, v, err)
+		}
+	}
+	if _, err := os.Stat(marker); !os.IsNotExist(err) {
+		t.Fatalf("shellcheck ran outside the valid empty diff: %v", err)
+	}
+}
+
+func TestNativeChecks_FastEmptyRoutingStaysEmpty(t *testing.T) {
+	marker := installRecordingShellcheck(t)
+	root := initRepoWithOriginMain(t, "scripts/bad.sh")
+	v, err := runShellcheckChanged(context.Background(), gates.RunContext{RepoRoot: root, Mode: gates.Fast})
+	if err != nil || v.Status != ports.GateStatusPass {
+		t.Fatalf("empty fast scope = %+v, error = %v", v, err)
+	}
+	if _, err := os.Stat(marker); !os.IsNotExist(err) {
+		t.Fatalf("shellcheck ran outside empty fast scope: %v", err)
+	}
+}
+
+func TestNativeChecks_FullScopeFiltersInstalledCopies(t *testing.T) {
+	root := initRepoWithOriginMainFiles(t, map[string]string{
+		".gitignore":          "ignored.sh\n",
+		"scripts/tracked.sh":  "#!/bin/sh\n",
+		".agents/skills/x.sh": shellcheckTriggeringScript,
+		".codex/skills/x.sh":  shellcheckTriggeringScript,
+	})
+	for _, rel := range []string{"ignored.sh", " untracked\n script.sh"} {
+		if err := os.WriteFile(filepath.Join(root, rel), []byte("#!/bin/sh\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got, err := changedFilesFor(context.Background(), gates.RunContext{
+		RepoRoot: root, Mode: gates.Full,
+	})
+	want := []string{".gitignore", "scripts/tracked.sh"}
+	if err != nil || !equalSetChecks(got, want) {
+		t.Fatalf("full scope = %q, want %q; error = %v", got, want, err)
 	}
 }

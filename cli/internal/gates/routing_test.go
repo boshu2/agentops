@@ -75,7 +75,7 @@ func TestGitChangedFiles_ScopeMappingAndDedupe(t *testing.T) {
 		RepoRoot: "/repo",
 		run: func(_ context.Context, _ string, args ...string) (string, error) {
 			gotArgs = args
-			return "cli/a.go\n\ncli/a.go\nscripts/x.sh\n", nil
+			return "cli/a.go\x00\x00cli/a.go\x00scripts/x.sh\x00", nil
 		},
 	}
 	changed, err := g.Changed(context.Background(), ScopeUpstream)

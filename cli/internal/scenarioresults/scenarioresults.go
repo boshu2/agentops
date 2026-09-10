@@ -8,6 +8,7 @@ package scenarioresults
 import (
 	"regexp"
 	"strings"
+	"time"
 )
 
 // SchemaVersion is the discriminator value for the scenario-results.v1 artifact.
@@ -93,6 +94,9 @@ func validateResult(r ScenarioResult) string {
 	}
 	if strings.TrimSpace(r.JudgedAt) == "" {
 		return "missing judged_at"
+	}
+	if _, err := time.Parse(time.RFC3339, r.JudgedAt); err != nil {
+		return "invalid judged_at: expected RFC3339 timestamp"
 	}
 	return ""
 }

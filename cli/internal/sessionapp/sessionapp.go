@@ -173,13 +173,14 @@ func Rehydrate(opts RehydrateOptions) error {
 	return nil
 }
 
-// pickLatestHandoff returns the newest handoff artifact by lexical name order.
+// pickLatestHandoff returns the newest handoff by the timestamp in its ID.
 // Current writers use .agents/ao/handoff; the legacy directory remains a
 // read-only compatibility source so an upgrade does not strand existing
 // caller-authored evidence. If the same artifact name exists in both places,
 // the canonical directory wins.
 type handoffCandidate struct {
 	name       string
+	order      string
 	displayDir string
 	components []string
 	priority   int
@@ -206,7 +207,7 @@ func pickLatestHandoff(cwd string) (*handoffCandidate, error) {
 		if candidate == nil {
 			continue
 		}
-		if latest == nil || candidate.name > latest.name || (candidate.name == latest.name && candidate.priority < latest.priority) {
+		if latest == nil || candidate.order > latest.order || (candidate.order == latest.order && candidate.priority < latest.priority) {
 			if latest != nil {
 				_ = latest.root.Close()
 			}
@@ -242,7 +243,7 @@ func pickLatestHandoffInRoot(cwd string, components []string, priority int) (*ha
 		return nil, fmt.Errorf("close handoff root %s: %w", dir, closeErr)
 	}
 
-	localName := ""
+	localName, localOrder := "", ""
 	for _, entry := range entries {
 		name := entry.Name()
 		if !strings.HasPrefix(name, "handoff-") || !strings.HasSuffix(name, ".json") {
@@ -258,8 +259,13 @@ func pickLatestHandoffInRoot(cwd string, components []string, priority int) (*ha
 			_ = root.Close()
 			return nil, fmt.Errorf("handoff artifact %s is not a real regular file", path)
 		}
-		if name > localName {
-			localName = name
+		order, err := handoffOrder(name)
+		if err != nil {
+			_ = root.Close()
+			return nil, fmt.Errorf("invalid handoff artifact name %s: %w", path, err)
+		}
+		if order > localOrder || (order == localOrder && name > localName) {
+			localName, localOrder = name, order
 		}
 	}
 	if localName == "" {
@@ -268,11 +274,28 @@ func pickLatestHandoffInRoot(cwd string, components []string, priority int) (*ha
 	}
 	return &handoffCandidate{
 		name:       localName,
+		order:      localOrder,
 		displayDir: dir,
 		components: append([]string(nil), components...),
 		priority:   priority,
 		root:       root,
 	}, nil
+}
+
+// handoffOrder normalizes the UTC ID timestamp for chronological comparison.
+// Trimming fractional trailing zeros makes equivalent precisions equal without
+// losing sub-nanosecond digits permitted by the handoff schema.
+func handoffOrder(name string) (string, error) {
+	id := strings.TrimSuffix(name, ".json")
+	if !handoffIDPattern.MatchString(id) {
+		return "", fmt.Errorf("invalid handoff ID")
+	}
+	stamp := strings.TrimSuffix(strings.TrimPrefix(id, "handoff-"), "Z")
+	seconds, fraction, _ := strings.Cut(stamp, ".")
+	if _, err := time.Parse("20060102T150405Z", seconds+"Z"); err != nil {
+		return "", err
+	}
+	return seconds + "." + strings.TrimRight(fraction, "0"), nil
 }
 
 // requireRealHandoffRoot resolves one configured handoff root without allowing
