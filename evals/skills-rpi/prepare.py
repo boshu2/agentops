@@ -4,7 +4,7 @@ import argparse
 import hashlib
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import shutil
 import subprocess
 import tarfile
@@ -34,6 +34,31 @@ def tree_hash(path):
 def write_json(path, value):
     path.write_text(json.dumps(value, indent=2) + "\n")
     path.chmod(0o600)
+
+
+def extract_cli(archive, destination):
+    """Import only regular CLI source files from the selected Git archive."""
+    root = destination.resolve()
+    with tarfile.open(fileobj=archive) as tar:
+        for member in tar:
+            name = PurePosixPath(member.name)
+            if name.is_absolute() or not name.parts or name.parts[0] != "cli" or ".." in name.parts:
+                raise ValueError("archive entry outside the CLI source")
+            if not member.isdir() and not member.isfile():
+                raise ValueError("archive links and special files are not source inputs")
+            target = destination.joinpath(*name.parts)
+            if not target.resolve().is_relative_to(root):
+                raise ValueError("archive target escapes its staging directory")
+            if member.isdir():
+                target.mkdir(parents=True, exist_ok=True)
+                continue
+            target.parent.mkdir(parents=True, exist_ok=True)
+            source = tar.extractfile(member)
+            if source is None:
+                raise ValueError("archive member has no source bytes")
+            with source, target.open("xb") as output:
+                shutil.copyfileobj(source, output)
+            target.chmod(member.mode & 0o777)
 
 
 def prepare(task, output, skills, auth_file, reps):
@@ -68,8 +93,7 @@ def prepare(task, output, skills, auth_file, reps):
         with tempfile.TemporaryFile() as archive:
             run(["git", "-C", str(repository), "archive", commit, "cli"], stdout=archive)
             archive.seek(0)
-            with tarfile.open(fileobj=archive) as tar:
-                tar.extractall(env, filter="data")
+            extract_cli(archive, env)
         shutil.copytree(env / "cli", tests / "cli")
     helpers = repository / "scripts" / "lib"
     if not (env / "helpers").exists():

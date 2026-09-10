@@ -1,9 +1,11 @@
 """Comparison integrity tests; no model, container or network calls."""
 import json
+import io
+import tarfile
 from pathlib import Path
 import tempfile
 import unittest
-from prepare import sha, tree_hash, write_json
+from prepare import extract_cli, sha, tree_hash, write_json
 from receipts import collect
 
 
@@ -69,6 +71,44 @@ class ReceiptIntegrity(unittest.TestCase):
         write_json(self.native, altered)
         with self.assertRaisesRegex(ValueError, "differs"):
             collect([self.manifest])
+
+
+class ArchiveInputs(unittest.TestCase):
+    def archive(self, name, kind=tarfile.REGTYPE):
+        raw = io.BytesIO()
+        with tarfile.open(fileobj=raw, mode="w") as tar:
+            entry = tarfile.TarInfo(name)
+            entry.type = kind
+            entry.linkname = "/outside" if kind in (tarfile.SYMTYPE, tarfile.LNKTYPE) else ""
+            entry.mode = 0o755
+            entry.size = 3 if kind == tarfile.REGTYPE else 0
+            tar.addfile(entry, io.BytesIO(b"src") if entry.size else None)
+        raw.seek(0)
+        return raw
+
+    def test_only_regular_source_is_imported(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            extract_cli(self.archive("cli/check.sh"), root)
+            self.assertEqual((root / "cli/check.sh").read_bytes(), b"src")
+            self.assertEqual((root / "cli/check.sh").stat().st_mode & 0o777, 0o755)
+
+    def test_paths_and_links_cannot_escape(self):
+        for name, kind in (("../outside", tarfile.REGTYPE), ("/cli/outside", tarfile.REGTYPE),
+                           ("cli/../outside", tarfile.REGTYPE), ("other/file", tarfile.REGTYPE),
+                           ("cli/link", tarfile.SYMTYPE), ("cli/link", tarfile.LNKTYPE),
+                           ("cli/device", tarfile.CHRTYPE)):
+            with self.subTest(name=name, kind=kind), tempfile.TemporaryDirectory() as tmp:
+                with self.assertRaises(ValueError):
+                    extract_cli(self.archive(name, kind), Path(tmp))
+
+    def test_existing_directory_link_cannot_redirect_import(self):
+        with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as outside:
+            root = Path(tmp)
+            (root / "cli").symlink_to(outside)
+            with self.assertRaises(ValueError):
+                extract_cli(self.archive("cli/file"), root)
+            self.assertEqual(list(Path(outside).iterdir()), [])
 
 
 if __name__ == "__main__":
