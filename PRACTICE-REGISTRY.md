@@ -149,33 +149,29 @@ an AI agent with a finite context window, not just a human team.
 The constraint changes the *size* and *shape* of the artifacts those
 practices produce. The practices themselves do not change.
 
-## What the agent-context constraint changes
+## Applying the registry to native execution
 
-1. **Granularity** — smaller modules, shorter ADRs, tighter bounded contexts,
-   more snapshots. Each artifact must fit one context window.
-2. **Linkage over inclusion** — artifacts forward-reference rather than
-   embed; agents follow links lazily.
-3. **Discovery surfaces are mandatory** — an `INDEX.md` is not optional, it
-   is the entry point. A skill without an index is invisible.
-4. **Drift is fatal** — human teams could tolerate documentation lag; agents
-   follow stale signposts blindly, so a stale signpost actively misleads.
-   The forcing functions DevOps invented for code and infrastructure now
-   apply to *every* signpost.
-5. **Verification is the spec** — TDD/BDD wasn't optional before; it's
-   load-bearing now because agents trust the verifier, not the prose.
-   A slice without a snapshot or property test is wishful thinking.
-6. **Knowledge compounds, or it actively rots** — agents are stateless
-   between sessions. Without a structured way to capture and recall what was
-   tried, why it changed course, what evidence mattered, every session
-   starts from zero. The practices that worked for human teams still work,
-   but the cost of skipping them is now immediate, not eventual.
-7. **Intent must be linked through phases** — humans can carry intent in
-   memory, side conversations, and organizational context; agents cannot rely
-   on any of that. Discovery intent must become planning packet, council
-   verdict, implementation contract, validation evidence, and handoff without
-   depending on chat history. In AgentOps, the packet is the linked-intent
-   object: it carries the objective, constraints, evidence rules, and
-   provenance anchors from one phase to the next.
+Select practices for the concrete engineering problem; this catalog is not a
+mandatory workflow. For this repository's native default:
+
+- Use BDD examples to clarify ambiguous behavior, including consequential edge
+  cases. A small clear change can use the existing issue and tests directly.
+- Use DDD to keep work tracking, source content, execution, evidence and memory
+  with their existing owners. Introduce an abstraction only for a real boundary.
+- Prefer small batches, direct repairs and tests at the changed behavior's seam.
+  A behavioral fix benefits from a right-reason failing test; a documentation
+  edit does not need a manufactured RED or an executable test of every sentence.
+- Link to current sources and retrieve them on demand. An index earns its cost
+  when it solves an observed discovery problem; no per-task INDEX or packet is
+  required.
+- Run the repository's required integration checks and obtain one fresh review
+  of the exact accepted change. Review depth follows risk and unresolved facts.
+- Reuse reviewed external knowledge when applicable. Preserve support and
+  limitations; later task evidence must establish benefit. Capturing a lesson
+  does not itself prove compounding.
+
+A native goal and existing tracker can preserve intent and handoff facts.
+Discovery, planning, implementation and review do not each need a new artifact.
 
 ## What does NOT change
 
@@ -192,33 +188,16 @@ practices produce. The practices themselves do not change.
 
 ## Implication for this repo
 
-Every artifact under `skills/`, `hooks/`, `evals/`, `docs/`, `schemas/`,
-`scripts/`, and `cli/` is exactly one of:
+Keep artifacts with their source owner: code, tests, contracts, and only the
+navigation or evidence a real consumer needs. Before adding process material,
+name that consumer, the decision it supports, the observed defect and the
+condition under which it can be retired. A new program written only to consume
+an otherwise unnecessary artifact does not justify it.
 
-1. A **bounded context** — a Primitive in our domain vocabulary
-   (`skills/domain/references/primitive.md`)
-2. A **spec** — a Slice, ADR-shaped and BDD-flavored
-   (`skills/domain/references/slice.md`)
-3. A **verification** — a test, a snapshot, an eval suite, a hook gate
-4. A **discovery surface** — an INDEX, a manifest, or a signpost README
-
-Each artifact is sized to fit one agent context window. Each forward-links
-to others. Each has a forcing function (snapshot hash, property test, schema
-check, eval suite) that fails when reality drifts from intent.
-
-Those four artifact kinds are not isolated. Each belongs to an intent chain:
-source material -> packet -> briefing -> verdict or plan -> execution packet
--> validation evidence -> handoff or learning. If an artifact changes the
-work, it must make clear what prior artifact it consumed and what next phase,
-artifact, or operator it feeds. Provenance and trace are how the chain remains
-auditable after the session that created it is gone.
-
-When you build something new in this repo, ask: which of those four kinds is
-this? If the answer is "none", the artifact is probably misplaced. If the
-answer is "all four", the artifact is too large.
-
-That is the practice. AgentOps is its codification under the
-AI-context-limited constraint.
+Use the smallest acceptance-advancing action. None of these practices requires
+installing or invoking an AgentOps skill; skills are optional guidance for
+specific uncertainties. The registry does not prove that every practice helps
+every task or that the skill library outperforms native model judgment.
 
 ## Practice slugs (canonical registry)
 

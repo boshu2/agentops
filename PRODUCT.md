@@ -1,5 +1,5 @@
 ---
-last_reviewed: 2026-09-09
+last_reviewed: 2026-09-10
 ---
 
 # AgentOps
@@ -16,7 +16,7 @@ handoffs — and the product boundary is deliberately small. The standard
 traversal through the graph is:
 
 ```text
-RPI charter -> on-demand Plan -> Implement and checks -> fresh Validate -> finish
+Accepted intent -> native implementation and checks -> fresh independent judgment -> finish
 ```
 
 ## Proven floor
@@ -49,7 +49,13 @@ AgentOps for delivery permission.
 
 ## Product surfaces
 
-RPI carries the operating charter; four skills are loaded as needed:
+The default uses the coding agent and shell with zero mandatory AgentOps skills.
+The repository brief supplies acceptance, source boundaries and required checks.
+`ao` supplies deterministic tools on demand. A native goal can maintain
+continuity; the caller's tracker keeps work and handoffs.
+
+The existing skill library remains optional. Select guidance when a task needs
+it; an explicit RPI workflow packages these operations:
 
 | Skill | Responsibility |
 |---|---|
@@ -67,8 +73,9 @@ and swarms may provide roles and dispatch. None is a correctness or lifecycle
 authority.
 
 The `ao` CLI supplies deterministic repository checks and generic read-only or
-record helpers where useful. Semantic validation belongs to the Validate skill,
-not a CLI state machine.
+record helpers where useful. A fresh native reviewer owns semantic validation;
+the optional Validate skill packages that method. A CLI cannot issue semantic
+acceptance from successful checks alone.
 
 ## Sovereign evidence
 
@@ -81,8 +88,9 @@ and ledger availability are never required for validity.
 
 ## Selected Context Delivery Lifecycle contract
 
-The lean [RPI charter](skills/rpi/SKILL.md) owns the authorized outcome through
-finish with on-demand Plan, Implement, Validate and optional Memory. Known
+Native execution owns the authorized outcome through finish. The optional
+[RPI charter](skills/rpi/SKILL.md) supplies on-demand Plan, Implement, Validate
+and Memory when selected. Known
 failures get direct repair; evidence can revise an approach within unchanged
 acceptance and scope. A genuine causal stall admits at most one bounded helper,
 never a helper chain. Cheap checks precede fresh author-distinct final judgment;

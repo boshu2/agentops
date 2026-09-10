@@ -41,47 +41,75 @@ func (Module) Contract() clicontract.CommandContract {
 	}
 }
 
-// Command builds the `ao demo` command with constructor-scoped --quick and
-// --concepts flags.
+// Command builds the native demo and its explicitly selected RPI alternative.
 func (Module) Command() *cobra.Command {
 	var (
 		quick    bool
 		concepts bool
+		rpi      bool
 	)
 	command := &cobra.Command{
 		Use:   "demo",
-		Short: "Show one RPI traversal",
-		Long: `Show the AgentOps product boundary:
+		Short: "Show native execution with optional workflow examples",
+		Long: `Show a native coding-agent change from accepted behavior through checks,
+fresh independent judgment and delivery under repository policy.
 
-  RPI -> Plan -> Implement -> fresh Validate -> repair to convergence -> report
-
+No skills or bootstrap are required. Specialists and evidence persistence are
+optional. Use --rpi to show the full workflow-skill alternative.
 The repository keeps its own Git, CI, tracker, release, and delivery policy.`,
 		GroupID: "start",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if concepts {
 				return showConcepts(cmd.OutOrStdout())
 			}
+			if rpi {
+				return rpiDemo(cmd.OutOrStdout())
+			}
 			return quickDemo(cmd.OutOrStdout())
 		},
 	}
-	command.Flags().BoolVar(&quick, "quick", false, "show the compact RPI example")
+	command.Flags().BoolVar(&quick, "quick", false, "show the compact native example (the default)")
 	command.Flags().BoolVar(&concepts, "concepts", false, "explain the product boundary")
+	command.Flags().BoolVar(&rpi, "rpi", false, "show the optional full RPI workflow")
+	command.MarkFlagsMutuallyExclusive("concepts", "rpi")
 	return command
 }
 
 func showConcepts(w io.Writer) error {
 	fmt.Fprintln(w, `AGENTOPS PRODUCT BOUNDARY
 
-AgentOps shapes one behavior, runs one bounded implementation experiment,
-obtains one fresh independent judgment over exact content, reports it, and
-stops. Machine-readable verdict persistence is optional and consumer-driven.
+The native coding agent owns the approach and completes accepted work using
+repository instructions, ordinary tools and deterministic checks. A fresh
+independent judgment over exact content is required for accepted completion;
+using the Validate skill to obtain it is optional. No workflow skills or
+bootstrap are required. Machine-readable verdict persistence is optional.
 
-It does not own retries, budgets, queues, work ownership, Git, closure, release,
-or delivery. Learn and multi-agent strategies are optional callers.`)
+AgentOps does not own retries, budgets, queues, work ownership, Git, closure, release,
+or delivery. Specialists and multi-agent strategies are optional callers.`)
 	return nil
 }
 
 func quickDemo(w io.Writer) error {
+	fmt.Fprintln(w, `AGENTOPS NATIVE DEMO
+
+Request: a parser must reject an empty value while preserving valid inputs.
+1. Read repository instructions and the parser's accepted behavior.
+2. Add a discriminating regression, reproduce the failure, and repair the parser
+   with native coding-agent tools. Run the required package and repository checks.
+3. Use ao gate check for deterministic facts; repair understood failures directly.
+4. A fresh independent context checks the exact final change, unchanged acceptance,
+   all changed paths and test evidence. The author cannot issue the binding PASS.
+5. Report the outcome and checked/not_checked scope, then follow repository delivery
+   policy. Missing judgment or unchecked acceptance remains NOT_PROVEN.
+
+No skill installation, workflow-skill loading, bootstrap or ao init is required.
+Specialists and evidence persistence are optional. The Validate skill can help
+conduct the required review; ao provenance can record explicitly requested proof.
+Use ao demo --rpi for the optional full workflow example.`)
+	return nil
+}
+
+func rpiDemo(w io.Writer) error {
 	fmt.Fprintln(w, `AGENTOPS RPI DEMO
 
 1. Plan refines one active behavior and write scope in the existing intent source.

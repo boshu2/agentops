@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -33,7 +34,7 @@ type LinkResult struct {
 //
 // Repairing an existing wrong or broken symlink is deliberately out of scope;
 // it is reported as a conflict so an operator can resolve ownership explicitly.
-func linkMissingSkills(srcDir, destDir string, dryRun bool) (LinkResult, error) {
+func linkMissingSkills(srcDir, destDir string, dryRun bool, selected ...string) (LinkResult, error) {
 	res := LinkResult{Dest: destDir, DryRun: dryRun}
 
 	// Fail-closed on an unresolved source: an empty srcDir would let
@@ -57,6 +58,9 @@ func linkMissingSkills(srcDir, destDir string, dryRun bool) (LinkResult, error) 
 			continue
 		}
 		name := e.Name()
+		if len(selected) > 0 && !slices.Contains(selected, name) {
+			continue
+		}
 		src := filepath.Join(absSrc, name)
 		if _, statErr := os.Stat(filepath.Join(src, "SKILL.md")); statErr != nil {
 			continue // not a skill dir — no SKILL.md
@@ -103,23 +107,59 @@ func linkMissingSkills(srcDir, destDir string, dryRun bool) (LinkResult, error) 
 	return res, nil
 }
 
-// LinkAllDests links the repo skills into every destination, RESILIENTLY: a
+// validateSelection checks the complete selection before any destination is
+// touched. Names are exact source directory names, not paths or comma lists.
+// No selectors preserves the explicit full-install behavior.
+func validateSelection(srcDir string, names []string) ([]string, error) {
+	if len(names) == 0 {
+		return nil, nil
+	}
+	if strings.TrimSpace(srcDir) == "" {
+		return nil, fmt.Errorf("skills source dir is empty")
+	}
+	selected := make([]string, 0, len(names))
+	for _, name := range names {
+		if name == "" || strings.TrimSpace(name) != name || name == "." || name == ".." || strings.ContainsAny(name, `/\,`) {
+			return nil, fmt.Errorf("invalid skill name %q: use one exact skill directory name per --skill", name)
+		}
+		info, err := os.Lstat(filepath.Join(srcDir, name))
+		if err != nil || !info.IsDir() {
+			return nil, fmt.Errorf("unknown skill %q: select a directory in the repository skills/ tree", name)
+		}
+		info, err = os.Stat(filepath.Join(srcDir, name, "SKILL.md"))
+		if err != nil || !info.Mode().IsRegular() {
+			return nil, fmt.Errorf("invalid skill %q: SKILL.md must be a regular file", name)
+		}
+		if !slices.Contains(selected, name) {
+			selected = append(selected, name)
+		}
+	}
+	sort.Strings(selected)
+	return selected, nil
+}
+
+// LinkAllDests links selected repo skills into every destination, RESILIENTLY: a
 // per-dest error is captured on that dest's result and the fan-out continues to
 // the remaining runtimes rather than aborting (which would leave earlier dests
 // mutated and later ones silently skipped). Returns the per-dest results and
-// whether any dest errored.
-func LinkAllDests(srcDir string, dests []string, dryRun bool) ([]LinkResult, bool) {
+// whether any dest errored. A selection error returns before any write; an
+// empty selection preserves full installation.
+func LinkAllDests(srcDir string, dests []string, dryRun bool, names ...string) ([]LinkResult, bool, error) {
+	selected, err := validateSelection(srcDir, names)
+	if err != nil {
+		return nil, false, err
+	}
 	results := make([]LinkResult, 0, len(dests))
 	anyErr := false
 	for _, dest := range dests {
-		res, err := linkMissingSkills(srcDir, dest, dryRun) // nosemgrep -- res is a value struct (never nil); setting res.Err on error cannot nil-deref.
+		res, err := linkMissingSkills(srcDir, dest, dryRun, selected...) // nosemgrep -- res is a value struct (never nil); setting res.Err on error cannot nil-deref.
 		if err != nil {
 			res.Err = err.Error()
 			anyErr = true
 		}
 		results = append(results, res)
 	}
-	return results, anyErr
+	return results, anyErr, nil
 }
 
 // RenderLinkResult prints one destination's link summary.
@@ -147,6 +187,6 @@ func RenderLinkResult(out io.Writer, res LinkResult) {
 		fmt.Fprintf(out, "  ! %s (real dir — foreign corpus, not clobbered)\n", n)
 	}
 	if len(res.Linked) == 0 && len(res.Conflicts) == 0 {
-		fmt.Fprintln(out, "  all repo skills already live-linked.")
+		fmt.Fprintln(out, "  all requested skills already live-linked.")
 	}
 }

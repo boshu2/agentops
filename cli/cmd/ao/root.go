@@ -30,11 +30,14 @@ var rootCmd = &cobra.Command{
 	Version: version,
 	Short:   "AgentOps CLI: deterministic checks and evidence records",
 	Long: `ao provides deterministic repository checks and generic evidence records.
-Semantic judgment belongs to the Validate skill. Git, delivery, retries, work
-ownership, and continuation belong to the caller and repository.
+Your native coding agent owns the approach and completes accepted work. Fresh
+independent judgment of the exact final change is required; workflow skills,
+specialists and evidence persistence are optional. No skills, bootstrap or init
+are required. Git, delivery, work ownership and continuation stay with the caller.
 
 For AI agents:
-  ao capabilities     Machine-readable CLI contract (JSON) — run this first.
+  ao quick-start      Native execution brief, without mandatory workflow skills.
+  ao capabilities     Machine-readable CLI contract (JSON), when useful.
   ao robot-docs       Paste-ready agent handbook.
   Append --json to any read-side command for structured output.
 

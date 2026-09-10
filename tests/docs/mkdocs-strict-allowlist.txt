@@ -38,3 +38,24 @@ WARNING -  Doc file 'contracts/codex-skill-api.md' contains a link '../../AGENTS
 WARNING -  Doc file 'releases/2026-07-17-v3.3.0-notes.md' contains a link '../../CHANGELOG.md', but the target '../CHANGELOG.md' is not found among documentation files. Did you mean '../CHANGELOG.md'?
 WARNING -  Doc file 'skills/cc-hooks.md' contains a link 'hooks/policy-dispatch.sh', but the target 'skills/hooks/policy-dispatch.sh' is not found among documentation files.
 WARNING -  Doc file 'skills/cc-hooks.md' contains a link 'policies/policies.json', but the target 'skills/policies/policies.json' is not found among documentation files.
+
+# Verified 2026-09-10: these links deliberately cite canonical source contracts
+# and the strict-build policy outside docs/, rather than generated site pages.
+# Every target is an existing repository file; retired documents are labeled
+# as historical text at their source and are not allowlisted.
+WARNING -  Doc file 'ARCHITECTURE.md' contains a link '../skills/rpi/references/bounded-adapter.md', but the target is not found among documentation files.
+WARNING -  Doc file 'agent-workflow-reference.md' contains a link '../skills/memory/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'agent-workflow-reference.md' contains a link '../skills/rpi/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'agent-workflow-reference.md' contains a link '../skills/validate/references/mechanics.md', but the target is not found among documentation files.
+WARNING -  Doc file 'how-it-works.md' contains a link '../skills/rpi/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'adr/ADR-0016-state-tiers.md' contains a link '../../skills/validate/references/mechanics.md', but the target '../skills/validate/references/mechanics.md' is not found among documentation files.
+WARNING -  Doc file 'adr/ADR-0017-loop-as-control-flow-not-knowledge.md' contains a link '../../skills/agent-native/references/model-dispatch.md', but the target '../skills/agent-native/references/model-dispatch.md' is not found among documentation files.
+WARNING -  Doc file 'architecture/hexagon-port-realness-audit.md' contains a link '../../AGENTS.md', but the target '../AGENTS.md' is not found among documentation files.
+WARNING -  Doc file 'architecture/rpi-traversal.md' contains a link '../../skills/rpi/SKILL.md', but the target '../skills/rpi/SKILL.md' is not found among documentation files.
+WARNING -  Doc file 'architecture/rpi-traversal.md' contains a link '../../skills/agent-native/references/model-dispatch.md', but the target '../skills/agent-native/references/model-dispatch.md' is not found among documentation files.
+WARNING -  Doc file 'architecture/rpi-traversal.md' contains a link '../../skills/rpi/references/outer-goal.md', but the target '../skills/rpi/references/outer-goal.md' is not found among documentation files.
+WARNING -  Doc file 'architecture/rpi-traversal.md' contains a link '../../skills/rpi/references/bounded-adapter.md', but the target '../skills/rpi/references/bounded-adapter.md' is not found among documentation files.
+WARNING -  Doc file 'architecture/rpi-traversal.md' contains a link '../../skills/memory/SKILL.md', but the target '../skills/memory/SKILL.md' is not found among documentation files.
+WARNING -  Doc file 'reference/skill-system-evolution.md' contains a link '../../skills/rpi/SKILL.md', but the target '../skills/rpi/SKILL.md' is not found among documentation files.
+WARNING -  Doc file 'releases/2026-07-30-v3.4.0-notes.md' contains a link '../../skills/using-gc/SKILL.md', but the target '../skills/using-gc/SKILL.md' is not found among documentation files.
+WARNING -  Doc file 'CONTRIBUTING.md' contains a link '../tests/docs/mkdocs-strict-allowlist.txt', but the target is not found among documentation files.

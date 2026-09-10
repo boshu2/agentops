@@ -7,13 +7,16 @@ that own work, execution, or delivery. It turns one intent into one
 evidence-bound engineering judgment:
 
 ```text
-RPI -> Plan -> Implement -> fresh Validate -> repair to convergence -> report
+Accepted intent -> native implementation and checks -> fresh independent judgment -> finish
 ```
 
 The product supplies behavior-first planning, one bounded implementation
 experiment, deterministic content identity, fresh independent judgment, and a
 standalone content-addressed verdict. It does not own retries, work queues,
 trackers, Git, CI, release, or delivery.
+
+Native execution requires zero AgentOps skills. Start with your coding agent
+and repository checks; load specialist guidance for a concrete need.
 
 ## Start here
 

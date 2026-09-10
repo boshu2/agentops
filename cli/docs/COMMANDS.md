@@ -19,7 +19,7 @@
 
 ### `ao demo`
 
-Show the AgentOps product boundary:
+Show a native coding-agent change from accepted behavior through checks,
 
 ```
 ao demo [flags]
@@ -30,14 +30,15 @@ ao demo [flags]
 ```
       --concepts   explain the product boundary
   -h, --help       help for demo
-      --quick      show the compact RPI example
+      --quick      show the compact native example (the default)
+      --rpi        show the optional full RPI workflow
 ```
 
 ---
 
 ### `ao init`
 
-Create the local intent and verdict evidence directories, then add one
+Optional local evidence setup; native execution needs no init, skills or
 
 ```
 ao init [flags]
@@ -47,7 +48,7 @@ ao init [flags]
 
 ### `ao quick-start`
 
-AgentOps is a small semantic evidence layer around agent work.
+Use your native coding agent and shell to complete the accepted work.
 
 ```
 ao quick-start [flags]
@@ -1071,7 +1072,7 @@ ao skills graph [flags]
 
 #### `ao skills link`
 
-Scan skills/ and create a live-tier symlink for every skill dir that has
+Optionally install skills from a source checkout. Native execution needs no
 
 ```
 ao skills link [flags]
@@ -1080,9 +1081,10 @@ ao skills link [flags]
 **Flags:**
 
 ```
-      --dest string   Link into this single dir instead of the auto-detected roots (default: ~/.agents plus every installed runtime)
-  -h, --help          help for link
-      --json          Emit machine-readable JSON
+      --dest string         Link into this single dir instead of the auto-detected roots (default: ~/.agents plus every installed runtime)
+  -h, --help                help for link
+      --json                Emit machine-readable JSON
+      --skill stringArray   Install only this skill; repeat for more names (default: all skills)
 ```
 
 #### `ao skills list`

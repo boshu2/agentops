@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 
-@test "root contract routes the RPI product boundary" {
+@test "root contract routes native execution and optional RPI" {
   repo_root="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
   contract="$repo_root/AGENTS.md"
   [ -f "$contract" ]
@@ -8,8 +8,9 @@
   for required in \
     "operations layer for agentic engineering" \
     "federated integration graph" \
+    "zero mandatory AgentOps skills" \
     "Lean RPI operating charter" \
-    "RPI charter -> on-demand Plan -> Implement and checks -> fresh Validate -> finish" \
+    "Accepted intent -> native implementation and checks -> fresh independent judgment -> finish" \
     "Persist machine evidence only for a caller request or declared consumer" \
     "It owns no aggregate retry controller" \
     "fresh independent judgment" \

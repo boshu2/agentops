@@ -6,7 +6,7 @@
 - **Builds on:** [ADR-0002](ADR-0002-agentops-3-hookless-cdlc-rearchitecture.md) (hookless-first), [ADR-0007](ADR-0007-deterministic-loop-only-operator-stops.md) (deterministic evolve loop)
 - **Supersedes:** the "Software factory daemon (`ao daemon`)" surface as an AgentOps-shipped capability.
 
-> **Historical-substrate note (added 2026-06-03, ag-xa7q):** This ADR predates the Gas City prune (ag-124p, #679) and names **Gas City** as the reference out-of-session substrate throughout. The *decision* (delete the daemon; adopt a substrate; AgentOps has no sovereign core to protect) stands unchanged — but the substrate has since been renarrated to **NTM + MCP (`ao mcp serve`) + managed-agents (`ao agent`)**; `runtime=gc`, `city.toml`, and `packs/agentops` were removed. Read "Gas City" below as "the out-of-session substrate." Canonical current statement: [docs/3.0.md](../3.0.md). The decision record is preserved as-is for provenance.
+> **Historical-substrate note (added 2026-06-03, ag-xa7q):** This ADR predates the Gas City prune (ag-124p, #679) and names **Gas City** as the reference out-of-session substrate throughout. The *decision* (delete the daemon; adopt a substrate; AgentOps has no sovereign core to protect) stands unchanged — but the substrate has since been renarrated to **NTM + MCP (`ao mcp serve`) + managed-agents (`ao agent`)**; `runtime=gc`, `city.toml`, and `packs/agentops` were removed. Read "Gas City" below as "the out-of-session substrate." Statement at the time: docs/3.0.md (historical reference; retired path: `../3.0.md`). The decision record is preserved as-is for provenance.
 
 ## Active disposition — 2026-09-06 CDLC adoption
 
@@ -89,8 +89,8 @@ This ADR is accepted when:
 
 ## References
 
-- [AgentOps 3.0: the north star](../3.0.md)
-- [The Canonical Loop Model](../architecture/canonical-loop-model.md)
+- AgentOps 3.0: the north star (historical reference; retired path: `../3.0.md`)
+- The Canonical Loop Model (historical reference; retired path: `../architecture/canonical-loop-model.md`)
 - [ADR-0002: Hookless-First CDLC Rearchitecture](ADR-0002-agentops-3-hookless-cdlc-rearchitecture.md)
 - [`.agents/discovery/2026-05-24-gvkj6-e2e-proof.md`](https://github.com/boshu2/agentops/blob/main/.agents/discovery/2026-05-24-gvkj6-e2e-proof.md) — the end-to-end proof (bead `soc-5jwah`)
 - Beads: `soc-j7a5q` (this ADR), `soc-2rtm0` (the orchestration-CLI rip), `soc-5jwah` (the e2e proof + upstream-GC gap)

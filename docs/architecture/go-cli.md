@@ -1,7 +1,8 @@
 # Go CLI architecture
 
 The `ao` binary supplies deterministic repository checks, evidence inspection,
-and operational utilities. Semantic judgment belongs to the Validate skill;
+and operational utilities. Semantic judgment belongs to a fresh native reviewer;
+the Validate skill is optional guidance for that review.
 Git, delivery, retries, work ownership, and continuation belong to the caller.
 This page maps an active command from CLI input to effect and result.
 
@@ -86,11 +87,12 @@ never a prebuilt `cli/bin/ao`.
 
 A gate PASS is a deterministic fact, not a semantic verdict.
 
-## Evidence contracts and the Validate boundary
+## Evidence contracts and the judgment boundary
 
 - `schemas/verdict.v2.schema.json` and `schemas/subject-manifest.v1.schema.json`
   declare the evidence contracts (see [docs/SCHEMAS.md](../SCHEMAS.md)).
-- The Validate skill is the semantic author of `verdict.v2`. The
+- A fresh reviewer is the semantic author of `verdict.v2`, whether reviewing
+  directly or using the optional Validate skill. The
   `ao provenance` evidence leaves compute subject identity and structurally
   verify and atomically store a supplied judgment through `internal/evidence`,
   reusing `internal/verdictcheck` canonical/strict primitives. Evidence helper
@@ -120,8 +122,9 @@ A gate PASS is a deterministic fact, not a semantic verdict.
 The in-repo measurement surface (the former eval command family) was retired
 unconsumed — no gate, workflow, or script ran it (see
 [docs/MIGRATION.md](../MIGRATION.md)). Learn remains an optional, off-path
-consumer of durable verdicts: the `learn` skill reads verdict evidence and
-writes TTL'd scratch notes, never a source of record. Rubric projections are
+consumer of authorized episodes and other evidence: the `learn` skill can
+update reviewed external topic pages under the Memory contract. No blind TTL
+or per-session lesson is required. Rubric projections are
 still leak-guarded by `schemas/outcomes-rubric.v1.schema.json`
 (`internal/evalsubstrate`), and true holdout rubrics live in the external
 measurement register, not this repo. Measurement, when a repository wants it,

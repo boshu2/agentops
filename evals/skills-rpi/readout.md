@@ -98,11 +98,104 @@ One small development batch is not a powered or held-out skill-benefit claim.
 The automated pilot recommendation is `insufficient-evidence`; the specialist
 can make a narrower supported, explicitly provisional maintenance decision.
 
-Native verifier reward 1 is an endpoint success. The reader leaves independent
-completion, worker false completion and feasibility unknown. A required fresh
+Native verifier reward 1 is an endpoint success. Worker false completion and
+feasibility remain unknown. A required fresh
 handoff or exact-subject judgment is not waived by a green executable oracle.
 Native rewards are retained for inspection; the reader never parses worker
 prose into acceptance.
+
+For an ordinary native coding observation, optionally join one explicitly
+selected subject using the existing provenance judgment inputs. No skill
+invocation or new trial is required. The acceptance, subject, author, complete
+required acceptance ID set and reviewer profiles must come from the caller,
+independently of candidate verdicts:
+
+```bash
+# From cli/. Add --job for a captured Harbor trial when applicable.
+go run ./cmd/skill-trial-report \
+  --session /protected/native/author.jsonl \
+  --root /absolute/candidate \
+  --manifest /protected/proof/manifest.json \
+  --intent /protected/proof/acceptance.intent \
+  --author-context-id native-author-id \
+  --required-profiles /protected/proof/profiles.json \
+  --required-criterion value --required-criterion scope \
+  --allowed-provider openai \
+  --evidence-root /protected/proof \
+  --verdict /protected/proof/CONTENT_DIGEST.json > /protected/native-report.json
+```
+
+Render from the repository root:
+
+```bash
+python evals/skills-rpi/readout.py --report /protected/native-report.json
+```
+
+The profile file uses the existing `ao provenance verify-judgments` format: an object with a `profiles`
+array of `id`, `runtime`, `model`, `family`, and `effort` strings. Use an empty
+effort only when no actual-effort requirement was selected. Repeat `--verdict`
+for required legs and `--allowed-provider` for independently authorized
+providers; these flags launch nothing. Supply `--base-manifest` for deletions.
+Missing required verdicts produce an unproven report. Partial judgment options
+are usage errors; invalid or missing subject/receipt/transcript evidence remains
+visible in the report's `work.problems` or original `work.judgments` result.
+
+Repeat `--required-criterion` for **every acceptance criterion ID**, as supplied
+by the caller before inspecting the candidate verdict. The native work join
+requires a nonempty, unique set of unpadded IDs. Every original verdict must
+cover that exact set once: a PASS listing `value` while omitting required
+`scope` remains unproven, as do duplicate IDs or unexpected IDs. The result
+retains the caller's `required_criteria` and every original leg with its coverage
+problems. Missing the flag is a usage error; direct report API calls without a
+selected criterion policy can never report accepted work.
+
+The caller owns completeness of that ID set; the fresh reviewer still maps
+each ID to the immutable acceptance and actual supporting evidence. This is
+exact ID coverage, not automatic extraction or interpretation of intent prose.
+The existing provenance API keeps its prior behavior when no optional criterion
+policy is selected; that legacy coverage alone is insufficient for native work
+acceptance.
+
+The native Go reader calls `evidence.VerifyJudgments`, the existing provenance
+owner. It verifies the expected subject and acceptance, original verdict
+integrity, distinct author/reviewer identities, freshness, required profiles,
+hash-bound judgment receipts, exact required criterion coverage and native
+reviewer completion. Verdicts, receipts
+and reviewer transcripts retain that owner's private non-Git root and size
+restrictions. It **does not mechanically resolve arbitrary criterion evidence
+references**. The fresh reviewer owns their semantic assessment. This reader
+reports supplied independent judgments and never issues a semantic verdict.
+
+`work.status` is `accepted` only with completed native author execution and
+satisfied independent PASS coverage of the caller's complete acceptance ID set.
+A correctly bound, fully covered independent FAIL remains
+`failed` even though PASS coverage is unsatisfied. Other incomplete or invalid
+proof is `not_proven`; original legs and problems remain visible in every case.
+`work.execution` separately reports `completed`, `failed`, `unfinished` or
+`unknown`. A timed-out attempt cannot become accepted because its code or later
+review passes. Missing native author completion is unknown; terminal markers
+whose ordering the accounting reader cannot establish also remain unknown.
+The recognized diagnostic for decreasing cumulative usage counters remains in
+native accounting and does not invalidate known author identity or execution;
+aggregate usage and billing remain unproven. Parse/identity ambiguity and
+unsupported abort/error ordering still block acceptance.
+
+Association requires the explicitly supplied native author identity. One
+session found in one trial joins that trial. Different copies of a session or
+an identity shared by several trials are ambiguous; no favorable retry is
+selected. A standalone session stays visible under `native_work` without an
+invented trial, arm, elapsed interval or cost. Unmatched trials retain unproven
+acceptance regardless of their endpoint reward. This association is a declared
+caller-selected relationship, not automatic proof of which session wrote Git
+content. Reported source hashes and exact subject/acceptance identify its bounds.
+
+Per-arm `independent_work` shows `known_accepted`, `known_failed`, observed
+`not_proven`, `unobserved_assignments`, the all-assigned denominator and the
+known accepted fraction of it. A zero known count is not proof of zero actual
+accepted work when coverage is missing. `independently_completed_outcomes`
+remains null until every assignment has a known accepted/failed disposition.
+The Python view consumes the native Go report; it does not reverify verdicts or
+promote comparison receipts or scalar rewards into independent acceptance.
 
 For validation fixtures, E2 captures the separate verifier's `verifier/grade.json`
 in `trial.documents` with `path`, `sha256` and parsed `data`. The readout consumes
@@ -131,7 +224,7 @@ do not rehabilitate an invalid paired comparison or establish general uplift.
 The same source's `not_checked` entries join `remaining_workflow_gaps` with their
 job and source reference. Missing gap coverage remains unknown. Case-level truth
 does not prove a fresh native handoff or independent completion of the workflow;
-`independently_completed_outcomes` remains unknown.
+only the explicit native work join above supplies that separate evidence.
 
 Cost and timing retain their measurement windows:
 

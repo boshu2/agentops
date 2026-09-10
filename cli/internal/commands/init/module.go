@@ -45,8 +45,11 @@ func (Module) Contract() clicontract.CommandContract {
 func (m Module) Command() *cobra.Command {
 	return &cobra.Command{
 		Use:   "init",
-		Short: "Create local AgentOps evidence directories",
-		Long: `Create the local intent and verdict evidence directories, then add one
+		Short: "Optionally create local AgentOps evidence directories",
+		Long: `Optional local evidence setup; native execution needs no init, skills or
+bootstrap. Use ao quick-start for the native execution brief.
+
+Create the local intent and verdict evidence directories, then add one
 commented, marker-delimited block to this directory's .gitignore (creating the
 file if it does not exist). The block ignores only machine-local state
 AgentOps tooling writes:

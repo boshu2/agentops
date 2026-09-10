@@ -1,11 +1,11 @@
 # ao — AgentOps CLI
 
 `ao` supplies deterministic repository utilities and evidence inspection. It
-is the optional checks/linking CLI of the AgentOps operations layer; the
-semantic protocol lives in the skills:
+is the checks/linking CLI of the AgentOps operations layer. Native execution
+requires zero AgentOps skills; a fresh reviewer judges the result:
 
 ```text
-RPI → Plan → Implement → fresh Validate → repair to convergence → report
+Accepted intent → native implementation and checks → fresh independent judgment → finish
 ```
 
 The CLI does not own retries, queues, work claims, Git delivery, release,
@@ -39,7 +39,7 @@ make test
 ```
 
 Add deterministic utilities only when they do not become lifecycle or delivery
-authorities. Keep semantic judgment in the Validate skill, optional verdict
+authorities. Keep semantic judgment with a fresh reviewer (Validate guidance is optional), verdict
 persistence with declared consumers, and external delivery in the consumer
 repository.
 

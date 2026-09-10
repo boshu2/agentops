@@ -1,6 +1,10 @@
 # RPI traversal
 
-This page owns exact evidence semantics for the lean [RPI operating charter](../../skills/rpi/SKILL.md).
+This page owns exact evidence semantics for native execution and the optional
+[RPI operating charter](../../skills/rpi/SKILL.md). No AgentOps skill invocation
+is required for native coding or a fresh independent review. The skill names
+below describe the selected RPI workflow; the same evidence bar applies to
+direct native work.
 AgentOps is the operations layer for agentic engineering: portable skills and
 independent judgment, not a scheduler, tracker, Git workflow or autonomous
 controller. [Vocabulary](../contracts/ubiquitous-language.md) names the source
@@ -66,7 +70,7 @@ verify-manifest, snapshot-intent, digest, store-verdict, verify-verdict and
 verify-subject helpers establish structural facts, not semantic judgments.
 They add no tracker, queue, Git delivery or runtime authority.
 
-## Fresh final Validate
+## Fresh final judgment (optional Validate guidance)
 
 A fresh author-distinct context reads the exact subject, unchanged acceptance
 and authorized evidence independently. A new role in the author's context is
@@ -82,7 +86,7 @@ NOT_PROVEN. Risk deepens inspection rather than automatically adding families
 or specialists. Use [model-dispatch](../../skills/agent-native/references/model-dispatch.md)
 with caller/native bounds, no fixed ten-minute cap and no renewed allowance.
 
-Validate derives subject identity at the beginning and end, confirms intent
+The fresh reviewer derives subject identity at the beginning and end, confirms intent
 continuity and complete changed-path coverage, and judges each acceptance
 criterion against real evidence. Proven out-of-scope change or failed acceptance
 is FAIL. Subject mutation, digest mismatch, incomplete coverage, missing
@@ -102,11 +106,11 @@ intent; weakening the oracle to get green is FAIL.
 Keep all necessary findings from selected judges with stable IDs/classes.
 Recurrence or unknown cause calls for causal examination; counts alone cannot
 prove progress, regression or a wrong design. Preserve disagreement; neither
-majority vote nor the author's preferred review certifies PASS. Validate reads
+majority vote nor the author's preferred review certifies PASS. The reviewer reads
 and returns judgment; implementers repair and obtain new fresh judgment over
 changed exact content.
 
-When requested by a caller or declared consumer, Validate authors `verdict.v2`
+When requested by a caller or declared consumer, the reviewer authors `verdict.v2`
 and uses `ao provenance store-verdict` for structural verification and atomic
 storage in the explicit protected external non-Git root. No default write to
 consumer `.agents/` is implied. Legacy requested proof remains preserved.

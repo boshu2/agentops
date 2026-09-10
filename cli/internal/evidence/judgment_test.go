@@ -83,6 +83,55 @@ func TestJudgmentsNativeRequiredLegs(t *testing.T) {
 	}
 }
 
+func TestJudgmentsRejectEmptyImplementationSubject(t *testing.T) {
+	f := newJudgmentFixture(t, "codex")
+	empty := t.TempDir()
+	manifest, err := BuildManifest(empty, []string{"."}, nil, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(manifest.Entries) != 0 {
+		t.Fatal("fixture must describe an empty implementation")
+	}
+	f.options.Root = empty
+	writeJSON(t, f.options.Manifest, manifest)
+	f.receipt.SubjectManifestDigest = manifest.Digest
+	f.publish(t, nil)
+
+	result, err := VerifyJudgments(f.options)
+	if err == nil || !strings.Contains(err.Error(), "subject manifest has no entries") {
+		t.Fatalf("empty implementation must not satisfy a judgment: result %+v, error %v", result, err)
+	}
+}
+
+func TestJudgmentsAcceptDeletionOnlySubject(t *testing.T) {
+	f := newJudgmentFixture(t, "codex")
+	base, err := LoadManifest(f.options.Manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.options.BaseManifest = filepath.Join(f.out, "base-manifest.json")
+	writeJSON(t, f.options.BaseManifest, base)
+	if err = os.Remove(filepath.Join(f.options.Root, "value")); err != nil {
+		t.Fatal(err)
+	}
+	manifest, err := BuildManifest(f.options.Root, []string{"value"}, nil, base, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(manifest.Entries) != 1 || manifest.Entries[0].Kind != "deletion" {
+		t.Fatalf("expected one real deletion: %+v", manifest.Entries)
+	}
+	writeJSON(t, f.options.Manifest, manifest)
+	f.receipt.SubjectManifestDigest = manifest.Digest
+	f.publish(t, nil)
+
+	result, err := VerifyJudgments(f.options)
+	if err != nil || !result.Satisfied {
+		t.Fatalf("a verified deletion is a nonempty subject: result %+v, error %v", result, err)
+	}
+}
+
 func TestJudgmentsRequiredFailures(t *testing.T) {
 	tests := []struct {
 		name     string

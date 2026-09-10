@@ -1,26 +1,37 @@
 # How it works
 
-RPI is a thin coordinator with one bounded repair loop (ADR-0017).
+Your native coding agent owns the authorized change. AgentOps supplies a short
+repository brief, deterministic AO tools and optional specialist guidance.
+No RPI invocation or skill installation is required.
 
 ```text
-Plan once -> Implement once -> fresh Validate -> repair under the convergence law -> Report
+Accepted intent -> native implementation and checks -> fresh independent judgment -> finish
 ```
 
-Plan turns intent into testable acceptance and a bounded write scope. Implement
-runs one experiment and packages the observed result. Validate computes exact
-content identity, checks that changed-path coverage is complete, checks scope and
-acceptance, and asks one distinct fresh context for criterion-level judgment.
+Keep behavior and scope in the existing issue or conversation. Use normal and
+edge acceptance examples when useful. Implement, check and directly repair
+known defects. A fresh author-distinct reviewer reads the exact change and
+judges every acceptance criterion against evidence. Passing tests alone cannot
+prove accepted work.
 
-Validate is the sole verdict writer. It writes canonical JSON to a temporary
-file in the destination directory, flushes it, and atomically renames it to:
+PASS requires complete checked scope, distinct identities, attested freshness
+and evidence for acceptance. Failed acceptance is FAIL; missing proof remains
+NOT_PROVEN. A repair changes the subject and needs a new judgment of that content.
+
+When a caller or declared consumer needs durable evidence, the reviewer authors
+`verdict.v2` and AO structurally verifies and atomically stores it in an explicit
+protected external non-Git root:
 
 ```text
-.agents/ao/verdicts/sha256/<artifact-digest>.json
+<evidence-root>/verdicts/sha256/<artifact-digest>.json
 ```
 
-An identical existing artifact is success. Different content under the same
-digest is an integrity failure and produces `NOT_PROVEN`.
+Identical stored content is idempotent. A digest collision with different
+content fails integrity checks. Storage and check success cannot substitute
+for a semantic judgment. Legacy `.agents/` evidence remains preserved under
+owner policy.
 
-Optional strategies may improve inputs. Optional factory adapters may dispatch
-explicit disjoint packets once. Neither can add a core phase, alter a verdict,
-or choose continuation.
+The [RPI workflow](../skills/rpi/SKILL.md) remains available by explicit choice.
+Native goals supply continuity and the existing tracker stores work and
+handoffs. Memory is optional retrieval or separately scoped curation. Skills,
+reviews and learning earn their cost through later engineering outcomes.

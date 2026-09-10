@@ -21,7 +21,7 @@ explicit behavior
 1. **Behavior before activity.** The caller-owned intent states the active
    behavior, acceptance examples where useful, non-goals, evidence, and bounded
    write scope before implementation begins.
-2. **Bounded implementation.** Implement makes and checks the change, repairing
+2. **Bounded implementation.** The native agent makes and checks the change, repairing
    known defects directly within the accepted scope and allowance. Aggregate
    budgets and delivery authority remain with the caller or selected runtime.
 3. **Fresh judgment.** PASS requires explicit, distinct author and validator
@@ -32,10 +32,10 @@ explicit behavior
 5. **Honest uncertainty.** Mutation, incomplete changed-path coverage, missing
    identity, or missing proof returns NOT_PROVEN. Proven scope or acceptance
    failure returns FAIL.
-6. **Sovereign proof.** When requested, Validate atomically writes
+6. **Sovereign proof.** When requested, the fresh reviewer uses AO to atomically write
    content-addressed JSON to caller-selected protected external non-Git storage.
    Preserve legacy evidence under owner policy. Provenance is optional audit.
-7. **Stop boundary.** RPI owns the authorized outcome, using Plan only when
+7. **Stop boundary.** The native agent owns the authorized outcome, planning only when
    needed and revising approach within unchanged acceptance. Known defects get
    direct repair; a causal stall gets at most one bounded fresh helper inside
    the existing allowance. Finish when accepted and freshly validated, or stop
@@ -46,7 +46,8 @@ explicit behavior
 
 ## Structural constraints
 
-- Core hard dependencies are only `rpi -> {plan, implement, validate}`; these
+- Native execution requires zero AgentOps skills. When selected, RPI's
+  core hard dependencies are only `rpi -> {plan, implement, validate}`; these
   capability references do not require invoking every skill on every change.
 - Memory, Learn and all strategy/factory/specialist skills are optional.
 - Core schemas contain no retry, budget, queue, claim, lease, admission,
@@ -54,7 +55,7 @@ explicit behavior
 - The pure manifest and verdict helpers make no Git, tracker, queue, network,
   release, or delivery call.
 - Deterministic `ao gate check` reports repository check success or failure only.
-- Semantic validation is a skill responsibility, not a CLI state machine.
+- Semantic validation belongs to a fresh reviewer; Validate is optional guidance.
 
 ## Gates
 
@@ -88,8 +89,9 @@ evidence for them.
 
 The selected CDLC (Context Delivery Lifecycle) contract maintains external
 context/environment around disposable agents; it neither trains weights nor
-promises deterministic inference. Discovery (with Plan as shaping owner),
-Implement and Validate operate within caller-owned intent and allowance.
+promises deterministic inference. Discovery, implementation and independent
+validation operate within caller-owned intent and allowance. Their corresponding
+skills are optional.
 Optional Memory recall and mining are skill guidance, not a new runtime or
 automatic private-source authorization; evolve restoration belongs only to
 T25. No unavailable entrypoint is enabled by this document.

@@ -107,7 +107,7 @@ This ADR is accepted when:
 
 ## References
 
-- [CDLC](../cdlc.md)
+- CDLC (historical reference; retired path: `../cdlc.md`)
 - [Operating Loop](../architecture/operating-loop.md)
 - [Ports and Adapters](../architecture/ports-and-adapters.md)
 - [Context Map](../contracts/context-map.md)

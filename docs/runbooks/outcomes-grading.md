@@ -115,6 +115,6 @@ once. A non-positive budget = no ceiling (no-op). **Dev-split scores never burn*
 
 ## See also
 
-- [Outcomes Rubric Projection Contract](../contracts/outcomes-rubric-projection.md)
-- [Eval Verdict Pipeline Contract](../contracts/eval-verdict-pipeline.md)
+- Outcomes Rubric Projection Contract (historical reference; retired path: `../contracts/outcomes-rubric-projection.md`)
+- Eval Verdict Pipeline Contract (historical reference; retired path: `../contracts/eval-verdict-pipeline.md`)
 - `~/.agents/evals/SCHEMA.md` — the LOCKED substrate this lane projects from (never relitigated)
