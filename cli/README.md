@@ -35,7 +35,28 @@ compatibility profile restores their implementation.
 
 The native agent can use AO to investigate a skill, `AGENTS.md`, or a task prompt
 against an explicitly selected session. Choose an authorized public or
-already-cleared source range and target instruction before reading:
+already-cleared source range and target instruction before reading.
+
+Start discovery with existing tools when the relevant records are not known:
+
+```bash
+cass search "QUERY" --workspace /path/to/repo --mode lexical \
+  --json --fields summary --limit 10 --timeout 5000
+cass pack "QUERY" --workspace /path/to/repo --mode lexical \
+  --json --max-sessions 3 --max-evidence 6 --max-tokens 2000 --timeout 5000
+```
+
+Check the installed CASS help for available flags. Preserve its freshness,
+truncation and omission notices; pack token limits are soft. Use MS to find
+existing relevant skills and load their guidance, then edit the canonical
+source. Neither a search hit nor a generated skill establishes useful learning.
+The [CASS](../skills/cass/SKILL.md) and [MS](../skills/ms/SKILL.md) adapters own
+their retrieval details; no AO search index or mandatory mining step is needed.
+
+Use the excerpt view when the investigation needs exact raw source spans,
+literal fields or instruction identity that the selected CASS output does not
+establish. If that extra precision does not affect the decision, the CASS
+evidence can be sufficient:
 
 ```bash
 ao provenance mine-session --view excerpts \

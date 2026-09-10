@@ -18,6 +18,26 @@ description: 'meta_skill (ms) — the skill-search/load engine over both corpora
 - Keep `ms` retrieval-only for production skill work. It returns search and load
   results; the caller owns authoring, validation, and every subsequent decision.
 
+## Session evidence and instruction changes
+
+For a requested instruction-improvement task, use CASS to discover relevant
+episodes and `ms` to find existing guidance that could explain the behavior or
+already address it. Load only the relevant skills, then inspect their canonical
+source before proposing an edit. An `AGENTS.md` or task-prompt change does not
+require inventing a skill or loading an unrelated one.
+
+Upstream MS also offers `build --from-cass`; this adapter deliberately does not
+invoke that authoring path. Inspect `ms build --help` if the caller selects it
+separately. A generated skill, search rank,
+repeated prompt, or recorded outcome is not proof of downstream improvement.
+
+CASS search/pack supplies candidate evidence. Use AO's bounded excerpt view only
+when the investigation needs exact raw spans, literal fields or instruction
+identity that the selected CASS output does not establish. These are optional
+capabilities, not a required sequence on every task. The caller owns a supported
+candidate edit or no-change judgment, independent review and later usefulness
+testing; retrieval never awards that outcome itself.
+
 ## Quick Start
 
 Find a skill (MCP-primary — BM25, currently strictly better than CLI search), then load the FULL runnable SKILL.md in one call (always `full: true` when you mean to use it):
