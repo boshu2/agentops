@@ -166,3 +166,34 @@ func TestReportRetainsIndependentGradeForFailedEndpoint(t *testing.T) {
 		t.Fatalf("independent failed-case grade lost: %+v", e)
 	}
 }
+
+func TestVerifierStartupFailureIsNotAModelFailure(t *testing.T) {
+	base := `{"started_at":"2026-09-10T14:00:00Z","finished_at":"2026-09-10T14:00:05Z","agent_execution":{"started_at":"2026-09-10T14:00:01Z","finished_at":"2026-09-10T14:00:02Z"},"verifier":{"started_at":"2026-09-10T14:00:03Z","finished_at":"2026-09-10T14:00:04Z"},"verifier_environment_mode":"separate","exception_info":{"exception_type":"RuntimeError","occurred_at":"2026-09-10T14:00:04.01Z"},"verifier_result":null}`
+	cases := []struct{ name, raw, want string }{
+		{"separate verifier startup", base, "infrastructure_error"},
+		{"agent timeout stays execution", strings.Replace(base, "RuntimeError", "AgentTimeoutError", 1), "execution_error"},
+		{"agent error before verifier", strings.Replace(base, "14:00:04.01Z", "14:00:02Z", 1), "execution_error"},
+		{"unfinished worker", strings.Replace(base, `"finished_at":"2026-09-10T14:00:02Z"`, `"finished_at":null`, 1), "execution_error"},
+		{"shared verifier", strings.Replace(base, `"separate"`, `"shared"`, 1), "execution_error"},
+		{"no phase timestamp", strings.Replace(base, "14:00:04.01Z", "bad-time", 1), "execution_error"},
+		{"exception after trial end", strings.Replace(base, "14:00:04.01Z", "14:00:06Z", 1), "execution_error"},
+		{"grade with later exception", strings.Replace(base, `"verifier_result":null`, `"verifier_result":{"rewards":{"reward":1}}`, 1), "execution_error"},
+	}
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			put(t, filepath.Join(dir, "trial", "result.json"), tt.raw)
+			report, err := Build([]JobInput{{Directory: dir}}, nil, "reward")
+			if err != nil {
+				t.Fatal(err)
+			}
+			trial := report.Jobs[0].Trials[0]
+			if trial.Outcome != tt.want {
+				t.Fatalf("outcome %q, want %q", trial.Outcome, tt.want)
+			}
+			if string(trial.Documents["result.json"].Data) != tt.raw {
+				t.Fatal("native evidence changed")
+			}
+		})
+	}
+}

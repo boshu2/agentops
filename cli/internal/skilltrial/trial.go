@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/boshu2/agentops/cli/internal/parser"
 )
@@ -23,8 +24,11 @@ type nativeTrial struct {
 	AgentSetup       *nativePhase    `json:"agent_setup"`
 	AgentExecution   *nativePhase    `json:"agent_execution"`
 	StepResults      json.RawMessage `json:"step_results"`
+	VerifierPhase    *nativePhase    `json:"verifier"`
+	VerifierMode     string          `json:"verifier_environment_mode"`
 	Exception        *struct {
-		Type string `json:"exception_type"`
+		Type       string `json:"exception_type"`
+		OccurredAt string `json:"occurred_at"`
 	} `json:"exception_info"`
 	Verifier *struct {
 		Rewards map[string]*float64 `json:"rewards"`
@@ -32,7 +36,8 @@ type nativeTrial struct {
 }
 
 type nativePhase struct {
-	StartedAt string `json:"started_at"`
+	StartedAt  string `json:"started_at"`
+	FinishedAt string `json:"finished_at"`
 }
 
 func (b *builder) readTrial(dir, arm string) Trial {
@@ -106,6 +111,9 @@ func classifyOutcome(result nativeTrial, rewardKey string) string {
 		if result.AgentExecution == nil && noSteps && (result.EnvironmentSetup != nil || result.AgentSetup != nil) {
 			return "infrastructure_error"
 		}
+		if verifierInfrastructureFailure(result) {
+			return "infrastructure_error"
+		}
 		switch result.Exception.Type {
 		case "AgentAuthenticationError", "ModelNotFoundError", "ApiUsageLimitError", "EnvironmentStartError", "EnvironmentBuildError",
 			"RewardFileNotFoundError", "RewardFileEmptyError", "VerifierOutputParseError", "VerifierTimeoutError":
@@ -125,6 +133,27 @@ func classifyOutcome(result nativeTrial, rewardKey string) string {
 	default:
 		return "unknown_outcome"
 	}
+}
+
+// Harbor can wrap separate-verifier startup failures in RuntimeError after the
+// worker has finished. A missing evaluator result is not a failed model grade.
+func verifierInfrastructureFailure(result nativeTrial) bool {
+	if result.Exception == nil || result.Exception.Type != "RuntimeError" ||
+		result.VerifierMode != "separate" || result.Verifier != nil ||
+		result.AgentExecution == nil || result.VerifierPhase == nil {
+		return false
+	}
+	values := []string{result.AgentExecution.FinishedAt, result.VerifierPhase.StartedAt,
+		result.Exception.OccurredAt, result.FinishedAt}
+	var previous time.Time
+	for _, value := range values {
+		current, err := time.Parse(time.RFC3339Nano, value)
+		if err != nil || (!previous.IsZero() && current.Before(previous)) {
+			return false
+		}
+		previous = current
+	}
+	return true
 }
 
 func sessionRoots(dir string, diagnostics *[]string) []string {
