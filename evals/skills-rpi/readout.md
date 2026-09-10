@@ -89,11 +89,39 @@ The automated pilot recommendation is `insufficient-evidence`; the specialist
 can make a narrower supported, explicitly provisional maintenance decision.
 
 Native verifier reward 1 is an endpoint success. The reader leaves independent
-completion, false completion, false acceptance, needless blocking and feasibility
-unknown unless separately measured by their source owners. A required fresh
+completion, worker false completion and feasibility unknown. A required fresh
 handoff or exact-subject judgment is not waived by a green executable oracle.
-Native rewards are retained for inspection; the reader does not invent these
-semantic measurements or parse worker claims into acceptance.
+Native rewards are retained for inspection; the reader never parses worker
+prose into acceptance.
+
+For validation fixtures, E2 captures the separate verifier's `verifier/grade.json`
+in `trial.documents` with `path`, `sha256` and parsed `data`. The readout consumes
+its `case_results` only when the external receipt, native separate-verifier
+mode, terminal evidence and captured source identity are valid. The oracle emits
+cases only after its source, scope and ground-truth checks succeed. Each case
+contains `case_id`, `expected`, `actual` and `classification`. All cases remain
+visible even when the trial's endpoint reward is zero.
+
+The per-arm `validation_cases` readout reports the raw expected/actual judgments
+and these descriptive metrics:
+
+- `false_acceptance`: cases classified false acceptance / cases expected FAIL
+  or NOT_PROVEN;
+- `false_blocker`: cases classified false blocker / clean cases expected PASS;
+- `justified_not_proven`: justified abstentions / cases expected NOT_PROVEN.
+
+Missing actual judgments (`classification: missing`) keep the known expected
+denominator but make the affected numerator and rate unknown; known counts and
+unknown-case counts remain explicit. An absent, malformed, integrity-invalid or
+untrusted grade makes the total denominator unknown, not zero. The table also
+states how many attempts lack a usable case grade. Worker-authored result fields
+cannot substitute for this separate verifier document. These case observations
+do not rehabilitate an invalid paired comparison or establish general uplift.
+
+The same source's `not_checked` entries join `remaining_workflow_gaps` with their
+job and source reference. Missing gap coverage remains unknown. Case-level truth
+does not prove a fresh native handoff or independent completion of the workflow;
+`independently_completed_outcomes` remains unknown.
 
 Cost and timing retain their measurement windows:
 

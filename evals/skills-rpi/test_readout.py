@@ -185,6 +185,77 @@ def test_harbor_estimates_remain_incomplete_even_with_scalars_for_every_attempt(
     assert "do not establish billing" in rendered
 
 
+def graded_fixture():
+    report, receipts = fixture(("failed", "failed"))
+    cases = [
+        {"case_id": "defect", "expected": "FAIL", "actual": "PASS", "classification": "false_acceptance"},
+        {"case_id": "clean", "expected": "PASS", "actual": "NOT_PROVEN", "classification": "false_blocker"},
+        {"case_id": "incomplete", "expected": "NOT_PROVEN", "actual": "NOT_PROVEN", "classification": "justified_not_proven"},
+    ]
+    for job in report["jobs"]:
+        grade = evidence({"case_results": deepcopy(cases), "not_checked": ["fresh native handoff not exercised"]})
+        grade["path"] = job["trials"][0]["directory"] + "/verifier/grade.json"
+        job["trials"][0]["documents"]["verifier/grade.json"] = grade
+    return report, receipts
+
+
+def test_failed_endpoint_preserves_independent_case_metrics_and_workflow_gaps():
+    report, receipts = graded_fixture()
+    result = readout.build(report, receipts)
+    metrics = result["arms"]["control"]["validation_cases"]
+    assert metrics["false_acceptance"]["count"] == 1
+    assert metrics["false_acceptance"]["denominator"] == 2
+    assert metrics["false_acceptance"]["rate"] == 0.5
+    assert metrics["false_blocker"]["count"] == 1
+    assert metrics["false_blocker"]["denominator"] == 1
+    assert metrics["justified_not_proven"]["count"] == 1
+    assert metrics["justified_not_proven"]["denominator"] == 1
+    assert len(metrics["case_results"]) == 3
+    assert result["arms"]["control"]["endpoint_successes"] == 0
+    assert result["arms"]["control"]["independently_completed_outcomes"] is None
+    assert result["remaining_workflow_gaps"][0]["not_checked"] == ["fresh native handoff not exercised"]
+    assert "validator false acceptance" not in result["unmeasured"]
+    assert "worker false completion" in result["unmeasured"]
+    rendered = readout.markdown(result)
+    assert "expected FAIL, actual PASS; false_acceptance" in rendered
+    assert "fresh native handoff not exercised" in rendered
+
+
+def test_missing_case_is_unknown_with_known_expected_denominator():
+    report, receipts = graded_fixture()
+    case = report["jobs"][0]["trials"][0]["documents"]["verifier/grade.json"]["data"]["case_results"][2]
+    case.update(actual=None, classification="missing")
+    metrics = readout.build(report, receipts)["arms"]["control"]["validation_cases"]
+    assert metrics["false_acceptance"]["count"] is None
+    assert metrics["false_acceptance"]["known_count"] == 1
+    assert metrics["false_acceptance"]["denominator"] == 2
+    assert metrics["false_acceptance"]["unknown_cases"] == 1
+    assert metrics["false_acceptance"]["rate"] is None
+    assert metrics["false_blocker"]["count"] == 1
+
+
+@pytest.mark.parametrize("invalid", ["missing", "worker_only", "no_cases", "wrong_receipt", "no_evidence_hash"])
+def test_missing_or_untrusted_grade_never_manufactures_zero_case_errors(invalid):
+    report, receipts = graded_fixture()
+    trial = report["jobs"][0]["trials"][0]
+    if invalid in ("missing", "worker_only"):
+        grade = trial["documents"].pop("verifier/grade.json")
+        if invalid == "worker_only":
+            trial["documents"]["result.json"]["data"].update(grade["data"])
+    elif invalid == "no_cases":
+        trial["documents"]["verifier/grade.json"]["data"].pop("case_results")
+    elif invalid == "wrong_receipt":
+        receipts["trials"][0]["task_checksum"] = "f" * 64
+    else:
+        trial["documents"]["verifier/grade.json"]["sha256"] = None
+    metrics = readout.build(report, receipts)["arms"]["control"]["validation_cases"]
+    assert metrics["case_results"] == []
+    assert metrics["attempts_without_case_grade"] == 1
+    assert metrics["false_acceptance"]["count"] is None
+    assert metrics["false_acceptance"]["denominator"] is None
+    assert metrics["false_acceptance"]["rate"] is None
+
+
 def test_no_receipt_keeps_observations_and_missing_usage_unknown():
     report, _ = fixture()
     result = readout.build(report)

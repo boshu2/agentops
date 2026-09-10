@@ -125,6 +125,51 @@ def distribution(values):
             "known_sum": sum(measured)}
 
 
+def verifier_grade(trial, identity_exclusions):
+    """Read only the separately captured verifier document, never worker prose."""
+    evidence = (trial.get("documents") or {}).get("verifier/grade.json") or {}
+    grade = document(trial, "verifier/grade.json")
+    reasons = list(identity_exclusions)
+    if not evidence.get("path") or not digest(evidence.get("sha256")) or not grade:
+        reasons.append("missing or invalid captured verifier grade")
+    if not trial.get("completed"):
+        reasons.append("no native terminal verifier evidence")
+    source = {key: evidence.get(key) for key in ("path", "sha256")}
+    gaps = grade.get("not_checked")
+    if not isinstance(gaps, list) or not all(isinstance(gap, str) for gap in gaps):
+        gaps = None
+    cases = grade.get("case_results")
+    classifications = {"correct", "false_acceptance", "false_blocker", "justified_not_proven", "incorrect_disposition", "missing"}
+    valid_cases = isinstance(cases, list) and bool(cases) and all(
+        isinstance(case, dict) and isinstance(case.get("case_id"), str) and case["case_id"]
+        and case.get("expected") in ("PASS", "FAIL", "NOT_PROVEN")
+        and "actual" in case and case.get("classification") in classifications for case in cases)
+    if valid_cases and len({case["case_id"] for case in cases}) != len(cases):
+        valid_cases = False
+    return {"source": source, "identity_exclusions": reasons,
+            "case_results": cases if valid_cases and not reasons else None,
+            "case_results_unknown": not valid_cases or bool(reasons),
+            "not_checked": gaps if not reasons else None}
+
+
+def validation_cases(rows):
+    cases = [{"job": row["job"], **case, "source": row["verifier_grade"]["source"]}
+             for row in rows for case in (row["verifier_grade"]["case_results"] or [])]
+    missing_grades = sum(row["verifier_grade"]["case_results_unknown"] for row in rows)
+    result = {"case_results": cases, "attempts_without_case_grade": missing_grades}
+    for name, expected in (("false_acceptance", {"FAIL", "NOT_PROVEN"}),
+                           ("false_blocker", {"PASS"}), ("justified_not_proven", {"NOT_PROVEN"})):
+        relevant = [case for case in cases if case["expected"] in expected]
+        unknown = sum(case["classification"] == "missing" for case in relevant)
+        known_count = sum(case["classification"] == name for case in relevant)
+        denominator = len(relevant) if cases and not missing_grades else None
+        count = known_count if denominator is not None and not unknown else None
+        result[name] = {"count": count, "denominator": denominator,
+                        "known_count": known_count, "known_denominator": len(relevant), "unknown_cases": unknown,
+                        "rate": count / denominator if count is not None and denominator else None}
+    return result
+
+
 def uncertainty(pairs, *, n_required=None, resamples=10000):
     if not pairs:
         return {"status": "unavailable", "reason": "no comparable endpoint pairs"}
@@ -192,6 +237,7 @@ def build(report, receipts=None, *, control="control", treatment="treatment", n_
                     reasons.append("native session accounting diagnostics require review")
             if seen_jobs[name] != 1 or len(candidates) > 1 or len(job.get("trials", [])) != 1:
                 reasons.append("ambiguous job, receipt, or retry assignment")
+            grade = verifier_grade(trial, reasons)
             if arm not in (control, treatment):
                 reasons.append("arm outside selected comparison")
             native = document(trial, "result.json")
@@ -207,6 +253,7 @@ def build(report, receipts=None, *, control="control", treatment="treatment", n_
                    "timing": trial.get("timing"), "comparison_exclusions": reasons,
                    "harbor_agent_result": native.get("agent_result"),
                    "native_rewards": (native.get("verifier_result") or {}).get("rewards"),
+                   "verifier_grade": grade,
                    "native_phase_endpoints": {key: native.get(key) for key in
                                               ("environment_setup", "agent_setup", "agent_execution", "verifier")},
                    "session_ids": trial.get("session_ids", []),
@@ -285,6 +332,7 @@ def build(report, receipts=None, *, control="control", treatment="treatment", n_
                           "endpoint_successes": successes,
                           "endpoint_success_rate_all_assignments": successes / denominator if denominator else None,
                           "independently_completed_outcomes": None,
+                          "validation_cases": validation_cases(rows),
                           "comparison_eligible_attempts": sum(not row["comparison_exclusions"] for row in rows),
                           "harbor_cost_usd": costs, "elapsed_seconds": distribution([row["elapsed_seconds"] for row in rows]),
                           "harbor_cost_note": "Incomplete Harbor estimate; nested sessions may be omitted. Billing is unknown.",
@@ -295,6 +343,11 @@ def build(report, receipts=None, *, control="control", treatment="treatment", n_
                              **{key: (copy.get("accounting") or {}).get(key) for key in
                                 ("parent_id", "usage", "first_timestamp", "last_timestamp", "latest_turn_state", "diagnostics")}}
                             for copy in session.get("copies", [])]} for session in report.get("sessions", [])]
+    unmeasured = ["feasibility and substantiated blocking", "worker false completion", "independent semantic acceptance",
+                  "scope/acceptance drift, recovery, stopping and budget overrun", "content delivery and relevant action",
+                  "total billing, orchestration and experimental grading cost"]
+    if not any(summary["validation_cases"]["case_results"] for summary in summaries.values()):
+        unmeasured.extend(["validator false acceptance", "needless blocking on clean candidates"])
     return {"recommendation": "insufficient-evidence",
             "recommendation_reason": "This pilot readout supports a scoped human maintenance decision; it does not establish held-out benefit, semantic acceptance, equivalence, or complete billed cost.",
             "arms": summaries, "paired_outcomes": pairs, "pair_dispositions": pair_dispositions,
@@ -302,10 +355,9 @@ def build(report, receipts=None, *, control="control", treatment="treatment", n_
             "attempts": attempts, "native_sessions": sessions,
             "receipt_diagnostics": receipts.get("diagnostics", []),
             "unobserved_receipt_jobs": sorted(name for name in by_job if name not in seen_jobs),
-            "unmeasured": ["feasibility and substantiated blocking", "worker false completion", "validator false acceptance",
-                           "needless blocking on clean candidates", "independent semantic acceptance",
-                           "scope/acceptance drift, recovery, stopping and budget overrun", "content delivery and relevant action",
-                           "total billing, orchestration and experimental grading cost"],
+            "unmeasured": unmeasured,
+            "remaining_workflow_gaps": [{"job": row["job"], "not_checked": row["verifier_grade"]["not_checked"],
+                                         "source": row["verifier_grade"]["source"]} for row in attempts],
             "limits": list(report.get("limits", [])) + [
                 "All supplied attempts remain visible. Native expected counts are assignments, not a reconstructed historical start ledger. Missing jobs in receipts remain separately visible.",
                 "Endpoint successes and receipt-backed comparable pairs are distinct. Isolation configuration is not proof against every contamination route; receipts must come from the external runner, never the worker.",
@@ -313,6 +365,7 @@ def build(report, receipts=None, *, control="control", treatment="treatment", n_
                 "Native cumulative counters are per session and evidence copy. Cached input is within input; reasoning is within output. Never sum copies, parent/child totals, or Harbor metrics with native usage.",
                 "Harbor cost values and ratios are incomplete estimates, even when every attempt has a scalar: the adapter may omit nested sessions. They are separate from native usage and do not establish billing. Missing usage or billing is unknown; zero accepted outcomes makes cost per accepted outcome undefined.",
                 "Infrastructure, missing and ambiguous endpoints are excluded from paired inference, retained in overall assignment accounting. Execution errors count as unsuccessful endpoints when identity is intact.",
+                "Validation case metrics use only receipt-valid, separately captured verifier grades, including failed endpoints. Missing cases or grades remain unknown; recorded case judgments do not establish worker false completion or independent workflow completion.",
                 "Numeric repetition IDs pair observations, not provider randomness. No live enforcement or general uplift claim follows from replay fixtures."]}
 
 
@@ -332,6 +385,22 @@ def markdown(result):
     for row in result["attempts"]:
         exclusion = "; ".join(row["comparison_exclusions"]) or "included in paired endpoint analysis"
         lines.append(f"- {row['job']} / {row['trial_id'] or row['directory']}: {row['outcome']}; {show(row['elapsed_seconds'])} seconds; {exclusion}.")
+    lines += ["", "Independent validation cases (count / expected-case denominator; unknown cases):",
+              "", "| Arm | False acceptance | False blocker | Justified NOT_PROVEN | Attempts without case grade |",
+              "|---|---|---|---|---:|"]
+    for arm, summary in result["arms"].items():
+        metrics = summary["validation_cases"]
+        cells = [f"{show(metrics[name]['count'])} / {show(metrics[name]['denominator'])}; {metrics[name]['unknown_cases']} unknown"
+                 for name in ("false_acceptance", "false_blocker", "justified_not_proven")]
+        lines.append(f"| {arm} | " + " | ".join(cells) + f" | {metrics['attempts_without_case_grade']} |")
+    lines.append("")
+    for summary in result["arms"].values():
+        metrics = summary["validation_cases"]
+        for case in metrics["case_results"]:
+            lines.append(f"- {case['job']} / {case['case_id']}: expected {case['expected']}, actual {show(case['actual'])}; {case['classification']}.")
+    lines += ["", "Remaining workflow gaps (verifier not_checked; absence is unknown):"]
+    lines += [f"- {gap['job']}: " + ("unknown" if gap["not_checked"] is None else "; ".join(gap["not_checked"]) or "none recorded")
+              for gap in result["remaining_workflow_gaps"]]
     if result["unobserved_receipt_jobs"]:
         lines += ["", "Receipt jobs without native report: " + ", ".join(result["unobserved_receipt_jobs"])]
     if result["receipt_diagnostics"]:
