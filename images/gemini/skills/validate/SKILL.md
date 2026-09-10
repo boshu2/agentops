@@ -122,8 +122,8 @@ every changed path and cited binding. Include excerpts only to assess a finding.
 Retain every criterion, necessary finding, identity, freshness fact and unchecked
 surface. Complete coverage does not require a second copy of the evidence.
 
-Return candidate judgment when its accepted review scope is verified. When
-delivery is outside that scope, the caller checks native delivery facts without
+Return the candidate verdict promptly when the judgment is complete. When
+delivery is outside the accepted review scope, the caller checks its native facts without
 another semantic review of unchanged content. Delivery inside acceptance stays
 unverified until its evidence exists: do not issue complete PASS early or remove
 the criterion. Use the existing result for any pending delivery update, without
