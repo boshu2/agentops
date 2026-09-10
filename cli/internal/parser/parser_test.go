@@ -201,6 +201,9 @@ func TestParser_Parse_CodexTokenCountTotals(t *testing.T) {
 	if result.FinalUsage == nil {
 		t.Fatal("FinalUsage is nil; Codex token_count total not captured")
 	}
+	if result.FinalUsage.InputTokens != 2100 || result.FinalUsage.CacheReadInputTokens != 900 {
+		t.Errorf("FinalUsage = %+v, want 2100 fresh and 900 cached input tokens", result.FinalUsage)
+	}
 	in, out := result.TokenTotals()
 	if in != 3000 || out != 120 {
 		t.Errorf("TokenTotals = (%d,%d), want (3000,120) — last cumulative total", in, out)

@@ -107,8 +107,9 @@ type codexEventPayload struct {
 // so the LAST one is the session total. input_tokens already includes cached
 // input, and total_tokens == input_tokens + output_tokens.
 type codexTokenUsage struct {
-	InputTokens  int `json:"input_tokens"`
-	OutputTokens int `json:"output_tokens"`
+	InputTokens       int `json:"input_tokens"`
+	CachedInputTokens int `json:"cached_input_tokens"`
+	OutputTokens      int `json:"output_tokens"`
 }
 
 type codexResponseItem struct {
@@ -519,14 +520,19 @@ func (p *Parser) parseCodexEvent(raw rawMessage, lineNum int) (*types.Transcript
 		if payload.Info == nil || payload.Info.TotalTokenUsage == nil {
 			return nil, nil
 		}
+		usage := payload.Info.TotalTokenUsage
+		if usage.InputTokens < 0 || usage.OutputTokens < 0 || usage.CachedInputTokens < 0 || usage.CachedInputTokens > usage.InputTokens {
+			return nil, fmt.Errorf("invalid Codex cumulative token counters")
+		}
 		return &types.TranscriptMessage{
 			Type:         msgTypeCodexTokenCount,
 			Timestamp:    parseTimestamp(raw.Timestamp),
 			SessionID:    raw.SessionID,
 			MessageIndex: lineNum,
 			Usage: &types.TokenUsage{
-				InputTokens:  payload.Info.TotalTokenUsage.InputTokens,
-				OutputTokens: payload.Info.TotalTokenUsage.OutputTokens,
+				InputTokens:          usage.InputTokens - usage.CachedInputTokens,
+				CacheReadInputTokens: usage.CachedInputTokens,
+				OutputTokens:         usage.OutputTokens,
 			},
 		}, nil
 	default:
