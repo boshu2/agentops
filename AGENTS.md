@@ -183,16 +183,11 @@ out-of-scope change or failed acceptance means `FAIL`. Repair known findings
 within authority and real bounds, then revalidate the changed exact subject.
 Persist machine evidence only for a caller request or declared consumer.
 
-[Memory](skills/memory/SKILL.md) is optional and on demand: recall applicable
-reviewed external topic pages, or separately budget mining/learning and curation.
-BD owns work/status/handoffs, Git content, and native/CASS systems episodes.
-Reuse existing topic pages; entries give applicability, action, support, limits
-and invalidation. One incident supports a narrow observation; stronger rules
-need stronger evidence. Preserve rare useful constraints and legacy `.agents/`
-evidence; no blind TTL/deletion. Learning may remove rules and no-change is valid.
-Benefit requires later work evidence, not saved pages. This lean path accepts
-public or already-cleared trial inputs only and claims no native enforcement
-for restricted sources. Protected external drafts and exact independent support
+[Memory](skills/memory/SKILL.md) optionally recalls reviewed external topic pages
+or separately mines and curates them. Its contract owns support, applicability,
+invalidation and preservation; no blind TTL/deletion. Benefit needs later work
+evidence. Public or already-cleared inputs only: this path supplies no native
+restricted-source enforcement. Protected external drafts and independent support
 and destination-disclosure review precede Git import (ADR-0016).
 
 The [RPI skill](skills/rpi/SKILL.md) packages this charter when explicitly selected;
