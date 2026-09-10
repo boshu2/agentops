@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/boshu2/agentops/cli/internal/evidence"
+	"github.com/boshu2/agentops/cli/internal/skilltrial"
 )
 
 type workFixture struct {
@@ -48,7 +49,7 @@ func newWorkFixture(t *testing.T) *workFixture {
 	}
 	manifestPath, intentPath, profilesPath := filepath.Join(f.proof, "manifest.json"), filepath.Join(f.proof, "intent"), filepath.Join(f.proof, "profiles.json")
 	workJSON(t, manifestPath, manifest)
-	intent := []byte("answer.Value is 42; changes are limited to answer.go\n")
+	intent := []byte("value: answer.Value is 42\nscope: changes are limited to answer.go\n")
 	workPut(t, intentPath, intent)
 	profile := evidence.JudgeProfile{ID: "review", Runtime: "codex", Model: "gpt-test", Family: "openai", Effort: "high"}
 	workJSON(t, profilesPath, map[string]any{"profiles": []evidence.JudgeProfile{profile}})
@@ -58,8 +59,10 @@ func newWorkFixture(t *testing.T) *workFixture {
 	workPut(t, f.reviewer, native)
 	zero, yes, no := 0, true, false
 	f.receipt = evidence.JudgmentReceipt{Version: "1", Requested: profile, SubjectManifestDigest: manifest.Digest, AcceptanceDigest: evidence.Hash(intent), AuthorContextID: "author", Transcript: evidence.TranscriptBinding{Path: f.reviewer, Start: 0, End: int64(len(native)), SHA256: evidence.Hash(native)}, ExitCode: &zero, TimedOut: &no, Truncated: &no, CleanupVerified: &yes, Omissions: []string{}}
-	f.verdict = map[string]any{"schema_version": "verdict.v2", "subject_manifest_digest": manifest.Digest, "acceptance_digest": evidence.Hash(intent), "author_context_id": "author", "validator_context_id": "reviewer", "freshness_attestation": map[string]any{"source": "runtime", "attester_identity": "native-test"}, "verdict": "PASS", "criteria": []any{map[string]any{"id": "value", "result": "PASS", "evidence_refs": []string{"check:value-42"}}}, "findings": []any{}, "checked": []string{"answer.go"}, "not_checked": []string{}, "validated_at": "2026-09-10T19:00:00Z"}
-	f.args = []string{"--session", f.author, "--root", f.root, "--manifest", manifestPath, "--intent", intentPath, "--evidence-root", f.proof, "--author-context-id", "author", "--required-profiles", profilesPath, "--allowed-provider", "openai"}
+	f.verdict = map[string]any{"schema_version": "verdict.v2", "subject_manifest_digest": manifest.Digest, "acceptance_digest": evidence.Hash(intent), "author_context_id": "author", "validator_context_id": "reviewer", "freshness_attestation": map[string]any{"source": "runtime", "attester_identity": "native-test"}, "verdict": "PASS", "criteria": []any{
+		map[string]any{"id": "value", "result": "PASS", "evidence_refs": []string{"check:value-42"}},
+		map[string]any{"id": "scope", "result": "PASS", "evidence_refs": []string{"check:scope"}}}, "findings": []any{}, "checked": []string{"answer.go"}, "not_checked": []string{}, "validated_at": "2026-09-10T19:00:00Z"}
+	f.args = []string{"--session", f.author, "--root", f.root, "--manifest", manifestPath, "--intent", intentPath, "--evidence-root", f.proof, "--author-context-id", "author", "--required-profiles", profilesPath, "--allowed-provider", "openai", "--required-criterion", "value", "--required-criterion", "scope"}
 	return f
 }
 
@@ -264,6 +267,109 @@ func TestNativeWorkMissingRequiredLegAndPartialFlags(t *testing.T) {
 	var out, stderr bytes.Buffer
 	if err := run([]string{"--session", f.author, "--root", f.root}, &out, &stderr); err == nil || !strings.Contains(err.Error(), "requires --manifest") {
 		t.Fatalf("partial judgment flags: %v", err)
+	}
+}
+
+func TestNativeWorkRequiresCompleteCallerCriterionSet(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		mutate  func(*workFixture)
+		problem string
+	}{
+		{"partial omission", func(f *workFixture) { f.verdict["criteria"] = f.verdict["criteria"].([]any)[:1] }, "missing_required_criterion: scope"},
+		{"duplicate verdict ID", func(f *workFixture) { f.verdict["criteria"].([]any)[1].(map[string]any)["id"] = "value" }, "duplicate_criterion: value"},
+		{"unknown verdict ID", func(f *workFixture) { f.verdict["criteria"].([]any)[1].(map[string]any)["id"] = "other" }, "unexpected_criterion: other"},
+		{"unknown expected ID", func(f *workFixture) { f.args[len(f.args)-1] = "other" }, "missing_required_criterion: other"},
+		{"duplicate expected ID", func(f *workFixture) { f.args[len(f.args)-1] = "value" }, "criterion IDs must be nonempty, unpadded and unique"},
+		{"empty expected ID", func(f *workFixture) { f.args[len(f.args)-1] = "" }, "criterion IDs must be nonempty, unpadded and unique"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			f := newWorkFixture(t)
+			tc.mutate(f)
+			work := workRun(t, f.seal(t))["work"].(map[string]any)
+			raw, err := json.Marshal(work)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if work["status"] != "not_proven" || !strings.Contains(string(raw), tc.problem) {
+				t.Fatalf("incomplete or ambiguous criteria accepted: %s", raw)
+			}
+			if strings.Contains(tc.problem, "_criterion:") {
+				legs := work["judgments"].(map[string]any)["legs"].([]any)
+				if len(legs) != 1 || legs[0].(map[string]any)["verdict"] != "PASS" {
+					t.Fatalf("original invalid leg lost: %s", raw)
+				}
+			}
+		})
+	}
+}
+
+func TestNativeWorkCannotAcceptWithoutCriterionExpectation(t *testing.T) {
+	f := newWorkFixture(t)
+	f.args = f.args[:len(f.args)-4] // The complete required-criterion input is absent.
+	args := f.seal(t)
+	var out, stderr bytes.Buffer
+	if err := run(args, &out, &stderr); err == nil || !strings.Contains(err.Error(), "requires --required-criterion") {
+		t.Fatalf("missing CLI criterion policy: %v", err)
+	}
+	profiles, err := evidence.LoadJudgeProfiles(filepath.Join(f.proof, "profiles.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	options := evidence.JudgmentOptions{Root: f.root, Manifest: filepath.Join(f.proof, "manifest.json"), Intent: filepath.Join(f.proof, "intent"), EvidenceRoot: f.proof, AuthorContextID: "author", Required: profiles, AllowedProviders: []string{"openai"}, Verdicts: []string{args[len(args)-1]}}
+	report, err := skilltrial.Build(nil, []string{f.author}, "reward")
+	if err != nil {
+		t.Fatal(err)
+	}
+	work := skilltrial.InspectWork(report, options)
+	if work.Status != "not_proven" || work.Judgments == nil || !work.Judgments.Satisfied || !strings.Contains(strings.Join(work.Problems, ";"), "required_criteria_missing") {
+		t.Fatalf("legacy coverage without expected criteria became accepted: %+v", work)
+	}
+}
+
+func TestNativeWorkKeepsCounterUncertaintySeparateFromExecution(t *testing.T) {
+	for _, tc := range []struct{ event, execution, status string }{
+		{"task_complete", "completed", "accepted"},
+		{"task_started", "unfinished", "not_proven"},
+	} {
+		t.Run(tc.event, func(t *testing.T) {
+			f := newWorkFixture(t)
+			native := "{\"type\":\"session_meta\",\"payload\":{\"id\":\"author\"}}\n" +
+				"{\"type\":\"event_msg\",\"payload\":{\"type\":\"token_count\",\"info\":{\"total_token_usage\":{\"input_tokens\":100,\"output_tokens\":10}}}}\n" +
+				"{\"type\":\"event_msg\",\"payload\":{\"type\":\"token_count\",\"info\":{\"total_token_usage\":{\"input_tokens\":50,\"output_tokens\":5}}}}\n" +
+				"{\"type\":\"event_msg\",\"payload\":{\"type\":\"" + tc.event + "\"}}\n"
+			workPut(t, f.author, []byte(native))
+			report := workRun(t, f.seal(t))
+			work := report["work"].(map[string]any)
+			if work["status"] != tc.status || work["execution"] != tc.execution || strings.Contains(strings.Join(anyStrings(work["problems"].([]any)), ";"), "author_accounting_unverified") {
+				t.Fatalf("counter uncertainty blocked native execution evidence: %+v", work)
+			}
+			accounting := report["sessions"].([]any)[0].(map[string]any)["copies"].([]any)[0].(map[string]any)["accounting"].(map[string]any)
+			if len(accounting["diagnostics"].([]any)) != 1 || accounting["usage"].(map[string]any)["input_tokens"] != float64(50) {
+				t.Fatalf("unknown aggregate accounting hidden or added: %+v", accounting)
+			}
+		})
+	}
+}
+
+func anyStrings(values []any) []string {
+	result := make([]string, len(values))
+	for i, value := range values {
+		result[i] = value.(string)
+	}
+	return result
+}
+
+func TestNativeWorkMalformedAuthorStillFailsClosed(t *testing.T) {
+	f := newWorkFixture(t)
+	raw, err := os.ReadFile(f.author)
+	if err != nil {
+		t.Fatal(err)
+	}
+	workPut(t, f.author, append([]byte("{invalid\n"), raw...))
+	work := workRun(t, f.seal(t))["work"].(map[string]any)
+	if work["status"] != "not_proven" || !strings.Contains(strings.Join(anyStrings(work["problems"].([]any)), ";"), "author_accounting_unverified") {
+		t.Fatalf("parse uncertainty was treated as usage-only: %+v", work)
 	}
 }
 

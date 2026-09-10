@@ -45,7 +45,8 @@ func VerifyJudgments(o JudgmentOptions) (*JudgmentResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	result := &JudgmentResult{Satisfied: true, SubjectManifestDigest: manifest.Digest, AcceptanceDigest: Hash(intent), Legs: []JudgmentLeg{}, Problems: []string{}}
+	result := &JudgmentResult{Satisfied: true, SubjectManifestDigest: manifest.Digest, AcceptanceDigest: Hash(intent),
+		RequiredCriteria: append([]string(nil), o.RequiredCriteria...), Legs: []JudgmentLeg{}, Problems: []string{}}
 	state := judgmentState{options: o, root: root, result: result, seen: map[string]bool{}, contexts: map[string]string{}}
 	for _, path := range o.Verdicts {
 		state.inspectVerdict(path)
@@ -60,6 +61,9 @@ func VerifyJudgments(o JudgmentOptions) (*JudgmentResult, error) {
 }
 
 func checkJudgePolicy(o JudgmentOptions) error {
+	if err := checkCriterionPolicy(o.RequiredCriteria); err != nil {
+		return err
+	}
 	if len(o.Required) == 0 || !knownJudgeIdentity(o.AuthorContextID) {
 		return fmt.Errorf("required profiles and independent author identity must be nonempty")
 	}
@@ -143,6 +147,7 @@ func (s *judgmentState) inspectLeg(path, ref string, v *verdictcheck.Verdict, r 
 		leg.Problems = append(leg.Problems, "requested_profile_mismatch")
 	}
 	leg.Problems = append(leg.Problems, receiptBindingProblems(s.options, s.result, v, r)...)
+	leg.Problems = append(leg.Problems, criterionCoverageProblems(s.options.RequiredCriteria, v.Criteria)...)
 	// Runtime/family identity is chosen by the independent profile. A receipt
 	// cannot route parsing or retrieval to a substituted/disallowed provider.
 	if r.Requested.Runtime == profile.Runtime && r.Requested.Family == profile.Family {
@@ -153,6 +158,51 @@ func (s *judgmentState) inspectLeg(path, ref string, v *verdictcheck.Verdict, r 
 		s.result.Satisfied = false
 	}
 	s.result.Legs = append(s.result.Legs, leg)
+}
+
+func checkCriterionPolicy(required []string) error {
+	if required == nil {
+		return nil
+	}
+	if len(required) == 0 {
+		return fmt.Errorf("selected required criterion IDs must be nonempty")
+	}
+	seen := map[string]bool{}
+	for _, id := range required {
+		if strings.TrimSpace(id) == "" || id != strings.TrimSpace(id) || seen[id] {
+			return fmt.Errorf("required criterion IDs must be nonempty, unpadded and unique")
+		}
+		seen[id] = true
+	}
+	return nil
+}
+
+// Criterion IDs establish exact coverage of the caller's selected set. The
+// fresh reviewer still owns each ID's mapping to intent and supporting evidence.
+func criterionCoverageProblems(required []string, criteria []verdictcheck.Criterion) []string {
+	if required == nil {
+		return nil
+	}
+	allowed, seen := map[string]bool{}, map[string]int{}
+	for _, id := range required {
+		allowed[id] = true
+	}
+	problems := []string{}
+	for _, criterion := range criteria {
+		seen[criterion.ID]++
+		if seen[criterion.ID] == 2 {
+			problems = append(problems, "duplicate_criterion: "+criterion.ID)
+		}
+		if seen[criterion.ID] == 1 && !allowed[criterion.ID] {
+			problems = append(problems, "unexpected_criterion: "+criterion.ID)
+		}
+	}
+	for _, id := range required {
+		if seen[id] == 0 {
+			problems = append(problems, "missing_required_criterion: "+id)
+		}
+	}
+	return problems
 }
 
 func receiptBindingProblems(o JudgmentOptions, result *JudgmentResult, v *verdictcheck.Verdict, r *JudgmentReceipt) []string {

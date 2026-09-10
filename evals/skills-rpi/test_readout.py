@@ -151,7 +151,7 @@ def test_independent_work_keeps_endpoint_and_missing_proof_separate():
     trial["session_ids"] = ["author"]
     report["work"] = {"status": "accepted", "execution": "completed", "association": "trial",
                       "author_context_id": "author", "trial_directory": trial["directory"], "problems": [],
-                      "judgments": {"satisfied": True, "legs": [{"id": "review", "verdict": "PASS"}]}}
+                      "judgments": {"satisfied": True, "required_criteria": ["value", "scope"], "legs": [{"id": "review", "verdict": "PASS"}]}}
     result = readout.build(report, receipts)
     assert result["arms"]["control"]["endpoint_successes"] == 1
     assert result["arms"]["treatment"]["endpoint_successes"] == 1
@@ -161,6 +161,7 @@ def test_independent_work_keeps_endpoint_and_missing_proof_separate():
     assert result["arms"]["treatment"]["independent_work"]["known_accepted"] == 1
     assert result["arms"]["treatment"]["total_billed_cost_per_accepted_outcome"] is None
     assert "accepted; execution completed; association trial" in readout.markdown(result)
+    assert "Required acceptance IDs: value, scope." in readout.markdown(result)
     report["jobs"][1]["counts"]["expected"] = 3
     result = readout.build(report, receipts)
     assert result["arms"]["treatment"]["independently_completed_outcomes"] is None

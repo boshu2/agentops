@@ -108,7 +108,9 @@ an optional one-subject join accepts the existing provenance flags (`--root`,
 `--manifest`, `--intent`, `--author-context-id`, `--required-profiles`,
 `--allowed-provider`, `--evidence-root`, and repeated `--verdict`). It reuses
 `evidence.VerifyJudgments` over caller-owned exact subject, acceptance and native
-reviewer receipts, then requires a unique observed author association and
+reviewer receipts. The join also requires repeatable `--required-criterion`
+inputs for the caller's complete acceptance ID set; partially omitted, duplicate
+or unexpected verdict criteria remain unproven. It then requires a unique observed author association and
 completed execution before reporting accepted work. No skill invocation is
 required. Endpoint rewards, verified FAIL, missing proof and unfinished work
 remain separate. See [the readout contract](readout.md) for the complete example,

@@ -464,6 +464,8 @@ def markdown(result):
         judgment = work.get("judgments") or {}
         if judgment.get("subject_manifest_digest"):
             lines.append("Subject manifest: " + judgment["subject_manifest_digest"] + "; acceptance: " + str(judgment.get("acceptance_digest")) + ".")
+        if judgment.get("required_criteria"):
+            lines.append("Required acceptance IDs: " + ", ".join(judgment["required_criteria"]) + ".")
         for leg in judgment.get("legs", []):
             lines.append(f"- {leg.get('id', 'unknown')}: original {leg.get('verdict', 'unknown')}; " + "; ".join(leg.get("problems", [])))
         problems = work.get("problems", []) + judgment.get("problems", [])

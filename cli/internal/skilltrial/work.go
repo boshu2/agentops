@@ -34,6 +34,9 @@ func InspectWork(report *Report, options evidence.JudgmentOptions) *Work {
 	w.associate(report)
 	result, err := evidence.VerifyJudgments(options)
 	w.Judgments = result
+	if len(options.RequiredCriteria) == 0 {
+		w.Problems = append(w.Problems, "required_criteria_missing")
+	}
 	if err != nil {
 		w.Problems = append(w.Problems, "judgment_verification: "+err.Error())
 	}
@@ -86,7 +89,7 @@ func (w *Work) associate(report *Report) {
 		if copy.Trial != "" {
 			trials[copy.Trial] = true
 		}
-		if copy.Accounting == nil || len(copy.Accounting.Diagnostics) > 0 {
+		if authorAccountingUnverified(copy.Accounting) {
 			w.Problems = append(w.Problems, "author_accounting_unverified")
 		}
 	}
@@ -108,6 +111,21 @@ func (w *Work) associate(report *Report) {
 		}
 		w.Problems = append(w.Problems, "associated_trial_missing")
 	}
+}
+
+func authorAccountingUnverified(accounting *parser.CodexAccounting) bool {
+	if accounting == nil {
+		return true
+	}
+	for _, diagnostic := range accounting.Diagnostics {
+		// This existing parser diagnostic concerns aggregate usage only. Keep it
+		// in native accounting without invalidating independently observed author
+		// identity or execution. Unknown and parse diagnostics still fail closed.
+		if diagnostic.Message != "cumulative counters decreased; last native snapshot retained, aggregation requires review" {
+			return true
+		}
+	}
+	return false
 }
 
 func authorExecution(accounting *parser.CodexAccounting) string {
