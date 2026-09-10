@@ -797,10 +797,16 @@ ao provenance mine-session --file <session.jsonl> [flags]
 **Flags:**
 
 ```
-      --file string    Path to the session transcript (.jsonl) to mine (required)
-  -h, --help           help for mine-session
-      --json           Emit events as JSONL on stdout (default true)
-      --state string   Path to the incremental watermark state JSON (created/updated; omit for a full one-shot mine)
+      --file string            Path to the session transcript (.jsonl) to mine (required)
+  -h, --help                   help for mine-session
+      --json                   Emit events as JSONL on stdout (default true)
+      --max-bytes int          Excerpts only: maximum source-window bytes (default 65536)
+      --max-output-bytes int   Excerpts only: maximum serialized JSON bytes, including newline (default 131072)
+      --max-records int        Excerpts only: maximum emitted records (default 20)
+      --start-byte int         Excerpts only: zero-based record-aligned source offset
+      --state string           Path to the incremental watermark state JSON (created/updated; omit for a full one-shot mine)
+      --target string          Excerpts only: explicit instruction file, at most 64 KiB
+      --view string            Output view: events (legacy JSONL) or excerpts (one bounded JSON document) (default "events")
 ```
 
 #### `ao provenance position`
