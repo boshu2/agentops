@@ -12,6 +12,10 @@ setup() {
 printf '%s\n' "$*" >> "$CASS_FIXTURE_ROOT/calls"
 case "$1" in
     status)
+        if [ -n "${CASS_FIXTURE_STATUS:-}" ]; then
+            printf '%s\n' "$CASS_FIXTURE_STATUS"
+            exit 0
+        fi
         case "$CASS_FIXTURE_MODE" in
             timeout) exit 124 ;;
             malformed) printf 'not json\n'; exit 0 ;;
@@ -92,6 +96,29 @@ teardown() {
     [[ "$output" == *"RECOVERED: doctor succeeded"* ]]
     [ -f "$TMP_DIR/repaired" ]
     ! grep -q '^index ' "$TMP_DIR/calls"
+}
+
+@test "selected recovery requires observed and correctly typed nested readiness facts" {
+    export CASS_FIXTURE_STATUS
+    local base='{"index":{"fresh":false,"documents":0},"database":{"exists":false,"messages":0}}'
+    local field
+    local invalid
+    for field in index.fresh database.exists index.documents database.messages; do
+        for invalid in null '"unknown"'; do
+            CASS_FIXTURE_STATUS=$(printf '%s' "$base" | jq -c --arg field "$field" --argjson invalid "$invalid" 'setpath($field | split("."); $invalid)')
+            : > "$TMP_DIR/calls"
+            run env PATH="$TMP_DIR/bin:$PATH" bash "$REPO_ROOT/skills/cass/scripts/recover.sh"
+            [ "$status" -eq 2 ]
+            [[ "$output" == *"UNAVAILABLE: index state not observed"* ]]
+            [ "$(cat "$TMP_DIR/calls")" = 'status --json' ]
+        done
+    done
+    CASS_FIXTURE_STATUS='{"index":{},"database":{}}'
+    : > "$TMP_DIR/calls"
+    run env PATH="$TMP_DIR/bin:$PATH" bash "$REPO_ROOT/skills/cass/scripts/recover.sh"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"UNAVAILABLE: index state not observed"* ]]
+    [ "$(cat "$TMP_DIR/calls")" = 'status --json' ]
 }
 
 make_prompt_fixture() {
