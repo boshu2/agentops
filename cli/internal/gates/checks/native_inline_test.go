@@ -182,6 +182,51 @@ func TestRunLearningCoherence_ChecksCanonicalAoRoot(t *testing.T) {
 	}
 }
 
+func TestRunLearningCoherence_ReadFailureBlocks(t *testing.T) {
+	check, ok := gates.Default.Get("learning.coherence")
+	if !ok {
+		t.Fatal("learning.coherence is not registered")
+	}
+	for _, rel := range []string{".agents/ao/learnings/bad.md", ".agents/learnings/bad.md"} {
+		t.Run(rel, func(t *testing.T) {
+			root := t.TempDir()
+			// A directory reliably makes ReadFile fail without permission assumptions.
+			if err := os.MkdirAll(filepath.Join(root, rel), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			verdict, err := runLearningCoherence(context.Background(), gates.RunContext{
+				RepoRoot: root, Mode: gates.Fast, ChangedFiles: []string{rel},
+			})
+			if err != nil {
+				t.Fatalf("runLearningCoherence: %v", err)
+			}
+			if verdict.Status != ports.GateStatusFail {
+				t.Fatalf("status = %s, want FAIL for unreadable learning %q", verdict.Status, rel)
+			}
+			if !strings.Contains(verdict.Reason, rel) {
+				t.Fatalf("reason = %q, want unreadable learning path %q", verdict.Reason, rel)
+			}
+			report := gates.Report{Results: []gates.CheckResult{{Check: check, Verdict: verdict}}}
+			if got := report.ExitCode(); got != 1 {
+				t.Fatalf("Report.ExitCode() = %d, want 1 for unreadable learning", got)
+			}
+		})
+	}
+}
+
+func TestRunLearningCoherence_DeletedFileSkipped(t *testing.T) {
+	for _, rel := range []string{".agents/ao/learnings/deleted.md", ".agents/learnings/deleted.md"} {
+		t.Run(rel, func(t *testing.T) {
+			verdict, err := runLearningCoherence(context.Background(), gates.RunContext{
+				RepoRoot: t.TempDir(), Mode: gates.Fast, ChangedFiles: []string{rel},
+			})
+			if err != nil || verdict.Status != ports.GateStatusPass {
+				t.Fatalf("deleted learning = %+v, error = %v; want PASS", verdict, err)
+			}
+		})
+	}
+}
+
 // equalSetChecks reports whether a and b hold the same elements (order-independent).
 func equalSetChecks(a, b []string) bool {
 	if len(a) != len(b) {
