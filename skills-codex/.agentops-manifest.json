@@ -501,8 +501,8 @@
     {
       "name": "implement",
       "source_skill": "skills/implement",
-      "source_hash": "9f23e9a25fce5f74c0a12d6196e0cc0fda580e90f2d9ed92af7eccdc8f755690",
-      "generated_hash": "395cfbaac7a093dfedfe1ecdc9ca4083db39c4249f2f35fd44ff6d28f2cbda99"
+      "source_hash": "3595c7401ac6fc8c1de10d92799124897870f829bcae385a5a2aca06130ad7e3",
+      "generated_hash": "913621062d45dee471648a7946f235d6dad50e9b95219c037ac1817434a57872"
     },
     {
       "name": "learn",
@@ -609,8 +609,8 @@
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "d56324d3257f0ee5619ab6675052faa5207747bf39e465aca0ff94621aef2f90",
-      "generated_hash": "98322805a85787c8b7cf6880f9ce756a8573a062dc9219ab12a7d895be7679db"
+      "source_hash": "fd5a6deaff8240607040c50e75958f4ea94c9ce11e73628cac29d0b73771c2b6",
+      "generated_hash": "fa475c8695a6116f245788325c0f3098a1b8ddf2d131637de65b2331dd937652"
     },
     {
       "name": "sbh",

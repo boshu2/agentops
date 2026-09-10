@@ -44,12 +44,19 @@ it. Run repository-required integration checks at the final integration boundary
 Valid exact-input receipts can establish routine facts; do not replay an expensive
 suite without an acceptance need, relevant new change or unresolved concern.
 
-The runtime derives actual changed paths, author context and `subject-manifest.v1`.
+The runtime derives actual changed paths, author context and content identity.
+A delegated increment awaiting integration supplies an exact commit or
+runtime-derived content digests with its check facts in the native handoff.
+The integrating caller derives `subject-manifest.v1` over the complete final
+subject before judgment. A separately judged increment requires its own
+manifest; delegation alone does not require duplicate evidence bundles.
 Where changed paths affect bound acceptance evidence, run
 `ao provenance evidence-orphans --root <repo-root>` with one `--changed <path>`
 per actual changed path and preserve its JSON receipt. Exit 0 means the scan
 completed, not that no orphan exists; exit 2 is incomplete. Recapture affected
 required evidence and refresh the receipt when repairs affect those bindings.
+This scan belongs to the same integration/judgment boundary; consolidating it
+does not omit any changed path, affected binding or required final check.
 
 `subject-manifest.v1` contains normalized relative paths, file/symlink/deletion
 kinds, executable bits, content/target digests, declared roots and exclusions,

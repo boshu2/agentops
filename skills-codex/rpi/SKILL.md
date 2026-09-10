@@ -38,23 +38,26 @@ delivery. AgentOps supplies a small charter and fresh judgment, not a scheduler.
 
 ## Context and handoffs
 
-Load required contracts once per context, then inspect the source or evidence
-needed for the next decision. A reference link is available context, not a
-reading list. Search before opening large files; retrieve relevant sections
-and expand when uncertainty requires it. Do not reread unchanged material or
-copy full logs into successive tool results and handoffs.
+Load required contracts once per context, then read only what the next decision
+needs. A reference link is available context, not a reading list. Search before
+opening large files; expand only for consequential uncertainty. Keep successful
+output compact at the tool boundary; retain full logs for inspection. Reuse the
+worker's component-check list and current receipts instead of rediscovering them.
 
-When delegation is authorized and useful, give each worker task-specific
-context: accepted intent and scope, exact subject, relevant evidence, remaining
-bounds and the requested result. Prefer a new task-only context for an
-independent subtask; resume the original worker for a direct repair when useful.
-Validators always receive fresh context, without the author's desired verdict.
-Use observed runtime capabilities; prompt wording does not prove isolation.
+When delegation is authorized and useful, select the runtime's task-only
+dispatch option for independent work; a short prompt in a full-history fork
+still carries full history. Supply accepted intent/scope, exact subject,
+relevant evidence, remaining bounds, result consumer and check ownership.
+Resume an author for direct repair when useful. Validators always receive fresh
+context without the author's desired verdict. Observe actual dispatch settings;
+prompt wording proves neither isolation nor smaller inherited context.
 
-Return concise findings, check facts and accessible evidence references. Keep
-full logs available, showing only decision-relevant excerpts; disclose truncation
-or missing evidence. Reuse one caller-owned handoff instead of multiplying
-plans, receipt summaries and status documents. Machine evidence such as `verdict.v2` is optional
+Return concise findings, check facts and evidence references in the existing
+handoff; disclose missing or truncated evidence. Derive the combined subject's
+manifest and applicable orphan scan at the integration/judgment boundary.
+Unjudged worker increments supply content identity and check facts, not duplicate
+final evidence bundles. A separately judged subject still needs complete proof.
+Machine evidence such as `verdict.v2` is optional
 unless requested or required by a declared consumer. When no machine
 artifact is requested or required, return the result without creating one.
 

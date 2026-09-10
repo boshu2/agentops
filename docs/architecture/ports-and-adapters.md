@@ -10,7 +10,7 @@ The core has four ports:
 | Port | Input | Output |
 |---|---|---|
 | Plan | Existing bead or caller intent | Same source refined in place, or a concise proposed amendment |
-| Implement | Resolved intent | Runtime-derived subject manifest and check receipts, or `NOT_BUILT` |
+| Implement | Resolved intent | Runtime-derived content identity and check facts; subject manifest at the judgment boundary, or `NOT_BUILT` |
 | Validate | Intent digest, exact subject, receipts, independent context identity | `PASS | FAIL | NOT_PROVEN`; optional `verdict.v2` |
 | Report | Phase outputs | Interactive result; optional `rpi-report.v1` |
 
