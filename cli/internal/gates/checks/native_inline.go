@@ -31,16 +31,16 @@ func init() {
 }
 
 // changedFilesFor preserves the routed fast scope, including a valid empty
-// set. Full checks enumerate repository files and propagate discovery failures
-// rather than mistaking them for an empty diff. Both modes exclude installed
-// skill copies, which are not repository source.
+// set. Full mode retains these native checks' origin/main...HEAD change scope
+// and propagates discovery failures rather than mistaking them for an empty
+// diff. Both modes exclude installed skill copies, which are not repo source.
 func changedFilesFor(ctx context.Context, rc gates.RunContext) ([]string, error) {
 	if rc.Mode != gates.Full {
 		return gates.FilterInstalledSkillCopies(rc.ChangedFiles), nil
 	}
-	files, err := gates.NewGitChangedFiles(rc.RepoRoot).All(ctx)
+	files, err := gates.NewGitChangedFiles(rc.RepoRoot).Changed(ctx, gates.Scope(gates.ScopeRangePrefix+"origin/main...HEAD"))
 	if err != nil {
-		return nil, fmt.Errorf("enumerate repository files for full checks: %w", err)
+		return nil, fmt.Errorf("discover full-mode changed files: %w", err)
 	}
 	return gates.FilterInstalledSkillCopies(files), nil
 }

@@ -178,16 +178,6 @@ func (g *GitChangedFiles) Changed(ctx context.Context, scope Scope) ([]string, e
 	return dedupePaths(out), nil
 }
 
-// All returns tracked and non-ignored untracked repository files. Full checks
-// inspect the current repository, independently of branch or remote history.
-func (g *GitChangedFiles) All(ctx context.Context) ([]string, error) {
-	out, err := g.exec(ctx, "ls-files", "--cached", "--others", "--exclude-standard", "-z")
-	if err != nil {
-		return nil, err
-	}
-	return dedupePaths(out), nil
-}
-
 // unbornHeadError translates a failed change-set computation into the friendly
 // ErrUnbornHead message when — and only when — the cause really is "this repo
 // has no commits yet". It runs only on the failure path, so the happy path
