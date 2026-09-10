@@ -1093,7 +1093,7 @@ func (d skillsIntegrityHygieneDetector) Detect(env *DetectEnv) ([]Finding, error
 			File:  "skills",
 			Query: "hygiene: " + strings.Join(kinds, ", "),
 		},
-		Remediation: remediation(d.ID(), true, unlinked),
+		Remediation: remediation(d.ID(), unlinked > 0, unlinked),
 	}}, nil
 }
 
@@ -1166,9 +1166,8 @@ func (f skillsIntegrityHygieneFixer) Fix(ctx *MutateContext, env *DetectEnv, _ [
 		}
 	}
 	if len(bySkill) == 0 {
-		// Nothing safely fixable; report-only findings remain. A successful
-		// run with nothing to fix, not a refusal.
-		res.Fixed = true
+		// The scan succeeded, but the report-only findings remain unresolved.
+		res.Fixed = false
 		return res, nil
 	}
 	// 3/4. Append a references block to each affected SKILL.md.
@@ -1213,13 +1212,19 @@ func (f skillsIntegrityHygieneFixer) Fix(ctx *MutateContext, env *DetectEnv, _ [
 	}
 	// 5. Verify: no UNLINKED finding may remain. Report-only findings may.
 	if !ctx.DryRun {
-		post, _, _ := scanSkillHygiene(env.RepoRoot)
+		post, _, err := scanSkillHygiene(env.RepoRoot)
+		if err != nil {
+			res.Err = fmt.Errorf("doctor: %s: verify hygiene: %w", f.ID(), err)
+			return res, res.Err
+		}
 		for _, h := range post {
 			if h.Kind == "UNLINKED" {
 				res.Err = fmt.Errorf("doctor: %s: fix did not eliminate the unlinked-reference findings", f.ID())
 				return res, res.Err
 			}
 		}
+		res.Fixed = len(post) == 0
+		return res, nil
 	}
 	res.Fixed = true
 	return res, nil
