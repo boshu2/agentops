@@ -1,6 +1,6 @@
 ---
 name: dcg
-user-invocable: false
+user-invocable: true
 skill_api_version: 1
 hexagonal_role: supporting
 consumes: []
@@ -11,9 +11,9 @@ metadata:
   capabilities: [dcg]
   effects: [write_dcg_config]
   canonical_status: canonical
-  disposition: keep_specialist
+  disposition: keep_optional_adapter
   tier: execution
-description: 'Handle blocked destructive commands and configure agent safety guardrails. Triggers: "dcg", "handle a DCG block", "configure agent safety guardrails".'
+description: 'Diagnose a Destructive Command Guard block or configure its rules. Use when: DCG rejected an operation or policy work is requested; never disguise commands to bypass it.'
 practices:
 - pragmatic-programmer
 output_contract: the blocked command, matched rule, surviving risk, and validated safe alternative; config writes only when explicitly requested

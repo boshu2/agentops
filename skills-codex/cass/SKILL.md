@@ -1,6 +1,6 @@
 ---
 name: cass
-description: 'Mine past agent sessions for working prompts, decisions, and patterns (session archaeology). Triggers: "cass", "mine past agent sessions for", "cass skill".'
+description: 'Search agent session logs and cited episodes with CASS. Use when: past prompts, decisions or failures may answer a question; repeated text is not a proven lesson.'
 ---
 # cass Session Search
 

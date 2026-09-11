@@ -6,11 +6,17 @@
   "task": "Several queued work items touch disjoint files and the caller wants them run at once without the workers colliding.",
   "query": "dispatch these independent tasks to parallel workers without collisions",
   "top_k": 3,
-  "expected_selected_ids": ["swarm"],
-  "critical_omitted_ids": ["agent-native"],
-  "forbidden_leaks": ["^(fitness|status)$"],
+  "expected_selected_ids": [
+    "agent-native"
+  ],
+  "critical_omitted_ids": [
+    "codex-exec"
+  ],
+  "forbidden_leaks": [
+    "^(swarm|fitness|status|reality-check)$"
+  ],
   "min_provenance_density": 1.0,
   "max_tokens": 80,
-  "rationale": "swarm dispatches explicit disjoint packets exactly once — the caller's request verbatim. agent-native is the persistent-worker adjacent skill and answers a different question (role-shaped panes, not one-shot packets), so it stays out of the pack. fitness and status currently fill ranks 2-3 on generic verbs; pinning them out of rank 1 catches the day a generic skill outranks the specific one.",
-  "notes": "Derived from the rt-01-parallel-safety routing template, narrowed to the dispatch half (the template also admits beads-bv and agent-mail for the ordering and reservation halves)."
+  "rationale": "Agent-native now owns explicit disjoint packet dispatch through the caller-selected runtime. Codex-exec executes one supplied command, while reality-check reports a claim or requested measurement; neither owns a batch of independent work packets.",
+  "notes": "Owner migrated from swarm when packet dispatch was consolidated into agent-native. The caller still requests concurrent dispatch with noncolliding write scopes; historical routing measurements retain their original subject."
 }

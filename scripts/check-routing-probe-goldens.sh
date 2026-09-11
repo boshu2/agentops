@@ -3,10 +3,9 @@
 # evals/routing-probes/goldens/.
 #
 # WHY: evals/routing-probes/ measures P(right skill loaded | applicable task).
-# Its only runs so far were three 2026-08-05 in-session subagent batches — a
-# live-model method that cannot run in CI and produced n=3 with one contaminated
-# row. The catalog can therefore drift (a renamed skill, a reworded description,
-# a new skill that outranks the right one) with nothing that notices. This gate
+# Live-model batches have their own authorization, context and contamination
+# limits. The catalog can drift when a skill is renamed or a description makes
+# the wrong owner win. This gate
 # grades the OFFLINE, DETERMINISTIC half of routing: `ao skills find`, the
 # repo's own token-overlap discovery surface, against hand-authored goldens in
 # schemas/pack-quality-expectations.v1.schema.json shape.

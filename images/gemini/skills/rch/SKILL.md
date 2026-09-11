@@ -1,6 +1,6 @@
 ---
 name: rch
-user-invocable: false
+user-invocable: true
 skill_api_version: 1
 hexagonal_role: supporting
 consumes: []
@@ -11,9 +11,9 @@ metadata:
   capabilities: [rch]
   effects: [remote_compilation_offload, authorized_remote_daemon_worker_mutation]
   canonical_status: canonical
-  disposition: keep_specialist
+  disposition: keep_optional_adapter
   tier: execution
-description: 'Use RCH once to offload a build or collect remote-compilation diagnostics. Triggers: "use RCH", "offload this build".'
+description: 'Offload one build through RCH or diagnose its remote compiler. Use when: remote compilation is selected; report errors without creating a retry controller.'
 practices:
 - pragmatic-programmer
 output_contract: remote compilation status and diagnostic evidence

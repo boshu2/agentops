@@ -1,10 +1,10 @@
 ---
 name: cass
-description: 'Mine past agent sessions for working prompts, decisions, and patterns (session archaeology). Triggers: "cass", "mine past agent sessions for", "cass skill".'
+description: 'Search agent session logs and cited episodes with CASS. Use when: past prompts, decisions or failures may answer a question; repeated text is not a proven lesson.'
 practices:
 - pragmatic-programmer
 skill_api_version: 1
-user-invocable: false
+user-invocable: true
 hexagonal_role: supporting
 consumes: []
 produces: []
@@ -15,7 +15,7 @@ metadata:
   capabilities: [cass]
   effects: [rebuild_local_index, sync_remote_sources, download_semantic_model]
   canonical_status: canonical
-  disposition: keep_specialist
+  disposition: keep_optional_adapter
   tier: execution
   external_dependencies:
   - "cass binary (>=0.3.6 recommended; some commands require HEAD \u2014 see Version Pinning)"

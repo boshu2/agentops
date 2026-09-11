@@ -22,11 +22,11 @@ skills/doc/references/doc.feature
 skills/doc/references/oss-docs.feature
 skills/doc/references/readme.feature
 skills/postmortem/references/postmortem.feature
-skills/learn/references/learn.feature
+skills/memory/references/learn/learn.feature
 skills/premortem/references/premortem.feature
 skills/refactor/references/refactor.feature
 skills/reverse-engineer/references/reverse-engineer.feature
-skills/scaffold/references/scaffold.feature
+skills/implement/references/scaffold/scaffold.feature
 skills/security/references/security-suite.feature
 skills/security/references/security.feature
 skills/skill-builder/references/heal.feature

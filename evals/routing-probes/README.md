@@ -1,19 +1,18 @@
 # Routing probes — P(skill loaded | applicable task)
 
-> Every efficacy number in `evals/skill-probes/` measures the skill's effect
-> GIVEN it was injected. This directory measures the multiplier the benchmarks
-> all skip (the ecological-validity critique in
-> docs/research/skill-eval-sota-standards-2026-08.md §1.9): with ~150 skills in
-> a flat list, does a real session load the right one unprompted?
+The routing question is whether a natural task makes the appropriate skill
+available and selected. This is separate from whether loading the skill helps:
+behavioral probes in `evals/skill-probes/` condition on skill content already
+being supplied.
 
 ## Method (v1 — in-session subagent batch)
 
 A routing scenario is a realistic task prompt in which exactly one (or a small
 set of) catalog skill(s) is applicable — the prompt NEVER names the skill or
 quotes its trigger phrases verbatim. Dispatch each scenario to a fresh
-in-session subagent (sonnet-class worker tier; the sanctioned Claude lane —
-subagents see the same skill listing real sessions do). Two deterministic
-signals per run:
+context using the caller-authorized runtime, model, effort, and bounds. Record
+the catalog actually supplied and any inherited context. For the historical
+Claude adapter, two observable signals were used:
 
 1. the session telemetry log (`.agents/ao/skill-telemetry.jsonl`, written by
    the opt-in PostToolUse hook when wired) gains a row for the expected skill
@@ -29,9 +28,9 @@ context-pollution problem.
 
 - Measures ROUTING, not efficacy — a ROUTED-but-useless skill still counts as
   routed; efficacy lives in skill-probes/.
-- Subagent context is not byte-identical to a fresh top-level session (it
-  inherits project CLAUDE.md but not user history); treat rates as an upper
-  bound on discoverability, label the runner in every scorecard.
+- A subagent or provided-catalog prompt is not an isolated fresh top-level
+  installation. Record the actual dispatch configuration and label conclusions
+  by that surface; prompt wording alone does not prove runtime isolation.
 - Scenario prompts must avoid trigger-phrase leakage: if the prompt quotes the
   skill's own trigger strings, the probe measures string matching, not routing.
 
@@ -45,14 +44,15 @@ runner instantiates placeholder strings freshly per run.
 
 ## Scenarios
 
-`scenarios.json`: id, prompt, applicable (skill slugs), decoys-tempting
-(skills a confused router might pick), rationale.
+`templates.json` contains task prompts, applicable owner IDs, and placeholders.
+`instantiate.py` supplies fresh scenario values for a selected run. Historical
+captures retain the skill names and catalog they actually observed.
 
 ## Method (v2 — offline deterministic goldens)
 
-The v1 method needs a live model, so it cannot run unattended and has produced
-exactly three rows (2026-08-05, one of them contaminated). `goldens/` adds the
-half that CAN run offline every night: hand-authored fixtures in
+The v1 method needs an authorized live-model run. Its recorded batches have
+context and contamination limits; they are not an inventory-wide routing score.
+`goldens/` supplies the offline check: hand-authored fixtures in
 [`schemas/pack-quality-expectations.v1.schema.json`](../../schemas/pack-quality-expectations.v1.schema.json)
 shape, graded against `ao skills find` — the repo's own deterministic
 token-overlap discovery surface — by
@@ -85,7 +85,7 @@ literal queries cannot contaminate it. That protection is why goldens are
 graded offline and why a golden query must never be reused as a live-dispatch
 prompt.
 
-### Standing finding (2026-08-26) — CLOSED same day
+### Historical ranker finding (2026-08-26) — closed on that subject
 
 `rq-04-independent-verdict` was red at authoring: six natural ways to ask for
 an independent verdict on finished work failed to surface `validate` in the

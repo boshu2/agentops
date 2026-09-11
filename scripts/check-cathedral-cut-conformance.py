@@ -54,11 +54,7 @@ FORBIDDEN_SCHEMA_STATE = {
     "retry", "retries", "budget", "queue", "claim", "lease", "admission",
     "next_action", "next-action", "closure", "release", "delivery",
 }
-# ADR-0017 (loop as control flow, not knowledge): `crank` is restored as a thin
-# wave skill — one caller-selected wave per invocation, forwarding the caller's
-# repair bound to RPI. The `ao crank` ROOT COMMAND stays removed and is still
-# tombstoned in REMOVED_COMMANDS below; `converge` stays removed as a skill
-# because its criterion now lives inside RPI's convergence law.
+# Wave dispatch is now an implementation mode; no separate crank/swarm root.
 REMOVED_SKILLS = {
     "discovery", "behavior-first-planning", "goal-design", "converge",
     "evolve", "gc-membrane", "pawl-review", "push", "release", "pr-prep",
@@ -67,6 +63,10 @@ REMOVED_SKILLS = {
     # a tombstone with no consumer, and scope's checks folded into plan.
     # Reintroducing any of the three fails this gate.
     "goals", "shared", "scope",
+    "product", "one-way-door", "anti-ceremony", "codebase-recon", "pattern-mining",
+    "learn", "toil-mining", "bootstrap", "handoff", "scaffold", "workflow-builder",
+    "automation-shape-routing", "crank", "converter", "operationalize", "standards",
+    "fitness", "status", "route", "human-only-skills", "swarm",
 }
 REMOVED_MORTEM_ALIASES = {
     "pre-mortem", "pre_mortem", "post-mortem", "post_mortem",
@@ -993,14 +993,11 @@ def check_skill_graph() -> None:
         for name in CORE
     }
     assert actual == expected, f"core dependency graph mismatch: {actual}"
-    # ADR-0017: crank is the one non-core skill with a hard dependency, on rpi
-    # alone; the skill mesh generator carries the same allowance.
-    allowed_extra = {"crank": {"rpi"}}
     for name, entry in entries.items():
         deps = set((entry.get("metadata") or {}).get("dependencies") or [])
         if name != "rpi":
-            assert deps == allowed_extra.get(name, set()), (
-                f"{name}: only rpi (and crank on rpi, ADR-0017) may declare hard dependencies: {sorted(deps)}"
+            assert not deps, (
+                f"{name}: only rpi may declare hard dependencies: {sorted(deps)}"
             )
     for name in REMOVED_SKILLS:
         assert not (ROOT / "skills" / name / "SKILL.md").exists(), f"removed skill is live: {name}"
@@ -1010,9 +1007,9 @@ def check_skill_graph() -> None:
         assert not (ROOT / "skills-codex" / name).exists(), f"removed Codex alias is live: {name}"
     assert (ROOT / "skills" / "premortem" / "SKILL.md").is_file()
     assert (ROOT / "skills" / "postmortem" / "SKILL.md").is_file()
-    swarm = entries["swarm"]
-    assert not ((swarm.get("metadata") or {}).get("dependencies") or []), "swarm must remain optional"
-    assert "dispatch_once" in (ROOT / "skills" / "swarm" / "SKILL.md").read_text(encoding="utf-8")
+    adapter = entries["agent-native"]
+    assert not ((adapter.get("metadata") or {}).get("dependencies") or []), "runtime dispatch must remain optional"
+    assert "scripts/swarm/dispatch_once.py" in (ROOT / "skills" / "agent-native" / "SKILL.md").read_text(encoding="utf-8")
 
 
 def check_generated_skill_inventory() -> None:
@@ -1279,7 +1276,7 @@ def check_tombstones() -> None:
 
 
 def check_dispatch_once() -> None:
-    path = ROOT / "skills" / "swarm" / "scripts" / "dispatch_once.py"
+    path = ROOT / "scripts" / "swarm" / "dispatch_once.py"
     spec = importlib.util.spec_from_file_location("cathedral_dispatch_once", path)
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)

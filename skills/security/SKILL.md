@@ -1,6 +1,6 @@
 ---
 name: security
-description: 'Run authorized repository security scans for vulnerabilities, dependency risk, secrets, and binary policy. Triggers: "security", "run repository security scans for", "security skill".'
+description: 'Review code or scan for security vulnerabilities, secrets, dependencies and prompt risks. Use when: concrete exposure needs assessment; never silently change policy.'
 practices:
 - supply-chain-integrity
 - design-by-contract
@@ -16,6 +16,7 @@ context_rel:
 - kind: supplier-to
   with: validate
 skill_api_version: 1
+user-invocable: true
 context:
   window: fork
   intent:

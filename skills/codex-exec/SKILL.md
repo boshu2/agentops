@@ -1,8 +1,8 @@
 ---
 name: codex-exec
-description: 'Run one caller-supplied Codex command non-interactively and capture evidence. Triggers: "run Codex headless", "capture Codex evidence".'
+description: 'Run one prompt through headless Codex and capture its result. Use when: requesting a single noninteractive Codex process. Not for worker batches or retries.'
 skill_api_version: 1
-user-invocable: false
+user-invocable: true
 hexagonal_role: driving-adapter
 practices:
 - pragmatic-programmer

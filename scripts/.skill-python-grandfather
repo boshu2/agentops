@@ -37,5 +37,3 @@ skills/skill-builder/scripts/conformance_profile.py
 skills/skill-builder/scripts/craft_score.py
 skills/skill-builder/scripts/scan_descriptions.py
 skills/skill-builder/scripts/score_agentops_skill.py
-skills/swarm/scripts/dispatch_once.py
-skills/toil-mining/scripts/recent_human.py

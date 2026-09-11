@@ -190,9 +190,9 @@ measuring whether the *model* routes there — disabling model invocation makes
 that probe structurally unmeasurable). A skill reached by any of those stays
 model-invoked.
 
-Codex has no equivalent switch and strips the key; see
-`docs/contracts/codex-skill-api.md`. The current human-only roster and the
-argument for each entry live in `skills/human-only-skills/SKILL.md`.
+Runtime treatment of explicit invocation is defined in
+`docs/contracts/codex-skill-api.md`. The generated `docs/SKILL-ROUTER.md`
+describes the current skills; callers no longer need a separate roster skill.
 
 ### `metadata`
 

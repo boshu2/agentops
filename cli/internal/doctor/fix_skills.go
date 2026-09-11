@@ -771,9 +771,8 @@ func staleRefLineHasCommand(line, cmd string) bool {
 
 // staleRefAmbiguousCommands returns the deprecated commands in raw for which
 // BOTH the old form AND its replacement appear on ordinary (non-rename-doc)
-// lines. A file in this state is ambiguous under the migration-owner discipline
-// (skills/standards/references/migration-owner.md, rule 3): the owner cannot
-// tell a genuine stale usage from a deliberate reference, so it must refuse to
+// lines. A file in this state is ambiguous: the fixer cannot tell a genuine
+// stale usage from a deliberate reference, so it must refuse to
 // rewrite rather than guess. Each entry is rendered "old / new".
 func staleRefAmbiguousCommands(raw []byte) []string {
 	oldSeen := make(map[string]bool)
@@ -857,8 +856,7 @@ func (f skillsStaleCommandRefsFixer) Fix(ctx *MutateContext, env *DetectEnv, _ [
 			res.Err = fmt.Errorf("doctor: %s: read %s: %w", f.ID(), file, err)
 			return res, res.Err
 		}
-		// Migration-owner discipline (skills/standards/references/migration-owner.md,
-		// rule 3): REFUSE an ambiguous fix. A file that holds BOTH a deprecated
+		// REFUSE an ambiguous fix. A file that holds BOTH a deprecated
 		// command AND its replacement cannot be rewritten without guessing which
 		// reference the author meant to keep — skip it and surface it; a human
 		// decides. The refusal is scoped to the file, never the whole run.
