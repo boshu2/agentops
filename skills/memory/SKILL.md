@@ -9,6 +9,7 @@ consumes: []
 produces:
 - applicable-context
 - reviewed-topic-pages
+- ranked-toil-evidence
 context_rel: []
 skill_api_version: 1
 user-invocable: true
@@ -16,11 +17,11 @@ metadata:
   graph_root: true
   tier: execution
   dependencies: []
-  capabilities: [recall_applicable_context, mine_supported_observations, curate_topic_pages]
-  effects: [write_protected_drafts, update_authorized_topic_pages]
+  capabilities: [recall_applicable_context, mine_supported_observations, curate_topic_pages, toil_mining]
+  effects: [write_protected_drafts, update_authorized_topic_pages, write_requested_toil_report]
   canonical_status: canonical
   disposition: keep_off_path
-output_contract: 'bounded applicable evidence or no-match; reviewed topic-page updates or no-change, with support, limits and unresolved gaps'
+output_contract: 'bounded applicable evidence or no-match; reviewed topic-page updates or no-change; ranked toil evidence with support, limits and unresolved gaps'
 ---
 
 # Memory
@@ -36,10 +37,12 @@ background mining. A trivial edit can proceed directly to implementation.
 | An earlier constraint may change the next action | [Recall](references/recall.md) |
 | Learn from a bounded set of episodes, failures or corrections | [Mine / learn](references/mine-learn.md) |
 | Update, qualify, consolidate or retire a supported claim | [Curate / qualify / retire](references/curate.md) |
+| Find repeated operational friction in supplied history | [Toil evidence](#toil-evidence) |
 
-`learn` remains a compatible optional entrypoint for the mine/learn operation.
-Specialist miners and operationalization tools are optional, never hard edges.
-Do not load all operation references just because Memory was selected.
+Mine/learn includes bounded verdicts, corrections and failed or harmful reuse;
+it is not a required completion step. The optional
+[OKF page profile](references/learn/okf-page-profile.md) checks structure only.
+Do not load every operation reference just because Memory was selected.
 
 ## One authority per fact
 
@@ -82,6 +85,33 @@ Saved pages, retrieval counts and structural checks prove no benefit. Only later
 work can demonstrate that reuse changed an action and helped its outcome; keep
 failed, harmful and no-change results. Mining is separately budgeted off-path
 and cannot delay finishing an already authorized change or alter its verdict.
+
+## Toil evidence
+
+Read only the explicitly supplied, authorized history within the stated window.
+Preserve queries, filters and representative source references. Exclude machine
+echoes and restored copies before clustering equivalent human actions. For
+supplied Codex JSONL in a source checkout, the optional helper
+`python3 scripts/toil-mining/recent_human.py --since <zoned-time> --until <zoned-time>
+<explicit-session-paths>` extracts to stdout without discovering sessions or
+reading attachments. Missing `client_id`, malformed records and exclusions stay
+counted and disclosed; the extractor does not itself infer toil. It is not
+bundled with standalone skill installs and adds no Python runtime dependency
+to ordinary Memory use.
+
+Report frequency, observed elapsed/token cost and failure or correction rate
+separately. A recurring-toil claim needs three resolvable occurrences; smaller
+groups remain tentative with their actual count. For a composite ranking, show
+the measured inputs and formula; missing factors remain unmeasured, never an
+invented average. Rank by demonstrated burden, not frequency or salience alone.
+Each candidate includes clustering confidence, representative evidence, limits
+and the smallest plausible automation shape. Separate observations from advice.
+
+Return the ranked evidence inline by default, with checked/not-checked sources.
+Only write a report when requested, using the authorized destination under the
+storage rules above. Mining creates no tracker items, automations, ownership or
+queue. A packaging request can use [Skill Builder](../skill-builder/SKILL.md);
+evidence alone grants no authority to adopt a rule or schedule a job.
 
 ## Prompt
 
