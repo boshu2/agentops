@@ -13,7 +13,7 @@ metadata:
   canonical_status: canonical
   disposition: keep_optional_adapter
   tier: execution
-description: 'Inspect storage pressure with SBH and perform a specifically authorized recovery action. Use when: diagnosing disk pressure or selecting SBH recovery; inspection alone does not authorize deletion.'
+description: 'Inspect disk pressure with SBH and perform an authorized recovery action. Use when: storage diagnosis or SBH recovery is requested; inspection does not authorize deletion.'
 practices:
 - pragmatic-programmer
 output_contract: disk pressure observations and authorized action result

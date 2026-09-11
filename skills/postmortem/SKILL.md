@@ -1,6 +1,6 @@
 ---
 name: postmortem
-description: 'Test a retrospective causal question against outcome evidence. Use when: the caller explicitly requests a postmortem; a finished task does not automatically require a report or a new lesson.'
+description: 'Test a retrospective causal question against outcome evidence. Use when: a postmortem is explicitly requested; finishing a task does not require a report or lesson.'
 practices:
 - sre
 - lean-startup

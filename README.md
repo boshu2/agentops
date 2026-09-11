@@ -255,6 +255,31 @@ intent examples, domain language and interface-focused tests. These are design
 influences, not a claim of compliance with a formal Pocock standard or measured
 improvement in coding outcomes.
 
+## Existing installations and former names
+
+This menu consolidates 55 roots into 34. The former slash-command names below
+are removed; select their owner or describe the task in ordinary language.
+Useful references and executable helpers have been moved with their consumers.
+
+| Former entries | Current owner |
+|---|---|
+| product, one-way-door, anti-ceremony | plan |
+| codebase-recon, pattern-mining | research |
+| learn, toil-mining | memory |
+| bootstrap, handoff | doc |
+| scaffold, workflow-builder, automation-shape-routing, crank | implement |
+| converter, operationalize | skill-builder |
+| standards | domain |
+| fitness, status | reality-check |
+| swarm | agent-native |
+| route, human-only-skills | generated Skill Router and native invocation policy |
+
+For checkout-linked installs, preview `ao skills unlink --dry-run`, then use
+`ao skills unlink` and `ao skills link` from the tracked checkout to refresh
+owned links. Unlink preserves real directories and foreign links. Inspect and
+back up obsolete copied packages separately; a new install does not silently
+remove those copies. Plugin bundles receive the regenerated catalog on update.
+
 ## Evidence contract
 
 A `PASS` binds unchanged acceptance, a deterministic subject manifest, complete
