@@ -387,6 +387,51 @@ func TestMineSession_DistinctCheckpointSameContent(t *testing.T) {
 	}
 }
 
+func TestMineSession_DryRunPreservesInputs(t *testing.T) {
+	dir := t.TempDir()
+	const first = "{\"type\":\"tool_use\",\"tool_name\":\"Read\",\"tool_input\":{}}\n"
+	const second = "{\"type\":\"tool_use\",\"tool_name\":\"Bash\",\"tool_input\":{}}\n"
+	sess := writeMineSession(t, dir, "session.jsonl", first)
+	state := filepath.Join(dir, "state.json")
+	opts := MineOptions{File: sess, State: state}
+	if _, err := mine(t, opts); err != nil {
+		t.Fatal(err)
+	}
+	before, err := os.ReadFile(state)
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeMineSession(t, dir, "session.jsonl", first+second)
+	opts.DryRun = true
+	var silent bytes.Buffer
+	if err := MineSession(opts, &silent); err != nil || silent.Len() != 0 {
+		t.Fatalf("dry-run without JSON: output %q, error %v", silent.String(), err)
+	}
+	preview, err := mine(t, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if events := parseMineEvents(t, preview); len(events) != 1 || events[0].Tool != "Bash" || events[0].SourceLine != 2 {
+		t.Errorf("dry-run must honor prior watermark: %+v", events)
+	}
+	if repeated, err := mine(t, opts); err != nil || repeated != preview {
+		t.Errorf("repeated dry-run changed pending events: %q, error %v", repeated, err)
+	}
+	if after, err := os.ReadFile(state); err != nil || !bytes.Equal(after, before) {
+		t.Errorf("dry-run changed checkpoint: before %q, after %q, error %v", before, after, err)
+	}
+	if after, err := os.ReadFile(sess); err != nil || string(after) != first+second {
+		t.Errorf("dry-run changed source: %q, error %v", after, err)
+	}
+	opts.DryRun = false
+	if normal, err := mine(t, opts); err != nil || normal != preview {
+		t.Errorf("normal run = %q, want preview %q, error %v", normal, preview, err)
+	}
+	if repeated, err := mine(t, opts); err != nil || repeated != "" {
+		t.Errorf("normal repeat replayed events: %q, error %v", repeated, err)
+	}
+}
+
 func TestMineSession_IncrementalIdempotentRollback(t *testing.T) {
 	dir := t.TempDir()
 	state := filepath.Join(dir, "state.json")

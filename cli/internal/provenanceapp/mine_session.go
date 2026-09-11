@@ -53,9 +53,10 @@ type mineState struct {
 
 // MineOptions carries the mine-session flag inputs from the command module.
 type MineOptions struct {
-	File  string
-	State string
-	JSON  bool
+	File   string
+	State  string
+	JSON   bool
+	DryRun bool // Preview pending events without changing State.
 }
 
 // MineSession parses a Claude Code or Codex session transcript and emits the
@@ -132,7 +133,8 @@ func MineSession(opts MineOptions, out io.Writer) error {
 	}
 
 	// --- persist the watermark ------------------------------------------------
-	if mineStatePath != "" {
+	// Dry-run uses the same prior watermark and events, but leaves them pending.
+	if mineStatePath != "" && !opts.DryRun {
 		highest := startAfter
 		for _, m := range result.Messages {
 			if m.MessageIndex > highest {
