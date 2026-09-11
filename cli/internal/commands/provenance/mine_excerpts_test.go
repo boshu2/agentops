@@ -110,3 +110,74 @@ func TestMineSessionDefaultRetainsEventsAndCheckpoint(t *testing.T) {
 		t.Fatalf("checkpoint replay: output=%q err=%v", out, err)
 	}
 }
+
+func TestMineSessionDryRunPreservesCheckpoint(t *testing.T) {
+	for _, existing := range []bool{false, true} {
+		name := "missing"
+		if existing {
+			name = "existing"
+		}
+		t.Run(name, func(t *testing.T) {
+			dir := t.TempDir()
+			source, state := filepath.Join(dir, "session.jsonl"), filepath.Join(dir, "state.json")
+			const first = "{\"type\":\"tool_use\",\"tool_name\":\"Read\",\"tool_input\":{}}\n"
+			const second = "{\"type\":\"tool_use\",\"tool_name\":\"Bash\",\"tool_input\":{}}\n"
+			if err := os.WriteFile(source, []byte(first), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			run := func(dry bool) string {
+				t.Helper()
+				root := NewModule(clicontract.HostOptions{DryRun: func() bool { return dry }}).Command()
+				var out bytes.Buffer
+				root.SetOut(&out)
+				root.SetArgs([]string{"mine-session", "--file", source, "--state", state})
+				if err := root.Execute(); err != nil {
+					t.Fatal(err)
+				}
+				return out.String()
+			}
+			var before []byte
+			wantTools := "Read,Bash"
+			if existing {
+				run(false)
+				var err error
+				before, err = os.ReadFile(state)
+				if err != nil {
+					t.Fatal(err)
+				}
+				wantTools = "Bash"
+			}
+			if err := os.WriteFile(source, []byte(first+second), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			preview := run(true)
+			var tools []string
+			for _, line := range strings.Split(strings.TrimSpace(preview), "\n") {
+				var event struct {
+					Tool string `json:"tool"`
+				}
+				if err := json.Unmarshal([]byte(line), &event); err != nil {
+					t.Fatal(err)
+				}
+				tools = append(tools, event.Tool)
+			}
+			if got := strings.Join(tools, ","); got != wantTools {
+				t.Errorf("dry-run tools = %q, want %q", got, wantTools)
+			}
+			after, err := os.ReadFile(state)
+			if existing {
+				if err != nil || !bytes.Equal(after, before) {
+					t.Errorf("dry-run changed checkpoint: before %q, after %q, error %v", before, after, err)
+				}
+			} else if !os.IsNotExist(err) {
+				t.Errorf("dry-run created checkpoint: %q, error %v", after, err)
+			}
+			if normal := run(false); normal != preview {
+				t.Errorf("normal run = %q, want preview %q", normal, preview)
+			}
+			if repeat := run(false); repeat != "" {
+				t.Errorf("normal repeat replayed events: %q", repeat)
+			}
+		})
+	}
+}

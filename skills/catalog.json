@@ -613,9 +613,7 @@
         "postmortem"
       ],
       "codex_override_present": true,
-      "consumes": [
-        "verdict.v2"
-      ],
+      "consumes": [],
       "context_rel": [],
       "dependencies": [],
       "description": "Test a retrospective causal question against outcome evidence. Use when: a postmortem is explicitly requested; finishing a task does not require a report or lesson.",
