@@ -1,6 +1,6 @@
 ---
 name: refactor
-description: 'Execute one behavior-preserving structural transformation and report evidence. Triggers: "refactor this", "simplify without changing behavior".'
+description: 'Simplify structure, interfaces or responsibilities while preserving observable behavior. Use when: the caller requests a focused refactor; feature changes and architecture churn need their own intent.'
 practices:
 - refactoring
 - legacy-code-seams
@@ -12,6 +12,7 @@ produces:
 - code-changes
 context_rel: []
 skill_api_version: 1
+user-invocable: true
 context:
   window: fork
   intent:

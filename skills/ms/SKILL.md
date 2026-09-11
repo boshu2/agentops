@@ -1,10 +1,10 @@
 ---
 name: ms
-description: 'meta_skill (ms) — the skill-search/load engine over both corpora (agentops + jsm). Find a skill for a task, search skills, or load runnable skill guidance. Triggers: "ms", "meta_skill", "skill search", "find a skill for", "load skill guidance".'
+description: 'Find and load skill guidance with the configured meta_skill search engine. Use when: searching a larger skill corpus for a task; use CASS for past sessions and Skill Builder for authoring packages.'
 practices:
 - pragmatic-programmer
 skill_api_version: 1
-user-invocable: false
+user-invocable: true
 hexagonal_role: supporting
 consumes: []
 produces: []
@@ -14,7 +14,7 @@ metadata:
   capabilities: [ms]
   effects: [spawn_search_server, write_feedback_outcomes, rebuild_search_index]
   canonical_status: canonical
-  disposition: keep_specialist
+  disposition: keep_optional_adapter
   tier: execution
   external_dependencies:
   - "ms binary (Jeffrey Emanuel's meta_skill). The 0.1.2 release binary corrupts IDs on Anthropic-frontmatter skills, so it must be built from a source checkout carrying the frontmatter-id fix; this operator builds from ~/dev/meta_skill, branch local/frontmatter-id."

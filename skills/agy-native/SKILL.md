@@ -1,6 +1,6 @@
 ---
 name: agy-native
-description: 'Use an explicitly selected AGY runtime for one provided packet or fresh validator context. Triggers: "agy", "antigravity", "AGY evidence".'
+description: 'Run a supplied task in the AGY Antigravity runtime and collect its result. Use when: the caller explicitly selects AGY; not a fallback for ordinary native coding work.'
 practices: [team-topologies, design-by-contract]
 hexagonal_role: driving-adapter
 consumes: [explicit-packet]
@@ -9,7 +9,7 @@ context_rel:
 - kind: separate-ways
   with: codex-exec
 skill_api_version: 1
-user-invocable: false
+user-invocable: true
 metadata:
   tier: cross-vendor
   dependencies: []

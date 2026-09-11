@@ -1,6 +1,6 @@
 ---
 name: agent-native
-description: 'Operate explicit orchestrator, implementer, validator, and scribe roles through a caller-selected agent runtime. Triggers: "agent-native factory", "role-shaped agent panes", "persistent workers".'
+description: 'Dispatch independent tasks to parallel workers or operate caller-selected persistent roles. Use when: delegation is authorized and write scopes are disjoint; runtime completion does not validate output.'
 practices: [team-topologies, design-by-contract]
 hexagonal_role: supporting
 consumes: [explicit-role-packets]
@@ -82,7 +82,7 @@ symlink or runtime isolation. The reference batch contract rejects nonempty
 Dispatch each validated packet once and preserve its identity with the result:
 candidate, evidence or executor error. Do not partly launch a batch that later
 fails validation, or retry an error as if it had never happened. Native caller
-authority determines any repair or follow-up. The developer reference is
+authority determines any repair or follow-up. The developer reference
 `scripts/swarm/dispatch_once.py` requires an AgentOps source checkout; it is
 exercised by repository tests and is not bundled with standalone skills.
 Installed use dispatches through the selected native runtime. This optional

@@ -1,6 +1,6 @@
 ---
 name: memory
-description: 'Recall applicable reviewed topic pages or maintain them through separately budgeted mining, learning and curation. Triggers: "memory", "recall prior work", "mine and learn", "curate memory", "qualify or retire a lesson".'
+description: 'Recall reviewed lessons or deliberately mine and curate experience. Use when: prior evidence can change the next action, or the caller selects learning work; no mandatory recall or lesson after every task.'
 practices:
 - evidence-based-engineering
 - continuous-learning

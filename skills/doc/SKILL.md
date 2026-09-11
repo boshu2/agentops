@@ -1,6 +1,6 @@
 ---
 name: doc
-description: 'Generate and validate repo docs, READMEs, and OSS doc packs. Triggers: "doc", "generate and validate repo docs", "doc skill".'
+description: 'Write source-grounded documentation, READMEs, repo instructions or continuity handoffs. Use when: these documents are the requested output; do not create reports as a routine completion ritual.'
 practices:
 - wiki-knowledge-surface
 - code-complete
@@ -13,6 +13,7 @@ produces:
 - session-handoff
 context_rel: []
 skill_api_version: 1
+user-invocable: true
 context:
   window: fork
   intent:

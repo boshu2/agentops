@@ -1,6 +1,6 @@
 ---
 name: test
-description: 'Generate tests and coverage plans. Triggers: "test", "generate tests and coverage plans.", "test skill".'
+description: 'Write or strengthen behavioral tests, practice TDD or investigate important coverage gaps. Use when: test design or missing proof needs work; running an existing suite needs no skill.'
 practices:
 - tdd
 - property-based-testing
@@ -13,6 +13,7 @@ produces:
 - test-evidence
 context_rel: []
 skill_api_version: 1
+user-invocable: true
 context:
   window: fork
   intent:

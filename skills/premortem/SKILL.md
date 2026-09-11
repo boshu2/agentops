@@ -1,6 +1,6 @@
 ---
 name: premortem
-description: 'Fresh-judge a frozen plan. Not for a live decision''s reversibility; that is one-way-door. Triggers: "premortem", "challenge this plan", "one judge", "what could make this plan fail".'
+description: 'Challenge an unexecuted plan for assumptions that could make it fail. Use when: a fresh critical read of a resolved plan is wanted; finished-code judgment belongs to Validate.'
 practices: [design-by-contract, adr]
 hexagonal_role: domain
 consumes: []

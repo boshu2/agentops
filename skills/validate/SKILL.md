@@ -1,6 +1,6 @@
 ---
 name: validate
-description: 'Freshly judge a finished change against its acceptance: PASS, FAIL, or NOT_PROVEN. Not for claim-vs-tree checks; that is reality-check. Triggers: "validate", "is this proven", "check this change", "cross-model review".'
+description: 'Freshly judge whether a finished change is proven against its original acceptance, before merge or handoff. Use when: an independent candidate verdict is needed; author tests alone cannot issue PASS.'
 practices:
 - design-by-contract
 - llm-eval-harness

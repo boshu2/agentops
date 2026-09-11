@@ -1,6 +1,6 @@
 ---
 name: research
-description: 'Answer one bounded question, cited. Not for dissecting a codebase; that is codebase-recon or reverse-engineer. Triggers: "research", "investigate this question", "find evidence".'
+description: 'Answer a bounded question by tracing code, investigating evidence or testing a recurring pattern. Use when: consequential uncertainty needs sources; an external feature teardown belongs to Reverse Engineer.'
 practices:
 - pragmatic-programmer
 - ddd-bounded-context
@@ -13,6 +13,7 @@ produces:
 - pattern-mining.v1
 context_rel: []
 skill_api_version: 1
+user-invocable: true
 allowed-tools: Read, Grep, Glob, Bash, Write
 metadata:
   capabilities: [research, codebase_recon, pattern_mining]

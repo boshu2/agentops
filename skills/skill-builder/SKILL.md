@@ -1,6 +1,6 @@
 ---
 name: skill-builder
-description: 'Create a metadata-complete AgentOps skill source package, regenerate its derived projections, and check or repair structural hygiene in skill packages. Triggers: "create a skill", "scaffold skill", "absorb external skill", "new skill", "heal skill", "repair skill hygiene", "audit skill structure", "check skill package".'
+description: 'Create, adapt, consolidate or repair skill packages and generated projections. Use when: authoring guidance, descriptions or package structure; Skill Eval measures behavior rather than structural conformance.'
 practices:
 - pragmatic-programmer
 - refactoring
@@ -13,6 +13,7 @@ produces:
 - operationalization-proposal
 context_rel: []
 skill_api_version: 1
+user-invocable: true
 context:
   window: fork
   intent:

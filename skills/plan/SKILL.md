@@ -1,6 +1,6 @@
 ---
 name: plan
-description: 'Shape or refine the existing bead or caller intent in place. Triggers: "plan", "discover and plan", "shape this goal", "review write scope", "check scope boundaries", "scope this change".'
+description: 'Describe intended behavior, review write scope and assess decision reversibility before coding. Use when: acceptance or an approach is unclear; reuse the caller intent and stop when work can proceed.'
 practices:
 - bdd-gherkin
 - design-by-contract

@@ -1,6 +1,6 @@
 ---
 name: domain
-description: 'Load the AgentOps language and bounded-context contracts when a term needs precise meaning. Triggers: "define this domain term", "check the bounded context".'
+description: 'Clarify domain terms, bounded contexts and repository conventions for a change. Use when: naming, rule ownership or applicable Go and other language standards are unclear; avoid a full architecture survey.'
 practices:
 - ddd-bounded-context
 - pragmatic-programmer
@@ -10,6 +10,7 @@ produces:
 - domain-language-guidance
 context_rel: []
 skill_api_version: 1
+user-invocable: true
 context:
   window: isolated
   intent:
