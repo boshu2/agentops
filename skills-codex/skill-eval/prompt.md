@@ -1,6 +1,6 @@
 # skill-eval
 
-Measure whether a skill helps a named task or needs revision, removal or more evidence. Use when: a bounded routing or controlled coding evaluation is requested; static conformance alone cannot show benefit.
+Measure whether a skill helps a named task or needs revision or removal. Use when: a bounded routing or coding evaluation is requested; conformance alone cannot show benefit.
 
 ## Instructions
 

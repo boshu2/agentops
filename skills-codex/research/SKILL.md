@@ -1,6 +1,6 @@
 ---
 name: research
-description: 'Answer a bounded question by tracing code, investigating evidence or testing a recurring pattern. Use when: consequential uncertainty needs sources. Not for external feature teardowns; use reverse-engineer.'
+description: 'Trace code or test a recurring pattern to answer one cited question. Use when: uncertainty needs evidence. Not for external feature teardowns; use reverse-engineer.'
 ---
 # Research
 

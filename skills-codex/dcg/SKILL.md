@@ -1,6 +1,6 @@
 ---
 name: dcg
-description: 'Diagnose a Destructive Command Guard block or configure its guardrails. Use when: DCG rejected an operation or the caller requests policy work; do not bypass a block by disguising the command.'
+description: 'Diagnose a Destructive Command Guard block or configure its rules. Use when: DCG rejected an operation or policy work is requested; never disguise commands to bypass it.'
 ---
 <!-- TOC: Core Insight | THE EXACT WORKFLOW | Quick Reference | Safe Alternatives | What Gets Blocked | Anti-Patterns | Configuration | References -->
 

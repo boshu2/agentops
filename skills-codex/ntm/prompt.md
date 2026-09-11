@@ -1,6 +1,6 @@
 # ntm
 
-Operate caller-selected NTM agent panes and inspect their native state. Use when: persistent tmux roles are explicitly requested; pane liveness and prompt delivery are not validation.
+Operate selected NTM agent panes and inspect native state. Use when: persistent tmux roles are requested; pane liveness and prompt delivery are not validation.
 
 ## Instructions
 

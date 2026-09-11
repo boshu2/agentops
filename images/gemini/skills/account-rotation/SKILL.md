@@ -13,7 +13,7 @@ metadata:
   canonical_status: canonical
   disposition: keep_optional_adapter
   tier: execution
-description: 'Switch a coding-agent account and verify its observed identity. Use when: the caller requests an account change on this host; does not allocate quota or switch accounts automatically.'
+description: 'Switch coding-agent accounts and verify runtime identity. Use when: the caller requests an account change; never rotate automatically to evade a quota.'
 practices:
 - pragmatic-programmer
 output_contract: observed account identity and command status

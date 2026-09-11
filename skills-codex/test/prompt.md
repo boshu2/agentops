@@ -1,6 +1,6 @@
 # test
 
-Write or strengthen behavioral tests, practice TDD or investigate important coverage gaps. Use when: test design or missing proof needs work; running an existing suite needs no skill.
+Write behavioral tests, practice TDD or inspect important coverage gaps. Use when: test design or missing proof needs work; running an existing suite needs no skill.
 
 ## Instructions
 

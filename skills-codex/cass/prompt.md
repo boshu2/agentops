@@ -1,6 +1,6 @@
 # cass
 
-Search agent session logs and inspect cited episodes with CASS. Use when: past prompts, decisions or failures may answer a question; repeated text is a candidate observation, not a proven lesson.
+Search agent session logs and cited episodes with CASS. Use when: past prompts, decisions or failures may answer a question; repeated text is not a proven lesson.
 
 ## Instructions
 

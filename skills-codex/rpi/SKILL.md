@@ -1,6 +1,6 @@
 ---
 name: rpi
-description: 'Apply the optional outcome-to-judgment operating charter. Use when: the caller explicitly selects RPI; ordinary coding, delegated work and native goals do not require this workflow.'
+description: 'Apply the outcome-to-judgment charter. Use when: the caller explicitly selects RPI; ordinary coding, delegation and native goals do not require this workflow.'
 ---
 # RPI
 

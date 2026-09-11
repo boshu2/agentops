@@ -1,6 +1,6 @@
 # council
 
-Compare independent perspectives on a consequential or contested decision. Use when: the caller selects multiple judges; evidence resolves disagreement, not majority voting or model prestige.
+Compare independent views on a consequential or contested decision. Use when: the caller selects multiple judges; evidence resolves disagreement, not voting.
 
 ## Instructions
 

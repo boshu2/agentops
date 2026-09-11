@@ -1,6 +1,6 @@
 ---
 name: doc
-description: 'Write source-grounded documentation, READMEs, repo instructions or continuity handoffs. Use when: these documents are the requested output; do not create reports as a routine completion ritual.'
+description: 'Write grounded docs, READMEs, repo instructions or continuity handoffs. Use when: these documents are requested; no reports as a routine completion ritual.'
 practices:
 - wiki-knowledge-surface
 - code-complete

@@ -1,6 +1,6 @@
 ---
 name: reverse-engineer
-description: 'Tear down an authorized competitor or upstream repository, binary or product into a feature inventory and adoption choices. Use when: comparing an external system; local code questions belong to Research.'
+description: 'Tear down an authorized competitor repo, binary or product into a feature inventory and adoption choices. Use when: comparing an external system; local questions go to Research.'
 ---
 # Reverse Engineer
 

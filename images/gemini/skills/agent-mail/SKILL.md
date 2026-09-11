@@ -19,7 +19,7 @@ metadata:
   disposition: keep_optional_adapter
   tier: execution
   dependencies: []
-description: 'Coordinate explicitly selected writers with Agent Mail messages and advisory file reservations. Use when: work already needs this adapter; messages and reservations do not own tracker status.'
+description: 'Coordinate selected writers with Agent Mail messages and advisory file reservations. Use when: this adapter is requested; mail does not own tracker status.'
 practices:
 - pragmatic-programmer
 output_contract: factual messaging and reservation adapter results

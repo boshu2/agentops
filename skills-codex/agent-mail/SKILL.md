@@ -1,6 +1,6 @@
 ---
 name: agent-mail
-description: 'Coordinate explicitly selected writers with Agent Mail messages and advisory file reservations. Use when: work already needs this adapter; messages and reservations do not own tracker status.'
+description: 'Coordinate selected writers with Agent Mail messages and advisory file reservations. Use when: this adapter is requested; mail does not own tracker status.'
 ---
 # Agent Mail — optional coordination adapter
 

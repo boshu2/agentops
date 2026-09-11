@@ -1,6 +1,6 @@
 ---
 name: council
-description: 'Compare independent perspectives on a consequential or contested decision. Use when: the caller selects multiple judges; evidence resolves disagreement, not majority voting or model prestige.'
+description: 'Compare independent views on a consequential or contested decision. Use when: the caller selects multiple judges; evidence resolves disagreement, not voting.'
 ---
 # Council
 

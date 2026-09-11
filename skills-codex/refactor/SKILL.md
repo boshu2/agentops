@@ -1,6 +1,6 @@
 ---
 name: refactor
-description: 'Simplify structure, interfaces or responsibilities while preserving observable behavior. Use when: the caller requests a focused refactor; feature changes and architecture churn need their own intent.'
+description: 'Simplify structure, interfaces or responsibilities while preserving behavior. Use when: a focused refactor is requested; feature changes need their own intent.'
 ---
 # Refactor — one structural experiment
 

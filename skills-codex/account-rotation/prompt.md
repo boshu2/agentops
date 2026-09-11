@@ -1,6 +1,6 @@
 # account-rotation
 
-Switch a coding-agent account and verify its observed identity. Use when: the caller requests an account change on this host; does not allocate quota or switch accounts automatically.
+Switch coding-agent accounts and verify runtime identity. Use when: the caller requests an account change; never rotate automatically to evade a quota.
 
 ## Instructions
 

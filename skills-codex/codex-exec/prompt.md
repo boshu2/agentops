@@ -1,6 +1,6 @@
 # codex-exec
 
-Run one supplied prompt through headless Codex and capture its result. Use when: a noninteractive Codex process is requested; this adapter does not choose work, retry or judge correctness.
+Run one prompt through headless Codex and capture its result. Use when: requesting a single noninteractive Codex process. Not for worker batches or retries.
 
 ## Instructions
 

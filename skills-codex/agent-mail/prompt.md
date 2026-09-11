@@ -1,6 +1,6 @@
 # agent-mail
 
-Coordinate explicitly selected writers with Agent Mail messages and advisory file reservations. Use when: work already needs this adapter; messages and reservations do not own tracker status.
+Coordinate selected writers with Agent Mail messages and advisory file reservations. Use when: this adapter is requested; mail does not own tracker status.
 
 ## Instructions
 

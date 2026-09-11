@@ -1,6 +1,6 @@
 ---
 name: skill-builder
-description: 'Create, adapt, consolidate or repair skill packages and generated projections. Use when: authoring guidance, descriptions or package structure; Skill Eval measures behavior rather than structural conformance.'
+description: 'Create, adapt, consolidate or repair skill packages and projections. Use when: authoring guidance, descriptions or structure; Skill Eval measures behavioral benefit.'
 practices:
 - pragmatic-programmer
 - refactoring

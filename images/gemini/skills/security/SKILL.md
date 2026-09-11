@@ -1,6 +1,6 @@
 ---
 name: security
-description: 'Review code or run authorized security scans for vulnerabilities, secrets, dependencies and prompt boundaries. Use when: concrete security exposure needs assessment; report gaps without silently changing policy.'
+description: 'Review code or scan for security vulnerabilities, secrets, dependencies and prompt risks. Use when: concrete exposure needs assessment; never silently change policy.'
 practices:
 - supply-chain-integrity
 - design-by-contract

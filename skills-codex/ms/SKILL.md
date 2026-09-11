@@ -1,6 +1,6 @@
 ---
 name: ms
-description: 'Find and load skill guidance with the configured meta_skill search engine. Use when: searching a larger skill corpus for a task; use CASS for past sessions and Skill Builder for authoring packages.'
+description: 'Find and load guidance with the meta_skill search engine. Use when: searching a skill corpus; CASS owns past sessions and Skill Builder owns package authoring.'
 ---
 <!-- TOC: Core Insight | Constraints | Quick Start | Consume (MCP) | Write/Admin (CLI) | Output | Production Skill Handoff | Footguns | Concurrency | Scenarios | Quality | References -->
 

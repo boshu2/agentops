@@ -1,6 +1,6 @@
 ---
 name: idea-genie
-description: 'Generate evidenced options or challenge a proposed idea. Use when: deciding what to build or comparing alternatives; exploration does not authorize implementation or approve the result.'
+description: 'Generate evidenced options or challenge an idea. Use when: deciding what to build or comparing alternatives; exploration does not authorize implementation.'
 ---
 # Idea Genie
 

@@ -1,6 +1,6 @@
 ---
 name: codex-exec
-description: 'Run one supplied prompt through headless Codex and capture its result. Use when: a noninteractive Codex process is requested; this adapter does not choose work, retry or judge correctness.'
+description: 'Run one prompt through headless Codex and capture its result. Use when: requesting a single noninteractive Codex process. Not for worker batches or retries.'
 ---
 # Codex Exec — one-shot runtime adapter
 

@@ -1,6 +1,6 @@
 ---
 name: rch
-description: 'Offload one requested build through RCH or diagnose its remote compiler path. Use when: remote compilation is explicitly selected; report errors without creating a retry controller.'
+description: 'Offload one build through RCH or diagnose its remote compiler. Use when: remote compilation is selected; report errors without creating a retry controller.'
 ---
 # RCH — remote compilation specialist
 

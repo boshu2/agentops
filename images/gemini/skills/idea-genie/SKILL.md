@@ -1,6 +1,6 @@
 ---
 name: idea-genie
-description: 'Generate evidenced options or challenge a proposed idea. Use when: deciding what to build or comparing alternatives; exploration does not authorize implementation or approve the result.'
+description: 'Generate evidenced options or challenge an idea. Use when: deciding what to build or comparing alternatives; exploration does not authorize implementation.'
 practices: [lean-startup, bdd-gherkin, design-by-contract, llm-eval-harness, adr]
 hexagonal_role: domain
 consumes: [repo-context, task-question, idea-portfolio.v1]

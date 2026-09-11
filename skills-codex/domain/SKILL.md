@@ -1,6 +1,6 @@
 ---
 name: domain
-description: 'Clarify domain terms, bounded contexts and repository conventions for a change. Use when: naming, rule ownership or applicable Go and other language standards are unclear; avoid a full architecture survey.'
+description: 'Clarify domain terms, bounded contexts and repository conventions. Use when: naming, rule ownership or Go and other language standards are unclear; avoid a broad survey.'
 ---
 # Domain — ubiquitous language
 

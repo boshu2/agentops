@@ -10,23 +10,23 @@ Names and descriptions below come from each source SKILL.md; explicit invocation
 
 | Skill | Use it for |
 |---|---|
-| [implement](../skills/implement/SKILL.md) | Implement accepted behavior, repair understood defects or execute a selected wave with per-lane evidence. Use when: authorized coding work is ready; shape only consequential missing intent and return check facts. |
-| [plan](../skills/plan/SKILL.md) | Describe intended behavior, review write scope and assess whether decisions are reversible. Use when: acceptance or approach is unclear before coding; reuse existing intent and stop when actionable. |
+| [implement](../skills/implement/SKILL.md) | Implement accepted behavior, repair defects or execute a selected wave with per-lane evidence. Use when: coding is authorized and ready; return facts, not a binding verdict. |
+| [plan](../skills/plan/SKILL.md) | Define intended behavior, review write scope and assess reversible decisions. Use when: acceptance or approach is unclear before coding; stop once actionable. |
 | [validate](../skills/validate/SKILL.md) | Freshly judge a finished change against original acceptance before merge. Use when: independent proof is needed; author tests cannot issue PASS. Triggers: "check this change". |
 
 ## Engineering specialists
 
 | Skill | Use it for |
 |---|---|
-| [doc](../skills/doc/SKILL.md) | Write source-grounded documentation, READMEs, repo instructions or continuity handoffs. Use when: these documents are the requested output; do not create reports as a routine completion ritual. |
-| [domain](../skills/domain/SKILL.md) | Clarify domain terms, bounded contexts and repository conventions for a change. Use when: naming, rule ownership or applicable Go and other language standards are unclear; avoid a full architecture survey. |
-| [refactor](../skills/refactor/SKILL.md) | Simplify structure, interfaces or responsibilities while preserving observable behavior. Use when: the caller requests a focused refactor; feature changes and architecture churn need their own intent. |
-| [research](../skills/research/SKILL.md) | Answer a bounded question by tracing code, investigating evidence or testing a recurring pattern. Use when: consequential uncertainty needs sources. Not for external feature teardowns; use reverse-engineer. |
-| [reverse-engineer](../skills/reverse-engineer/SKILL.md) | Tear down an authorized competitor or upstream repository, binary or product into a feature inventory and adoption choices. Use when: comparing an external system; local code questions belong to Research. |
-| [security](../skills/security/SKILL.md) | Review code or run authorized security scans for vulnerabilities, secrets, dependencies and prompt boundaries. Use when: concrete security exposure needs assessment; report gaps without silently changing policy. |
-| [skill-builder](../skills/skill-builder/SKILL.md) | Create, adapt, consolidate or repair skill packages and generated projections. Use when: authoring guidance, descriptions or package structure; Skill Eval measures behavior rather than structural conformance. |
-| [skill-eval](../skills/skill-eval/SKILL.md) | Measure whether a skill helps a named task or needs revision, removal or more evidence. Use when: a bounded routing or controlled coding evaluation is requested; static conformance alone cannot show benefit. |
-| [test](../skills/test/SKILL.md) | Write or strengthen behavioral tests, practice TDD or investigate important coverage gaps. Use when: test design or missing proof needs work; running an existing suite needs no skill. |
+| [doc](../skills/doc/SKILL.md) | Write grounded docs, READMEs, repo instructions or continuity handoffs. Use when: these documents are requested; no reports as a routine completion ritual. |
+| [domain](../skills/domain/SKILL.md) | Clarify domain terms, bounded contexts and repository conventions. Use when: naming, rule ownership or Go and other language standards are unclear; avoid a broad survey. |
+| [refactor](../skills/refactor/SKILL.md) | Simplify structure, interfaces or responsibilities while preserving behavior. Use when: a focused refactor is requested; feature changes need their own intent. |
+| [research](../skills/research/SKILL.md) | Trace code or test a recurring pattern to answer one cited question. Use when: uncertainty needs evidence. Not for external feature teardowns; use reverse-engineer. |
+| [reverse-engineer](../skills/reverse-engineer/SKILL.md) | Tear down an authorized competitor repo, binary or product into a feature inventory and adoption choices. Use when: comparing an external system; local questions go to Research. |
+| [security](../skills/security/SKILL.md) | Review code or scan for security vulnerabilities, secrets, dependencies and prompt risks. Use when: concrete exposure needs assessment; never silently change policy. |
+| [skill-builder](../skills/skill-builder/SKILL.md) | Create, adapt, consolidate or repair skill packages and projections. Use when: authoring guidance, descriptions or structure; Skill Eval measures behavioral benefit. |
+| [skill-eval](../skills/skill-eval/SKILL.md) | Measure whether a skill helps a named task or needs revision or removal. Use when: a bounded routing or coding evaluation is requested; conformance alone cannot show benefit. |
+| [test](../skills/test/SKILL.md) | Write behavioral tests, practice TDD or inspect important coverage gaps. Use when: test design or missing proof needs work; running an existing suite needs no skill. |
 
 ## Memory on demand
 
@@ -38,30 +38,30 @@ Names and descriptions below come from each source SKILL.md; explicit invocation
 
 | Skill | Use it for |
 |---|---|
-| [council](../skills/council/SKILL.md) | Compare independent perspectives on a consequential or contested decision. Use when: the caller selects multiple judges; evidence resolves disagreement, not majority voting or model prestige. |
+| [council](../skills/council/SKILL.md) | Compare independent views on a consequential or contested decision. Use when: the caller selects multiple judges; evidence resolves disagreement, not voting. |
 | [craft-goal](../skills/craft-goal/SKILL.md) | Draft or lint a bounded persistent goal above a bead graph of RPI experiments. Use when: this goal workflow is explicitly selected; shaping a single change belongs to Plan. |
-| [idea-genie](../skills/idea-genie/SKILL.md) | Generate evidenced options or challenge a proposed idea. Use when: deciding what to build or comparing alternatives; exploration does not authorize implementation or approve the result. |
-| [postmortem](../skills/postmortem/SKILL.md) | Test a retrospective causal question against outcome evidence. Use when: the caller explicitly requests a postmortem; a finished task does not automatically require a report or a new lesson. |
+| [idea-genie](../skills/idea-genie/SKILL.md) | Generate evidenced options or challenge an idea. Use when: deciding what to build or comparing alternatives; exploration does not authorize implementation. |
+| [postmortem](../skills/postmortem/SKILL.md) | Test a retrospective causal question against outcome evidence. Use when: a postmortem is explicitly requested; finishing a task does not require a report or lesson. |
 | [premortem](../skills/premortem/SKILL.md) | Challenge a rollout plan with one fresh judge before implementation; identify what could make it fail. Not for finished-code judgment. Triggers: "one judge", "challenge this plan". |
-| [reality-check](../skills/reality-check/SKILL.md) | Check whether a claimed shipped feature, repository state or goal status holds up in observable evidence. Use when: comparing a claim with what exists; a gap report is not a final candidate verdict. |
-| [rpi](../skills/rpi/SKILL.md) | Apply the optional outcome-to-judgment operating charter. Use when: the caller explicitly selects RPI; ordinary coding, delegated work and native goals do not require this workflow. |
+| [reality-check](../skills/reality-check/SKILL.md) | Check whether a claimed shipped feature, repo state or goal status holds up in evidence. Use when: comparing a claim with what exists; a gap report is not a verdict. |
+| [rpi](../skills/rpi/SKILL.md) | Apply the outcome-to-judgment charter. Use when: the caller explicitly selects RPI; ordinary coding, delegation and native goals do not require this workflow. |
 
 ## Explicit tool and runtime adapters
 
 | Skill | Use it for |
 |---|---|
-| [account-rotation](../skills/account-rotation/SKILL.md) | Switch a coding-agent account and verify its observed identity. Use when: the caller requests an account change on this host; does not allocate quota or switch accounts automatically. |
-| [agent-mail](../skills/agent-mail/SKILL.md) | Coordinate explicitly selected writers with Agent Mail messages and advisory file reservations. Use when: work already needs this adapter; messages and reservations do not own tracker status. |
-| [agent-native](../skills/agent-native/SKILL.md) | Dispatch independent tasks to parallel workers or operate selected persistent roles. Use when: delegation is authorized and scopes are disjoint; runtime completion does not validate output. |
+| [account-rotation](../skills/account-rotation/SKILL.md) | Switch coding-agent accounts and verify runtime identity. Use when: the caller requests an account change; never rotate automatically to evade a quota. |
+| [agent-mail](../skills/agent-mail/SKILL.md) | Coordinate selected writers with Agent Mail messages and advisory file reservations. Use when: this adapter is requested; mail does not own tracker status. |
+| [agent-native](../skills/agent-native/SKILL.md) | Dispatch independent tasks to parallel workers or selected persistent roles. Use when: delegation is authorized with disjoint scopes; execution does not validate output. |
 | [agy-native](../skills/agy-native/SKILL.md) | Run a supplied task in AGY Antigravity and collect its result. Use when: the caller selects AGY; never a fallback for native coding. |
-| [cass](../skills/cass/SKILL.md) | Search agent session logs and inspect cited episodes with CASS. Use when: past prompts, decisions or failures may answer a question; repeated text is a candidate observation, not a proven lesson. |
+| [cass](../skills/cass/SKILL.md) | Search agent session logs and cited episodes with CASS. Use when: past prompts, decisions or failures may answer a question; repeated text is not a proven lesson. |
 | [cc-hooks](../skills/cc-hooks/SKILL.md) | Configure Claude Code hooks and narrow enforcement guards. Use when: the caller requests hook installation, repair or policy changes; a hook is not required to use other skills. |
-| [codex-exec](../skills/codex-exec/SKILL.md) | Run one supplied prompt through headless Codex and capture its result. Use when: a noninteractive Codex process is requested; this adapter does not choose work, retry or judge correctness. |
-| [dcg](../skills/dcg/SKILL.md) | Diagnose a Destructive Command Guard block or configure its guardrails. Use when: DCG rejected an operation or the caller requests policy work; do not bypass a block by disguising the command. |
-| [ms](../skills/ms/SKILL.md) | Find and load skill guidance with the configured meta_skill search engine. Use when: searching a larger skill corpus for a task; use CASS for past sessions and Skill Builder for authoring packages. |
-| [ntm](../skills/ntm/SKILL.md) | Operate caller-selected NTM agent panes and inspect their native state. Use when: persistent tmux roles are explicitly requested; pane liveness and prompt delivery are not validation. |
-| [rch](../skills/rch/SKILL.md) | Offload one requested build through RCH or diagnose its remote compiler path. Use when: remote compilation is explicitly selected; report errors without creating a retry controller. |
-| [sbh](../skills/sbh/SKILL.md) | Inspect storage pressure with SBH and perform a specifically authorized recovery action. Use when: diagnosing disk pressure or selecting SBH recovery; inspection alone does not authorize deletion. |
+| [codex-exec](../skills/codex-exec/SKILL.md) | Run one prompt through headless Codex and capture its result. Use when: requesting a single noninteractive Codex process. Not for worker batches or retries. |
+| [dcg](../skills/dcg/SKILL.md) | Diagnose a Destructive Command Guard block or configure its rules. Use when: DCG rejected an operation or policy work is requested; never disguise commands to bypass it. |
+| [ms](../skills/ms/SKILL.md) | Find and load guidance with the meta_skill search engine. Use when: searching a skill corpus; CASS owns past sessions and Skill Builder owns package authoring. |
+| [ntm](../skills/ntm/SKILL.md) | Operate selected NTM agent panes and inspect native state. Use when: persistent tmux roles are requested; pane liveness and prompt delivery are not validation. |
+| [rch](../skills/rch/SKILL.md) | Offload one build through RCH or diagnose its remote compiler. Use when: remote compilation is selected; report errors without creating a retry controller. |
+| [sbh](../skills/sbh/SKILL.md) | Inspect disk pressure with SBH and perform an authorized recovery action. Use when: storage diagnosis or SBH recovery is requested; inspection does not authorize deletion. |
 | [using-flywheel](../skills/using-flywheel/SKILL.md) | Operate the Agentic Coding Flywheel through its native workflow. Use when: the caller explicitly selects this factory; convergence and closed work do not prove semantic acceptance. |
 | [using-gc](../skills/using-gc/SKILL.md) | Operate Gas City through its Mayor, registry packs and native run state. Use when: the caller explicitly selects Gas City; factory completion does not replace independent judgment. |
 

@@ -1,6 +1,6 @@
 ---
 name: plan
-description: 'Describe intended behavior, review write scope and assess whether decisions are reversible. Use when: acceptance or approach is unclear before coding; reuse existing intent and stop when actionable.'
+description: 'Define intended behavior, review write scope and assess reversible decisions. Use when: acceptance or approach is unclear before coding; stop once actionable.'
 ---
 # Plan
 

@@ -1,6 +1,6 @@
 # reality-check
 
-Check whether a claimed shipped feature, repository state or goal status holds up in observable evidence. Use when: comparing a claim with what exists; a gap report is not a final candidate verdict.
+Check whether a claimed shipped feature, repo state or goal status holds up in evidence. Use when: comparing a claim with what exists; a gap report is not a verdict.
 
 ## Instructions
 

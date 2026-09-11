@@ -1,6 +1,6 @@
 # doc
 
-Write source-grounded documentation, READMEs, repo instructions or continuity handoffs. Use when: these documents are the requested output; do not create reports as a routine completion ritual.
+Write grounded docs, READMEs, repo instructions or continuity handoffs. Use when: these documents are requested; no reports as a routine completion ritual.
 
 ## Instructions
 

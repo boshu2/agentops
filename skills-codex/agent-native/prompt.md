@@ -1,6 +1,6 @@
 # agent-native
 
-Dispatch independent tasks to parallel workers or operate selected persistent roles. Use when: delegation is authorized and scopes are disjoint; runtime completion does not validate output.
+Dispatch independent tasks to parallel workers or selected persistent roles. Use when: delegation is authorized with disjoint scopes; execution does not validate output.
 
 ## Instructions
 
