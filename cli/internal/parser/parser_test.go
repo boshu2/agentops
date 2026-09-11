@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -247,6 +248,68 @@ func TestParser_Parse_CodexArchivedSessionShape(t *testing.T) {
 	}
 	if len(result.Messages[4].Tools) != 1 || !strings.Contains(result.Messages[4].Tools[0].Output, "/worktree") {
 		t.Fatalf("unexpected function_call_output message: %+v", result.Messages[4])
+	}
+}
+
+func TestParser_Parse_CodexToolCallInputs(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		payload string
+		want    map[string]any
+	}{
+		{
+			name:    "native custom input",
+			payload: `{"type":"custom_tool_call","name":"apply_patch","call_id":"c2","input":"*** literal patch ***"}`,
+			want:    map[string]any{"raw": "*** literal patch ***"},
+		},
+		{
+			name:    "native custom JSON text stays literal",
+			payload: `{"type":"custom_tool_call","name":"apply_patch","input":"{ \"key\": \"value\" }"}`,
+			want:    map[string]any{"raw": `{ "key": "value" }`},
+		},
+		{
+			name:    "native custom empty input overrides legacy arguments",
+			payload: `{"type":"custom_tool_call","name":"apply_patch","input":"","arguments":"legacy"}`,
+			want:    map[string]any{"raw": ""},
+		},
+		{
+			name:    "ordinary function arguments",
+			payload: `{"type":"function_call","name":"exec_command","arguments":"{\"cmd\":\"pwd\"}","input":"ignored"}`,
+			want:    map[string]any{"cmd": "pwd"},
+		},
+		{
+			name:    "legacy custom raw arguments",
+			payload: `{"type":"custom_tool_call","name":"my_tool","arguments":"not-json"}`,
+			want:    map[string]any{"raw": "not-json"},
+		},
+		{
+			name:    "legacy custom object arguments",
+			payload: `{"type":"custom_tool_call","name":"my_tool","arguments":"{\"key\":\"value\"}"}`,
+			want:    map[string]any{"key": "value"},
+		},
+		{
+			name:    "legacy custom scalar arguments",
+			payload: `{"type":"custom_tool_call","name":"my_tool","arguments":"42"}`,
+			want:    map[string]any{"value": float64(42)},
+		},
+		{
+			name:    "legacy custom empty arguments",
+			payload: `{"type":"custom_tool_call","name":"my_tool","arguments":""}`,
+			want:    nil,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := NewParser().Parse(strings.NewReader(`{"type":"response_item","payload":` + tc.payload + `}`))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(result.Messages) != 1 || len(result.Messages[0].Tools) != 1 {
+				t.Fatalf("expected one tool call, got %+v", result)
+			}
+			if got := result.Messages[0].Tools[0].Input; !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("input = %#v, want %#v", got, tc.want)
+			}
+		})
 	}
 }
 

@@ -113,11 +113,12 @@ type codexTokenUsage struct {
 }
 
 type codexResponseItem struct {
-	Type      string `json:"type"`
-	Role      string `json:"role"`
-	Name      string `json:"name"`
-	Arguments string `json:"arguments"`
-	Output    string `json:"output"`
+	Type      string  `json:"type"`
+	Role      string  `json:"role"`
+	Name      string  `json:"name"`
+	Arguments string  `json:"arguments"`
+	Input     *string `json:"input"`
+	Output    string  `json:"output"`
 	Content   []struct {
 		Type string `json:"type"`
 		Text string `json:"text"`
@@ -576,6 +577,12 @@ func (p *Parser) parseCodexResponseItem(raw rawMessage, lineNum int) (*types.Tra
 			MessageIndex: lineNum,
 		}, nil
 	case "function_call", "custom_tool_call":
+		input := parseCodexToolInput(item.Arguments)
+		if item.Type == "custom_tool_call" && item.Input != nil {
+			// Native custom input is literal text, including empty or JSON-like
+			// strings. Only calls without it use the legacy arguments decoder.
+			input = map[string]any{"raw": *item.Input}
+		}
 		return &types.TranscriptMessage{
 			Type:         msgTypeToolUse,
 			Role:         msgTypeAssistant,
@@ -584,7 +591,7 @@ func (p *Parser) parseCodexResponseItem(raw rawMessage, lineNum int) (*types.Tra
 			MessageIndex: lineNum,
 			Tools: []types.ToolCall{{
 				Name:  coalesce(item.Name, item.Type),
-				Input: parseCodexToolInput(item.Arguments),
+				Input: input,
 			}},
 		}, nil
 	case "function_call_output", "custom_tool_call_output":

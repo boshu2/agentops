@@ -53,9 +53,10 @@ type mineState struct {
 
 // MineOptions carries the mine-session flag inputs from the command module.
 type MineOptions struct {
-	File  string
-	State string
-	JSON  bool
+	File   string
+	State  string
+	JSON   bool
+	DryRun bool // Preview pending events without changing State.
 }
 
 // MineSession parses a Claude Code or Codex session transcript and emits the
@@ -70,8 +71,12 @@ func MineSession(opts MineOptions, out io.Writer) error {
 	if mineFile == "" {
 		return fmt.Errorf("mine-session: --file is required")
 	}
-	if _, err := os.Stat(mineFile); err != nil {
+	sourceInfo, err := os.Stat(mineFile)
+	if err != nil {
 		return fmt.Errorf("mine-session: cannot read --file %s: %w", mineFile, err)
+	}
+	if mineStateAliasesSource(mineStatePath, sourceInfo) {
+		return fmt.Errorf("mine-session: --state %s must not refer to --file %s", mineStatePath, mineFile)
 	}
 
 	p := parser.NewParser()
@@ -128,31 +133,9 @@ func MineSession(opts MineOptions, out io.Writer) error {
 	}
 
 	// --- persist the watermark ------------------------------------------------
-	if mineStatePath != "" {
-		highest := startAfter
-		for _, m := range result.Messages {
-			if m.MessageIndex > highest {
-				highest = m.MessageIndex
-			}
-		}
-		minedCount := len(events)
-		if prior != nil && startAfter == prior.LastLine {
-			minedCount += prior.MinedCount // incremental: accumulate
-		}
-		// Store the ABSOLUTE path: the File binding must be cwd-independent. Storing
-		// the raw (possibly relative) --file value lets the same relative name from a
-		// different cwd compare equal to a physically different transcript, defeating
-		// the binding and dropping that file's events.
-		storedFile := mineFile
-		if abs, aerr := filepath.Abs(mineFile); aerr == nil {
-			storedFile = abs
-		}
-		next := mineState{
-			File:           storedFile,
-			LastLine:       highest,
-			PrefixChecksum: prefixChecksum(result, highest),
-			MinedCount:     minedCount,
-		}
+	// Dry-run uses the same prior watermark and events, but leaves them pending.
+	if mineStatePath != "" && !opts.DryRun {
+		next := nextMineState(mineFile, result, prior, startAfter, len(events))
 		if err := writeMineState(mineStatePath, next); err != nil {
 			return fmt.Errorf("mine-session: write state %s: %w", mineStatePath, err)
 		}
@@ -160,6 +143,34 @@ func MineSession(opts MineOptions, out io.Writer) error {
 
 	fmt.Fprintf(os.Stderr, "mine-session: %d new event(s) from %s\n", len(events), mineFile)
 	return nil
+}
+
+// nextMineState builds the checkpoint for the parsed prefix and accumulates
+// prior events only when the prior watermark was honored.
+func nextMineState(file string, result *parser.ParseResult, prior *mineState, startAfter, minedCount int) mineState {
+	highest := startAfter
+	for _, m := range result.Messages {
+		if m.MessageIndex > highest {
+			highest = m.MessageIndex
+		}
+	}
+	if prior != nil && startAfter == prior.LastLine {
+		minedCount += prior.MinedCount // incremental: accumulate
+	}
+	// Store the ABSOLUTE path: the File binding must be cwd-independent. Storing
+	// the raw (possibly relative) --file value lets the same relative name from a
+	// different cwd compare equal to a physically different transcript, defeating
+	// the binding and dropping that file's events.
+	storedFile := file
+	if abs, aerr := filepath.Abs(file); aerr == nil {
+		storedFile = abs
+	}
+	return mineState{
+		File:           storedFile,
+		LastLine:       highest,
+		PrefixChecksum: prefixChecksum(result, highest),
+		MinedCount:     minedCount,
+	}
 }
 
 // mineToolCallEvents emits one tool_call event per tool use in messages whose
@@ -275,6 +286,14 @@ func sameFile(a, b string) bool {
 		return a == b
 	}
 	return aa == bb
+}
+
+// mineStateAliasesSource compares filesystem identity, including symlinks and
+// hardlinks, before mining can emit events or replace a source with checkpoint
+// data. Missing or inaccessible checkpoints retain their existing validation.
+func mineStateAliasesSource(path string, source os.FileInfo) bool {
+	state, err := os.Stat(path)
+	return err == nil && os.SameFile(source, state)
 }
 
 func writeMineState(path string, st mineState) error {

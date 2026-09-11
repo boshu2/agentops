@@ -712,9 +712,10 @@ only excerpt serialization; measured output limits cannot prove host delivery.`,
 
 func (m *Module) runMineSession(cmd *cobra.Command, _ []string) error {
 	return provenanceapp.MineSession(provenanceapp.MineOptions{
-		File:  m.mineFile,
-		State: m.mineState,
-		JSON:  m.mineJSON,
+		File:   m.mineFile,
+		State:  m.mineState,
+		JSON:   m.mineJSON,
+		DryRun: m.host.DryRun != nil && m.host.DryRun(),
 	}, cmd.OutOrStdout())
 }
 

@@ -76,7 +76,6 @@
 | `ntm` | consumes | `pane-command-request` |
 | `ntm` | produces | `ntm-robot-state` |
 | `ntm` | produces | `agent-worker-transcript` |
-| `postmortem` | consumes | `verdict.v2` |
 | `postmortem` | produces | `postmortem-report.md` |
 | `premortem` | produces | `premortem-plan-review.v1` |
 | `reality-check` | consumes | `caller-question` |
