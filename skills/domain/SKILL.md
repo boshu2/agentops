@@ -74,3 +74,11 @@ responsibilities. Vocabulary edits do not authorize those transitions.
 
 - [Caller vocabulary examples](references/caller-vocabulary.md)
 - [Upstream capability reference](https://github.com/mattpocock/skills/blob/main/skills/engineering/domain-modeling/SKILL.md) — Matt Pocock; original AgentOps adaptation.
+
+## Applicable engineering standards
+
+Load only the language or risk guidance needed for the current change from
+[standards references](references/standards/common-standards.md). Repository
+contracts and the actual toolchain take precedence. A vocabulary lookup does
+not require a coding-standards survey, and these references do not create a
+second approval or validation lane.

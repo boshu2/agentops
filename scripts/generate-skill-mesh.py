@@ -146,12 +146,29 @@ def md_table(entries: list[dict[str, Any]]) -> str:
 
 
 def router(entries: list[dict[str, Any]]) -> str:
-    groups: dict[str, list[str]] = {}
+    groups: dict[str, list[dict[str, Any]]] = {}
     for entry in entries:
-        groups.setdefault(entry["disposition"], []).append(entry["name"])
-    lines = ["<!-- generated from skills/*/SKILL.md metadata -->", "", "# Skill Router", "", f"{len(entries)} live skills. Metadata is the sole inventory and graph source.", ""]
-    for disposition in ("keep", "keep_off_path", "keep_strategy", "keep_optional_adapter", "keep_specialist"):
-        lines += [f"## {disposition}", "", ", ".join(f"`{name}`" for name in sorted(groups.get(disposition, []))) or "(none)", ""]
+        groups.setdefault(entry["disposition"], []).append(entry)
+    lines = ["<!-- generated from skills/*/SKILL.md metadata -->", "", "# Skill Router", "",
+             f"{len(entries)} live skills. Choose guidance for a concrete task need; no skill is mandatory.",
+             "A clear task can proceed in the native agent. Read a skill only when its description fits.",
+             "Names and descriptions below come from each source SKILL.md; explicit invocation remains available.", ""]
+    sections = (
+        ("keep", "Intent, implementation and final judgment"),
+        ("keep_specialist", "Engineering specialists"),
+        ("keep_off_path", "Memory on demand"),
+        ("keep_strategy", "Deliberate planning and review strategies"),
+        ("keep_optional_adapter", "Explicit tool and runtime adapters"),
+    )
+    for disposition, heading in sections:
+        members = groups.get(disposition, [])
+        if not members:
+            continue
+        lines += [f"## {heading}", "", "| Skill | Use it for |", "|---|---|"]
+        for entry in members:
+            description = entry["description"].replace("|", "\\|").replace("\n", " ")
+            lines.append(f"| [{entry['name']}](../skills/{entry['name']}/SKILL.md) | {description} |")
+        lines.append("")
     lines += ["## Complete inventory", "", md_table(entries), ""]
     return "\n".join(lines)
 

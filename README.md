@@ -62,14 +62,13 @@ Most skills need nothing beyond the coding agent; these need more:
 | `rpi` | `ao`, conditional | delegates exact-subject checks to Validate; only persists `verdict.v2` when requested, with the fixed-dispatch adapter optional |
 | `plan` | `ao`, conditional | runs `ao provenance snapshot-intent` with an explicit evidence root when the intent source is not durable |
 | `validate` | `ao` | derives exact subject identity with the helper and uses `ao provenance store-verdict` when persistence is requested; Python/schema checks are developer-only |
-| `fitness` | `ao` | its whole procedure is running one `ao goals` subcommand |
+| `reality-check` | `ao`, conditional | inspect a selected goal's native status or fitness facts |
 | `using-gc` | `ao` | rig prep runs `ao gc prepare` and `ao gc check` |
-| `handoff` | `ao`, optional | `ao session handoff`/`rehydrate` cover the same artifact; the skill can write it directly |
-| `status` | `ao`, optional | describes `ao status`'s output shape; the report can be read directly from `.agents/ao/` |
+| `doc` | `ao`, optional | a requested continuity handoff may use `ao session handoff`/`rehydrate` |
 | `reverse-engineer` | `python3` | Phase 1's mechanical teardown runs `scripts/reverse_engineer.py` |
 | `skill-builder` | `python3`, conditional | Create mode's `build.sh` runs `scripts/generate-skill-mesh.py`; heal/check/audit modes are bash-only |
 | `ms` | `python3`, conditional, plus `ms` binary | the MCP-search fallback runs `python3 skills/ms/scripts/mcp-search.py`; the `ms` binary is required for CLI load, write, and admin operations |
-| `toil-mining` | `python3`, conditional | the recent-human extractor runs `scripts/recent_human.py` for Codex JSONL session sources |
+| `memory` | `python3`, conditional | a selected toil investigation can use the repository helper `scripts/toil-mining/recent_human.py` on cleared Codex sources |
 | `security` | `python3`, conditional | the composable suite and offline redteam surfaces run `security_suite.py` when that scan type is selected |
 | `cass` | `python3`, optional | `scripts/prompt_miner.py` mines repeated prompts; one of several selectable Scripts-table entries |
 
@@ -142,7 +141,7 @@ comes from caller/native bounds, with no fixed ten-minute cap. See the
 ## Multi-agent systems
 
 The default is one agent, one writer. When you need a fleet,
-[`swarm`](skills/swarm/SKILL.md), [`agent-native`](skills/agent-native/SKILL.md),
+[`agent-native`](skills/agent-native/SKILL.md),
 [`ntm`](skills/ntm/SKILL.md), and [`using-gc`](skills/using-gc/SKILL.md)
 orchestrate multi-agent work. They dispatch; they do not own the verdict.
 
@@ -212,38 +211,49 @@ non-Git storage, with checked scope, omissions, and evidence refs. Existing
 Plain JSON. No hosted service required. Interactive validation does not create
 one unless requested.
 
-## Optional workflow skills
+## Choose skills by the work
 
-| Skill | Job |
+You can describe the outcome in ordinary language. Include examples and limits
+that matter; the agent can choose useful guidance from its descriptions. Slash
+commands remain a precise way to request a particular approach.
+
+> Add duplicate-delivery protection for completed Jobs. Receiving the same Job
+> again should return its completed result without repeating the side effect.
+> Preserve the current API and run the owning package checks.
+
+Use existing repository language. For a complicated behavior, Given/When/Then
+examples make intent and later validation easier to compare. A simple edit
+needs no separate specification document.
+
+| Need | Skill |
 |---|---|
-| [`rpi`](skills/rpi/SKILL.md) | own the authorized outcome through checks, direct repair and fresh final judgment |
-| [`plan`](skills/plan/SKILL.md) | shape existing intent when needed; revise disproved approaches within accepted scope |
-| [`implement`](skills/implement/SKILL.md) | implement and repair known defects with discriminating checks |
-| [`validate`](skills/validate/SKILL.md) | fresh context (optionally different model); optionally persist `verdict.v2` |
-| [`memory`](skills/memory/SKILL.md) | recall reviewed topic pages or separately mine and curate when useful |
+| Resolve a question about code or evidence | [research](skills/research/SKILL.md) |
+| Describe behavior and scope before coding | [plan](skills/plan/SKILL.md) |
+| Clarify domain terms, boundaries or applicable standards | [domain](skills/domain/SKILL.md) |
+| Build a change, diagnose a failure or integrate delegated work | [implement](skills/implement/SKILL.md) |
+| Write useful behavioral tests | [test](skills/test/SKILL.md) |
+| Improve structure while preserving behavior | [refactor](skills/refactor/SKILL.md) |
+| Independently judge a finished candidate | [validate](skills/validate/SKILL.md) |
+| Write source-grounded documentation or a requested handoff | [doc](skills/doc/SKILL.md) |
+| Recall or deliberately curate prior experience | [memory](skills/memory/SKILL.md) |
 
-Optional later: [`learn`](skills/learn/SKILL.md). Optional strategies:
-[`anti-ceremony`](skills/anti-ceremony/SKILL.md),
-[`council`](skills/council/SKILL.md), [`idea-genie`](skills/idea-genie/SKILL.md),
-[`premortem`](skills/premortem/SKILL.md), [`postmortem`](skills/postmortem/SKILL.md),
-[`one-way-door`](skills/one-way-door/SKILL.md) (is this decision reversible?),
-[`reality-check`](skills/reality-check/SKILL.md) (does the repo match the claim?).
-Not sure which skill owns a request? Ask [`route`](skills/route/SKILL.md).
+The [generated Skill Router](docs/SKILL-ROUTER.md) is the complete menu, including
+security, skill authoring/evaluation, decision strategies and explicit tool
+adapters. [RPI](skills/rpi/SKILL.md) packages the operating charter when explicitly
+selected; it is not automatically triggered by every coding request. A council,
+postmortem, persistent goal or factory is a deliberate choice.
 
-## One skill, many shapes
+Descriptions state the task, when it helps and its nearest boundary. Codex
+projections preserve the full description and translate explicit-only policy;
+Claude uses its native invocation controls. Installing a skill makes it
+available, not mandatory. A smaller selected installation gives the model less
+irrelevant metadata to consider.
 
-AgentOps prefers a smaller skill set you can steer over dozens of near-duplicate
-skills. Modes and flags change behavior inside one contract.
-
-| Skill | Steer with | Examples |
-|---|---|---|
-| [`doc`](skills/doc/SKILL.md) | `--mode` | `readme`, `oss`, default API/docs; README mode runs a docs-prose (de-slop) pass |
-| [`codebase-recon`](skills/codebase-recon/SKILL.md) | mode · view · lens · depth | `baseline`/`delta`; emphasize audit or mental model; one domain lens per pass |
-| [`idea-genie`](skills/idea-genie/SKILL.md) | elicit \| duel | portfolio vs sealed multi-perspective challenge |
-| [`rpi`](skills/rpi/SKILL.md) | bead / intent ref | one full traversal against a frozen bead |
-
-Read the skill's mode table before inventing a sibling skill. Full inventory:
-[Skill Router](docs/SKILL-ROUTER.md).
+This menu incorporates original adaptations informed by
+[Matt Pocock's engineering skills](https://github.com/mattpocock/skills): useful
+intent examples, domain language and interface-focused tests. These are design
+influences, not a claim of compliance with a formal Pocock standard or measured
+improvement in coding outcomes.
 
 ## Evidence contract
 

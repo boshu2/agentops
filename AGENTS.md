@@ -20,6 +20,14 @@ the repository's checks, and have a fresh context judge acceptance. Load a
 skill only for a concrete uncertainty or an explicitly selected workflow.
 Native goals supply continuity; BD keeps work and handoffs. Neither needs RPI.
 
+Use [the generated skill menu](docs/SKILL-ROUTER.md) for task-specific guidance.
+Plan describes intended observable behavior using existing domain names before
+implementation; Validate checks those same examples on the exact candidate.
+Examples may live in the conversation or bead; no feature file is mandatory.
+Research answers questions, Domain clarifies terms and standards, and Memory
+handles optional recall or explicitly selected mining. RPI, Council and runtime
+adapters remain deliberate choices, not implicit prerequisites for coding.
+
 ## Repository map and mechanics
 
 | Path | What it is |
