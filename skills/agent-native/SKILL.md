@@ -42,12 +42,13 @@ controls must enforce it. A prompt, worktree, chmod or unrestricted same-user
 process does not establish isolation. Observe synthetic canary denials before
 restricted-source work; unavailable protection remains unavailable.
 
-When a worker looks stuck, score interventions by evidence and reversibility
-before acting: observe more (free, fully reversible), then nudge, then replace
-the worker, then restart the runtime — escalate only when observable state,
-not impatience, rules out the cheaper step. Stop the observe-nudge cycle once
-the worker reaches a terminal status or the caller's observation window ends;
-past that point further intervention manufactures noise, not evidence.
+Use native waits or status notifications while workers or checks are pending.
+Unchanged state is no reason for another analysis, review or provisional
+retrospective. Observation consumes time and context; it is not free. A known
+blocking failure deserves action even while other jobs run. For a suspected
+stall, inspect observable state before choosing a nudge or replacement within
+authority and remaining bounds. Stop observing at terminal status or the end
+of the caller's observation window; impatience alone does not justify restart.
 
 Named failure mode — **prompt-send optimism**: treating a successfully
 delivered prompt as a working worker; delivery proves transport, not
@@ -64,7 +65,10 @@ stalled, and rescue is usually cheaper than rerun.
 
 ## Roles
 
-- **Orchestrator:** passes explicit packets and reports runtime facts.
+- **Orchestrator:** passes focused intent, scope and evidence references, names
+  the integration/final-review owner, and reports runtime facts. Retrieve extra
+  history only for a consequential uncertainty; a fresh context is not
+  necessarily small. A new goal does not clear history or renew spent bounds.
 - **Implementer:** may modify only its packet's declared subject.
 - **Validator:** receives exact candidate content in a fresh, read-only context.
 - **Scribe:** records runtime evidence without judging acceptance.

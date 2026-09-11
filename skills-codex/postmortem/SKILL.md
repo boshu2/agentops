@@ -1,11 +1,13 @@
 ---
 name: postmortem
-description: 'Test a retrospective causal question against outcome evidence. Use when: a postmortem is explicitly requested; finishing a task does not require a report or lesson.'
+description: 'Analyze outcomes or an interim cutoff. Use when: a postmortem is explicitly requested; consumes available judgment, never gates code acceptance or requires a lesson.'
 ---
 # Postmortem
 
 Answer an explicit retrospective causal question about a completed or stopped
 goal, session or change using its actual intent, outcome and judgment evidence.
+For an explicitly requested interim analysis, pin the cutoff and pending checks;
+its conclusions describe that interval and do not establish a final outcome.
 
 ## Prompt
 
@@ -18,7 +20,10 @@ and which checks were necessary? No verdict file was saved. Answer inline.
 ## Critical Constraints
 
 - Postmortem is retrospective causal analysis, not the general learning umbrella
-  or a completion gate: acceptance proof and causal inference are different judgments.
+  or a code-acceptance gate: acceptance proof and causal inference are different judgments.
+  A request for code and a postmortem does not make the postmortem an input to
+  code judgment. Wait for a known outcome unless interim analysis was requested;
+  keep the caller's overall request incomplete until its requested analysis exists.
 - Existing verdicts and native judgments remain unchanged. It does not re-run acceptance validation
   or fabricate missing proof to enable a retrospective. An existing `verdict.v2`
   is optional evidence; its absence does not exclude a stopped or unvalidated subject.

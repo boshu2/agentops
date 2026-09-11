@@ -67,6 +67,9 @@ owns source changes and factual checks; the runtime derives identity and receipt
    exact-input receipts only while source, tool and relevant environment match.
    Distinguish repository-mandated hook checks from discretionary repeats;
    neither bypass required hooks nor replay a check just to rename its receipt.
+   A required CI job's known failure is actionable before the whole run ends.
+   Inspect and repair it within scope; preserve the failed subject's evidence
+   and rerun affected checks on the repair. Pending jobs do not imply success.
 5. Refactor while acceptance remains green. Inspect changed tests, fixtures,
    goldens, tolerances, suppressions and specification text against original
    intent. Mocks, placeholders or weakened oracles cannot substitute for the
@@ -102,11 +105,13 @@ framework for a one-off operation.
 
 Prefer current-session execution. If delegation is authorized and useful,
 partition independent writes in isolated workspaces; shared generators and
-integration serialize. Supply each lane its intent, acceptance and scope, then
-integrate its exact content and check facts. A selected wave ends with the
+integration serialize. Supply each lane its intent, acceptance, scope and review
+owner, then integrate its exact content and check facts. A selected wave ends with the
 caller-requested wave result; do not invent another wave. One fresh review of
-the integrated candidate can cover unjudged increments. Preserve any separately
-required lane judgments; a successful process exit is not semantic PASS.
+the integrated candidate can cover unjudged increments; when the integrator
+owns that review, workers return their handoff without commissioning another.
+Preserve any separately required lane judgments; a successful process exit is
+not semantic PASS.
 [Agent Native](../agent-native/SKILL.md) supplies optional dispatch mechanics.
 
 An explicitly requested one-shot adapter dispatches each supplied operation
