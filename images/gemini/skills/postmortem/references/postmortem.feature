@@ -1,17 +1,22 @@
 Feature: Postmortem tests retrospective causal claims
-  As an engineer learning from a validated outcome
+  As an engineer learning from a completed or stopped goal, session or change
   I want causal hypotheses challenged against evidence and counterfactuals
   So that retrospective stories do not become unsupported doctrine
 
   Scenario: An explicit causal question receives bounded analysis
-    Given an immutable Validate verdict
+    Given actual intent, outcome and available native judgment evidence
     And an explicit retrospective causal question
     When Postmortem reconstructs the evidence-backed timeline
     Then it distinguishes supported claims, rejected claims, and unknowns
     And it cites evidence and counterfactuals
+    And it distinguishes delivered facts, necessary checks and avoidable rework
+    And uncertain time and token accounting remains explicit
+    And it returns at most three supported changes or no-change inline by default
 
   Scenario: Postmortem does not repeat validation
-    Given the acceptance verdict is already immutable
+    Given an existing immutable verdict or no saved verdict
     When Postmortem begins
     Then it does not re-run acceptance validation
+    And it does not fabricate missing judgment evidence
     And it does not change proof, bookkeeping, planning, tracker, or delivery state
+    And it saves a report only on request in protected external non-Git storage
