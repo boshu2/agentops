@@ -1,6 +1,6 @@
 ---
 name: validate
-description: 'Freshly judge whether a finished change is proven against its original acceptance, before merge or handoff. Use when: an independent candidate verdict is needed; author tests alone cannot issue PASS.'
+description: 'Freshly judge a finished change against original acceptance before merge. Use when: independent proof is needed; author tests cannot issue PASS. Triggers: "check this change".'
 practices:
 - design-by-contract
 - llm-eval-harness

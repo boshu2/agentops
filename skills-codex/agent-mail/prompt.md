@@ -1,6 +1,6 @@
 # agent-mail
 
-Use Agent Mail as an optional messaging and file-reservation adapter for explicitly coordinated writers. Triggers: "coordinate writers", "reserve files".
+Coordinate explicitly selected writers with Agent Mail messages and advisory file reservations. Use when: work already needs this adapter; messages and reservations do not own tracker status.
 
 ## Instructions
 

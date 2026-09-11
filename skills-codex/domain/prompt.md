@@ -1,6 +1,6 @@
 # domain
 
-Load the AgentOps language and bounded-context contracts when a term needs precise meaning. Triggers: "define this domain term", "check the bounded context".
+Clarify domain terms, bounded contexts and repository conventions for a change. Use when: naming, rule ownership or applicable Go and other language standards are unclear; avoid a full architecture survey.
 
 ## Instructions
 

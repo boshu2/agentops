@@ -1,6 +1,6 @@
 ---
 name: sbh
-description: 'Inspect disk pressure with SBH and run one explicitly authorized recovery action. Triggers: "check disk pressure", "run SBH".'
+description: 'Inspect storage pressure with SBH and perform a specifically authorized recovery action. Use when: diagnosing disk pressure or selecting SBH recovery; inspection alone does not authorize deletion.'
 ---
 # SBH — storage pressure specialist
 

@@ -1,6 +1,6 @@
 ---
 name: plan
-description: 'Describe intended behavior, review write scope and assess decision reversibility before coding. Use when: acceptance or an approach is unclear; reuse the caller intent and stop when work can proceed.'
+description: 'Describe intended behavior, review write scope and assess whether decisions are reversible. Use when: acceptance or approach is unclear before coding; reuse existing intent and stop when actionable.'
 practices:
 - bdd-gherkin
 - design-by-contract

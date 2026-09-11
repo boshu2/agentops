@@ -1,6 +1,6 @@
 # security
 
-Run authorized repository security scans for vulnerabilities, dependency risk, secrets, and binary policy. Triggers: "security", "run repository security scans for", "security skill".
+Review code or run authorized security scans for vulnerabilities, secrets, dependencies and prompt boundaries. Use when: concrete security exposure needs assessment; report gaps without silently changing policy.
 
 ## Instructions
 

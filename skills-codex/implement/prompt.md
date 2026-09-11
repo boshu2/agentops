@@ -1,6 +1,6 @@
 # implement
 
-Implement authorized work and repair understood defects; return derived subject identity and check facts. Triggers: "implement", "implement this bead", "run the experiment". Full plan-to-validation requests route to rpi.
+Implement accepted behavior, repair understood defects or execute a selected wave with per-lane evidence. Use when: authorized coding work is ready; shape only consequential missing intent and return check facts.
 
 ## Instructions
 

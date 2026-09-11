@@ -1,6 +1,6 @@
 ---
 name: memory
-description: 'Recall reviewed lessons or deliberately mine and curate experience. Use when: prior evidence can change the next action, or the caller selects learning work; no mandatory recall or lesson after every task.'
+description: 'Recall reviewed lessons or deliberately mine and curate experience. Use when: prior evidence can change an action, or learning is requested; no mandatory recall or lesson.'
 practices:
 - evidence-based-engineering
 - continuous-learning

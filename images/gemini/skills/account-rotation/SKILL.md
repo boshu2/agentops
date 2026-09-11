@@ -1,6 +1,6 @@
 ---
 name: account-rotation
-user-invocable: false
+user-invocable: true
 skill_api_version: 1
 hexagonal_role: supporting
 consumes: []
@@ -11,9 +11,9 @@ metadata:
   capabilities: [account_rotation]
   effects: [rotate_agent_account]
   canonical_status: canonical
-  disposition: keep_specialist
+  disposition: keep_optional_adapter
   tier: execution
-description: 'Switch a caller-selected coding-agent account and report the observed identity. Triggers: "switch account", "rotate coding-agent account".'
+description: 'Switch a coding-agent account and verify its observed identity. Use when: the caller requests an account change on this host; does not allocate quota or switch accounts automatically.'
 practices:
 - pragmatic-programmer
 output_contract: observed account identity and command status

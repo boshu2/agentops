@@ -1,6 +1,6 @@
 ---
 name: ntm
-user-invocable: false
+user-invocable: true
 skill_api_version: 1
 hexagonal_role: supporting
 consumes:
@@ -18,7 +18,7 @@ metadata:
   disposition: keep_optional_adapter
   tier: execution
   dependencies: []
-description: 'Use NTM as an optional pane adapter for caller-supplied roles and commands. Triggers: "ntm", "tmux panes", "ntm robot state".'
+description: 'Operate caller-selected NTM agent panes and inspect their native state. Use when: persistent tmux roles are explicitly requested; pane liveness and prompt delivery are not validation.'
 practices:
 - pragmatic-programmer
 output_contract: factual session, pane, command, and observation results

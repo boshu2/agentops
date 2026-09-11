@@ -1,6 +1,6 @@
 # plan
 
-Shape or refine the existing bead or caller intent in place. Triggers: "plan", "discover and plan", "shape this goal", "review write scope", "check scope boundaries", "scope this change".
+Describe intended behavior, review write scope and assess whether decisions are reversible. Use when: acceptance or approach is unclear before coding; reuse existing intent and stop when actionable.
 
 ## Instructions
 

@@ -1,6 +1,6 @@
 # agent-native
 
-Operate explicit orchestrator, implementer, validator, and scribe roles through a caller-selected agent runtime. Triggers: "agent-native factory", "role-shaped agent panes", "persistent workers".
+Dispatch independent tasks to parallel workers or operate selected persistent roles. Use when: delegation is authorized and scopes are disjoint; runtime completion does not validate output.
 
 ## Instructions
 

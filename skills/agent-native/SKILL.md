@@ -1,6 +1,6 @@
 ---
 name: agent-native
-description: 'Dispatch independent tasks to parallel workers or operate caller-selected persistent roles. Use when: delegation is authorized and write scopes are disjoint; runtime completion does not validate output.'
+description: 'Dispatch independent tasks to parallel workers or operate selected persistent roles. Use when: delegation is authorized and scopes are disjoint; runtime completion does not validate output.'
 practices: [team-topologies, design-by-contract]
 hexagonal_role: supporting
 consumes: [explicit-role-packets]

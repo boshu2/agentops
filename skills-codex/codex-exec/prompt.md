@@ -1,6 +1,6 @@
 # codex-exec
 
-Run one caller-supplied Codex command non-interactively and capture evidence. Triggers: "run Codex headless", "capture Codex evidence".
+Run one supplied prompt through headless Codex and capture its result. Use when: a noninteractive Codex process is requested; this adapter does not choose work, retry or judge correctness.
 
 ## Instructions
 

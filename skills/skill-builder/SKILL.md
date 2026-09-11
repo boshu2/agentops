@@ -136,3 +136,7 @@ Evidence cannot publish itself as policy. Build an artifact only when the
 caller's authorization includes adoption; a proposal-only request ends with the
 proposal. Repair ordinary known defects within existing authority; tool failures
 remain explicit facts for the native caller, not an automatic helper chain.
+
+For an actual package edit, use the [source template](references/skill-template.md)
+for required fields and [context density guidance](references/context-density-checks.md)
+when deciding which prose earns a place. Neither requires adding a new skill.

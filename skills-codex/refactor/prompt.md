@@ -1,6 +1,6 @@
 # refactor
 
-Execute one behavior-preserving structural transformation and report evidence. Triggers: "refactor this", "simplify without changing behavior".
+Simplify structure, interfaces or responsibilities while preserving observable behavior. Use when: the caller requests a focused refactor; feature changes and architecture churn need their own intent.
 
 ## Instructions
 

@@ -1,6 +1,6 @@
 ---
 name: cc-hooks
-user-invocable: false
+user-invocable: true
 skill_api_version: 1
 hexagonal_role: supporting
 consumes: []
@@ -11,9 +11,9 @@ metadata:
   capabilities: [cc_hooks]
   effects: [write_hook_config, append_guardrail_telemetry, write_session_sentinel]
   canonical_status: canonical
-  disposition: keep_specialist
+  disposition: keep_optional_adapter
   tier: execution
-description: 'Configure default Claude Code enforcement hooks and opt-in guard recipes. Triggers: "cc-hooks", "configure Claude Code hooks", "install hooks".'
+description: 'Configure Claude Code hooks and narrow enforcement guards. Use when: the caller requests hook installation, repair or policy changes; a hook is not required to use other skills.'
 practices:
 - pragmatic-programmer
 output_contract: a hooks block in ~/.claude or project settings.json (matcher + command entries), or a hook script signalling allow/deny/ask via exit codes and hookSpecificOutput JSON; installs write hook config and guard fires append hashed telemetry

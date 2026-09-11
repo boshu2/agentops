@@ -120,3 +120,13 @@ external storage authorization. Return the exact path to Markdown consumers.
 Writing a handoff changes no tracker, Git, runtime or verdict state. The native
 caller continues owning the authorized outcome; this documentation mode does
 not select work or decide continuation for it.
+
+## Reference menu
+
+Load these only for the document being written. They supply examples and
+techniques under the kernel's accepted scope, not additional workflow gates.
+
+- Formats and examples: [generation templates](references/generation-templates.md), [project types](references/project-types.md).
+- OSS scope: [documentation tiers](references/oss-documentation-tiers.md), [OSS project types](references/oss-project-types.md).
+- Writing and checks: [prose workmanship](references/prose-and-report-workmanship.md), [validation techniques](references/validation-rules.md).
+- Explicit context configuration: [context routing](references/bootstrap/context-routing.md).

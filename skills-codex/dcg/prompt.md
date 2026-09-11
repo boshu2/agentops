@@ -1,6 +1,6 @@
 # dcg
 
-Handle blocked destructive commands and configure agent safety guardrails. Triggers: "dcg", "handle a DCG block", "configure agent safety guardrails".
+Diagnose a Destructive Command Guard block or configure its guardrails. Use when: DCG rejected an operation or the caller requests policy work; do not bypass a block by disguising the command.
 
 ## Instructions
 

@@ -1,6 +1,6 @@
 ---
 name: premortem
-description: 'Challenge an unexecuted plan for assumptions that could make it fail. Use when: a fresh critical read of a resolved plan is wanted; finished-code judgment belongs to Validate.'
+description: 'Challenge a rollout plan with one fresh judge before implementation; identify what could make it fail. Not for finished-code judgment. Triggers: "one judge", "challenge this plan".'
 practices: [design-by-contract, adr]
 hexagonal_role: domain
 consumes: []

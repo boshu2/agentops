@@ -83,3 +83,10 @@ Load only the language or risk guidance needed for the current change from
 contracts and the actual toolchain take precedence. A vocabulary lookup does
 not require a coding-standards survey, and these references do not create a
 second approval or validation lane.
+
+Choose just the applicable reference:
+
+- Languages: [Go](references/standards/go.md), [Python](references/standards/python.md), [Rust](references/standards/rust.md), [JavaScript](references/standards/javascript.md), [TypeScript](references/standards/typescript.md), [shell](references/standards/shell.md).
+- Data and prose: [JSON](references/standards/json.md), [YAML](references/standards/yaml.md), [Markdown](references/standards/markdown.md).
+- Relevant risk: [concurrency](references/standards/race-condition-checklist.md), [SQL](references/standards/sql-safety-checklist.md), [LLM trust](references/standards/llm-trust-boundary-checklist.md).
+- Test design: [test pyramid](references/standards/test-pyramid.md); package form: [skill structure](references/standards/skill-structure.md).

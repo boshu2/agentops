@@ -1,6 +1,6 @@
 ---
 name: rch
-description: 'Use RCH once to offload a build or collect remote-compilation diagnostics. Triggers: "use RCH", "offload this build".'
+description: 'Offload one requested build through RCH or diagnose its remote compiler path. Use when: remote compilation is explicitly selected; report errors without creating a retry controller.'
 ---
 # RCH — remote compilation specialist
 

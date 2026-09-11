@@ -1,6 +1,6 @@
 ---
 name: rpi
-description: 'Own an authorized outcome through implementation, checks and fresh final validation; load planning and memory only when useful. Triggers: "run rpi", "run one traversal", "execute this plan", orchestration or worker delegation that implements changes.'
+description: 'Apply the optional outcome-to-judgment operating charter. Use when: the caller explicitly selects RPI; ordinary coding, delegated work and native goals do not require this workflow.'
 practices:
 - bdd-gherkin
 - tdd
@@ -21,6 +21,7 @@ context_rel:
   with: validate
 skill_api_version: 1
 user-invocable: true
+disable-model-invocation: true
 metadata:
   graph_root: true
   tier: meta
@@ -28,7 +29,7 @@ metadata:
   capabilities: [own_authorized_outcome, report]
   effects: [dispatch_core_phases]
   canonical_status: canonical
-  disposition: keep
+  disposition: keep_strategy
 output_contract: 'concise human-readable result; optional rpi-report.v1 when a caller or declared consumer requests machine-readable evidence'
 ---
 

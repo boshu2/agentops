@@ -1,6 +1,6 @@
 ---
 name: skill-eval
-description: 'Evaluate a named maintenance decision with behavioral probes, controlled coding comparisons, or separate memory transfer tests. Triggers: "measure this skill", "the probe came back INERT", "the control arm aces it", "harden this scenario", "is this skill actually doing anything".'
+description: 'Measure whether a skill helps a named task or needs revision, removal or more evidence. Use when: a bounded routing or controlled coding evaluation is requested; static conformance alone cannot show benefit.'
 practices:
 - measurement-over-assertion
 - ab-testing

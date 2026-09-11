@@ -1,6 +1,6 @@
 ---
 name: research
-description: 'Answer a bounded question by tracing code, investigating evidence or testing a recurring pattern. Use when: consequential uncertainty needs sources; an external feature teardown belongs to Reverse Engineer.'
+description: 'Answer a bounded question by tracing code, investigating evidence or testing a recurring pattern. Use when: consequential uncertainty needs sources. Not for external feature teardowns; use reverse-engineer.'
 practices:
 - pragmatic-programmer
 - ddd-bounded-context

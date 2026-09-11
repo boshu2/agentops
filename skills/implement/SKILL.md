@@ -125,3 +125,6 @@ Return facts, not semantic PASS. An implement-only handoff does not authorize
 Git, tracker or delivery transitions; existing caller authority remains usable.
 A full outcome request uses RPI through fresh final judgment. Success is working
 behavior with usable evidence, not volume of logs or process artifacts.
+
+[Generic scaffold examples](references/scaffold/generic-templates.md) are
+optional starting points when the repository has no suitable existing pattern.

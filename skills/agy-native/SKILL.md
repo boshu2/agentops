@@ -1,6 +1,6 @@
 ---
 name: agy-native
-description: 'Run a supplied task in the AGY Antigravity runtime and collect its result. Use when: the caller explicitly selects AGY; not a fallback for ordinary native coding work.'
+description: 'Run a supplied task in AGY Antigravity and collect its result. Use when: the caller selects AGY; never a fallback for native coding.'
 practices: [team-topologies, design-by-contract]
 hexagonal_role: driving-adapter
 consumes: [explicit-packet]

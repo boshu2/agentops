@@ -1,6 +1,6 @@
 # reality-check
 
-Compare a claimed state with observable repository evidence and report concrete gaps. Requires a claim or expected state to test. Triggers: "reality check", "is this claim actually done", "compare claim to repo".
+Check whether a claimed shipped feature, repository state or goal status holds up in observable evidence. Use when: comparing a claim with what exists; a gap report is not a final candidate verdict.
 
 ## Instructions
 

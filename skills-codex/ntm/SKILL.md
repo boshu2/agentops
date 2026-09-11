@@ -1,6 +1,6 @@
 ---
 name: ntm
-description: 'Use NTM as an optional pane adapter for caller-supplied roles and commands. Triggers: "ntm", "tmux panes", "ntm robot state".'
+description: 'Operate caller-selected NTM agent panes and inspect their native state. Use when: persistent tmux roles are explicitly requested; pane liveness and prompt delivery are not validation.'
 ---
 # NTM — optional pane adapter
 

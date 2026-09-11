@@ -1,6 +1,6 @@
 ---
 name: rpi
-description: 'Own an authorized outcome through implementation, checks and fresh final validation; load planning and memory only when useful. Triggers: "run rpi", "run one traversal", "execute this plan", orchestration or worker delegation that implements changes.'
+description: 'Apply the optional outcome-to-judgment operating charter. Use when: the caller explicitly selects RPI; ordinary coding, delegated work and native goals do not require this workflow.'
 ---
 # RPI
 

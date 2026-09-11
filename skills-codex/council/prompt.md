@@ -1,6 +1,6 @@
 # council
 
-Gather independent views on a high-stakes judgment. Not for one-judge plan challenge; that is premortem. Triggers: "council", "multi-judge review", "independent perspectives".
+Compare independent perspectives on a consequential or contested decision. Use when: the caller selects multiple judges; evidence resolves disagreement, not majority voting or model prestige.
 
 ## Instructions
 
