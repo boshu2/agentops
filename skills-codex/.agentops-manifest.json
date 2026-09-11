@@ -321,8 +321,8 @@
     {
       "name": "implement",
       "source_skill": "skills/implement",
-      "source_hash": "96c806afaa094ff6128649efd4cb96fa54e86a977b9353edb545d23ebf11f47f",
-      "generated_hash": "f3a97a6f2c2f13058a37f1e3f8545ea1c837f14c2da2965b471c0d8f5e574d6b"
+      "source_hash": "7e37fb379de17fbd31e16cf93511713765d070413515720c5636584698d0bc62",
+      "generated_hash": "6c2f4e4f63a32a23eedf61753d588aeac84cd86b033a3b441fc4bae7fa582fe2"
     },
     {
       "name": "memory",

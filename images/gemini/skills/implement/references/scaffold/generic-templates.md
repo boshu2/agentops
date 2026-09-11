@@ -1,7 +1,8 @@
 # Generic scaffolding templates (project · component · CI)
 
-> **Provenance:** This content was **moved verbatim** out of `skills/implement/SKILL.md`
-> (generic-craft trim). A frontier model produces
+> **Provenance:** This content was **moved verbatim** out of the historical
+> `skills/scaffold/SKILL.md` (generic-craft trim). It is now maintained under
+> Implement. A frontier model produces
 > standard project trees, best-practice config, and GitHub-Actions / GitLab-CI YAML
 > correctly **with no template** — so this file is a fallback reference, not the skill's
 > durable value. Reach for this file only when the caller wants one of the
