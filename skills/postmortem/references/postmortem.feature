@@ -20,3 +20,17 @@ Feature: Postmortem tests retrospective causal claims
     And it does not fabricate missing judgment evidence
     And it does not change proof, bookkeeping, planning, tracker, or delivery state
     And it saves a report only on request in protected external non-Git storage
+
+  Scenario: A goal requests code and a retrospective
+    Given the caller requires a coding change and a final postmortem
+    And required code checks are still pending
+    When the caller prepares code acceptance review
+    Then the review does not require a provisional postmortem
+    And final analysis waits for the known outcome and available judgment
+    And the overall goal still requires the requested postmortem
+
+  Scenario: The caller explicitly requests interim analysis
+    Given the coding outcome is not yet known
+    When the caller requests a retrospective up to a stated cutoff
+    Then the analysis names that cutoff and pending checks
+    And it does not infer final success or replace later outcome evidence
