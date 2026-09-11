@@ -255,8 +255,8 @@
     {
       "name": "agent-native",
       "source_skill": "skills/agent-native",
-      "source_hash": "794ac660b8caa18e9f0145d099257974f51188fa65190b894a94f7c78b6deb4d",
-      "generated_hash": "82f92f1f70af1bc0bc68a42c78fc8ee90ced72a3b518d5d828cc53a0f7ace16a"
+      "source_hash": "c247de76757e92c15a36a7cf8ab0946eeb880d3424291a0efb19e05f81aed13e",
+      "generated_hash": "6a72c88ce4392646260012ea3318fe85f7930d2fd50f8f5069d88705fc14e4ec"
     },
     {
       "name": "agy-native",
@@ -291,8 +291,8 @@
     {
       "name": "craft-goal",
       "source_skill": "skills/craft-goal",
-      "source_hash": "1b14aa1d1de32a6406ada1f57b4bf88bf5432f0f8b8a74f3be98b3af33143355",
-      "generated_hash": "e19a2a9d80110b8f1e57e21285c7bb04cea5640563de6a691ba7b18b5ea2ee64"
+      "source_hash": "a7bf1d672f03f789d282bd886a807100d38d67b254c736374cade28ac74b4bac",
+      "generated_hash": "48c2aa4970a442eaf13be1e57b2a96b484bb6d6c149755f02c50f19e6954b762"
     },
     {
       "name": "dcg",
@@ -321,8 +321,8 @@
     {
       "name": "implement",
       "source_skill": "skills/implement",
-      "source_hash": "af41fa112d21870677ed165e70c28f4e5b923bbb07f986cceab6abd016ee6e0a",
-      "generated_hash": "47556d3d595cbb739d5ea6c4b244849acc09246e3b1b71a1ee76d346344f4ce2"
+      "source_hash": "d7e3b51ffba9f38d16635d27baeab03c461d4b84be3e3b1d1b6b669bbb87a070",
+      "generated_hash": "31639aeac2011bb96525021afb59a608c5948b49b1458cbc15160b5d6b5a25b6"
     },
     {
       "name": "memory",
@@ -345,14 +345,14 @@
     {
       "name": "plan",
       "source_skill": "skills/plan",
-      "source_hash": "1841d6f87c2fb54a13f2dc10c9d63ee87f5a38805cc3aa8bbc89e7477c954abc",
-      "generated_hash": "e2281ff61a4af9d2d2fb5ad88c02e7af1ccad5f233be737802ee385ba6a5db5a"
+      "source_hash": "0a489ea32d18f7104ea12608b74d242fcd7e6ce85c22a73c5c19d3f7da787c9c",
+      "generated_hash": "04058340641faef641d15e9b0ec1c19ea7324c3c5421b50b0fb5b80995ae3877"
     },
     {
       "name": "postmortem",
       "source_skill": "skills/postmortem",
-      "source_hash": "16f80995fc7bc81c9711f66d47d17d1acb74caa1d49f9bc7db963a4916f1632d",
-      "generated_hash": "e83306969ec80722d9367c01e1e7d307643f63e593b642612a250fcffea19503"
+      "source_hash": "8393503f05c265dc0d214a1a3af5bd394a69ade12662ab530c4e86866f88b83e",
+      "generated_hash": "284780609f4c3be9b6473b50068846cad1d24a6ea8b9555c38468ff7423973d4"
     },
     {
       "name": "premortem",
@@ -417,8 +417,8 @@
     {
       "name": "skill-eval",
       "source_skill": "skills/skill-eval",
-      "source_hash": "fb34e823e0292dac89db76a0e0edf92324f0d72a08d2c007429f512437dab95c",
-      "generated_hash": "aceca58535c352659adbdf8e29899bbd5d62cca19d654c0f11386948b1d3a41e"
+      "source_hash": "7f4956eeb7b364e5e0ab72b6c949ce9488f64f106bb185ea1fb527ce2d7b9ef8",
+      "generated_hash": "9ebc52f8ababe9c5be8825b260b0f89529834350dcf85ac99a55c98bc6162739"
     },
     {
       "name": "test",
@@ -441,8 +441,8 @@
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "e1d3b5342adacc7dd094eba80cf90f39f7a8e31cc8f6b95604aa45280cc2130c",
-      "generated_hash": "91247144a6f17f96ba18ec58dc745055aab85badc5887e1f52e79cce0a723486"
+      "source_hash": "8def3596efe18975392bc0ce3cac0402ffc0b9202e2d7dd988401e6f442905b2",
+      "generated_hash": "c88209fb2cca50df76edb8395b6b2ccaa038b6d6cc4c5bba81dd4c8ee917bd09"
     }
   ],
   "package_count": 34

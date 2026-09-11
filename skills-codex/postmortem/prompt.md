@@ -1,6 +1,6 @@
 # postmortem
 
-Test a retrospective causal question against outcome evidence. Use when: a postmortem is explicitly requested; finishing a task does not require a report or lesson.
+Analyze a known outcome. Use when: a postmortem or interim analysis is explicitly requested; name the evidence cutoff. Consumes judgment, does not gate code acceptance or require a lesson.
 
 ## Instructions
 

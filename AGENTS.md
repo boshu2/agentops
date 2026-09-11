@@ -2,23 +2,22 @@
 
 Detailed workflow mechanics: [docs/agent-workflow-reference.md](docs/agent-workflow-reference.md).
 
-AgentOps is the operations layer for agentic engineering: tools, optional skills and evidence
-contracts that make one coding-agent change independently judgeable. Your
-tracker, Git, and coding agents keep owning work, history, and execution;
-AgentOps joins them as a federated integration graph and adds the judgment
-step. The default is native execution with zero mandatory AgentOps skills:
+AgentOps provides tools, optional skills and evidence for independently judgeable
+coding-agent changes. The tracker, Git and coding agents retain work, history
+and execution authority. AgentOps connects their evidence in a federated graph;
+native execution needs zero mandatory AgentOps skills.
 
 ```text
 Accepted intent -> native implementation and checks -> fresh independent judgment -> finish
 ```
 
-No fresh independent judgment over the exact subject means the experiment is
-not proven.
-
-Use the existing issue or conversation, edit the smallest useful change, run
-the repository's checks, and have a fresh context judge acceptance. Load a
-skill only for a concrete uncertainty or an explicitly selected workflow.
+Use the existing issue or conversation and load a skill only for a concrete
+uncertainty or an explicitly selected workflow. Without fresh independent
+judgment over the exact subject, the experiment remains unproven.
 Native goals supply continuity; BD keeps work and handoffs. Neither needs RPI.
+Creating a goal does not reset the conversation or enforce a resource limit.
+Delegate focused intent, scope and evidence; retrieve history only when it can
+change a decision. Assign final review once, preserving required review legs.
 See [the skill menu](docs/SKILL-ROUTER.md) for optional guidance. Plan states observable behavior in existing domain terms; Validate checks those same accepted examples. Conversation or bead examples suffice.
 
 ## Repository map and mechanics
@@ -161,6 +160,10 @@ smallest action that advances acceptance or resolves consequential uncertainty.
 Plan may revise an approach when evidence disproves an assumption within
 unchanged accepted outcome and scope; acceptance changes need caller authority.
 Implement repairs ordinary known defects directly. Specialists remain optional.
+Act on known blocking check failures while remaining checks finish; use native
+waits for unchanged pending state. Requested retrospectives follow the known
+outcome and judgment; explicit interim analysis names its cutoff and unknowns.
+Neither holds code acceptance open; the overall goal still owes both deliverables.
 
 Use cheap discriminating checks during edits, required integration checks before
 final judgment, and reserve capacity for integration, validation, repair and a
@@ -184,12 +187,11 @@ out-of-scope change or failed acceptance means `FAIL`. Repair known findings
 within authority and real bounds, then revalidate the changed exact subject.
 Persist machine evidence only for a caller request or declared consumer.
 
-[Memory](skills/memory/SKILL.md) optionally recalls reviewed external topic pages
-or separately mines and curates them. Its contract owns support, applicability,
-invalidation and preservation; no blind TTL/deletion. Benefit needs later work
-evidence. Public or already-cleared inputs only: this path supplies no native
-restricted-source enforcement. Protected external drafts and independent support
-and destination-disclosure review precede Git import (ADR-0016).
+[Memory](skills/memory/SKILL.md) owns optional recall, mining and curation:
+support, applicability, invalidation and preservation; no blind TTL/deletion.
+Benefit needs later work evidence. Use public or already-cleared inputs; this
+path supplies no native restricted-source enforcement. Protected external drafts and
+independent support/disclosure review precede Git import (ADR-0016).
 
 The [RPI skill](skills/rpi/SKILL.md) packages this charter when explicitly selected;
 it is not a prerequisite for native execution or independent review. The
@@ -243,8 +245,6 @@ AgentOps work ownership.
 
 ## Closeout
 
-Inspect the final subject, map acceptance to evidence, disclose `checked` and
-`not_checked` (any entry makes the result `NOT_PROVEN`; scope limits are
-disclosed, never deleted), and obtain one fresh validation over the exact
-content. Git, push, merge, release, and rollback belong to the caller's
-repository policy.
+Map final acceptance to evidence and obtain fresh exact-content judgment.
+Disclose `checked` and `not_checked`; any unchecked acceptance means `NOT_PROVEN`.
+Git, push, merge, release and rollback follow the caller's repository policy.
