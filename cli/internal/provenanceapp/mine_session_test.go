@@ -302,6 +302,91 @@ func TestMineSession_CodexFunctionCalls(t *testing.T) {
 	}
 }
 
+func TestMineSession_CheckpointSourceAliasesRejected(t *testing.T) {
+	for _, name := range []string{
+		"identical_absolute", "identical_relative", "relative_source_absolute_state",
+		"absolute_source_relative_state", "normalized_relative_state", "source_symlink",
+		"checkpoint_symlink", "parent_directory_symlink", "hardlink",
+	} {
+		t.Run(name, func(t *testing.T) {
+			dir := t.TempDir()
+			t.Chdir(dir)
+			const content = "{\"type\":\"tool_use\",\"tool_name\":\"Read\",\"tool_input\":{}}\n"
+			sess := writeMineSession(t, dir, "source.jsonl", content)
+			source, state := sess, sess
+			switch name {
+			case "identical_relative":
+				source, state = "source.jsonl", "source.jsonl"
+			case "relative_source_absolute_state":
+				source = "./source.jsonl"
+			case "absolute_source_relative_state":
+				state = "./source.jsonl"
+			case "normalized_relative_state":
+				if err := os.Mkdir("nested", 0o700); err != nil {
+					t.Fatal(err)
+				}
+				state = "./nested/../source.jsonl"
+			case "source_symlink", "checkpoint_symlink":
+				alias := filepath.Join(dir, "alias.jsonl")
+				if err := os.Symlink(sess, alias); err != nil {
+					t.Skipf("symlinks unavailable: %v", err)
+				}
+				if name == "source_symlink" {
+					source = alias
+				} else {
+					state = alias
+				}
+			case "parent_directory_symlink":
+				if err := os.Symlink(dir, "alias-dir"); err != nil {
+					t.Skipf("directory symlinks unavailable: %v", err)
+				}
+				state = filepath.Join("alias-dir", "source.jsonl")
+			case "hardlink":
+				state = filepath.Join(dir, "alias.jsonl")
+				if err := os.Link(sess, state); err != nil {
+					t.Skipf("hardlinks unavailable: %v", err)
+				}
+			}
+			before, err := os.Lstat(state)
+			if err != nil {
+				t.Fatal(err)
+			}
+			out, err := mine(t, MineOptions{File: source, State: state})
+			if err == nil || out != "" {
+				t.Errorf("source alias must fail before emission: output %q, error %v", out, err)
+			}
+			for _, path := range []string{source, state} {
+				if got, err := os.ReadFile(path); err != nil || string(got) != content {
+					t.Errorf("source alias %s changed: %q, error %v", path, got, err)
+				}
+			}
+			if after, err := os.Lstat(state); err != nil || !os.SameFile(before, after) {
+				t.Errorf("checkpoint entry replaced: %v", err)
+			}
+		})
+	}
+}
+
+func TestMineSession_DistinctCheckpointSameContent(t *testing.T) {
+	dir := t.TempDir()
+	const content = "{\"type\":\"tool_use\",\"tool_name\":\"Read\",\"tool_input\":{}}\n"
+	sess := writeMineSession(t, dir, "source.jsonl", content)
+	state := writeMineSession(t, dir, "state.json", content)
+	out, err := mine(t, MineOptions{File: sess, State: state})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if events := parseMineEvents(t, out); len(events) != 1 || events[0].Tool != "Read" {
+		t.Fatalf("distinct checkpoint must allow one Read event: %+v", events)
+	}
+	if again, err := mine(t, MineOptions{File: sess, State: state}); err != nil || again != "" {
+		t.Fatalf("distinct checkpoint did not preserve incremental mining: %q, %v", again, err)
+	}
+	if got, err := os.ReadFile(sess); err != nil || string(got) != content {
+		t.Fatalf("source changed with distinct checkpoint: %q, %v", got, err)
+	}
+}
+
 func TestMineSession_IncrementalIdempotentRollback(t *testing.T) {
 	dir := t.TempDir()
 	state := filepath.Join(dir, "state.json")

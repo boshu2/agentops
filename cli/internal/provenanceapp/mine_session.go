@@ -70,8 +70,12 @@ func MineSession(opts MineOptions, out io.Writer) error {
 	if mineFile == "" {
 		return fmt.Errorf("mine-session: --file is required")
 	}
-	if _, err := os.Stat(mineFile); err != nil {
+	sourceInfo, err := os.Stat(mineFile)
+	if err != nil {
 		return fmt.Errorf("mine-session: cannot read --file %s: %w", mineFile, err)
+	}
+	if mineStateAliasesSource(mineStatePath, sourceInfo) {
+		return fmt.Errorf("mine-session: --state %s must not refer to --file %s", mineStatePath, mineFile)
 	}
 
 	p := parser.NewParser()
@@ -275,6 +279,14 @@ func sameFile(a, b string) bool {
 		return a == b
 	}
 	return aa == bb
+}
+
+// mineStateAliasesSource compares filesystem identity, including symlinks and
+// hardlinks, before mining can emit events or replace a source with checkpoint
+// data. Missing or inaccessible checkpoints retain their existing validation.
+func mineStateAliasesSource(path string, source os.FileInfo) bool {
+	state, err := os.Stat(path)
+	return err == nil && os.SameFile(source, state)
 }
 
 func writeMineState(path string, st mineState) error {
