@@ -135,30 +135,7 @@ func MineSession(opts MineOptions, out io.Writer) error {
 	// --- persist the watermark ------------------------------------------------
 	// Dry-run uses the same prior watermark and events, but leaves them pending.
 	if mineStatePath != "" && !opts.DryRun {
-		highest := startAfter
-		for _, m := range result.Messages {
-			if m.MessageIndex > highest {
-				highest = m.MessageIndex
-			}
-		}
-		minedCount := len(events)
-		if prior != nil && startAfter == prior.LastLine {
-			minedCount += prior.MinedCount // incremental: accumulate
-		}
-		// Store the ABSOLUTE path: the File binding must be cwd-independent. Storing
-		// the raw (possibly relative) --file value lets the same relative name from a
-		// different cwd compare equal to a physically different transcript, defeating
-		// the binding and dropping that file's events.
-		storedFile := mineFile
-		if abs, aerr := filepath.Abs(mineFile); aerr == nil {
-			storedFile = abs
-		}
-		next := mineState{
-			File:           storedFile,
-			LastLine:       highest,
-			PrefixChecksum: prefixChecksum(result, highest),
-			MinedCount:     minedCount,
-		}
+		next := nextMineState(mineFile, result, prior, startAfter, len(events))
 		if err := writeMineState(mineStatePath, next); err != nil {
 			return fmt.Errorf("mine-session: write state %s: %w", mineStatePath, err)
 		}
@@ -166,6 +143,34 @@ func MineSession(opts MineOptions, out io.Writer) error {
 
 	fmt.Fprintf(os.Stderr, "mine-session: %d new event(s) from %s\n", len(events), mineFile)
 	return nil
+}
+
+// nextMineState builds the checkpoint for the parsed prefix and accumulates
+// prior events only when the prior watermark was honored.
+func nextMineState(file string, result *parser.ParseResult, prior *mineState, startAfter, minedCount int) mineState {
+	highest := startAfter
+	for _, m := range result.Messages {
+		if m.MessageIndex > highest {
+			highest = m.MessageIndex
+		}
+	}
+	if prior != nil && startAfter == prior.LastLine {
+		minedCount += prior.MinedCount // incremental: accumulate
+	}
+	// Store the ABSOLUTE path: the File binding must be cwd-independent. Storing
+	// the raw (possibly relative) --file value lets the same relative name from a
+	// different cwd compare equal to a physically different transcript, defeating
+	// the binding and dropping that file's events.
+	storedFile := file
+	if abs, aerr := filepath.Abs(file); aerr == nil {
+		storedFile = abs
+	}
+	return mineState{
+		File:           storedFile,
+		LastLine:       highest,
+		PrefixChecksum: prefixChecksum(result, highest),
+		MinedCount:     minedCount,
+	}
 }
 
 // mineToolCallEvents emits one tool_call event per tool use in messages whose
