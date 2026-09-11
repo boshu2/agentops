@@ -1,12 +1,16 @@
 # Go Conventions
 
-> Canonical source with full examples: `skills/standards/references/go.md`
+> Canonical source with full examples: `skills/domain/references/standards/go.md`
 > This file is kept self-contained for sessions that don't invoke skills.
 
 ## Complexity Budget
 
 - Warn at cyclomatic complexity 15, fail at 25.
-- Run `golangci-lint run` to check.
+- Use the repository's actual complexity/CI check; lint alone does not establish
+  this budget. In AgentOps, run from the repository root:
+  `bash scripts/check-go-complexity.sh --base <accepted-base>`.
+  It discovers changed paths from committed `<accepted-base>...HEAD`; a
+  no-files/skip result does not validate uncommitted changes.
 
 ## Before Committing Go Changes
 
@@ -21,7 +25,7 @@ Or equivalently: `cd cli && make build && make test`
 
 ## Testing (AI-Native Test Shape)
 
-**L2 first, L1 always.** Write L2 integration tests first (where bugs are found), then L1 unit tests for regression safety. AI agents write both. See `skills/standards/references/test-pyramid.md` for the full AI-native test shape.
+**L2 first, L1 always.** Write L2 integration tests first (where bugs are found), then L1 unit tests for regression safety. AI agents write both. See `skills/domain/references/standards/test-pyramid.md` for the full AI-native test shape.
 
 - Test file naming: `<source>_test.go` (e.g., `goals_test.go`). NEVER `cov*_test.go` or `*_extra_test.go`.
 - Test function naming: `Test<Uppercase>` (e.g., `TestFoo_Bar`). Go requires uppercase after `Test`.
@@ -32,7 +36,7 @@ Or equivalently: `cd cli && make build && make test`
 - Prefer table-driven tests for multi-case functions.
 - Test low-level functions directly; don't depend on external CLIs (`bd`, `ao`) in tests.
 - **Prefer L2 integration tests** that call a command/workflow entry point over L1 tests that mock dependencies.
-- **Guard-test fixtures must use the real persisted shape.** Skip/dedup/consumed/idempotency/regression guard tests must build fixtures by round-tripping a real persisted sample (serialize with the production writer, read back with the production reader) or asserting against a checked-in real example — never a hand-built in-memory constructor that sets a marker at a granularity the on-disk format never produces (e.g. `consumed` at the item level when `next-work.jsonl` marks it at the batch level). A fixture of a shape production can't emit gives a false green (ag-mjlg / PR #652). Full rationale: `skills/standards/references/test-pyramid.md` → "Fixture Fidelity".
+- **Guard-test fixtures must use the real persisted shape.** Skip/dedup/consumed/idempotency/regression guard tests must build fixtures by round-tripping a real persisted sample (serialize with the production writer, read back with the production reader) or asserting against a checked-in real example — never a hand-built in-memory constructor that sets a marker at a granularity the on-disk format never produces (e.g. `consumed` at the item level when `next-work.jsonl` marks it at the batch level). A fixture of a shape production can't emit gives a false green (ag-mjlg / PR #652). Related fixture guidance: `skills/domain/references/standards/test-pyramid.md` → "Regression design".
 - **Test isolation — restore shared global/process state via `t.Cleanup`.** `cli/cmd/ao` tests share one `rootCmd` + package-global cobra flag vars and run inside the repo tree, so a test that mutates shared state without restoring it leaks into whatever test the `-shuffle=on` order runs next. This is a recurring flake class (goals `goalsMeasureScenariosOnly` cobra-global → `a9dab21c4`; `core.bare` git-env → ek8v; cwd floor → hvb).
   - A test that sets a package-global cobra flag MUST restore it via `t.Cleanup` — a self-cleaning `setFoo(t, v)` helper at every set-site is the durable shape, not a reset only on the happy path.
   - A test that mutates process state MUST scope it: `t.Chdir(t.TempDir())`, `t.Setenv`, and `git -C <tempRepo>` with `cmd.Dir` set. Never run a state-mutating `git` op against the real repo via an unset `cmd.Dir` / leaked `GIT_DIR`.
