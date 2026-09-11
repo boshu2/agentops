@@ -190,6 +190,45 @@ func TestMineSession_RollbackOnContentRewrite(t *testing.T) {
 	}
 }
 
+func TestMineSession_CodexCustomInputRewrite(t *testing.T) {
+	// age-85vu.5: native custom calls carry freeform input, not arguments.
+	// Round-trip the production checkpoint before changing only that input.
+	dir := t.TempDir()
+	const original = `{"type":"response_item","payload":{"type":"custom_tool_call","name":"apply_patch","call_id":"c2","input":"*** Begin Patch\n*** Add File: example.txt\n+before\n*** End Patch"}}
+{"type":"response_item","payload":{"type":"custom_tool_call_output","call_id":"c2","output":"done"}}
+`
+	sess := writeMineSession(t, dir, "custom.jsonl", original)
+	opts := MineOptions{File: sess, State: filepath.Join(dir, "state.json")}
+
+	for _, step := range []struct {
+		name       string
+		content    string
+		wantEvents int
+	}{
+		{"first mine", original, 1},
+		{"unchanged original", original, 0},
+		{"input-only rewrite", strings.Replace(original, "+before", "+after", 1), 1},
+		{"unchanged rewrite", strings.Replace(original, "+before", "+after", 1), 0},
+	} {
+		if err := os.WriteFile(sess, []byte(step.content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		out, err := mine(t, opts)
+		if err != nil {
+			t.Fatalf("%s: %v", step.name, err)
+		}
+		events := parseMineEvents(t, out)
+		if len(events) != step.wantEvents {
+			t.Fatalf("%s: got %d events, want %d: %+v", step.name, len(events), step.wantEvents, events)
+		}
+		for _, event := range events {
+			if event.Kind != "tool_call" || event.Tool != "apply_patch" || event.SourceLine != 1 || event.SessionID != "custom" {
+				t.Errorf("%s: unexpected custom call event: %+v", step.name, event)
+			}
+		}
+	}
+}
+
 // TestMineSession_StateBoundToFile (DROP-CASE regression): a --state watermark is
 // bound to ONE transcript. Reusing it against a DIFFERENT file (whose line-prefix
 // happens to line up) must NOT trust the stale line watermark and silently drop
