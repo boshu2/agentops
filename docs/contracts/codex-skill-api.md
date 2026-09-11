@@ -5,6 +5,7 @@
 
 **Official docs:**
 - [Codex Skills](https://developers.openai.com/codex/skills/)
+- [Build skills and invocation policy](https://learn.chatgpt.com/docs/build-skills)
 - [Codex Multi-Agent](https://developers.openai.com/codex/multi-agent/)
 - [Codex CLI Features](https://developers.openai.com/codex/cli/features)
 
@@ -63,6 +64,21 @@ dependencies:
 | `policy.allow_implicit_invocation` | `false` prevents auto-activation (explicit `$skill` only) |
 | `dependencies.tools` | MCP server dependencies |
 
+The Codex default for `policy.allow_implicit_invocation` is `true`. Setting it
+to `false` prevents implicit activation while preserving explicit `$skill`
+invocation. For parity projections, `scripts/codex-sync.sh` maps canonical
+`disable-model-invocation: true` to this policy. It merges that field into the
+projected copy of source `agents/openai.yaml`, preserving its UI metadata,
+dependencies and other policy fields. If no source file exists, it generates
+the policy file alone.
+
+The generator always derives metadata from canonical source files. Removing
+the frontmatter flag, or setting it to `false`, restores source YAML verbatim
+or removes a generated-only policy file. A caller-authored source policy is
+still respected; with no explicit source policy, Codex's default applies.
+For development installs linked directly to `skills/<name>/`, set the matching
+policy in canonical `agents/openai.yaml`; those installs bypass projection.
+
 ---
 
 ## Skill Discovery And Installation
@@ -103,10 +119,13 @@ canonical repository skills.
 
 Skills are loaded via **progressive disclosure**: metadata first (name,
 description), full SKILL.md only when activated. Because the description is
-the implicit-routing surface, a projection must preserve the source's complete
-`Triggers:` clause while keeping its introductory prose within the catalog
-budget; a generic summary or dropped trigger is a behavioral defect, even when
-the body remains byte-complete.
+the implicit-routing surface, a projection must preserve the complete source
+description, including use cases, preconditions, exclusions and any `Triggers:`
+clause. Only whitespace is normalized. Keep source descriptions concise and
+front-load their key use case: Codex may shorten the initial discovery list to
+fit its context budget, but the generated package must not silently discard
+routing meaning. A dropped sentence is a behavioral defect even when the body
+remains byte-complete.
 
 ---
 
@@ -204,16 +223,14 @@ Tools available inside a Codex agent session:
 | `context.window` | No equivalent | Strip from frontmatter |
 | `context.sections.exclude` | No equivalent | Strip from frontmatter |
 | `context.intel_scope` | Deprecated — ignored, no reader | Does not exist |
-| `disable-model-invocation` | No equivalent — Codex has no model-invocation switch and always advertises a `$name` skill | Strip from frontmatter |
+| `disable-model-invocation: true` | `agents/openai.yaml` → `policy.allow_implicit_invocation: false` | Map policy; strip from frontmatter |
 
-Skills referencing these primitives produce **broken instructions** in Codex.
+Unmapped Claude-only primitives produce **broken instructions** in Codex.
 
-`disable-model-invocation` is a Claude Code context-budget control, not a
-behavioral instruction, so stripping it loses nothing a Codex reader could act
-on. The consequence is intended and asymmetric: a human-only skill is invisible
-to Claude's implicit routing but stays `$name`-invocable under Codex. Requirement
-1 below already strips it — the row exists so the divergence is declared rather
-than discovered.
+`disable-model-invocation` controls automatic skill selection. Stripping it
+without mapping the invocation policy changes behavior. Codex supports the
+equivalent explicit-only policy while keeping the field out of portable
+`SKILL.md` frontmatter.
 
 ---
 
@@ -222,8 +239,8 @@ than discovered.
 When generating Codex skills from source skills:
 
 1. **Strip all non-Codex frontmatter** — emit only `name` + `description`,
-   compacting introductory prose while preserving the complete source
-   `Triggers:` clause as the activation catalog signal
+   preserving the complete source description as the activation catalog signal
+   and mapping `disable-model-invocation: true` into `agents/openai.yaml` policy
 2. **Map Claude tools to Codex tools** — Read→read_file, Edit→apply_patch, Grep→rg, Glob→glob_file_search
 3. **Rewrite `Skill(skill="X")` to `$X`** — Codex uses dollar-prefix invocation
 4. **Strip ALL task/team primitives** — TaskCreate, TaskList, TeamCreate, SendMessage (none have working Codex equivalents as direct tool calls — `todo_write`/`update_plan` empirically unavailable, and `send_input` is follow-up-only)
