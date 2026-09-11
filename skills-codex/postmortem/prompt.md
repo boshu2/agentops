@@ -1,6 +1,6 @@
 # postmortem
 
-Analyze a known outcome. Use when: a postmortem or interim analysis is explicitly requested; name the evidence cutoff. Consumes judgment, does not gate code acceptance or require a lesson.
+Analyze outcomes or an interim cutoff. Use when: a postmortem is explicitly requested; consumes available judgment, never gates code acceptance or requires a lesson.
 
 ## Instructions
 
