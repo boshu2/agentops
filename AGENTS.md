@@ -19,6 +19,7 @@ Use the existing issue or conversation, edit the smallest useful change, run
 the repository's checks, and have a fresh context judge acceptance. Load a
 skill only for a concrete uncertainty or an explicitly selected workflow.
 Native goals supply continuity; BD keeps work and handoffs. Neither needs RPI.
+See [the skill menu](docs/SKILL-ROUTER.md) for optional guidance. Plan states observable behavior in existing domain terms; Validate checks those same accepted examples. Conversation or bead examples suffice.
 
 ## Repository map and mechanics
 

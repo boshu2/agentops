@@ -1,10 +1,10 @@
 {
   "image": "claude",
   "schema_version": "skill-image.v1",
-  "skill_count": 55,
+  "skill_count": 34,
   "skills": [
     {
-      "disposition": "keep_specialist",
+      "disposition": "keep_optional_adapter",
       "path": "skills/account-rotation/",
       "slug": "account-rotation"
     },
@@ -24,34 +24,14 @@
       "slug": "agy-native"
     },
     {
-      "disposition": "keep_specialist",
-      "path": "skills/anti-ceremony/",
-      "slug": "anti-ceremony"
-    },
-    {
       "disposition": "keep_optional_adapter",
-      "path": "skills/automation-shape-routing/",
-      "slug": "automation-shape-routing"
-    },
-    {
-      "disposition": "keep_specialist",
-      "path": "skills/bootstrap/",
-      "slug": "bootstrap"
-    },
-    {
-      "disposition": "keep_specialist",
       "path": "skills/cass/",
       "slug": "cass"
     },
     {
-      "disposition": "keep_specialist",
+      "disposition": "keep_optional_adapter",
       "path": "skills/cc-hooks/",
       "slug": "cc-hooks"
-    },
-    {
-      "disposition": "keep_specialist",
-      "path": "skills/codebase-recon/",
-      "slug": "codebase-recon"
     },
     {
       "disposition": "keep_optional_adapter",
@@ -59,27 +39,17 @@
       "slug": "codex-exec"
     },
     {
-      "disposition": "keep_specialist",
-      "path": "skills/converter/",
-      "slug": "converter"
-    },
-    {
       "disposition": "keep_strategy",
       "path": "skills/council/",
       "slug": "council"
     },
     {
-      "disposition": "keep_specialist",
+      "disposition": "keep_strategy",
       "path": "skills/craft-goal/",
       "slug": "craft-goal"
     },
     {
-      "disposition": "keep",
-      "path": "skills/crank/",
-      "slug": "crank"
-    },
-    {
-      "disposition": "keep_specialist",
+      "disposition": "keep_optional_adapter",
       "path": "skills/dcg/",
       "slug": "dcg"
     },
@@ -94,21 +64,6 @@
       "slug": "domain"
     },
     {
-      "disposition": "keep_specialist",
-      "path": "skills/fitness/",
-      "slug": "fitness"
-    },
-    {
-      "disposition": "keep_specialist",
-      "path": "skills/handoff/",
-      "slug": "handoff"
-    },
-    {
-      "disposition": "keep_specialist",
-      "path": "skills/human-only-skills/",
-      "slug": "human-only-skills"
-    },
-    {
       "disposition": "keep_strategy",
       "path": "skills/idea-genie/",
       "slug": "idea-genie"
@@ -120,16 +75,11 @@
     },
     {
       "disposition": "keep_off_path",
-      "path": "skills/learn/",
-      "slug": "learn"
-    },
-    {
-      "disposition": "keep_off_path",
       "path": "skills/memory/",
       "slug": "memory"
     },
     {
-      "disposition": "keep_specialist",
+      "disposition": "keep_optional_adapter",
       "path": "skills/ms/",
       "slug": "ms"
     },
@@ -137,21 +87,6 @@
       "disposition": "keep_optional_adapter",
       "path": "skills/ntm/",
       "slug": "ntm"
-    },
-    {
-      "disposition": "keep_strategy",
-      "path": "skills/one-way-door/",
-      "slug": "one-way-door"
-    },
-    {
-      "disposition": "keep_specialist",
-      "path": "skills/operationalize/",
-      "slug": "operationalize"
-    },
-    {
-      "disposition": "keep_specialist",
-      "path": "skills/pattern-mining/",
-      "slug": "pattern-mining"
     },
     {
       "disposition": "keep",
@@ -169,12 +104,7 @@
       "slug": "premortem"
     },
     {
-      "disposition": "keep_specialist",
-      "path": "skills/product/",
-      "slug": "product"
-    },
-    {
-      "disposition": "keep_specialist",
+      "disposition": "keep_optional_adapter",
       "path": "skills/rch/",
       "slug": "rch"
     },
@@ -199,24 +129,14 @@
       "slug": "reverse-engineer"
     },
     {
-      "disposition": "keep_specialist",
-      "path": "skills/route/",
-      "slug": "route"
-    },
-    {
-      "disposition": "keep",
+      "disposition": "keep_strategy",
       "path": "skills/rpi/",
       "slug": "rpi"
     },
     {
-      "disposition": "keep_specialist",
+      "disposition": "keep_optional_adapter",
       "path": "skills/sbh/",
       "slug": "sbh"
-    },
-    {
-      "disposition": "keep_specialist",
-      "path": "skills/scaffold/",
-      "slug": "scaffold"
     },
     {
       "disposition": "keep_specialist",
@@ -235,28 +155,8 @@
     },
     {
       "disposition": "keep_specialist",
-      "path": "skills/standards/",
-      "slug": "standards"
-    },
-    {
-      "disposition": "keep_specialist",
-      "path": "skills/status/",
-      "slug": "status"
-    },
-    {
-      "disposition": "keep_optional_adapter",
-      "path": "skills/swarm/",
-      "slug": "swarm"
-    },
-    {
-      "disposition": "keep_specialist",
       "path": "skills/test/",
       "slug": "test"
-    },
-    {
-      "disposition": "keep_specialist",
-      "path": "skills/toil-mining/",
-      "slug": "toil-mining"
     },
     {
       "disposition": "keep_optional_adapter",
@@ -272,11 +172,6 @@
       "disposition": "keep",
       "path": "skills/validate/",
       "slug": "validate"
-    },
-    {
-      "disposition": "keep_specialist",
-      "path": "skills/workflow-builder/",
-      "slug": "workflow-builder"
     }
   ],
   "source": "skills/*/SKILL.md metadata"

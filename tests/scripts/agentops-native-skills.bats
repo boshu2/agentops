@@ -209,7 +209,7 @@ run_recon_race() {
 
 # B3.1
 @test "codebase-recon validates evidence-bounded fact inference unknown claims" {
-  v="$REPO_ROOT/skills/codebase-recon/scripts/validate-output.sh"
+  v="$REPO_ROOT/skills/research/scripts/codebase-recon/validate-output.sh"
   target="$BATS_TEST_TMPDIR/recon-baseline"
   commit="$(init_recon_repo "$target")"
   artifact="$(recon_file "{\"schema_version\":\"codebase-recon.v1\",\"mode\":\"baseline\",\"commit\":\"$commit\",\"flows\":[{\"entry\":\"cli/main.go\",\"domain\":\"internal/domain\",\"integration\":\"internal/adapters\",\"tests\":\"internal/domain/x_test.go\"}],\"claims\":[{\"kind\":\"fact\",\"text\":\"a flow exists\",\"confidence\":\"high\",\"evidence\":[\"evidence.txt\"]},{\"kind\":\"unknown\",\"text\":\"remote behavior\",\"confidence\":\"low\",\"evidence\":[]}],\"coverage\":{\"inspected\":[\"cli\"],\"uninspected\":[\"images\"]}}")"
@@ -249,7 +249,7 @@ run_recon_race() {
 
 # B3.2
 @test "codebase-recon requires a verified delta when a prior pack exists" {
-  v="$REPO_ROOT/skills/codebase-recon/scripts/validate-output.sh"
+  v="$REPO_ROOT/skills/research/scripts/codebase-recon/validate-output.sh"
   target="$BATS_TEST_TMPDIR/recon-delta"
   baseline_commit="$(init_recon_repo "$target")"
   prior="$target/.agents/recon/prior/codebase-recon.json"
@@ -303,7 +303,7 @@ run_recon_race() {
 
 # B3.3
 @test "codebase-recon prior-discovery finds validated packs at current and earlier default paths" {
-  v="$REPO_ROOT/skills/codebase-recon/scripts/validate-output.sh"
+  v="$REPO_ROOT/skills/research/scripts/codebase-recon/validate-output.sh"
   target="$BATS_TEST_TMPDIR/target"
   legacy="$target/.agents/recon/legacy-run/codebase-recon.json"
   current="$target/.agents/scratch/codebase-recon/current-run/codebase-recon.json"
@@ -338,7 +338,7 @@ run_recon_race() {
 
 # B3.4
 @test "codebase-recon resolves historical evidence against each manifest commit" {
-  v="$REPO_ROOT/skills/codebase-recon/scripts/validate-output.sh"
+  v="$REPO_ROOT/skills/research/scripts/codebase-recon/validate-output.sh"
   target="$BATS_TEST_TMPDIR/recon-evidence-history"
   baseline_commit="$(init_recon_repo "$target")"
   good="$target/.agents/recon/good/codebase-recon.json"
@@ -362,7 +362,7 @@ run_recon_race() {
 
 # B3.5
 @test "codebase-recon binds its companion and rejects validation-time mutation" {
-  v="$REPO_ROOT/skills/codebase-recon/scripts/validate-output.sh"
+  v="$REPO_ROOT/skills/research/scripts/codebase-recon/validate-output.sh"
   target="$BATS_TEST_TMPDIR/recon-companion"
   commit="$(init_recon_repo "$target")"
   pack="$target/.agents/scratch/codebase-recon/run/codebase-recon.json"
@@ -423,8 +423,8 @@ run_recon_race() {
 
 # B3.6
 @test "Codex projection executes the hardened recon validator contract" {
-  canonical="$REPO_ROOT/skills/codebase-recon/scripts/validate-output.sh"
-  projected="$REPO_ROOT/skills-codex/codebase-recon/scripts/validate-output.sh"
+  canonical="$REPO_ROOT/skills/research/scripts/codebase-recon/validate-output.sh"
+  projected="$REPO_ROOT/skills-codex/research/scripts/codebase-recon/validate-output.sh"
   [ -x "$projected" ]
   cmp -s "$canonical" "$projected"
 
@@ -449,14 +449,24 @@ run_recon_race() {
 
 # B4.1
 @test "pattern-mining promotes only a three-exemplar holdout-proven pattern" {
-  v="$REPO_ROOT/skills/pattern-mining/scripts/validate-output.sh"
+  v="$REPO_ROOT/skills/research/scripts/pattern-mining/validate-output.sh"
   assert_accepts "$v" '{"schema_version":"pattern-mining.v1","outcome":"promote","exemplars":["a.go:1","b.go:2","c.go:3"],"invariants":["fail closed"],"variations":["transport"],"incidental":["identifier"],"holdout":{"source":"d.go:4","result":"pass"},"back_application":"pass","route":"operationalize"}'
   assert_rejects "$v" '{"schema_version":"pattern-mining.v1","outcome":"promote","exemplars":["a.go:1","b.go:2"],"invariants":["x"],"variations":[],"incidental":[],"holdout":{"source":"c.go:3","result":"pass"},"back_application":"pass","route":"skill"}'
 }
 
 # B4.2
 @test "pattern-mining keeps weak evidence as a hypothesis" {
-  v="$REPO_ROOT/skills/pattern-mining/scripts/validate-output.sh"
+  v="$REPO_ROOT/skills/research/scripts/pattern-mining/validate-output.sh"
   assert_accepts "$v" '{"schema_version":"pattern-mining.v1","outcome":"hypothesis","exemplars":["a.go:1","b.go:2"],"invariants":[],"variations":[],"incidental":[],"holdout":{"source":"","result":"not-run"},"back_application":"not-run","route":"no-action"}'
   assert_rejects "$v" '{"schema_version":"pattern-mining.v1","outcome":"hypothesis","exemplars":["a.go:1"],"invariants":[],"variations":[],"incidental":[],"holdout":{"source":"","result":"not-run"},"back_application":"not-run","route":"skill"}'
+}
+
+@test "agent-native packet helper retains one-shot dispatch and overlap refusal" {
+  run env PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s "$REPO_ROOT/tests/swarm" -p 'test_*.py'
+  [ "$status" -eq 0 ]
+}
+
+@test "memory history helper preserves source filtering and provenance" {
+  run env PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s "$REPO_ROOT/tests/toil-mining" -p 'test_*.py'
+  [ "$status" -eq 0 ]
 }

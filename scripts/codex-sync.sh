@@ -8,13 +8,15 @@
 # roots — not a plugin-cache installer.
 # twin must carry its own body + references; a bare pointer to skills/<name>
 # would dangle at runtime (docs/contracts/codex-skill-api.md). The generated twin is therefore:
-#   - SKILL.md: frontmatter carrying the FIRST SENTENCE of the source prose
-#     plus the full source Triggers clause + the source body transformed
+#   - SKILL.md: frontmatter carrying the complete source description
+#     (whitespace normalized) + the source body transformed
 #     runtime-native
 #     (slash-command invocations of known skills -> `$` prefix, but never the H1
 #     title; the RUNTIME_REWRITES table below for ~/.claude -> ~/.codex and
 #     "Claude Code" -> "Codex", longest phrase first);
 #   - references/ + scripts/: copied byte-identical (lint scans only SKILL.md);
+#   - agents/openai.yaml: source metadata preserved, with explicit-only source
+#     invocation policy mapped to Codex policy.allow_implicit_invocation;
 #   - prompt.md: the standard codex pointer-to-sibling-SKILL.md template,
 #     optionally plus catalog-declared operator-contract markers.
 # Because the twin is GENERATED from source, source edits never require a hand
@@ -318,65 +320,10 @@ def render_operator_contract_block(name: str, operator_contract: dict | None) ->
     return "\n".join(out)
 
 
-# Abbreviations whose trailing period is NOT a sentence end. Matched
-# case-insensitively and only at a word start, where "word start" means the
-# beginning of the prose, whitespace, or an OPENING bracket or quote — prose
-# says "Use tools (e.g. shell)" as readily as "Use tools, e.g. shell", and
-# accepting only whitespace cut the first at "Use tools (e.g." The class is
-# explicit rather than a bare \W so a period or comma before the token cannot
-# silently make it an abbreviation.
-_ABBREVIATIONS = ("e.g.", "i.e.", "vs.", "etc.", "cf.")
-_ABBREVIATION_OPENERS = "\\s(\\[{\"'\u2018\u201c"
-_ABBREVIATION_RE = re.compile(
-    r"(?:^|[" + _ABBREVIATION_OPENERS + r"])(?:"
-    + "|".join(re.escape(a) for a in _ABBREVIATIONS)
-    + r")$",
-    re.IGNORECASE,
-)
-# A closing quote may sit between the terminator and the space: the sentence
-# ends AFTER the quote, so `Say "done." Then stop.` yields `Say "done."`. Both
-# curly closers are here — a source that opens with U+2018 closes with U+2019,
-# and omitting it kept the whole two-sentence prose.
-_CLOSING_QUOTES = "\"'\u201d\u2019"
-
-
-def first_sentence(prose: str) -> str:
-    """The first whole sentence of ``prose``.
-
-    A terminator is ``.``, ``!`` or ``?`` followed by whitespace or the end of
-    the prose, optionally with one closing quote in between. ``;`` and dashes
-    are NOT terminators — they join clauses, so cutting there still yields a
-    fragment. Requiring whitespace after the mark is what keeps "verdict.v2"
-    and "reality-check." intact; the abbreviation list above keeps "e.g." and
-    friends from ending a sentence mid-thought. Prose with no terminator at all
-    is itself the sentence.
-    """
-    for match in re.finditer(r"[.!?]", prose):
-        stop = match.end()
-        if _ABBREVIATION_RE.search(prose[:stop]):
-            continue
-        if stop < len(prose) and prose[stop] in _CLOSING_QUOTES:
-            stop += 1
-        if stop >= len(prose) or prose[stop].isspace():
-            return prose[:stop]
-    return prose
-
-
 def codex_catalog_description(name: str, source_description: str) -> str:
-    """Skill-specific Codex activation catalog text.
-
-    The catalog description is the model's routing signal, so it ships as whole
-    sentences: the FIRST SENTENCE of the source prose, the ``Not for`` exclusion
-    sentence when the prose carries one, one space, then the full source
-    ``Triggers:`` clause verbatim. Nothing else. Prose is never cut inside a
-    sentence.
-
-    The rule this replaced was a 44-character word-boundary cut. It truncated
-    51 of 56 entries into fragments ("Freshly judge whether a finished change
-    is Triggers: ..."), which defeated the one thing the always-loaded catalog
-    exists to do. The cap constant is gone: length is bounded by choosing a
-    sentence, and the acceptance in tests/skills/test-token-budgets.sh (the
-    per-skill limit and the per-skill catalog average) measures the result.
+    """Preserve the complete source routing signal, including all use cases,
+    preconditions, exclusions and triggers. Source authors own concision;
+    catalog budgets must not silently delete meaning during projection.
     """
     # Whitespace only. parse_frontmatter runs the frontmatter through
     # yaml.safe_load, so the value handed in here is ALREADY the unquoted
@@ -384,25 +331,34 @@ def codex_catalog_description(name: str, source_description: str) -> str:
     # ate legitimate leading/trailing quotes, e.g. a description ending in
     # `Triggers: "validate"` lost its final quote.
     desc = re.sub(r"\s+", " ", source_description).strip()
-    if not desc:
-        return f"Run {name}."
+    return desc or f"Run {name}."
 
-    trigger_match = re.search(r"\s+[Tt]riggers?:", desc)
-    if trigger_match:
-        prose = desc[: trigger_match.start()].strip()
-        triggers = desc[trigger_match.start() :].strip()
-    else:
-        prose = desc
-        triggers = ""
 
-    lead = first_sentence(prose)
-    # The negative-routing sentence ("Not for X; that is <sibling>.") is the
-    # second routing signal a description carries; the always-loaded catalog
-    # keeps it whole so Codex routes away from the sibling's job too.
-    tail = prose[len(lead):].strip()
-    if tail.startswith("Not for "):
-        lead = lead + " " + first_sentence(tail)
-    return " ".join(part for part in (lead, triggers) if part)
+def codex_payload_overrides(src_dir: pathlib.Path, fm: dict) -> dict[str, bytes]:
+    """Map host frontmatter policy without losing caller-owned source metadata.
+
+    Always start from source, never the previous twin. Removing the source flag
+    therefore restores source YAML (or removes a generated-only policy file).
+    With neither a flag nor source policy, Codex defaults to implicit invocation.
+    """
+    disabled = fm.get("disable-model-invocation", False)
+    if not isinstance(disabled, bool):
+        raise ValueError(f"{src_dir}/SKILL.md: disable-model-invocation must be boolean")
+    if not disabled:
+        return {}
+
+    relpath = "agents/openai.yaml"
+    source_yaml = src_dir / relpath
+    metadata = yaml.safe_load(source_yaml.read_text(encoding="utf-8")) if source_yaml.exists() else {}
+    if metadata is None:
+        metadata = {}
+    if not isinstance(metadata, dict):
+        raise ValueError(f"{source_yaml}: metadata must be a mapping")
+    policy = metadata.setdefault("policy", {})
+    if not isinstance(policy, dict):
+        raise ValueError(f"{source_yaml}: policy must be a mapping")
+    policy["allow_implicit_invocation"] = False
+    return {relpath: yaml.safe_dump(metadata, sort_keys=False, allow_unicode=True).encode("utf-8")}
 
 
 def twin_skill_md(
@@ -470,7 +426,9 @@ def upsert(entries: list, name: str, entry: dict) -> bool:
 
 
 # Discover source skills (ground truth), skip non-skill dirs and bespoke.
-def mirror_reasons(src_dir: pathlib.Path, twin_dir: pathlib.Path) -> list[str]:
+def mirror_reasons(
+    src_dir: pathlib.Path, twin_dir: pathlib.Path, overrides: dict[str, bytes]
+) -> list[str]:
     """Drift reasons for a twin's mirrored content (references/scripts/fixtures/
     etc.) vs source — missing, stale (content mismatch), or extra files. SKILL.md
     is transformed (verified separately); prompt.md + marker are twin-only."""
@@ -489,6 +447,7 @@ def mirror_reasons(src_dir: pathlib.Path, twin_dir: pathlib.Path) -> list[str]:
         return out
 
     src = tree(src_dir)
+    src.update(overrides)
     twin = tree(twin_dir)
     reasons = [f"missing {r}" for r in src if r not in twin]
     reasons += [f"stale {r}" for r in src if r in twin and twin[r] != src[r]]
@@ -496,7 +455,9 @@ def mirror_reasons(src_dir: pathlib.Path, twin_dir: pathlib.Path) -> list[str]:
     return reasons
 
 
-def exact_mirror_source_payload(src_dir: pathlib.Path, twin_dir: pathlib.Path) -> None:
+def exact_mirror_source_payload(
+    src_dir: pathlib.Path, twin_dir: pathlib.Path, overrides: dict[str, bytes]
+) -> None:
     """Exact-copy source sibling content into a parity twin, excluding SKILL.md
     and twin-only bookkeeping. This keeps references/scripts/fixtures generated
     from source and removes stale copied files when source deletes them."""
@@ -520,6 +481,11 @@ def exact_mirror_source_payload(src_dir: pathlib.Path, twin_dir: pathlib.Path) -
         if dst_entry.exists():
             shutil.rmtree(dst_entry) if dst_entry.is_dir() else dst_entry.unlink()
         shutil.copytree(entry, dst_entry) if entry.is_dir() else shutil.copy2(entry, dst_entry)
+
+    for relpath, content in overrides.items():
+        destination = twin_dir / relpath
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(content)
 
 
 source_skills = sorted(
@@ -581,6 +547,7 @@ for name in source_skills:
         name in cross_runtime,
     )
     desired_prompt = twin_prompt_md(name, source_description, operator_contract)
+    payload_overrides = codex_payload_overrides(source_root / name, fm)
 
     # A twin is "complete" iff its body files + marker exist AND it is registered
     # in the gate-enforced 1:1 surface (skills-codex-overrides/catalog.json — the
@@ -609,7 +576,7 @@ for name in source_skills:
             reasons.append("SKILL.md")
         if not prompt_md.exists() or prompt_md.read_bytes() != desired_prompt:
             reasons.append("prompt.md")
-        reasons += mirror_reasons(source_root / name, twin_dir)
+        reasons += mirror_reasons(source_root / name, twin_dir, payload_overrides)
         if reasons:
             drift.append((name, reasons))
         continue
@@ -623,7 +590,7 @@ for name in source_skills:
         regen_reasons.append("SKILL.md")
     if not prompt_md.exists() or prompt_md.read_bytes() != desired_prompt:
         regen_reasons.append("prompt.md")
-    regen_reasons += mirror_reasons(source_root / name, twin_dir)
+    regen_reasons += mirror_reasons(source_root / name, twin_dir, payload_overrides)
 
     if not force and not regen_reasons:
         continue
@@ -636,10 +603,10 @@ for name in source_skills:
         prompt_md.write_bytes(desired_prompt)
 
     # Mirror ALL source content (references/, scripts/, fixtures/, templates/,
-    # agents/, any sibling files) EXCEPT SKILL.md — byte-identical, so every link
-    # in the body resolves and the Codex runtime artifact is fully self-contained.
-    # lint scans only SKILL.md, so copied content needs no transform.
-    exact_mirror_source_payload(source_root / name, twin_dir)
+    # agents/, any sibling files) EXCEPT SKILL.md, then apply the invocation
+    # policy mapping. Other payload files stay byte-identical so every local
+    # link resolves and the Codex artifact is fully self-contained.
+    exact_mirror_source_payload(source_root / name, twin_dir, payload_overrides)
 
     source_hash = hash_tree_with(source_root / name, {})
     generated_hash = hash_tree_with(twin_dir, {})

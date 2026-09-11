@@ -13,8 +13,8 @@ EXPECTED = {
     "official": "7642c6f23753f01d305eafb73bc4abd6b60ef01cc138de01ba20fb77bf31f909",
     "companions": "f64f66ae0291accd42e95e93f0b1b553fe7917e191e7e092dcc3be3bdcd20232",
 }
-LEAVES = ["idea-genie", "codebase-recon", "pattern-mining"]
-CONSUMERS = ["discovery", "plan", "research", "refactor", "operationalize", "validate"]
+LEAVES = ["idea-genie", "research"]
+CONSUMERS = ["plan", "refactor", "skill-builder", "validate"]
 
 
 def files(root: Path):

@@ -22,19 +22,16 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FILES=(
   "AGENTS.md"
   "docs/architecture/primitive-chains.md"
-  "skills/status/SKILL.md"
-  "skills-codex/status/SKILL.md"
-  # skills/inject/SKILL.md retired (knowledge activation folded into
-  # operationalize). Its cold-start slot passes to skills/bootstrap/SKILL.md,
-  # which now carries the session-start routing (ao session bootstrap +
-  # ao lookup) that made inject a cold-start surface in the first place.
-  # (The inject Codex twin was already dropped when inject was demoted to the
-  # experimental tier, age-focus-membrane-bookkeeper-m1wg.19.)
-  "skills/bootstrap/SKILL.md"
-  "skills/recover/SKILL.md"
-  "skills-codex/recover/SKILL.md"
-  "skills/review/SKILL.md"
-  "skills-codex/review/SKILL.md"
+  "skills/reality-check/SKILL.md"
+  "skills-codex/reality-check/SKILL.md"
+  # Requested documentation setup and handoffs now belong to doc; ordinary
+  # sessions have no mandatory bootstrap or context-loading command.
+  "skills/doc/SKILL.md"
+  "skills-codex/doc/SKILL.md"
+  "skills/memory/SKILL.md"
+  "skills-codex/memory/SKILL.md"
+  "skills/validate/SKILL.md"
+  "skills-codex/validate/SKILL.md"
   "docs/newcomer-guide.md"
   # Workflow-discipline surfaces: must never present the removed
   # session-pr-counter hook as an active surface.

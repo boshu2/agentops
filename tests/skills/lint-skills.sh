@@ -100,11 +100,12 @@ for skill_dir in "$SKILLS_DIR"/*/; do
     fi
 
     # --- (e) Referenced files must exist ---
-    # Match patterns like references/foo.md, references/bar-baz.md
+    # Keep every path segment: a nested reference must be checked as a file,
+    # not truncated to its first directory (references/standards, for example).
     # Also handles cross-skill references:
     #   - skills/<name>/references/foo.md (repo-absolute)
     #   - ../<sibling-skill>/references/foo.md (relative cross-skill)
-    ref_paths=$(grep -oE '(\.\./[a-z-]+/|skills/[a-z-]+/)?references/[A-Za-z0-9_.-]+(\.[a-z]+)?' "$skill_md" 2>/dev/null || true)
+    ref_paths=$(grep -oE '(\.\./[A-Za-z0-9_./-]+/|skills/[A-Za-z0-9_.-]+/)?references/[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)*' "$skill_md" 2>/dev/null || true)
     if [ -n "$ref_paths" ]; then
         while IFS= read -r ref; do
             [ -z "$ref" ] && continue

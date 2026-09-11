@@ -50,12 +50,12 @@ assert_registered_or_invoked() {
     return 1
 }
 
-# Test 1: /agentops:status skill
-echo "Test 1: /agentops:status skill"
-LOG_FILE=$(run_claude_json "/agentops:status" 120) || true
+# Test 1: /agentops:reality-check skill
+echo "Test 1: /agentops:reality-check skill"
+LOG_FILE=$(run_claude_json "/agentops:reality-check check whether this project has a README" 120) || true
 
 test_passed=true
-if ! assert_registered_or_invoked "$LOG_FILE" "status" "status" "Status skill triggered"; then
+if ! assert_registered_or_invoked "$LOG_FILE" "reality-check" "reality-check" "Reality-check skill triggered"; then
     test_passed=false
 fi
 
@@ -66,12 +66,12 @@ else
 fi
 echo ""
 
-# Test 2: /agentops:knowledge-activation skill
-echo "Test 2: /agentops:knowledge-activation skill"
-LOG_FILE=$(run_claude_json "/agentops:knowledge-activation" 120) || true
+# Test 2: /agentops:memory skill
+echo "Test 2: /agentops:memory skill"
+LOG_FILE=$(run_claude_json "/agentops:memory" 120) || true
 
 test_passed=true
-if ! assert_registered_or_invoked "$LOG_FILE" "knowledge-activation" "knowledge-activation" "Knowledge activation skill triggered"; then
+if ! assert_registered_or_invoked "$LOG_FILE" "memory" "memory" "Memory skill triggered"; then
     test_passed=false
 fi
 
@@ -101,17 +101,7 @@ if ! assert_registered_or_invoked "$LOG_FILE" "research" "research" "Research sk
     test_passed=false
 fi
 
-# Verify research creates artifacts in .agents/research/
-if [[ -d ".agents/research" ]]; then
-    research_files=$(find .agents/research -name "*.md" -type f 2>/dev/null | wc -l | tr -d ' ')
-    if [[ "$research_files" -gt 0 ]]; then
-        echo -e "  ${GREEN}[PASS]${NC} Research artifacts created ($research_files files)"
-    else
-        echo -e "  ${YELLOW}[WARN]${NC} No research artifacts found (may be expected if skill failed)"
-    fi
-else
-    echo -e "  ${YELLOW}[WARN]${NC} .agents/research directory not created"
-fi
+# Research may return inline; registration/invocation is the smoke boundary.
 
 if $test_passed; then
     ((passed++)) || true

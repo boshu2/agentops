@@ -71,7 +71,7 @@ mkdir -p "$SRC_DIR/references"
 cat > "$SRC_DIR/SKILL.md" <<'EOF'
 ---
 name: zzz-codex-sync-accept-probe
-description: 'Throwaway probe for the codex-sync acceptance test. SENTINEL_SECOND_SENTENCE must not reach the twin. Triggers: "zzz codex sync accept probe".'
+description: 'Throwaway probe for the codex-sync acceptance test. Requires a claim to test. Do not use for unscoped exploration. Triggers: "zzz codex sync accept probe".'
 practices:
 - some-practice
 hexagonal_role: supporting
@@ -123,40 +123,30 @@ grep -q 'Triggers: "zzz codex sync accept probe"' "$TWIN_DIR/SKILL.md" 2>/dev/nu
   && pass "twin catalog preserves the source activation trigger" \
   || fail "twin catalog discarded or truncated the source activation trigger"
 
-# The frozen catalog-projection contract: the twin description is the FIRST
-# SENTENCE of the source prose plus the FULL Triggers clause, verbatim, and
-# nothing else. The probe's source prose is deliberately two sentences, so this
-# discriminates: the first must survive whole, the second must be gone, and the
-# clause must be untouched. The rule this replaced cut prose at 44 chars on a
-# word boundary and shipped 51 of 56 catalog entries as mid-clause fragments.
+# Complete descriptions carry routing meaning beyond the first sentence.
+# The required-input and exclusion sentences must survive along with triggers.
 generated_description="$(awk '/^description:/{print; exit}' "$TWIN_DIR/SKILL.md")"
-expected_description="description: 'Throwaway probe for the codex-sync acceptance test. Triggers: \"zzz codex sync accept probe\".'"
+expected_description="description: 'Throwaway probe for the codex-sync acceptance test. Requires a claim to test. Do not use for unscoped exploration. Triggers: \"zzz codex sync accept probe\".'"
 
 [[ "$generated_description" == *"Throwaway probe for the codex-sync acceptance test."* ]] \
   && pass "twin catalog keeps the source's first sentence WHOLE" \
   || fail "twin catalog cut inside the first sentence: $generated_description"
 
-[[ "$generated_description" != *"SENTINEL_SECOND_SENTENCE"* ]] \
-  && pass "twin catalog drops prose after the first sentence" \
-  || fail "twin catalog kept prose past the first sentence: $generated_description"
+[[ "$generated_description" == *"Requires a claim to test. Do not use for unscoped exploration."* ]] \
+  && pass "twin catalog preserves required inputs and exclusions" \
+  || fail "twin catalog dropped required inputs or exclusions: $generated_description"
 
 [[ "$generated_description" == "$expected_description" ]] \
-  && pass "twin catalog is exactly first-sentence + full Triggers clause" \
-  || fail "twin catalog text is not the frozen projection
+  && pass "twin catalog preserves the complete source description" \
+  || fail "twin catalog text differs from the source description
       expected: $expected_description
       actual:   $generated_description"
 
 echo "== 3b. projection edge cases, end-to-end against the real generator =="
-# LITERAL input -> LITERAL output, driven through codex-sync.sh itself. These
-# pin the parts of the contract a boundary rule alone cannot state:
-#   - an abbreviation's period ("e.g.", "i.e.", "vs.", "etc.", "cf.") is not a
-#     sentence end;
-#   - a terminator followed by a closing quote ends the sentence AFTER the
-#     quote;
-#   - the description value is a YAML scalar, so a value that legitimately ENDS
-#     in a quote keeps it. The generator used to .strip(" '\"") the value and
-#     ate that final character.
-# Comparison is on the twin's parsed VALUE, not on YAML quoting style.
+# LITERAL input -> LITERAL output, driven through codex-sync.sh itself.
+# All punctuation and sentences survive. Values are parsed YAML scalars, so
+# descriptions ending in a quote must retain that quote rather than treating it
+# as surrounding YAML syntax. Compare values instead of YAML quoting styles.
 canonical_description="$(awk '/^description:/{sub(/^description:[[:space:]]*/,""); print; exit}' "$SRC_DIR/SKILL.md")"
 
 set_source_description() {
@@ -196,15 +186,15 @@ project_case() { # project_case <label> <source description scalar> <expected VA
 
 project_case "abbreviation 'e.g.' does not end the sentence" \
   "'Use tools, e.g. shell. Then stop. Triggers: \"x\".'" \
-  'Use tools, e.g. shell. Triggers: "x".'
+  'Use tools, e.g. shell. Then stop. Triggers: "x".'
 
 project_case "abbreviations i.e./vs./etc./cf. do not end the sentence" \
   "'Weigh i.e. this vs. that, etc. and cf. the notes. Then stop. Triggers: \"x\".'" \
-  'Weigh i.e. this vs. that, etc. and cf. the notes. Triggers: "x".'
+  'Weigh i.e. this vs. that, etc. and cf. the notes. Then stop. Triggers: "x".'
 
 project_case "closing quote after the terminator ends the sentence after the quote" \
   "'Say \"done.\" Then stop. Triggers: \"x\".'" \
-  'Say "done." Triggers: "x".'
+  'Say "done." Then stop. Triggers: "x".'
 
 project_case "a description value ending in a quote keeps its final character" \
   "'Emit the sentinel \"ready.\" Triggers: \"x\"'" \
@@ -212,19 +202,19 @@ project_case "a description value ending in a quote keeps its final character" \
 
 project_case "an abbreviation directly after an opening bracket is still an abbreviation" \
   "'Use tools (e.g. shell). Then stop. Triggers: \"x\".'" \
-  'Use tools (e.g. shell). Triggers: "x".'
+  'Use tools (e.g. shell). Then stop. Triggers: "x".'
 
 # The curly quotes below are the DATA under test — U+2018/U+2019 must survive
 # verbatim into the twin, so they cannot be "retyped" as ASCII.
 # shellcheck disable=SC1112
 project_case "a right single quotation mark closes the sentence like any other quote" \
   "'Say ‘done.’ Then stop. Triggers: \"x\".'" \
-  'Say ‘done.’ Triggers: "x".'
+  'Say ‘done.’ Then stop. Triggers: "x".'
 
 # Restore the canonical probe description so sections 4-6 judge the real shape.
 set_source_description "$canonical_description"
 bash "$ROOT/scripts/codex-sync.sh" --only "$PROBE" >/dev/null 2>&1
-[[ "$(twin_description_value)" == 'Throwaway probe for the codex-sync acceptance test. Triggers: "zzz codex sync accept probe".' ]] \
+[[ "$(twin_description_value)" == 'Throwaway probe for the codex-sync acceptance test. Requires a claim to test. Do not use for unscoped exploration. Triggers: "zzz codex sync accept probe".' ]] \
   && pass "canonical probe description restored for the gate section" \
   || fail "failed to restore the canonical probe description"
 

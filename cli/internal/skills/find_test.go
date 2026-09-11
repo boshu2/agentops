@@ -233,10 +233,10 @@ func TestScore_LiveCatalogOwnVocabulary(t *testing.T) {
 		"validate this change and check the tests": "validate",
 		"premortem the plan for this live rollout": "premortem",
 		"challenge this plan with one judge":       "premortem",
-		"is this live decision reversible":         "one-way-door",
+		"is this live decision reversible":         "plan",
 		// The two triggers added in the 2026-09-03 repair, quoted verbatim:
 		// a declared phrase must beat a sibling that owns one of its words as
-		// a name token (reality-check, one-way-door).
+		// a name token (reality-check, plan).
 		"check this change": "validate",
 		"one judge":         "premortem",
 		// Phrase matching reads the query in order: "one council judge"

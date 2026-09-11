@@ -89,7 +89,7 @@ if actual != expected:
 PY
   [ "$status" -eq 0 ]
 
-  require_text skills/standards/references/skill-structure.md \
+  require_text skills/domain/references/standards/skill-structure.md \
     "Anti-ceremony and Memory are optional"
   require_text docs/contracts/skill-ports-and-adapters.md \
     "RPI depends on the three core operations; Memory and specialists are optional."

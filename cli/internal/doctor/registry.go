@@ -68,8 +68,7 @@ type FixResult struct {
 	// (migration-owner discipline: both old and new form present — never
 	// guess). Each entry is a human-readable path+reason surfaced to the
 	// operator; a non-empty Skipped means the fixer is not fully done and a
-	// human must resolve those units. See
-	// skills/standards/references/migration-owner.md.
+	// human must resolve those units.
 	Skipped []string
 }
 

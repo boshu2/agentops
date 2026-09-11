@@ -1,6 +1,6 @@
 ---
 name: validate
-description: 'Freshly judge a finished change against its acceptance: PASS, FAIL, or NOT_PROVEN. Not for claim-vs-tree checks; that is reality-check. Triggers: "validate", "is this proven", "check this change", "cross-model review".'
+description: 'Freshly judge a finished change against original acceptance before merge. Use when: independent proof is needed; author tests cannot issue PASS. Triggers: "check this change".'
 ---
 # Validate
 
@@ -52,7 +52,11 @@ ao provenance manifest --root "$REPO_ROOT" --include "$CHANGED_PATH"
    A mismatch means mutation and NOT_PROVEN. Verify exact intent continuity,
    cited evidence digests and complete changed-path coverage; missing integrity
    is NOT_PROVEN. Proven out-of-scope change is FAIL.
-2. Inspect the actual diff against every acceptance criterion. Risk determines
+2. Revisit the original accepted behavior examples, including those in the
+   conversation or bead. Check the observable result and its established
+   domain meaning on the exact candidate. A new test or renamed concept cannot
+   replace an unfulfilled scenario; missing scenario evidence is NOT_PROVEN.
+   Inspect the actual diff against every acceptance criterion. Risk determines
    depth: acceptance, permissions, tests/gates, stopping, disclosure, hooks and
    executable controls warrant deeper inspection, including prose policy.
    Unknown risk merits examination, not automatic extra reviewers.

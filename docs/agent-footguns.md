@@ -2,7 +2,7 @@
 
 Reference doc to include in agent dispatch prompts. Prevents agents from rediscovering known issues.
 
-See also: `skills/swarm/references/worker-pitfalls.md` for general platform pitfalls (bash, Go basics, git worktrees).
+See also: `skills/agent-native/SKILL.md` for explicit runtime dispatch and disjoint worker scopes.
 
 ## Go / Cobra CLI
 
@@ -24,7 +24,7 @@ See also: `skills/swarm/references/worker-pitfalls.md` for general platform pitf
 
 ## Embedded Assets
 
-- **Sync embedded copies after editing source**: After editing `lib/chain-parser.sh`, `skills/standards/references/`, or `skills/compile/scripts/`, run `cd cli && make sync-hooks` (it copies those into `cli/embedded/`). Tests and builds use the embedded copies, not the source files. (The target name is legacy — AgentOps 3.0 is hookless; it embeds skills/lib, not runtime hooks.)
+- **Regenerate owned projections after editing source**: After editing a skill or its references, run `scripts/regen-all.sh` and inspect the generated changes. Edit the canonical source; do not patch runtime copies.
 - **CLI docs drift**: After adding/changing CLI commands or flags, run `scripts/generate-cli-reference.sh`. CI checks for drift.
 
 ## Scope Overflow

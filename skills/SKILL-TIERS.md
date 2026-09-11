@@ -4,23 +4,23 @@
 
 ## cross-vendor
 
-`agy-native`, `converter`
+`agy-native`
 
 ## execution
 
-`account-rotation`, `agent-mail`, `cass`, `cc-hooks`, `codebase-recon`, `dcg`, `idea-genie`, `implement`, `learn`, `memory`, `ms`, `ntm`, `pattern-mining`, `plan`, `rch`, `refactor`, `research`, `reverse-engineer`, `sbh`, `scaffold`, `swarm`, `test`, `using-flywheel`, `using-gc`
+`account-rotation`, `agent-mail`, `cass`, `cc-hooks`, `dcg`, `idea-genie`, `implement`, `memory`, `ms`, `ntm`, `plan`, `rch`, `refactor`, `research`, `reverse-engineer`, `sbh`, `test`, `using-flywheel`, `using-gc`
 
 ## judgment
 
-`anti-ceremony`, `council`, `craft-goal`, `one-way-door`, `postmortem`, `premortem`, `reality-check`, `validate`
+`council`, `craft-goal`, `postmortem`, `premortem`, `reality-check`, `validate`
 
 ## knowledge
 
-`domain`, `standards`
+`domain`
 
 ## meta
 
-`agent-native`, `automation-shape-routing`, `crank`, `human-only-skills`, `operationalize`, `route`, `rpi`, `skill-builder`, `skill-eval`, `toil-mining`, `workflow-builder`
+`agent-native`, `rpi`, `skill-builder`, `skill-eval`
 
 ## orchestration
 
@@ -28,68 +28,43 @@
 
 ## product
 
-`doc`, `fitness`, `product`, `security`
-
-## session
-
-`bootstrap`, `handoff`, `status`
+`doc`, `security`
 
 ## Inventory
 
 | Skill | Tier | Disposition | Hard dependencies | Capabilities | Effects |
 |---|---|---|---|---|---|
-| `account-rotation` | execution | `keep_specialist` | - | `account_rotation` | `rotate_agent_account` |
+| `account-rotation` | execution | `keep_optional_adapter` | - | `account_rotation` | `rotate_agent_account` |
 | `agent-mail` | execution | `keep_optional_adapter` | - | `agent_mail` | `write_agent_mail_records`, `install_precommit_guard`, `authorized_destructive_reset` |
-| `agent-native` | meta | `keep_optional_adapter` | - | `role_dispatch`, `observe_workers`, `handoff` | `manage_runtime_sessions` |
+| `agent-native` | meta | `keep_optional_adapter` | - | `role_dispatch`, `observe_workers`, `handoff`, `dispatch_once` | `manage_runtime_sessions`, `invoke_selected_executor` |
 | `agy-native` | cross-vendor | `keep_optional_adapter` | - | `dispatch_explicit_packet`, `provide_fresh_context` | `start_agy_session` |
-| `anti-ceremony` | judgment | `keep_specialist` | - | `guard_anti_ceremony`, `audit_anti_ceremony` | - |
-| `automation-shape-routing` | meta | `keep_optional_adapter` | - | `automation_shape_routing` | - |
-| `bootstrap` | session | `keep_specialist` | - | `bootstrap` | `write_project_docs` |
-| `cass` | execution | `keep_specialist` | - | `cass` | `rebuild_local_index`, `sync_remote_sources`, `download_semantic_model` |
-| `cc-hooks` | execution | `keep_specialist` | - | `cc_hooks` | `write_hook_config`, `append_guardrail_telemetry`, `write_session_sentinel` |
-| `codebase-recon` | execution | `keep_specialist` | - | `codebase_recon` | `write_recon_pack` |
+| `cass` | execution | `keep_optional_adapter` | - | `cass` | `rebuild_local_index`, `sync_remote_sources`, `download_semantic_model` |
+| `cc-hooks` | execution | `keep_optional_adapter` | - | `cc_hooks` | `write_hook_config`, `append_guardrail_telemetry`, `write_session_sentinel` |
 | `codex-exec` | orchestration | `keep_optional_adapter` | - | `codex_exec` | `run_codex_process`, `sandbox_tiered_workspace_and_network_effects` |
-| `converter` | cross-vendor | `keep_specialist` | - | `converter` | `write_converted_skill_projection` |
 | `council` | judgment | `keep_strategy` | - | `collect_independent_judgments`, `synthesize_disagreement` | `write_advisory_council_report` |
-| `craft-goal` | judgment | `keep_specialist` | - | `goal_prompt_design`, `goal_prompt_lint` | - |
-| `crank` | meta | `keep` | `rpi` | `execute_wave` | `dispatch_rpi_per_lane` |
-| `dcg` | execution | `keep_specialist` | - | `dcg` | `write_dcg_config` |
-| `doc` | product | `keep_specialist` | - | `doc` | `write_documentation` |
-| `domain` | knowledge | `keep_specialist` | - | `domain` | - |
-| `fitness` | product | `keep_specialist` | - | `fitness` | `write_goal_snapshot`, `write_rendered_spec` |
-| `handoff` | session | `keep_specialist` | - | `handoff` | `write_handoff_artifact`, `read_git_state`, `read_clock` |
-| `human-only-skills` | meta | `keep_specialist` | - | `human_only_skill_routing` | - |
+| `craft-goal` | judgment | `keep_strategy` | - | `goal_prompt_design`, `goal_prompt_lint` | - |
+| `dcg` | execution | `keep_optional_adapter` | - | `dcg` | `write_dcg_config` |
+| `doc` | product | `keep_specialist` | - | `doc`, `initialize_missing_docs`, `write_session_handoff` | `write_documentation`, `write_requested_handoff`, `create_requested_evidence_directory` |
+| `domain` | knowledge | `keep_specialist` | - | `domain`, `clarify_domain_language`, `reconcile_domain_names` | `update_existing_domain_contracts` |
 | `idea-genie` | execution | `keep_strategy` | - | `generate_evidenced_options`, `dueling_idea_genies` | `write_idea_portfolio` |
 | `implement` | execution | `keep` | - | `execute_one_experiment`, `collect_factual_evidence` | `modify_declared_subject`, `derive_subject_manifest` |
-| `learn` | execution | `keep_off_path` | - | `analyze_bounded_evidence` | `write_advisory_observations` |
-| `memory` | execution | `keep_off_path` | - | `recall_applicable_context`, `mine_supported_observations`, `curate_topic_pages` | `write_protected_drafts`, `update_authorized_topic_pages` |
-| `ms` | execution | `keep_specialist` | - | `ms` | `spawn_search_server`, `write_feedback_outcomes`, `rebuild_search_index` |
+| `memory` | execution | `keep_off_path` | - | `recall_applicable_context`, `mine_supported_observations`, `curate_topic_pages`, `toil_mining` | `write_protected_drafts`, `update_authorized_topic_pages`, `write_requested_toil_report` |
+| `ms` | execution | `keep_optional_adapter` | - | `ms` | `spawn_search_server`, `write_feedback_outcomes`, `rebuild_search_index` |
 | `ntm` | execution | `keep_optional_adapter` | - | `ntm` | `manage_ntm_panes`, `dispatch_pane_commands` |
-| `one-way-door` | judgment | `keep_strategy` | - | `classify_decision_reversibility`, `escalate_user_challenge` | `write_advisory_decision_classification` |
-| `operationalize` | meta | `keep_specialist` | - | `distill_expertise`, `propose_artifact_shape` | `write_advisory_proposal` |
-| `pattern-mining` | execution | `keep_specialist` | - | `pattern_mining` | `write_pattern_evidence` |
 | `plan` | execution | `keep` | - | `shape_intent`, `define_acceptance`, `bound_write_scope` | `update_intent_source` |
 | `postmortem` | judgment | `keep_strategy` | - | `postmortem` | `write_postmortem_report` |
 | `premortem` | judgment | `keep_strategy` | - | `challenge_plan` | `write_advisory_plan_review` |
-| `product` | product | `keep_specialist` | - | `shape_product_boundary` | `write_product_document` |
-| `rch` | execution | `keep_specialist` | - | `rch` | `remote_compilation_offload`, `authorized_remote_daemon_worker_mutation` |
-| `reality-check` | judgment | `keep_strategy` | - | `compare_claim_to_evidence` | `write_advisory_gap_report` |
+| `rch` | execution | `keep_optional_adapter` | - | `rch` | `remote_compilation_offload`, `authorized_remote_daemon_worker_mutation` |
+| `reality-check` | judgment | `keep_strategy` | - | `compare_claim_to_evidence`, `measure_declared_goals`, `report_native_status` | `write_advisory_gap_report`, `write_goal_snapshot`, `write_requested_rendered_spec` |
 | `refactor` | execution | `keep_specialist` | - | `refactor` | `modify_source_files` |
-| `research` | execution | `keep_specialist` | - | `research` | `write_research_report` |
+| `research` | execution | `keep_specialist` | - | `research`, `codebase_recon`, `pattern_mining` | `write_research_report`, `write_recon_pack`, `write_pattern_evidence` |
 | `reverse-engineer` | execution | `keep_specialist` | - | `reverse_engineer` | `clone_upstream_repo`, `authorized_binary_execution`, `write_teardown_artifacts` |
-| `route` | meta | `keep_specialist` | - | `route_request_to_skill` | - |
-| `rpi` | meta | `keep` | `plan`, `implement`, `validate` | `own_authorized_outcome`, `report` | `dispatch_core_phases` |
-| `sbh` | execution | `keep_specialist` | - | `sbh` | `delete_reclaimable_files`, `release_disk_ballast`, `modify_host_storage_config` |
-| `scaffold` | execution | `keep_specialist` | - | `scaffold` | `write_project_files` |
+| `rpi` | meta | `keep_strategy` | `plan`, `implement`, `validate` | `own_authorized_outcome`, `report` | `dispatch_core_phases` |
+| `sbh` | execution | `keep_optional_adapter` | - | `sbh` | `delete_reclaimable_files`, `release_disk_ballast`, `modify_host_storage_config` |
 | `security` | product | `keep_specialist` | - | `security` | `write_scan_artifacts` |
-| `skill-builder` | meta | `keep_specialist` | - | `skill_builder`, `heal_skill` | `write_skill_source`, `write_build_report`, `regenerate_skill_projections`, `repair_skill_projections` |
+| `skill-builder` | meta | `keep_specialist` | - | `skill_builder`, `heal_skill`, `export_skill`, `distill_expertise` | `write_skill_source`, `write_build_report`, `regenerate_skill_projections`, `repair_skill_projections`, `write_converted_skill_projection`, `write_advisory_proposal` |
 | `skill-eval` | meta | `keep_specialist` | - | `author_seeded_probe`, `run_probe_tier`, `evaluate_skill_decision` | `write_probe_package`, `dispatch_probe_producer` |
-| `standards` | knowledge | `keep_specialist` | - | `standards` | - |
-| `status` | session | `keep_specialist` | - | `status` | `read_filesystem`, `read_clock` |
-| `swarm` | execution | `keep_optional_adapter` | - | `dispatch_once` | `invoke_selected_executor` |
 | `test` | execution | `keep_specialist` | - | `test` | `write_test_files`, `write_test_evidence`, `modify_source_files` |
-| `toil-mining` | meta | `keep_specialist` | - | `toil_mining` | `write_toil_candidates` |
 | `using-flywheel` | execution | `keep_optional_adapter` | - | `route_to_native_flywheel_workflow`, `expose_agentops_skills`, `observe_flywheel_runtime` | - |
 | `using-gc` | execution | `keep_optional_adapter` | - | `dispatch_explicit_packet`, `observe_gc_runtime`, `inspect_pack_registries`, `drive_mayor_door` | `operate_gas_city`, `configure_codex_trust` |
 | `validate` | judgment | `keep` | - | `compute_subject_identity`, `judge_acceptance`, `return_validation_result`, `persist_verdict` | `write_verdict_artifact` |
-| `workflow-builder` | meta | `keep_specialist` | - | `workflow_builder` | `write_workflow_script` |

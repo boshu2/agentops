@@ -10,33 +10,20 @@ Learning and durable verdict storage are deliberately off the critical path.
 
 ## What is implemented
 
-One thing: the [`learn`](https://github.com/boshu2/agentops/blob/main/skills/learn/SKILL.md)
-skill, an optional, caller-invoked consumer of durable `verdict.v2`
-collections. It is a skill — prose an agent follows — with no CLI command and
-no scheduled or automatic invocation behind it.
+The [Memory skill](https://github.com/boshu2/agentops/blob/main/skills/memory/SKILL.md)
+provides optional recall, mining, and curation over caller-selected evidence.
+Its mine/learn operation absorbs the former `learn` entry point. Neither
+ordinary implementation nor final validation requires a learning step.
 
-Invoked, `learn` summarizes recurring evidence across a caller-supplied verdict
-collection and may propose a candidate deterministic check for later human or
-caller evaluation. Its own contract bounds the output hard:
+A mining request names the sources, question, destination, and bounds. It may
+return supported observations or no change. Updating a topic page requires
+provenance, factual support, and destination-disclosure review. Drafts stay in
+caller-selected protected external storage; existing unique evidence is
+preserved, with no automatic expiry or deletion.
 
-> When the caller asks for a durable artifact, write the observations under
-> `.agents/scratch/learn/` and return the path; otherwise return them inline.
-> The write is advisory and TTL'd — it is never a source of record, and its
-> absence never changes whether a candidate is valid.
-
-`.agents/scratch/` is disposable state by [ADR-0016](adr/ADR-0016-state-tiers.md):
-rebuildable or expirable, never authority. So the implemented half of this loop
-reads durable evidence and writes only to a tier that nothing is allowed to
-trust.
-
-`learn` does not:
-
-- change a completed verdict;
-- repair or re-plan work;
-- choose a next invocation;
-- activate a rule or deterministic check;
-- mutate Git, a tracker, or delivery state; or
-- block RPI when its own storage or analysis is unavailable.
+Memory does not change a completed verdict, select follow-up work, install a
+rule, or operate a tracker or delivery transition. A proposal for a reusable
+skill or check becomes a separate authorized implementation task.
 
 ## What is designed but not built
 
@@ -56,7 +43,7 @@ and typed by three schemas:
 reads, writes, or validates against any of the three; the only non-schema hits
 in the repository are `scripts/insert-schema-practices.py` (which tags every
 schema's `practices` field and knows nothing about their content), the two
-contract pages, and dated audit records. No `SKILL.md` — `learn` included —
+contract pages, and dated audit records. No `SKILL.md` — `memory` included —
 cites them either, so nothing instructs an agent to emit these shapes by hand.
 
 The schemas stay on disk deliberately: they are the declared contract if the

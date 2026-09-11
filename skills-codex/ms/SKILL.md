@@ -1,6 +1,6 @@
 ---
 name: ms
-description: 'meta_skill (ms) — the skill-search/load engine over both corpora (agentops + jsm). Triggers: "ms", "meta_skill", "skill search", "find a skill for", "load skill guidance".'
+description: 'Find and load guidance with the meta_skill search engine. Use when: searching a skill corpus; CASS owns past sessions and Skill Builder owns package authoring.'
 ---
 <!-- TOC: Core Insight | Constraints | Quick Start | Consume (MCP) | Write/Admin (CLI) | Output | Production Skill Handoff | Footguns | Concurrency | Scenarios | Quality | References -->
 

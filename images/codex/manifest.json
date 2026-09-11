@@ -1,10 +1,10 @@
 {
   "image": "codex",
   "schema_version": "skill-image.v1",
-  "skill_count": 55,
+  "skill_count": 34,
   "skills": [
     {
-      "disposition": "keep_specialist",
+      "disposition": "keep_optional_adapter",
       "slug": "account-rotation",
       "source_path": "skills/account-rotation/",
       "twin_path": "skills-codex/account-rotation/"
@@ -28,40 +28,16 @@
       "twin_path": "skills-codex/agy-native/"
     },
     {
-      "disposition": "keep_specialist",
-      "slug": "anti-ceremony",
-      "source_path": "skills/anti-ceremony/",
-      "twin_path": "skills-codex/anti-ceremony/"
-    },
-    {
       "disposition": "keep_optional_adapter",
-      "slug": "automation-shape-routing",
-      "source_path": "skills/automation-shape-routing/",
-      "twin_path": "skills-codex/automation-shape-routing/"
-    },
-    {
-      "disposition": "keep_specialist",
-      "slug": "bootstrap",
-      "source_path": "skills/bootstrap/",
-      "twin_path": "skills-codex/bootstrap/"
-    },
-    {
-      "disposition": "keep_specialist",
       "slug": "cass",
       "source_path": "skills/cass/",
       "twin_path": "skills-codex/cass/"
     },
     {
-      "disposition": "keep_specialist",
+      "disposition": "keep_optional_adapter",
       "slug": "cc-hooks",
       "source_path": "skills/cc-hooks/",
       "twin_path": "skills-codex/cc-hooks/"
-    },
-    {
-      "disposition": "keep_specialist",
-      "slug": "codebase-recon",
-      "source_path": "skills/codebase-recon/",
-      "twin_path": "skills-codex/codebase-recon/"
     },
     {
       "disposition": "keep_optional_adapter",
@@ -70,31 +46,19 @@
       "twin_path": "skills-codex/codex-exec/"
     },
     {
-      "disposition": "keep_specialist",
-      "slug": "converter",
-      "source_path": "skills/converter/",
-      "twin_path": "skills-codex/converter/"
-    },
-    {
       "disposition": "keep_strategy",
       "slug": "council",
       "source_path": "skills/council/",
       "twin_path": "skills-codex/council/"
     },
     {
-      "disposition": "keep_specialist",
+      "disposition": "keep_strategy",
       "slug": "craft-goal",
       "source_path": "skills/craft-goal/",
       "twin_path": "skills-codex/craft-goal/"
     },
     {
-      "disposition": "keep",
-      "slug": "crank",
-      "source_path": "skills/crank/",
-      "twin_path": "skills-codex/crank/"
-    },
-    {
-      "disposition": "keep_specialist",
+      "disposition": "keep_optional_adapter",
       "slug": "dcg",
       "source_path": "skills/dcg/",
       "twin_path": "skills-codex/dcg/"
@@ -112,24 +76,6 @@
       "twin_path": "skills-codex/domain/"
     },
     {
-      "disposition": "keep_specialist",
-      "slug": "fitness",
-      "source_path": "skills/fitness/",
-      "twin_path": "skills-codex/fitness/"
-    },
-    {
-      "disposition": "keep_specialist",
-      "slug": "handoff",
-      "source_path": "skills/handoff/",
-      "twin_path": "skills-codex/handoff/"
-    },
-    {
-      "disposition": "keep_specialist",
-      "slug": "human-only-skills",
-      "source_path": "skills/human-only-skills/",
-      "twin_path": "skills-codex/human-only-skills/"
-    },
-    {
       "disposition": "keep_strategy",
       "slug": "idea-genie",
       "source_path": "skills/idea-genie/",
@@ -143,18 +89,12 @@
     },
     {
       "disposition": "keep_off_path",
-      "slug": "learn",
-      "source_path": "skills/learn/",
-      "twin_path": "skills-codex/learn/"
-    },
-    {
-      "disposition": "keep_off_path",
       "slug": "memory",
       "source_path": "skills/memory/",
       "twin_path": "skills-codex/memory/"
     },
     {
-      "disposition": "keep_specialist",
+      "disposition": "keep_optional_adapter",
       "slug": "ms",
       "source_path": "skills/ms/",
       "twin_path": "skills-codex/ms/"
@@ -164,24 +104,6 @@
       "slug": "ntm",
       "source_path": "skills/ntm/",
       "twin_path": "skills-codex/ntm/"
-    },
-    {
-      "disposition": "keep_strategy",
-      "slug": "one-way-door",
-      "source_path": "skills/one-way-door/",
-      "twin_path": "skills-codex/one-way-door/"
-    },
-    {
-      "disposition": "keep_specialist",
-      "slug": "operationalize",
-      "source_path": "skills/operationalize/",
-      "twin_path": "skills-codex/operationalize/"
-    },
-    {
-      "disposition": "keep_specialist",
-      "slug": "pattern-mining",
-      "source_path": "skills/pattern-mining/",
-      "twin_path": "skills-codex/pattern-mining/"
     },
     {
       "disposition": "keep",
@@ -202,13 +124,7 @@
       "twin_path": "skills-codex/premortem/"
     },
     {
-      "disposition": "keep_specialist",
-      "slug": "product",
-      "source_path": "skills/product/",
-      "twin_path": "skills-codex/product/"
-    },
-    {
-      "disposition": "keep_specialist",
+      "disposition": "keep_optional_adapter",
       "slug": "rch",
       "source_path": "skills/rch/",
       "twin_path": "skills-codex/rch/"
@@ -238,28 +154,16 @@
       "twin_path": "skills-codex/reverse-engineer/"
     },
     {
-      "disposition": "keep_specialist",
-      "slug": "route",
-      "source_path": "skills/route/",
-      "twin_path": "skills-codex/route/"
-    },
-    {
-      "disposition": "keep",
+      "disposition": "keep_strategy",
       "slug": "rpi",
       "source_path": "skills/rpi/",
       "twin_path": "skills-codex/rpi/"
     },
     {
-      "disposition": "keep_specialist",
+      "disposition": "keep_optional_adapter",
       "slug": "sbh",
       "source_path": "skills/sbh/",
       "twin_path": "skills-codex/sbh/"
-    },
-    {
-      "disposition": "keep_specialist",
-      "slug": "scaffold",
-      "source_path": "skills/scaffold/",
-      "twin_path": "skills-codex/scaffold/"
     },
     {
       "disposition": "keep_specialist",
@@ -281,33 +185,9 @@
     },
     {
       "disposition": "keep_specialist",
-      "slug": "standards",
-      "source_path": "skills/standards/",
-      "twin_path": "skills-codex/standards/"
-    },
-    {
-      "disposition": "keep_specialist",
-      "slug": "status",
-      "source_path": "skills/status/",
-      "twin_path": "skills-codex/status/"
-    },
-    {
-      "disposition": "keep_optional_adapter",
-      "slug": "swarm",
-      "source_path": "skills/swarm/",
-      "twin_path": "skills-codex/swarm/"
-    },
-    {
-      "disposition": "keep_specialist",
       "slug": "test",
       "source_path": "skills/test/",
       "twin_path": "skills-codex/test/"
-    },
-    {
-      "disposition": "keep_specialist",
-      "slug": "toil-mining",
-      "source_path": "skills/toil-mining/",
-      "twin_path": "skills-codex/toil-mining/"
     },
     {
       "disposition": "keep_optional_adapter",
@@ -326,12 +206,6 @@
       "slug": "validate",
       "source_path": "skills/validate/",
       "twin_path": "skills-codex/validate/"
-    },
-    {
-      "disposition": "keep_specialist",
-      "slug": "workflow-builder",
-      "source_path": "skills/workflow-builder/",
-      "twin_path": "skills-codex/workflow-builder/"
     }
   ],
   "source": "skills/*/SKILL.md metadata"

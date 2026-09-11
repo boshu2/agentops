@@ -1,6 +1,6 @@
 ---
 name: sbh
-user-invocable: false
+user-invocable: true
 skill_api_version: 1
 hexagonal_role: supporting
 consumes: []
@@ -11,9 +11,9 @@ metadata:
   capabilities: [sbh]
   effects: [delete_reclaimable_files, release_disk_ballast, modify_host_storage_config]
   canonical_status: canonical
-  disposition: keep_specialist
+  disposition: keep_optional_adapter
   tier: execution
-description: 'Inspect disk pressure with SBH and run one explicitly authorized recovery action. Triggers: "check disk pressure", "run SBH".'
+description: 'Inspect disk pressure with SBH and perform an authorized recovery action. Use when: storage diagnosis or SBH recovery is requested; inspection does not authorize deletion.'
 practices:
 - pragmatic-programmer
 output_contract: disk pressure observations and authorized action result
