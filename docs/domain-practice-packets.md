@@ -55,7 +55,7 @@ above them.
 | `GOALS.md` | Fitness spec and directives the repo must preserve. |
 | `PRACTICE-REGISTRY.md` | Practice lineage and canonical `practices: [slug]` registry. |
 | `AGENTS.md` or runtime instructions | Local operating rules for agents in this repo. |
-| `docs/standards/` and `skills/standards/` | Coding and review conventions. |
+| `docs/standards/` and `skills/domain/references/standards/` | Coding and review conventions. |
 | `br` beads (`_beads/`) | Current work, dependencies, acceptance criteria, and ownership. |
 | `ao context assemble` | Builds a phase-scoped briefing from goals, history, intel, task, and protocol. |
 | `ao context packet` | Shows ranked findings, planning rules, premortem checks, and next-work context. |

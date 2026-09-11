@@ -14,4 +14,4 @@
 # Illustrative CLI-naming template: deliberately names hypothetical commands
 # (`ao loop-history`, `ao loop write`, `ao loop tail`) as good/bad naming
 # examples and future-subcommand placeholders — not real invocations.
-skills/standards/references/cli-wireup-template.md
+skills/domain/references/standards/cli-wireup-template.md

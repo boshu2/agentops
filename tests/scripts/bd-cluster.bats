@@ -27,14 +27,14 @@ if [[ "$1" == "show" ]]; then
     na-aaa)
       cat <<'JSON'
 [
-  {"id":"na-aaa","title":"Swarm cluster docs","description":"Update skills/swarm/SKILL.md","issue_type":"chore","labels":["skill:swarm"]}
+  {"id":"na-aaa","title":"Swarm cluster docs","description":"Update skills/agent-native/SKILL.md","issue_type":"chore","labels":["skill:swarm"]}
 ]
 JSON
       ;;
     na-bbb)
       cat <<'JSON'
 [
-  {"id":"na-bbb","title":"Swarm cluster runtime","description":"Update skills/swarm/SKILL.md","issue_type":"chore","labels":["skill:swarm"]}
+  {"id":"na-bbb","title":"Swarm cluster runtime","description":"Update skills/agent-native/SKILL.md","issue_type":"chore","labels":["skill:swarm"]}
 ]
 JSON
       ;;
