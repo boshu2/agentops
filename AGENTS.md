@@ -2,10 +2,10 @@
 
 Detailed workflow mechanics: [docs/agent-workflow-reference.md](docs/agent-workflow-reference.md).
 
-AgentOps provides tools, optional skills and evidence for independently judgeable
-coding-agent changes. The tracker, Git and coding agents retain work, history
-and execution authority. AgentOps connects their evidence in a federated graph;
-native execution needs zero mandatory AgentOps skills.
+AgentOps is the operations layer for agentic engineering: tools, optional skills
+and evidence for independently judgeable changes. Its federated integration graph
+connects evidence; tracker, Git and coding agents own work, history and execution.
+Native execution needs zero mandatory AgentOps skills.
 
 ```text
 Accepted intent -> native implementation and checks -> fresh independent judgment -> finish
