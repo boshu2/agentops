@@ -147,13 +147,19 @@ if (input.items.length > 1) {
     if (canonical.has(target.canonical) || (target.identity !== null && identities.has(target.identity))) {
       badArgs('duplicate filesystem target; no writers started');
     }
-    // Absent paths have no inode identity. Different case spellings can become
-    // the same file on macOS; reject this portable-path ambiguity on all hosts.
-    const portableName = target.canonical.normalize('NFC').toLowerCase();
-    if (portableNames.has(portableName) && (target.identity === null || portableNames.get(portableName) === null)) {
-      badArgs('ambiguous case-variant target involving an absent file; use distinct portable names');
+    // Absent paths have no inode identity. JavaScript Unicode case conversion
+    // does not model APFS identity, so prove only the portable ASCII subset.
+    const asciiPath = !/[^\x00-\x7f]/.test(target.canonical);
+    if (target.identity === null && !asciiPath) {
+      badArgs('cannot prove disjoint missing paths with non-ASCII canonical names; use separate calls');
     }
-    portableNames.set(portableName, target.identity);
+    if (asciiPath) {
+      const portableName = target.canonical.toLowerCase();
+      if (portableNames.has(portableName) && (target.identity === null || portableNames.get(portableName) === null)) {
+        badArgs('ambiguous case-variant target involving an absent file; use distinct portable names');
+      }
+      portableNames.set(portableName, target.identity);
+    }
     canonical.add(target.canonical);
     if (target.identity !== null) identities.add(target.identity);
   }

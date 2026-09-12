@@ -164,6 +164,34 @@ const tests = {
       assert.equal(result.writers.length, 0);
     }
   },
+  async 'target-unicode-aliases'() {
+    // These APFS case aliases are not equivalent under NFC + lowercasing.
+    const accepted = [];
+    for (const targets of [['\u03a3.js', '\u03c2.js'], ['Stra\u00dfe.js', 'STRASSE.js'], ['\u00b5.js', '\u03bc.js']]) {
+      for (const target of targets) assert(!fs.existsSync(path.join(fixture, target)));
+      const result = await run('code-write', { ...writeArgs, items: [item(targets[0]), item(targets[1], 'two')] }, () => receipt());
+      if (!result.error) { accepted.push(targets.join(' / ')); continue; }
+      assert.match(result.error.message, /cannot prove disjoint missing paths.*use separate calls/);
+      assert.equal(result.writers.length, 0);
+    }
+    assert.deepEqual(accepted, [], 'Absent Unicode aliases accepted: ' + accepted.join(', '));
+    // The restriction applies to the entire canonical path, including an
+    // existing Unicode parent. No probe attests unresolved components alone.
+    fs.mkdirSync(path.join(fixture, '\u03bc-parent'));
+    const parent = await run('code-write', { ...writeArgs, items: [item('\u03bc-parent/new.js'), item('ordinary.js', 'two')] }, () => receipt());
+    assert(parent.error); assert.equal(parent.writers.length, 0);
+    // Existing Unicode files have native metadata and remain valid batch
+    // targets when their inode identities differ.
+    for (const target of ['\u03b1.js', '\u03b2.js']) fs.writeFileSync(path.join(fixture, target), '// existing\n');
+    const existing = good(await run('code-write', { ...writeArgs, items: [item('\u03b1.js'), item('\u03b2.js', 'two')] }, (prompt, options) =>
+      options.label.endsWith(':one') ? receipt('\u03b1.js') : receipt('\u03b2.js', 'two')));
+    assert.equal(existing.writers.length, 2);
+    fs.linkSync(path.join(fixture, '\u03b1.js'), path.join(fixture, '\u03b3.js'));
+    const alias = await run('code-write', { ...writeArgs, items: [item('\u03b1.js'), item('\u03b3.js', 'two')] }, () => receipt());
+    assert(alias.error); assert.equal(alias.writers.length, 0);
+    const single = good(await run('code-write', { ...writeArgs, items: [item('\u03a3.js')] }, () => receipt('\u03a3.js')));
+    assert.equal(single.writers.length, 1);
+  },
   async 'target-probe'() {
     const target = "odd ' ; touch SHOULD_NOT_EXIST ; $(touch ALSO_NOT_CREATED).js";
     const result = good(await run('code-write', { ...writeArgs, items: [item(), item(target, 'two')] }, (prompt, options) => options.label.endsWith(':one') ? receipt() : receipt(target, 'two')));
