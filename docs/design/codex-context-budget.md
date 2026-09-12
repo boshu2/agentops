@@ -254,8 +254,43 @@ Its live Claude criteria remain NOT_PROVEN.
 
 `bash tests/run-all.sh` exited 0: 10 passed, 0 failed, 1 skipped (optional OL
 integration directory absent). This is the repository's default static tier;
-it does not establish live Claude integration. Final native routed gates and
-fresh review are recorded with the PR once complete.
+it does not establish live Claude integration. The remaining native checks also exited 0:
+
+- `./cli/bin/ao gate check --scope range:origin/main..HEAD`: 33 passed; 41
+  unrelated/tier gates were not selected. No Go source changed.
+- `bash scripts/regen-all.sh --check`: all 11 projection checks passed.
+- `bash scripts/check-door9-no-claude-p.sh`,
+  `bash scripts/check-hookless-cold-start.sh`,
+  `bash scripts/check-doc-hooks-drift.sh`: passed.
+- `shellcheck` on both shared guard/installer shells and the three new native
+  guard/installer shells: passed. `node --check` on both workflows and
+  `scripts/lib/codex-agent-config.mjs`: passed.
+- `bats tests/scripts/read-budget-guard*.bats
+  tests/scripts/install-read-budget-guard.bats tests/scripts/policy-dispatch.bats
+  tests/scripts/context-budget-workflows.bats tests/scripts/codex-context-agents.bats
+  tests/scripts/codex-read-budget-guard.bats
+  tests/scripts/install-codex-read-budget-guard.bats`: 222 passed, zero skipped.
+- `bash scripts/validate-codex-install-bundle.sh`: passed, 34 skill packages.
+  `cmp CHANGELOG.md docs/CHANGELOG.md` and `git diff --check`: passed.
+
+Logs are external: `native-routed.log`, `native-regen-check.log`,
+`native-bats.log` and `native-extra.log` under the scratch directory.
+The native PR records the final author-distinct exact-content judgment.
+
+checked: native refusal shape and live denial; same-predicate waivers,
+quiet allowed path and hashed telemetry fixtures; inert default manifests;
+ordinary personal/project discovery and linked-worktree refusal; native role
+registration/model pins; complete six-slice reader run; receipt-only writer
+and independent Bats exit status; configuration preservation; generated
+34-skill delivery and the checks above.
+
+not_checked: live Claude Workflow-tool execution and plugin agent-name
+resolution inherited from #1137; other Codex versions/accounts; hosted/MCP
+read interception outside the verified Bash shape; adversarial enforcement
+of advisory target-only/receipt-only role instructions; cost-savings or
+latency comparisons and ADR-0002 value-proof clearance. The absent optional
+OL integration suite did not run. These limits are not presented as enforced
+or measured capabilities.
 
 BD resolves its private
 Dolt store with `bd context --json`; `bd create` recorded `age-z25n` with the
