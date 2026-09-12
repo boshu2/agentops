@@ -26,6 +26,7 @@ diagnostic="$(printf '%s' "$input" | bash "$core" 2>&1 >/dev/null)"
 decision=$?
 [ "$decision" -eq 2 ] || exit 0
 while IFS= read -r line; do
+  line="${line//agentops:bulk-reader/bulk-reader}"
   case "$line" in
     '→ Read a slice:'*)
       printf '%s\n' "→ Read a bounded shell slice: sed -n 'START,ENDp' <file>, within AOP_READ_BUDGET_LINES (default 350)." >&2 ;;

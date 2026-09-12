@@ -41,6 +41,7 @@ invoke() {
   [[ "$stderr" == *"Codex: delegate"*"bulk-reader"* ]]
   [[ "$stderr" != *"Workflow:"* ]]
   [[ "$stderr" != *"AgentOps plugin"* ]]
+  [[ "$stderr" != *"agentops:"* ]]
   [[ "$stderr" != *"Agent tool:"* ]]
   [[ "$stderr" != *"Read(file_path"* ]]
 }
@@ -55,6 +56,8 @@ invoke() {
   [[ "$stderr" == *"full reason shown earlier"* ]]
   [[ "$stderr" != *"offset+limit"* ]]
   [ "$(wc -l < "$AGENTOPS_GUARDRAIL_TELEMETRY" | tr -d ' ')" -eq 2 ]
+  [[ "$stderr" == *"delegate to bulk-reader"* ]]
+  [[ "$stderr" != *"agentops:"* ]]
 }
 
 @test "codex guard: bounded, at-budget, binary, missing and unmonitored calls are silent" {
