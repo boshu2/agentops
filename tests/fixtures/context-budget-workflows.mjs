@@ -154,6 +154,16 @@ const tests = {
     const result = await run('code-write', args, () => receipt(), () => { throw Error('probe dead'); });
     assert(result.error); assert.equal(result.writers.length, 0);
   },
+  async 'target-case-aliases'() {
+    // Both paths are absent, so realpath/stat cannot supply an inode identity
+    // even on a case-insensitive macOS filesystem. The restriction is portable.
+    for (const targets of [['New.js', 'new.js'], ['NewDir/out.js', 'newdir/out.js'], ['Caf\u00e9.js', 'Cafe\u0301.js']]) {
+      for (const target of targets) assert(!fs.existsSync(path.join(fixture, target)));
+      const result = await run('code-write', { ...writeArgs, items: [item(targets[0]), item(targets[1], 'two')] }, () => receipt());
+      assert(result.error, 'Absent portable-name aliases accepted: ' + targets.join(', '));
+      assert.equal(result.writers.length, 0);
+    }
+  },
   async 'target-probe'() {
     const target = "odd ' ; touch SHOULD_NOT_EXIST ; $(touch ALSO_NOT_CREATED).js";
     const result = good(await run('code-write', { ...writeArgs, items: [item(), item(target, 'two')] }, (prompt, options) => options.label.endsWith(':one') ? receipt() : receipt(target, 'two')));

@@ -136,6 +136,7 @@ if (input.items.length > 1) {
   }
   const canonical = new Set();
   const identities = new Set();
+  const portableNames = new Map();
   for (let i = 0; i < probe.targets.length; i++) {
     const target = probe.targets[i];
     if (!target || target.target !== input.items[i].target || typeof target.canonical !== 'string' || !target.canonical.startsWith('/') ||
@@ -146,6 +147,13 @@ if (input.items.length > 1) {
     if (canonical.has(target.canonical) || (target.identity !== null && identities.has(target.identity))) {
       badArgs('duplicate filesystem target; no writers started');
     }
+    // Absent paths have no inode identity. Different case spellings can become
+    // the same file on macOS; reject this portable-path ambiguity on all hosts.
+    const portableName = target.canonical.normalize('NFC').toLowerCase();
+    if (portableNames.has(portableName) && (target.identity === null || portableNames.get(portableName) === null)) {
+      badArgs('ambiguous case-variant target involving an absent file; use distinct portable names');
+    }
+    portableNames.set(portableName, target.identity);
     canonical.add(target.canonical);
     if (target.identity !== null) identities.add(target.identity);
   }

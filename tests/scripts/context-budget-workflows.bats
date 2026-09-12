@@ -40,6 +40,11 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "code-write: absent case-variant targets are rejected before any writer" {
+  run node "$HARNESS" target-case-aliases
+  [ "$status" -eq 0 ]
+}
+
 @test "code-write: metadata probe shell-quotes paths and rejects dangling links" {
   run node "$HARNESS" target-probe
   [ "$status" -eq 0 ]
