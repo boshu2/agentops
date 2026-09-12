@@ -180,6 +180,14 @@ phase('Write');
 // against another process changing symlinks or files after the check.
 const receipts = [];
 for (const item of input.items) {
+  const schema = {
+    ...WRITER_SCHEMA,
+    properties: {
+      ...WRITER_SCHEMA.properties,
+      key: { type: 'string', const: item.key },
+      target: { type: 'string', const: item.target },
+    },
+  };
   try {
     receipts.push(await agent(
       'You are a code writer. You write exactly one file from a spec, matching the patterns of a reference file, and return a receipt. ' +
@@ -200,8 +208,10 @@ for (const item of input.items) {
           ? '- After writing, run this check ONCE with Bash and report only check_ran: true and check_ok (exit status 0). Keep all command output in your context; it can contain source code. Do not return it:\n  ' + item.check + '\n'
           : '- No check was given: report check_ran: false and check_ok: false.\n') +
         '- NEVER return the file content. Return a receipt only: key, target, written, lines (line count of the target after writing), ' +
-        'the check fields, and a one-line summary of at most 300 characters saying what was written (no code or copied command output).',
-      { label: 'code-write:' + item.key, phase: 'Write', schema: WRITER_SCHEMA, model, effort: 'medium' }
+        'the check fields, and a one-line summary of at most 300 characters saying what was written (no code or copied command output).\n' +
+        '- Preserve the caller\'s receipt identity EXACTLY: key must be ' + JSON.stringify(item.key) + ' and target must be ' + JSON.stringify(item.target) +
+        '. Do not replace a relative target with an absolute path, normalize it, resolve symlinks or change spelling in the receipt; filesystem tool paths may differ.',
+      { label: 'code-write:' + item.key, phase: 'Write', schema, model, effort: 'medium' }
     ));
   } catch (_) { receipts.push(null); }
 }

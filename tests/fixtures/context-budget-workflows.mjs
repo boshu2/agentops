@@ -132,6 +132,25 @@ const tests = {
   async 'required-reference'() {
     for (const reference of [undefined, '', ' ']) rejected(await run('code-write', { ...writeArgs, items: [{ ...item(), reference }] }, () => receipt()));
   },
+  async 'writer-receipt-identity'() {
+    const inputs = [item('./out.js', 'relative-key'), item(path.join(fixture, 'second.js'), 'absolute-key')];
+    const result = good(await run('code-write', { ...writeArgs, items: inputs }, (_prompt, options) => {
+      const properties = options.schema.properties;
+      assert(Object.hasOwn(properties.key, 'const'), 'Writer schema must constrain the receipt key');
+      assert(Object.hasOwn(properties.target, 'const'), 'Writer schema must constrain the receipt target');
+      return receipt(properties.target.const, properties.key.const);
+    }));
+    for (let i = 0; i < inputs.length; i++) {
+      assert.equal(result.writers[i].options.schema.properties.key.const, inputs[i].key);
+      assert.equal(result.writers[i].options.schema.properties.target.const, inputs[i].target);
+      assert.equal(result.result.items[i].key, inputs[i].key);
+      assert.equal(result.result.items[i].target, inputs[i].target);
+      assert.equal(result.result.items[i].written, true);
+    }
+    // The wrapper must still reject replies that bypass the schema and
+    // normalize the caller's relative identity to an absolute path.
+    unknownWriter(await run('code-write', { ...writeArgs, items: [inputs[0]] }, () => receipt(path.join(fixture, 'out.js'), inputs[0].key)));
+  },
   async 'target-aliases'() {
     for (const target of ['out.js', './out.js', 'sub/../out.js', path.join(fixture, 'out.js'), 'alias.js', 'hardlink.js']) {
       const result = await run('code-write', { ...writeArgs, items: [item(), item(target, 'two')] }, () => receipt());
