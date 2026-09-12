@@ -18,7 +18,7 @@
 #   PASS / WAIVED / DISABLED -> exit 0, ZERO stdout, ZERO stderr (stray stdout
 #            on an exit-0 PreToolUse path is parsed as JSON by the harness).
 #
-# PASS by construction (zero false-positive surface): a Read with a numeric
+# PASS cases: a Read with a numeric
 # limit; a file at/below budget; a missing / non-regular / binary path; a Bash
 # command containing | < > (a bounded consumer or a file sink); any command
 # word other than cat/head/tail; unresolvable tokens ($VAR, globs, backticks);
@@ -40,7 +40,8 @@
 #
 # Fail OPEN: no jq -> exit 0; malformed JSON -> exit 0 silent; empty or unknown
 # tool -> exit 0. Portable bash 3.2 + BSD tools: no GNU-only flags, no sed -i,
-# no mapfile, no associative arrays; head/tail flags parsed with case.
+# no mapfile, no associative arrays; head/tail flags parsed with case. Bash
+# judging also fails open without awk or uname.
 set -uo pipefail
 # Tokens are matched literally: a `*` / `?` / `[` in a command must never be
 # expanded against the hook's own cwd.
@@ -66,11 +67,24 @@ sid="$(printf '%s' "$input" | jq -r '.session_id // "nosession"' 2>/dev/null)"
 cwd="$(printf '%s' "$input" | jq -r '.cwd // ""' 2>/dev/null)"
 [ -n "$cwd" ] || cwd="$PWD"
 
-# Budget: a positive integer, else the default. Normalized through base-10
-# arithmetic so a leading zero can never reach --argjson as invalid JSON.
-budget="${AOP_READ_BUDGET_LINES:-350}"
-case "$budget" in ''|*[!0-9]*) budget=350 ;; esac
-budget=$((10#$budget))
+# Normalize decimal strings before arithmetic. Bash wraps overflowing integers;
+# saturate budgets at its signed 64-bit maximum and reject out-of-range
+# command counts. Leading zeroes do not invoke octal arithmetic.
+max_integer=9223372036854775807
+normalize_uint() {
+  local value="$1"
+  case "$value" in ''|*[!0-9]*) return 1 ;; esac
+  value="${value#"${value%%[!0]*}"}"
+  [ -n "$value" ] || value=0
+  # Equal-width decimals compare lexically before entering machine arithmetic.
+  # shellcheck disable=SC2071
+  if [ "${#value}" -gt 19 ] || { [ "${#value}" -eq 19 ] && [[ "$value" > "$max_integer" ]]; }; then
+    [ "${2:-}" = exact ] && return 1
+    value="$max_integer"
+  fi
+  printf '%s' "$value"
+}
+budget="$(normalize_uint "${AOP_READ_BUDGET_LINES:-350}")" || budget=350
 [ "$budget" -gt 0 ] || budget=350
 
 # Set when a leading AOP_WAIVE=<ids> assignment on the Bash command names this
@@ -82,9 +96,9 @@ resolve_path() {
   case "$1" in
     /*) printf '%s' "$1" ;;
     \~|\~/*)
-      # The shell would expand a leading tilde against HOME; mirror it. With no
-      # HOME the token stays literal, is never found, and the read passes.
-      if [ -n "${HOME:-}" ]; then printf '%s%s' "$HOME" "${1#\~}"; else printf '%s/%s' "$cwd" "$1"; fi ;;
+      # Bash tokens already have their unquoted tilde expanded by the lexer.
+      # Read paths keep the existing HOME shorthand; otherwise retain it literally.
+      if [ "${2:-}" != literal ] && [ -n "${HOME:-}" ]; then printf '%s%s' "$HOME" "${1#\~}"; else printf '%s/%s' "$cwd" "$1"; fi ;;
     *)  printf '%s/%s' "$cwd" "$1" ;;
   esac
 }
@@ -176,7 +190,7 @@ fire() {
   local sdir="${TMPDIR:-/tmp}/aop-read-budget-guard"
   local sentinel="${sdir}/${sid//\//_}"
   if [ -f "$sentinel" ]; then
-    printf '⛔ policy %s: %s is %s lines (budget %s) — slice it (offset+limit / sed -n) or delegate to bulk-reader (full reason shown earlier this session).\n' \
+    printf '⛔ policy %s: %s is %s lines (budget %s) — slice it (offset+limit / sed -n) or delegate to agentops:bulk-reader (full reason shown earlier this session).\n' \
       "$policy_id" "$1" "$2" "$budget" >&2
     exit 2
   fi
@@ -187,8 +201,9 @@ fire() {
 $1 is $2 lines (budget ${budget}). An unbounded read puts every line into this context and re-sends it on every later turn.
 → Read a slice: Read(file_path, offset, limit) with limit ≤ ${budget}, or Bash: sed -n '1,${budget}p' $1 / grep -n <pattern> $1.
 → Or delegate the whole file to a cheap reader that returns line-referenced bullets and keeps the bytes out of this context:
-    Agent tool: subagent_type "bulk-reader", prompt "<question>\nfiles: $1"
-    Workflow: bulk-read { question: "<question>", files: ["$1"] }
+    Agent tool: subagent_type "agentops:bulk-reader", prompt "<question>\nfiles: $1"
+    Workflow: agentops:bulk-read { question: "<question>", files: ["$1"] }
+    These names require the AgentOps plugin. Use bare names only when the runtime lists standalone definitions or links under those names.
 Waive once: AOP_WAIVE=${policy_id} (hook env, or a prefix on the Bash command). Raise the budget: AOP_READ_BUDGET_LINES=$2 in the hook env (an operator setting, not a command prefix).
 MSG
   exit 2
@@ -198,7 +213,7 @@ MSG
 
 check_read() {
   local fpath ltype abs lines
-  fpath="$(printf '%s' "$input" | jq -r '.tool_input.file_path // ""' 2>/dev/null)"
+  fpath="$(printf '%s' "$input" | jq -r '.tool_input.file_path | select(type == "string")' 2>/dev/null)"
   [ -n "$fpath" ] || return 0
   # A bounded slice always passes; offset alone does NOT bound.
   ltype="$(printf '%s' "$input" | jq -r '.tool_input.limit | type' 2>/dev/null)"
@@ -213,220 +228,252 @@ check_read() {
 
 # ---------------------------------------------------------------- Bash ------
 
-# strip_quotes T → T with ONE layer of surrounding single or double quotes removed.
-strip_quotes() {
-  local t="$1"
-  case "$t" in
-    \"*\") t="${t#\"}"; t="${t%\"}" ;;
-    \'*\') t="${t#\'}"; t="${t%\'}" ;;
+# Resolve an executable without invoking it. Bare names use the command's
+# literal PATH assignments and cwd; paths containing / resolve against cwd.
+resolve_command() {
+  case "$1" in
+    */*) resolve_path "$1" literal ;;
+    *) (cd "$cwd" 2>/dev/null && PATH="$2" type -P -- "$1" 2>/dev/null) ;;
   esac
-  printf '%s' "$t"
 }
 
-# check_segment SEG — judge one `;` / `&&` segment. Calls fire (never returns)
-# when the segment's effective read exceeds the budget; returns 0 otherwise.
+# check_segment receives literal words from the lexer, prefixed with "a" for
+# syntactic assignments or "w" for ordinary words. Never eval command input.
 check_segment() {
-  local -a toks
-  local -a files
-  local n i t cmdw name v n_raw want_next sign num
-  read -r -a toks <<< "$1" || true
+  local -a toks files
+  toks=("$@"); files=()
+  local n i t cmdw command_literal command_path utility_family platform v n_raw want_next sign num options
+  local lookup_path="${PATH:-}"
   n=${#toks[@]}
   [ "$n" -gt 0 ] || return 0
-
-  # Segments arrive from the quote-aware split in check_bash, so every quote
-  # here belongs to a word of ONE real command. A `#` word starts a comment:
-  # nothing after it is a command. A word is judgeable only when its quotes
-  # are a matched pair around the whole word (or around the value of a
-  # NAME=value assignment); anything else — a quoted path with a space, a
-  # stray quote, foo"bar" — is unparseable here: skip the segment, silent.
-  local -a words
-  local q
-  words=()
-  for t in "${toks[@]}"; do
-    case "$t" in \#*) break ;; esac
-    words[${#words[@]}]="$t"
-  done
-  n=${#words[@]}
-  [ "$n" -gt 0 ] || return 0
-  for t in "${words[@]}"; do
-    case "$t" in *\"*|*\'*) ;; *) continue ;; esac
-    v="$t"
-    name="${t%%=*}"
-    case "$name" in
-      [A-Za-z_]*) case "$name" in *[!A-Za-z0-9_]*) ;; *) v="${t#*=}" ;; esac ;;
-      --[A-Za-z]*) case "$name" in *[!A-Za-z0-9-]*) ;; *) v="${t#*=}" ;; esac ;;
-    esac
-    case "$v" in
-      \"\"|\'\') ;;
-      \"?*\") q="${v//[!\"]/}"; [ "${#q}" -eq 2 ] || return 0 ;;
-      \'?*\') q="${v//[!\']/}"; [ "${#q}" -eq 2 ] || return 0 ;;
-      *) return 0 ;;
-    esac
-  done
-  toks=("${words[@]}")
-
-  # Leading VAR=value assignments: skip them; an AOP_WAIVE naming this policy
-  # waives the whole call.
   i=0
   while [ "$i" -lt "$n" ]; do
     t="${toks[$i]}"
     case "$t" in
-      *=*)
-        name="${t%%=*}"
-        case "$name" in ''|[0-9]*|*[!A-Za-z0-9_]*) break ;; esac
-        if [ "$name" = "AOP_WAIVE" ]; then
-          v="$(strip_quotes "${t#*=}")"
-          case ",${v}," in *",${policy_id},"*) inline_waived=1 ;; esac
-        fi
-        i=$((i + 1))
-        ;;
+      aPATH=*) lookup_path="${t#aPATH=}" ;;
+      aAOP_WAIVE=*)
+        v="${t#aAOP_WAIVE=}"
+        case ",${v}," in *",${policy_id},"*) inline_waived=1 ;; esac ;;
+      a*) ;;
       *) break ;;
     esac
+    i=$((i + 1))
   done
   [ "$i" -lt "$n" ] || return 0
-
-  cmdw="$(strip_quotes "${toks[$i]}")"
-  cmdw="${cmdw##*/}"
+  command_literal="${toks[$i]#w}"
+  cmdw="${command_literal##*/}"
   case "$cmdw" in cat|head|tail) ;; *) return 0 ;; esac
+  command_path="$(resolve_command "$command_literal" "$lookup_path")" || return 0
+  [ -n "$command_path" ] || return 0
+  command_path="$(resolve_path "$command_path" literal)"
+  [ -f "$command_path" ] && [ -x "$command_path" ] || return 0
+  # Darwin system utilities reject some GNU forms without reading. Follow
+  # executable identity, including symlinks: basename alone is insufficient.
+  # uname is a guard dependency; never probe a caller-selected executable.
+  utility_family=generic
+  platform="$(uname -s 2>/dev/null)" || return 0
+  if [ "$platform" = Darwin ]; then
+    case "$cmdw" in
+      cat) [ "$command_path" -ef /bin/cat ] && utility_family=bsd-cat ;;
+      head) [ "$command_path" -ef /usr/bin/head ] && utility_family=bsd-head ;;
+      tail) [ "$command_path" -ef /usr/bin/tail ] && utility_family=bsd-tail ;;
+    esac
+  fi
   i=$((i + 1))
 
-  n_raw="10"
-  want_next=""
-  files=()
+  n_raw=10; want_next=""; options=1
   while [ "$i" -lt "$n" ]; do
-    t="$(strip_quotes "${toks[$i]}")"
+    t="${toks[$i]:1}"
     i=$((i + 1))
     if [ -n "$want_next" ]; then
-      n_raw="$t"
-      want_next=""
-      continue
+      n_raw="$t"; want_next=""; continue
     fi
-    # Unresolvable tokens: variables, command substitution, globs.
-    case "$t" in \$*|*\`*|*\**|*\?*|*\[*) continue ;; esac
-    if [ "$cmdw" = "cat" ]; then
-      # cat flags (-n, -A, ...) never bound the read; everything else is a file.
-      case "$t" in -*) continue ;; esac
-      files[${#files[@]}]="$t"
-      continue
+    if [ "$options" -eq 1 ]; then
+      case "$t" in
+        --) options=0; continue ;;
+        --help|--version) return 0 ;;
+        -) continue ;; # stdin, including after -- (handled below too)
+      esac
+      if [ "$cmdw" = cat ]; then
+        # Only known output-format flags are non-bounding. Unknown options
+        # may terminate without reading any file, so fail open.
+        if [ "$utility_family" = bsd-cat ]; then
+          case "$t" in --*|-*[AET]*) return 0 ;; esac
+        fi
+        case "$t" in
+          --number|--number-nonblank|--squeeze-blank|--show-all|--show-ends|--show-nonprinting|--show-tabs) continue ;;
+          -*) v="${t#-}"; case "$v" in *[!AbensTtuvE]*) return 0 ;; *) continue ;; esac ;;
+        esac
+      else
+        case "$t" in
+          -c*|--bytes|--bytes=*|-f|-F|--follow|--follow=*) return 0 ;;
+          -n|--lines) want_next=1; continue ;;
+          -n*) n_raw="${t#-n}"; continue ;;
+          --lines=*) n_raw="${t#--lines=}"; continue ;;
+          -[0-9]*) n_raw="${t#-}"; continue ;;
+          --quiet|--silent|--verbose) [ "$utility_family" = bsd-head ] && return 0; continue ;;
+          -*)
+            v="${t#-}"
+            case "$v" in *[!qv]*) return 0 ;; esac
+            [ "$utility_family" = bsd-head ] && return 0
+            continue ;;
+        esac
+      fi
     fi
-    # head / tail flag forms. A byte-mode or follow form makes the segment
-    # unjudgeable by line count -> skip the whole segment.
-    case "$t" in
-      -c|-c*|--bytes|--bytes=*) return 0 ;;
-      -f|-F|--follow|--follow=*)
-        [ "$cmdw" = "tail" ] && return 0
-        continue
-        ;;
-      -n|--lines) want_next=1; continue ;;
-      -n*) n_raw="${t#-n}"; continue ;;
-      --lines=*) n_raw="$(strip_quotes "${t#--lines=}")"; continue ;;
-      -[0-9]*) n_raw="${t#-}"; continue ;;
-      -*) continue ;;
-    esac
+    [ "$t" = - ] && continue
     files[${#files[@]}]="$t"
   done
+  [ -z "$want_next" ] || return 0
   [ "${#files[@]}" -gt 0 ] || return 0
 
   local abs lines eff total maxlines maxpath
-  if [ "$cmdw" = "cat" ]; then
-    # Effective = the SUM over the resolved files; report the largest file.
+  if [ "$cmdw" = cat ]; then
     total=0; maxlines=0; maxpath=""
     for t in "${files[@]}"; do
-      abs="$(resolve_path "$t")"
+      abs="$(resolve_path "$t" literal)"
       is_text_file "$abs" || continue
       lines="$(line_count "$abs")"
       case "$lines" in ''|*[!0-9]*) continue ;; esac
-      total=$((total + lines))
+      if [ "$lines" -gt "$((max_integer - total))" ]; then
+        total="$max_integer"
+      else
+        total=$((total + lines))
+      fi
       if [ "$lines" -gt "$maxlines" ] || [ -z "$maxpath" ]; then
         maxlines="$lines"; maxpath="$abs"
       fi
     done
     [ -n "$maxpath" ] || return 0
     [ "$total" -gt "$budget" ] || return 0
-    fire "$maxpath" "$total" "Bash"
+    fire "$maxpath" "$total" Bash
   fi
 
-  # head / tail: parse the count. head: N -> min(N, lines); -K -> the whole
-  # file. tail: N or -K -> min(K, lines); +K -> lines - K + 1 (min 0).
+  # head -K means all but the last K; tail +K starts at line K (0 and 1
+  # both start at the first line). Out-of-range counts fail open: the utility
+  # may reject them instead of reading. Never let them wrap in arithmetic.
   sign=""; num="$n_raw"
   case "$n_raw" in
     +*) sign="+"; num="${n_raw#+}" ;;
     -*) sign="-"; num="${n_raw#-}" ;;
   esac
-  case "$num" in ''|*[!0-9]*) return 0 ;; esac
-  [ "$cmdw" = "head" ] && [ "$sign" = "+" ] && return 0
-  num=$((10#$num))
+  [ "$utility_family" = bsd-head ] && [ "$sign" = - ] && return 0
+  num="$(normalize_uint "$num" exact)" || return 0
   for t in "${files[@]}"; do
-    abs="$(resolve_path "$t")"
+    abs="$(resolve_path "$t" literal)"
     is_text_file "$abs" || continue
     lines="$(line_count "$abs")"
     case "$lines" in ''|*[!0-9]*) continue ;; esac
-    if [ "$cmdw" = "head" ] && [ "$sign" = "-" ]; then
-      eff="$lines"
-    elif [ "$cmdw" = "tail" ] && [ "$sign" = "+" ]; then
-      eff=$((lines - num + 1))
+    if [ "$cmdw" = head ] && [ "$sign" = - ]; then
+      eff=$((lines - num))
+      [ "$eff" -lt 0 ] && eff=0
+    elif [ "$cmdw" = tail ] && [ "$sign" = + ]; then
+      if [ "$num" -le 1 ]; then eff="$lines"; else eff=$((lines - num + 1)); fi
       [ "$eff" -lt 0 ] && eff=0
     else
       eff="$num"
       [ "$eff" -gt "$lines" ] && eff="$lines"
     fi
     [ "$eff" -gt "$budget" ] || continue
-    fire "$abs" "$eff" "Bash"
+    fire "$abs" "$eff" Bash
   done
   return 0
 }
 
 check_bash() {
-  local cmd seg
-  cmd="$(printf '%s' "$input" | jq -r '.tool_input.command // ""' 2>/dev/null)"
+  local cmd token
+  local -a words
+  words=()
+  cmd="$(printf '%s' "$input" | jq -r '.tool_input.command | select(type == "string")' 2>/dev/null)"
   [ -n "$cmd" ] || return 0
-  # Pipes and redirects are out of scope by design: a bounded consumer or a
-  # file sink, never an unbounded read into this context.
+  # Pipes and redirects are explicitly outside this guard, even in quotes.
   case "$cmd" in *'|'*|*'<'*|*'>'*) return 0 ;; esac
-  # Quote-aware split: `;`, `&&` and a newline end a segment only OUTSIDE
-  # single/double quotes (backslash escapes honored outside single quotes), so
-  # quoted text that merely mentions `cat` — a commit message, an echo — stays
-  # inside its own command's segment and is never judged as an invocation. A
-  # newline inside quotes becomes a space (segments are only ever tokenized).
-  # A `#` comment (at a word start) runs to end of line and is dropped, so a
-  # separator or a quote inside a comment never splits or swallows anything;
-  # a backslash-newline is deleted, joining the segment exactly as the shell
-  # does (`cat big\` + newline + `.txt` is `cat big.txt`). awk (POSIX, BSD and GNU) keeps
-  # this a single linear pass in bash 3.2; no awk -> fail open, silent.
   command -v awk >/dev/null 2>&1 || return 0
-  while IFS= read -r seg; do
-    [ -n "$seg" ] || continue
-    check_segment "$seg"
+  # The lexer keeps literal word boundaries (including spaces/newlines),
+  # strips shell quotes, and removes escaped newlines outside single quotes.
+  # It emits NOTHING until the whole command is known to use this subset.
+  # Expansions, ANSI-C quotes, control syntax, directory changes and persistent
+  # assignments before later segments fail open for the whole call. This avoids both stale-cwd attribution and
+  # prematurely blocking text before an unmatched/unsupported later quote.
+  while IFS= read -r -d '' token; do
+    if [ "$token" = s ]; then
+      if [ "${#words[@]}" -gt 0 ]; then check_segment "${words[@]}"; fi
+      words=()
+    else
+      words[${#words[@]}]="$token"
+    fi
   done < <(printf '%s\n' "$cmd" | awk '
-    BEGIN { q = ""; seg = ""; cont = 0 }
-    {
-      line = $0; n = length(line)
-      for (i = 1; i <= n; i++) {
-        c = substr(line, i, 1)
-        if (q == "") {
-          if (c == "\\") {
-            if (i == n) { cont = 1; break }
-            seg = seg c substr(line, i + 1, 1); i++; continue
-          }
-          if (c == "#" && (i == 1 || substr(line, i - 1, 1) ~ /[ \t;&()]/)) break
-          if (c == "\"" || c == "\047") { q = c; seg = seg c; continue }
-          if (c == ";") { print seg; seg = ""; continue }
-          if (c == "&" && substr(line, i + 1, 1) == "&") { print seg; seg = ""; i++; continue }
-          seg = seg c
-        } else if (q == "\"") {
-          if (c == "\\") { seg = seg c substr(line, i + 1, 1); i++; continue }
-          if (c == "\"") q = ""
-          seg = seg c
-        } else {
-          if (c == "\047") q = ""
-          seg = seg c
-        }
+    function word_done(    value, kind) {
+      if (!active) return
+      if (persistent_assignment) bad = 1
+      value = word
+      if (tilde && ENVIRON["HOME"] != "") value = ENVIRON["HOME"] substr(value, 2)
+      kind = assignment ? "a" : "w"
+      records[++count] = kind value
+      segment_words++; pending_and = 0
+      if (!command_seen && !assignment) {
+        command_seen = 1
+        # Builtins/wrappers may change cwd or shell evaluation for later
+        # segments; reserved words require a real shell grammar.
+        if (value ~ /^(cd|pushd|popd|builtin|command|eval|source|\.|if|then|else|elif|fi|while|until|do|done|for|case|esac|select|function|!|time|coproc|exec)$/) bad = 1
       }
-      if (cont) { cont = 0 }
-      else if (q == "") { print seg; seg = "" }
-      else { seg = seg " " }
+      word = ""; active = 0; assignment = 0; quoted = 0; tilde = 0
     }
-    END { if (seg != "") print seg }
+    function segment_done() {
+      word_done()
+      # Assignment-only commands persist shell state for later segments.
+      # Do not judge those later words using the original hook environment.
+      if (segment_words && !command_seen) persistent_assignment = 1
+      records[++count] = "s"
+      command_seen = 0; segment_words = 0
+    }
+    BEGIN { q = ""; word = ""; count = 0 }
+    {
+      line = $0; n = length(line); continuation = 0
+      for (i = 1; i <= n; i++) {
+        c = substr(line, i, 1); nextc = substr(line, i + 1, 1)
+        if (q == "\047") {
+          if (c == "\047") q = ""; else word = word c
+          continue
+        }
+        if (c == "\\") {
+          if (i == n) { continuation = 1; break }
+          active = 1; quoted = 1
+          if (q == "\"" && nextc !~ /[\\"$`]/) word = word "\\"
+          word = word nextc; i++; continue
+        }
+        if (q == "\"") {
+          if (c == "\"") q = ""
+          else if (c == "$" || c == "`") bad = 1
+          else word = word c
+          continue
+        }
+        if (c == "#" && !active) break
+        if (c == "\"" || c == "\047") { q = c; active = 1; quoted = 1; continue }
+        if (c == " " || c == "\t") { word_done(); continue }
+        if (c == ";") {
+          word_done(); if (!segment_words || pending_and) bad = 1
+          segment_done(); continue
+        }
+        if (c == "&" && nextc == "&") {
+          word_done(); if (!segment_words || pending_and) bad = 1
+          segment_done(); pending_and = 1; i++; continue
+        }
+        if (c ~ /[$`*?\[(){}&]/) { bad = 1; continue }
+        if (c == "~") {
+          if (!active && (nextc == "/" || nextc == "" || nextc ~ /[ \t;]/)) tilde = 1
+          else { bad = 1; continue }
+        }
+        if (c == "=" && !quoted && word ~ /^[A-Za-z_][A-Za-z0-9_]*$/) assignment = 1
+        active = 1; word = word c
+      }
+      if (!continuation) {
+        if (q != "") word = word "\n"; else segment_done()
+      }
+    }
+    END {
+      if (q != "" || continuation || pending_and || bad) exit
+      for (j = 1; j <= count; j++) printf "%s%c", records[j], 0
+    }
   ')
   return 0
 }
