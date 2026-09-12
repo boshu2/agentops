@@ -93,7 +93,10 @@ JSON on stdin (`{tool_name, tool_input, session_id, cwd}`) with `jq`; a missing
   first remaining word must be `cat`, `head` or `tail`. Resolve that literal
   executable against the command cwd and PATH (including literal leading PATH
   assignments); missing or non-executable paths pass. Resolution never invokes
-  the selected executable.
+  the selected executable. An assignment-only segment followed by another
+  nonempty segment (`PATH=/nonexistent; cat file`) skips the whole call because
+  the assignment persists shell state; later segments must not reuse the hook
+  environment. A trailing assignment alone does not hide an earlier read.
 - On Darwin, compare executable identity (`-ef`, following symlinks) with
   `/bin/cat`, `/usr/bin/head` and `/usr/bin/tail`. The system `cat` rejects
   GNU-only `-A`, `-E`, `-T` (including combinations) and long flags; the system
@@ -320,6 +323,9 @@ false-negative shapes:
   preserved, and unquoted leading `~/` is the one expansion mirrored.
 - **Command prefixes** (`sudo cat`, `time cat`, `env X=1 cat`) are silent:
   only a segment whose command word is `cat`, `head` or `tail` is judged.
+- **Persistent assignments**: an assignment-only segment before a later
+  nonempty segment skips the whole call; persistent shell state is not tracked.
+  An assignment prefix attached to a command remains supported.
 - **Directory changes and evaluation builtins** (`cd`, `pushd`, `popd`,
   `builtin`, `command`, `source`, `eval`, `exec`) skip the whole call. Shell
   functions, aliases and the exit status of earlier commands are not resolved;

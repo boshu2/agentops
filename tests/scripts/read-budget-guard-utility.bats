@@ -106,3 +106,16 @@ require_gnu() {
   actual_read 0 400 env "PATH=$WORK/bin" cat -A
   guard_read 2 "PATH=$WORK/bin cat -A big.txt"
 }
+
+@test "UTILITY: assignment-only PATH changes do not reuse the hook PATH in later segments" {
+  local separator
+  for separator in ';' '&&' $'\n'; do
+    actual_read 127 0 bash -c "PATH=/nonexistent $separator cat \"\$1\"" _
+    guard_read 0 "PATH=/nonexistent $separator cat big.txt"
+  done
+}
+
+@test "UTILITY: a trailing assignment does not hide an earlier unbounded read" {
+  actual_read 0 400 bash -c 'cat "$1"; PATH=/nonexistent' _
+  guard_read 2 'cat big.txt; PATH=/nonexistent'
+}

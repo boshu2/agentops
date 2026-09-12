@@ -390,8 +390,8 @@ check_bash() {
   # The lexer keeps literal word boundaries (including spaces/newlines),
   # strips shell quotes, and removes escaped newlines outside single quotes.
   # It emits NOTHING until the whole command is known to use this subset.
-  # Expansions, ANSI-C quotes, control syntax and directory-changing commands
-  # fail open for the whole call. This avoids both stale-cwd attribution and
+  # Expansions, ANSI-C quotes, control syntax, directory changes and persistent
+  # assignments before later segments fail open for the whole call. This avoids both stale-cwd attribution and
   # prematurely blocking text before an unmatched/unsupported later quote.
   while IFS= read -r -d '' token; do
     if [ "$token" = s ]; then
@@ -403,6 +403,7 @@ check_bash() {
   done < <(printf '%s\n' "$cmd" | awk '
     function word_done(    value, kind) {
       if (!active) return
+      if (persistent_assignment) bad = 1
       value = word
       if (tilde && ENVIRON["HOME"] != "") value = ENVIRON["HOME"] substr(value, 2)
       kind = assignment ? "a" : "w"
@@ -418,6 +419,9 @@ check_bash() {
     }
     function segment_done() {
       word_done()
+      # Assignment-only commands persist shell state for later segments.
+      # Do not judge those later words using the original hook environment.
+      if (segment_words && !command_seen) persistent_assignment = 1
       records[++count] = "s"
       command_seen = 0; segment_words = 0
     }

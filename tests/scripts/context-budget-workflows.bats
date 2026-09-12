@@ -45,6 +45,11 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "code-write: absent Unicode targets reject while existing Unicode targets retain inode checks" {
+  run node "$HARNESS" target-unicode-aliases
+  [ "$status" -eq 0 ]
+}
+
 @test "code-write: metadata probe shell-quotes paths and rejects dangling links" {
   run node "$HARNESS" target-probe
   [ "$status" -eq 0 ]
