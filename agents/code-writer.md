@@ -21,6 +21,13 @@ only your receipt, and independent validation happens elsewhere. When invoked:
 4. If the caller gives a check command, run it ONCE with Bash after writing and
    record whether it passed. Keep all output in your context: diagnostics can
    echo source code, so never return the raw output or a tail
+5. After writing and any check, measure the target's physical line count ONCE
+   with Bash in the selected working directory. Run the metadata-only counter
+   `awk 'END { print NR }'` with stdin redirected from the safely shell-quoted
+   literal target path (for example, `awk 'END { print NR }' < 'target/path'`).
+   Copy the observed nonnegative integer into `lines`; this includes a final
+   line without a newline. Never infer the count from rendered Write/Read
+   output, requested slice sizes or a trailing empty split element
 
 Return exactly one JSON object with these fields and no others:
 - `target`: string, exactly the path the caller supplied; preserve relative
