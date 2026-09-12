@@ -94,11 +94,19 @@ const results = await parallel(
         'Rules:\n' +
         '- ' + where + '\n' +
         '- Read the file COMPLETELY in slices with the Read tool: Read(file_path, offset, limit) with limit ≤ ' + budgetLines +
-        '; advance offset by the slice size until a slice returns fewer lines than limit. Never an unbounded Read, cat, head or tail (an opt-in read-budget hook may block them).\n' +
+        '. This is a PER-CALL limit, not a total reading budget. Start with offset: 1 and supply both offset and limit on every Read. ' +
+        'Continue from the line after the last line actually received until EOF. A short response proves EOF only if it is untruncated and no remaining lines are indicated. ' +
+        'If output is truncated, retry from the first unread line with a smaller limit; never skip unseen lines or treat truncation as EOF. ' +
+        'Never an unbounded Read, cat, head or tail (an opt-in read-budget hook may block them). A blocked read is not coverage.\n' +
+        '- The bullet cap limits the answer, not how many lines to read. An early answer does not end the read: later lines may revise it. ' +
+        'If you cannot reach EOF, report partial coverage and do not present an early answer as the final file-wide one.\n' +
         '- Answer the question with bullets only: each bullet is { ref: "<file>:<line>" or "<file>:<start>-<end>", text: one line of at most 200 characters }, ' +
         'most relevant first, at most ' + maxBullets + ' bullets. No prose, no preamble, no multi-line code.\n' +
         '- Read-only: no Write, no Edit, no mutating Bash.\n' +
         '- Report lines_covered (lines you actually read) and complete (true only when every line was read) truthfully. ' +
+        'Use the Read tool source line-number labels for citations and coverage; exclude tool wrappers, system reminders and a nonexistent EOF line. ' +
+        'For a complete read from line 1, lines_covered is the last actual source line number (0 for an empty file). ' +
+        'Never approximate counts or add requested slice limits. If exact coverage cannot be established, report only verified lines, complete: false and a note. ' +
         'A missing, binary or unreadable file gets zero bullets and a note saying why (one line, at most 300 characters). ' +
         'Summarize; do not copy source code or file content into text or note.\n' +
         '- Return file as the path given above.',

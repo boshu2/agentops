@@ -161,15 +161,16 @@ First fire in a session (full):
 <path> is <N> lines (budget <B>). An unbounded read puts every line into this context and re-sends it on every later turn.
 → Read a slice: Read(file_path, offset, limit) with limit ≤ <B>, or Bash: sed -n '1,<B>p' <path> / grep -n <pattern> <path>.
 → Or delegate the whole file to a cheap reader that returns line-referenced bullets and keeps the bytes out of this context:
-    Agent tool: subagent_type "bulk-reader", prompt "<question>\nfiles: <path>"
-    Workflow: bulk-read { question: "<question>", files: ["<path>"] }
+    Agent tool: subagent_type "agentops:bulk-reader", prompt "<question>\nfiles: <path>"
+    Workflow: agentops:bulk-read { question: "<question>", files: ["<path>"] }
+    These names require the AgentOps plugin. Use bare names only when the runtime lists standalone definitions or links under those names.
 Waive once: AOP_WAIVE=core.context:unbounded-read (hook env, or a prefix on the Bash command). Raise the budget: AOP_READ_BUDGET_LINES=<N> in the hook env (an operator setting, not a command prefix).
 ```
 
 Later fires in the same session (short, still exit 2):
 
 ```text
-⛔ policy core.context:unbounded-read: <path> is <N> lines (budget <B>) — slice it (offset+limit / sed -n) or delegate to bulk-reader (full reason shown earlier this session).
+⛔ policy core.context:unbounded-read: <path> is <N> lines (budget <B>) — slice it (offset+limit / sed -n) or delegate to agentops:bulk-reader (full reason shown earlier this session).
 ```
 
 The per-session sentinel lives under `${TMPDIR:-/tmp}/aop-read-budget-guard/`
@@ -200,13 +201,21 @@ bullets or a receipt, never bytes, and nothing is kept between calls:
 
 | Piece | What the caller gets |
 |---|---|
-| `agents/bulk-reader.md` — subagent `bulk-reader` (`Read`/`Grep`/`Glob`/`Bash`, no `Write`/`Edit`, haiku) | line-referenced bullets (`path:line`, at most 40 unless the caller sets another cap), no prose |
-| `workflows/bulk-read.js` — `bulk-read { question, files, root?, model?, maxBullets?, budgetLines? }` | one reader per file in parallel; `{question, files:[{file, bullets, lines_covered, complete, note?, error?}], bullets_total}` |
-| `workflows/code-write.js` with `agents/code-writer.md` — `code-write { items:[{key, spec, reference, target, check?}] }` | metadata-only realpath/stat preflight for batches, then sequential writers; bounded receipts (`written`, `lines`, `check_ok`, `summary`), no check output; a reference file is REQUIRED |
+| `agents/bulk-reader.md` — subagent `agentops:bulk-reader` (`Read`/`Grep`/`Glob`/`Bash`, no `Write`/`Edit`, haiku) | line-referenced bullets (`path:line`, at most 40 unless the caller sets another cap), no prose |
+| `workflows/bulk-read.js` — `agentops:bulk-read { question, files, root?, model?, maxBullets?, budgetLines? }` | one reader per file in parallel; `{question, files:[{file, bullets, lines_covered, complete, note?, error?}], bullets_total}` |
+| `workflows/code-write.js` with subagent `agentops:code-writer` (`agents/code-writer.md`) — `agentops:code-write { items:[{key, spec, reference, target, check?}] }` | metadata-only realpath/stat preflight for batches, then sequential writers; bounded receipts (`written`, `lines`, `check_ok`, `summary`), no check output; a reference file is REQUIRED |
+
+These invocation names require the AgentOps plugin. Bare names apply only to
+standalone definitions or links when the runtime actually lists those names.
+The plugin adds the prefix; source agent names and workflow `meta.name` stay bare.
 
 Guard compatibility: the reader and writer prompts read in **slices** (`Read`
-with `offset` + `limit ≤ budgetLines`, advancing until a slice comes back
-short), never an unbounded `Read`/`cat`/`head`/`tail`. So a delegate's own
+with `offset` + `limit ≤ budgetLines`), never an unbounded
+`Read`/`cat`/`head`/`tail`. Readers start at offset 1 and continue through EOF;
+the limit is per call, and the bullet cap does not limit coverage. Truncated
+responses require smaller slices from the first unread line, not an EOF claim.
+An early answer does not establish the final decision while lines remain unread.
+So a delegate's own
 reads pass this guard on a host where it is installed — the delegation is not
 an exemption, it is a reader that obeys the same rule. A follow-up question
 about the same file costs another delegation, not another copy of the file in
