@@ -150,6 +150,7 @@ Absent targets in a batch must have ASCII canonical paths, including all existin
 The preflight is child-reported metadata at one instant, not a filesystem lock or sandbox. Use targets nobody else is editing; another process could change paths after preflight. Target-only writes remain an agent instruction. A receipt is a child report, not validation: judge the written files with a fresh, author-distinct Validate as usual.
 
 Args: `{ context?: string, root?: string, model?: string (default 'haiku'), budgetLines?: positive safe integer (default 350), items: [{ key, spec, reference, target, check? }] }` — duplicate target strings or filesystem identities throw before writing. The selected model also applies to the metadata probe.
+Each writer's output schema fixes `key` and `target` to the caller's exact strings. A relative target stays relative in the receipt even when the child uses an absolute filesystem path. The wrapper still rejects a mismatched receipt.
 Returns: `{ items: [{ key, target, written, lines, check_ran, check_ok, summary }] }`. The workflow validates key/target identity, booleans, nonnegative integer line count, and a one-line summary of at most 300 characters. Raw check output is excluded because diagnostics can contain source code. Dead writers and invalid receipts return `written: null`, `lines: null`, `check_ran: null`, `check_ok: null`, an empty summary, and an `error`: file and check state are unknown, since a worker can write before it dies. Short-summary semantics remain an agent instruction.
 
 ```js

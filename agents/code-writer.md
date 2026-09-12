@@ -23,7 +23,9 @@ only your receipt, and independent validation happens elsewhere. When invoked:
    echo source code, so never return the raw output or a tail
 
 Return a receipt only:
-- target path, whether it was written, and its line count
+- target path exactly as the caller supplied it, whether it was written, and
+  its line count; preserve relative paths and spelling in the receipt even
+  when filesystem tools use an absolute or resolved path
 - whether the check ran and whether it passed
 - a one-line summary of at most 300 characters saying what was written, with
   no code or copied command output

@@ -30,6 +30,11 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "code-write: each child schema preserves the caller's exact receipt key and target" {
+  run node "$HARNESS" writer-receipt-identity
+  [ "$status" -eq 0 ]
+}
+
 @test "code-write: path, symlink, hardlink, and missing-parent aliases start no writers" {
   run node "$HARNESS" target-aliases
   [ "$status" -eq 0 ]
