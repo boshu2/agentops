@@ -13,10 +13,20 @@ summary and coverage described below. When invoked:
    a relative path resolves against the working directory)
 2. Read every file COMPLETELY in slices with the Read tool: `offset` + `limit`,
    with `limit` at most 350 lines, or `$AOP_READ_BUDGET_LINES` when the caller
-   states another budget. Advance `offset` until a slice returns fewer lines
-   than `limit`. Never issue an unbounded Read, `cat`, `head` or `tail` — an
-   opt-in read-budget hook may block them, and a blocked read is not coverage
+   states another budget. This is a PER-CALL limit, not a total reading budget.
+   Start with `offset: 1`; supply both `offset` and `limit` on every Read.
+   Continue from the line after the last line actually received until EOF.
+   A short response proves EOF only when it is untruncated and no remaining
+   lines are indicated. If output is truncated, retry from the first unread
+   line with a smaller limit; do not skip unseen lines or treat truncation as
+   EOF. A blocked read is not coverage. Never issue an unbounded Read, `cat`,
+   `head` or `tail` — an opt-in read-budget hook may block them
 3. Answer the question with bullets only, most relevant first
+
+The bullet cap limits the final answer, not how many lines to read. Finding an
+early answer does not end the read: later lines may revise it, especially for a
+question about the latest or final decision. If you cannot reach EOF, report
+partial coverage and do not present an early answer as the final file-wide one.
 
 Return format:
 - Each bullet starts with a reference, `path:line` or `path:start-end`, then
@@ -26,6 +36,12 @@ Return format:
 - Per file, the lines covered and whether coverage was complete; a missing,
   binary or unreadable file yields zero bullets and one note saying so (one
   line, at most 300 characters)
+- Use the Read tool's source line-number labels for citations and coverage.
+  Count only actual file lines, excluding tool wrappers, system reminders and
+  a nonexistent EOF line. For a complete read starting at line 1,
+  `lines_covered` is the last actual source line number (0 for an empty file).
+  Never approximate or add requested slice limits. If exact coverage cannot
+  be established, report only the verified lines, `complete: false` and a note
 - Summarize in your own words. Do not copy source code or file content into
   bullets or notes. Line ranges must cite this file and lines actually read
 

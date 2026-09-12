@@ -190,7 +190,7 @@ fire() {
   local sdir="${TMPDIR:-/tmp}/aop-read-budget-guard"
   local sentinel="${sdir}/${sid//\//_}"
   if [ -f "$sentinel" ]; then
-    printf '⛔ policy %s: %s is %s lines (budget %s) — slice it (offset+limit / sed -n) or delegate to bulk-reader (full reason shown earlier this session).\n' \
+    printf '⛔ policy %s: %s is %s lines (budget %s) — slice it (offset+limit / sed -n) or delegate to agentops:bulk-reader (full reason shown earlier this session).\n' \
       "$policy_id" "$1" "$2" "$budget" >&2
     exit 2
   fi
@@ -201,8 +201,9 @@ fire() {
 $1 is $2 lines (budget ${budget}). An unbounded read puts every line into this context and re-sends it on every later turn.
 → Read a slice: Read(file_path, offset, limit) with limit ≤ ${budget}, or Bash: sed -n '1,${budget}p' $1 / grep -n <pattern> $1.
 → Or delegate the whole file to a cheap reader that returns line-referenced bullets and keeps the bytes out of this context:
-    Agent tool: subagent_type "bulk-reader", prompt "<question>\nfiles: $1"
-    Workflow: bulk-read { question: "<question>", files: ["$1"] }
+    Agent tool: subagent_type "agentops:bulk-reader", prompt "<question>\nfiles: $1"
+    Workflow: agentops:bulk-read { question: "<question>", files: ["$1"] }
+    These names require the AgentOps plugin. Use bare names only when the runtime lists standalone definitions or links under those names.
 Waive once: AOP_WAIVE=${policy_id} (hook env, or a prefix on the Bash command). Raise the budget: AOP_READ_BUDGET_LINES=$2 in the hook env (an operator setting, not a command prefix).
 MSG
   exit 2

@@ -180,8 +180,9 @@ unsupported shell syntax and directory-changing chains fail open. Negative
 Darwin system utility flags pass after checking executable identity. Positive
 signed head counts are bounded by their numeric value. Nothing un-reads bytes
 once in context → every attempt blocks (exit 2 + stderr): full message once per session naming the two
-correct moves (slice it, or delegate to the `bulk-reader` subagent /
-`bulk-read` workflow), one short line after. Waive once with
+correct moves (slice it, or delegate to the plugin's `agentops:bulk-reader`
+subagent / `agentops:bulk-read` workflow), one short line after. Use bare names
+only for standalone definitions or links when the runtime lists them. Waive once with
 `AOP_WAIVE=core.context:unbounded-read`; hashed telemetry adds `tool`, `lines`,
 `budget` plus the dispatcher's `mode`/`decision` pair. Ships INERT — opt-in installer:
 

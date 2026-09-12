@@ -43,6 +43,12 @@ removes only links pointing back into this checkout.
 at session start. Newly minted links appear in the next session, not the one
 already running.
 
+With the AgentOps plugin loaded, the context-budget workflows are listed as
+`agentops:bulk-read` and `agentops:code-write`; the plugin agents are
+`agentops:bulk-reader` and `agentops:code-writer`. Use bare names only for
+standalone definitions or links when the runtime actually lists those names.
+The plugin supplies the namespace; each source `meta.name` remains bare.
+
 ## Doctrine: thin conveyors
 
 These scripts are **thin conveyors**. All task semantics — the subject, the charters, the briefs, the acceptance criteria — arrive via `args`. The script contributes only orchestration shape, guardrail scaffolding (RED-first, disjoint ownership, no-stash, adversarial verification, destructive-command-guard awareness), and result plumbing. If a prompt inside a script ever encodes knowledge about a specific repo, defect, or session, that is a bug in the script. Agents operate in the session working directory; pass `args.root` only if you must point them elsewhere. Malformed args throw immediately with the expected shape — a thrown workflow is better than a silently wrong fleet.
@@ -118,11 +124,15 @@ Delegate large or many files to cheap readers. One reader per file is instructed
 
 Readers are instructed to be read-only, summarize without copying source, and report `lines_covered` / `complete` truthfully. A missing, binary or unreadable file comes back with zero bullets and a `note`. The wrapper verifies return structure and bounds, not whether the worker actually read the file or whether a short summary is accurate. Bash read-only behavior and content-free summaries remain agent instructions; neither tool confinement nor live child-to-parent context isolation is established by the stub harness.
 
+`budgetLines` limits each Read, and `maxBullets` limits the answer; neither caps total file coverage. Readers start at offset 1 and continue through EOF even after finding an early answer. Truncated output requires another Read from the first unread line with a smaller limit, not an assumption that the file ended. Incomplete coverage cannot establish the final file-wide decision.
+
+Citations and coverage use source line-number labels. Tool wrappers, system reminders and EOF notices are not file lines; a complete read's `lines_covered` equals the last actual source line number (0 for an empty file). Readers report verified coverage as incomplete when the exact count cannot be established.
+
 Args: `{ question: string, files: [string], root?: string, model?: string (default 'haiku'), maxBullets?: positive safe integer (default 40), budgetLines?: positive safe integer (default 350) }`
 Returns: `{ question, files: [{ file, bullets: [{ ref, text }], lines_covered, complete, note? }], bullets_total }` — a dead reader or invalid result produces empty `bullets`, `lines_covered: null`, `complete: false` and an `error` field. A missing result means coverage is unknown, even if the worker read some lines before dying.
 
 ```js
-Workflow({ name: 'bulk-read', args: {
+Workflow({ name: 'agentops:bulk-read', args: {
   question: 'Where are exit codes decided, and which paths return non-zero?',
   files: ['cli/internal/gates/runner.go', 'scripts/check-go-lint.sh'],
   maxBullets: 20,
@@ -143,7 +153,7 @@ Args: `{ context?: string, root?: string, model?: string (default 'haiku'), budg
 Returns: `{ items: [{ key, target, written, lines, check_ran, check_ok, summary }] }`. The workflow validates key/target identity, booleans, nonnegative integer line count, and a one-line summary of at most 300 characters. Raw check output is excluded because diagnostics can contain source code. Dead writers and invalid receipts return `written: null`, `lines: null`, `check_ran: null`, `check_ok: null`, an empty summary, and an `error`: file and check state are unknown, since a worker can write before it dies. Short-summary semantics remain an agent instruction.
 
 ```js
-Workflow({ name: 'code-write', args: {
+Workflow({ name: 'agentops:code-write', args: {
   context: 'Go CLI; tests are table-driven and live next to the source',
   items: [
     { key: 'parse-tests',
