@@ -46,31 +46,50 @@ echo "✓ installed ${dst}"
 
 # Merge the PreToolUse Read|Bash matcher into settings.json (idempotent).
 mkdir -p "$(dirname "$settings")"
-[[ -f "$settings" ]] || echo '{}' > "$settings"
+tmp="$(mktemp "${settings}.tmp.XXXXXX")"
+trap 'rm -f "$tmp"' EXIT
 
-# Timestamped backup before mutating settings (installer-workmanship).
-if [[ -f "$settings" && -s "$settings" ]]; then
-  backup="${settings}.bak.$(date +%Y%m%d%H%M%S)"
-  cp -p "$settings" "$backup"
-  echo "✓ backed up settings → ${backup}"
+merge_settings() {
+  jq --arg cmd "$dst" '
+    .hooks //= {} |
+    .hooks.PreToolUse //= [] |
+    if any(.hooks.PreToolUse[]?;
+      .matcher == "Read|Bash" and
+      any(.hooks[]?; .type == "command" and .command == $cmd))
+    then .
+    else .hooks.PreToolUse += [{
+      "matcher": "Read|Bash",
+      "hooks": [ { "type": "command", "command": $cmd } ]
+    }]
+    end
+  '
+}
+
+if [[ -f "$settings" ]]; then
+  merge_settings < "$settings" > "$tmp"
+else
+  printf '{}\n' | merge_settings > "$tmp"
 fi
 
-tmp="$(mktemp)"
-trap 'rm -f "$tmp"' EXIT
-jq --arg cmd "$dst" '
-  .hooks //= {} |
-  .hooks.PreToolUse //= [] |
-  if any(.hooks.PreToolUse[]?; (.hooks // [])[]?.command == $cmd)
-  then .
-  else .hooks.PreToolUse += [{
-    "matcher": "Read|Bash",
-    "hooks": [ { "type": "command", "command": $cmd } ]
-  }]
-  end
-' "$settings" > "$tmp" && mv "$tmp" "$settings"
+if ! cmp -s "$settings" "$tmp"; then
+  # Preserve each pre-mutation snapshot, including multiple installs in one
+  # second. An unchanged re-run must not replace the original backup.
+  if [[ -f "$settings" && -s "$settings" ]]; then
+    backup="$(mktemp "${settings}.bak.$(date +%Y%m%d%H%M%S).XXXXXX")"
+    cp -p "$settings" "$backup"
+    echo "✓ backed up settings → ${backup}"
+  fi
+  mv "$tmp" "$settings"
+else
+  rm -f "$tmp"
+fi
 trap - EXIT
 
-if grep -qF "$dst" "$settings"; then
+if jq -e --arg cmd "$dst" '
+  any(.hooks.PreToolUse[]?;
+    .matcher == "Read|Bash" and
+    any(.hooks[]?; .type == "command" and .command == $cmd))
+' "$settings" >/dev/null; then
   echo "✓ wired Read|Bash PreToolUse guard into ${settings}"
 else
   echo "ERROR: failed to wire guard into ${settings}" >&2

@@ -71,6 +71,19 @@ stdout_only() {
   out="$("$@" 2>/dev/null)" || rc=$?
 }
 
+# Negative head counts are GNU semantics. On Darwin, point a command named
+# head at the installed GNU inode instead of asserting BSD rejected input reads.
+require_negative_head() {
+  NEGATIVE_HEAD=head
+  if [ "$(uname -s)" = Darwin ] && [ "$(type -P head)" -ef /usr/bin/head ]; then
+    local candidate
+    candidate="$(command -v ghead)" || skip "GNU head is not installed"
+    mkdir -p "$TMPDIR/gnu"
+    ln -s "$candidate" "$TMPDIR/gnu/head"
+    NEGATIVE_HEAD="$TMPDIR/gnu/head"
+  fi
+}
+
 # --- FIRE (exit 2, stderr names the policy id) --------------------------------
 
 @test "FIRE: Read of a 400-line file without limit blocks (exit 2, names the policy)" {
@@ -115,10 +128,12 @@ stdout_only() {
   [ "$status" -eq 2 ]
 }
 
-@test "FIRE: Bash 'head -n -5 big.txt' blocks (negative count = whole file minus a tail)" {
-  run run_bash "head -n -5 big.txt" "f-head-neg"
+@test "FIRE: GNU head -n -5 blocks (negative count = whole file minus a tail)" {
+  require_negative_head
+  run run_bash "\"$NEGATIVE_HEAD\" -n -5 big.txt" "f-head-neg"
   [ "$status" -eq 2 ]
-  [[ "$output" == *"is 400 lines"* ]]
+  # A1 requires the effective read count: 400 - 5, not the full file size.
+  [[ "$output" == *"is 395 lines"* ]]
 }
 
 @test "FIRE: Bash 'tail -n 400 big.txt' blocks" {
@@ -178,14 +193,15 @@ stdout_only() {
   [[ "$output" != *"→ Read a slice"* ]]
 }
 
-@test "FIRE: the first fire's message names bulk-reader and both delegation doors" {
+@test "FIRE: the first fire names the plugin-qualified Agent and Workflow delegation doors" {
   run run_read "$WORK/big.txt" "f-full-msg"
   [ "$status" -eq 2 ]
   [[ "$output" == *"bulk-reader"* ]]
   [[ "$output" == *"→ Read a slice: Read(file_path, offset, limit) with limit ≤ 350"* ]]
   [[ "$output" == *"→ Or delegate the whole file to a cheap reader"* ]]
-  [[ "$output" == *"Agent tool: subagent_type \"bulk-reader\""* ]]
-  [[ "$output" == *"Workflow: bulk-read { question: \"<question>\", files: [\"$WORK/big.txt\"] }"* ]]
+  [[ "$output" == *"Agent tool: subagent_type \"agentops:bulk-reader\""* ]]
+  [[ "$output" == *"Workflow: agentops:bulk-read { question: \"<question>\", files: [\"$WORK/big.txt\"] }"* ]]
+  [[ "$output" == *"Use bare names only when the runtime lists standalone definitions or links under those names."* ]]
   [[ "$output" == *"Waive once: AOP_WAIVE=$POLICY"* ]]
   [[ "$output" == *"AOP_READ_BUDGET_LINES="* ]]
 }
@@ -310,7 +326,7 @@ stdout_only() {
   [ -z "$output" ]
 }
 
-@test "SILENT: 'cd sub && cat nested.txt' passes (documented gap: resolved against the original cwd, not found)" {
+@test "SILENT: 'cd sub && cat nested.txt' fails open because the cwd changes" {
   run run_bash "cd sub && cat nested.txt" "s-cd-chain"
   [ "$status" -eq 0 ]
   [ -z "$output" ]
@@ -448,12 +464,13 @@ stdout_only() {
   [ -z "$output" ]
 }
 
-@test "SILENT: a quoted path with a space never mis-attributes to a coincidental sibling file" {
+@test "FIRE: a quoted large path with a space is attributed to the complete filename" {
   seq 1 400 > "$WORK/big"            # the coincidental sibling the broken token would hit
   seq 1 400 > "$WORK/my big"
   run run_bash 'cat "my big"' "q5"
-  [ "$status" -eq 0 ]
-  [ -z "$output" ]
+  # The old silent expectation contradicted A1: this literal file has 400 lines.
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"$WORK/my big is 400 lines"* ]]
 }
 
 @test "FIRE: a fully quoted over-budget path still fires (balanced quotes are an invocation)" {
