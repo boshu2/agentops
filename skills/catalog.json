@@ -1,6 +1,6 @@
 {
   "schema_version": "3",
-  "skill_count": 55,
+  "skill_count": 34,
   "skills": [
     {
       "canonical_status": "canonical",
@@ -11,8 +11,8 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Switch a caller-selected coding-agent account and report the observed identity. Triggers: \"switch account\", \"rotate coding-agent account\".",
-      "disposition": "keep_specialist",
+      "description": "Switch coding-agent accounts and verify runtime identity. Use when: the caller requests an account change; never rotate automatically to evade a quota.",
+      "disposition": "keep_optional_adapter",
       "effects": [
         "rotate_agent_account"
       ],
@@ -25,7 +25,7 @@
       "produces": [],
       "references_count": 0,
       "tier": "execution",
-      "user_invocable": false
+      "user_invocable": true
     },
     {
       "canonical_status": "canonical",
@@ -43,7 +43,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Use Agent Mail as an optional messaging and file-reservation adapter for explicitly coordinated writers. Triggers: \"coordinate writers\", \"reserve files\".",
+      "description": "Coordinate selected writers with Agent Mail messages and advisory file reservations. Use when: this adapter is requested; mail does not own tracker status.",
       "disposition": "keep_optional_adapter",
       "effects": [
         "write_agent_mail_records",
@@ -63,14 +63,15 @@
       ],
       "references_count": 3,
       "tier": "execution",
-      "user_invocable": false
+      "user_invocable": true
     },
     {
       "canonical_status": "canonical",
       "capabilities": [
         "role_dispatch",
         "observe_workers",
-        "handoff"
+        "handoff",
+        "dispatch_once"
       ],
       "codex_override_present": true,
       "consumes": [
@@ -91,10 +92,11 @@
         }
       ],
       "dependencies": [],
-      "description": "Operate explicit orchestrator, implementer, validator, and scribe roles through a caller-selected agent runtime. Triggers: \"agent-native factory\", \"role-shaped agent panes\", \"persistent workers\".",
+      "description": "Dispatch independent tasks to parallel workers or selected persistent roles. Use when: delegation is authorized with disjoint scopes; execution does not validate output.",
       "disposition": "keep_optional_adapter",
       "effects": [
-        "manage_runtime_sessions"
+        "manage_runtime_sessions",
+        "invoke_selected_executor"
       ],
       "graph_root": false,
       "hexagonal_role": "supporting",
@@ -105,9 +107,10 @@
       ],
       "produces": [
         "runtime-evidence",
-        "worker-handoff"
+        "worker-handoff",
+        "per-packet-results"
       ],
-      "references_count": 2,
+      "references_count": 3,
       "tier": "meta",
       "user_invocable": true
     },
@@ -128,7 +131,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Use an explicitly selected AGY runtime for one provided packet or fresh validator context. Triggers: \"agy\", \"antigravity\", \"AGY evidence\".",
+      "description": "Run a supplied task in AGY Antigravity and collect its result. Use when: the caller selects AGY; never a fallback for native coding.",
       "disposition": "keep_optional_adapter",
       "effects": [
         "start_agy_session"
@@ -145,117 +148,6 @@
       ],
       "references_count": 0,
       "tier": "cross-vendor",
-      "user_invocable": false
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
-        "guard_anti_ceremony",
-        "audit_anti_ceremony"
-      ],
-      "codex_override_present": true,
-      "consumes": [
-        "caller-outcome",
-        "proposed-process-work",
-        "proof-state"
-      ],
-      "context_rel": [],
-      "dependencies": [],
-      "description": "Guard outcome work against process overhead. Triggers: optional \"quick guard\"; explicit \"full anti-ceremony audit\" requests.",
-      "disposition": "keep_specialist",
-      "effects": [],
-      "graph_root": false,
-      "hexagonal_role": "supporting",
-      "name": "anti-ceremony",
-      "practices": [
-        "lean",
-        "evidence-based-development"
-      ],
-      "produces": [
-        "anti-ceremony-decision"
-      ],
-      "references_count": 0,
-      "tier": "judgment",
-      "user_invocable": true
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
-        "automation_shape_routing"
-      ],
-      "codex_override_present": true,
-      "consumes": [
-        "task-intent"
-      ],
-      "context_rel": [
-        {
-          "kind": "supplier-to",
-          "with": "skill-builder"
-        },
-        {
-          "kind": "supplier-to",
-          "with": "workflow-builder"
-        },
-        {
-          "kind": "supplier-to",
-          "with": "agent-native"
-        },
-        {
-          "kind": "supplier-to",
-          "with": "using-gc"
-        },
-        {
-          "kind": "supplier-to",
-          "with": "operationalize"
-        }
-      ],
-      "dependencies": [],
-      "description": "Front door for agent automation: choose inline, bounded fanout, reusable skill/workflow/gate, persistent agent-native workers, or explicit Gas City. Triggers: \"build automation\", \"which orchestration shape\", \"should this use NTM\".",
-      "disposition": "keep_optional_adapter",
-      "effects": [],
-      "graph_root": false,
-      "hexagonal_role": "supporting",
-      "name": "automation-shape-routing",
-      "practices": [
-        "hexagonal-architecture",
-        "team-topologies",
-        "pragmatic-programmer"
-      ],
-      "produces": [
-        "automation-shape-verdict"
-      ],
-      "references_count": 0,
-      "tier": "meta",
-      "user_invocable": false
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
-        "bootstrap"
-      ],
-      "codex_override_present": true,
-      "consumes": [
-        "fitness",
-        "product",
-        "doc"
-      ],
-      "context_rel": [],
-      "dependencies": [],
-      "description": "Initialize explicitly requested, missing AgentOps documentation and optional verdict storage without taking over repository workflow. Triggers: \"bootstrap AgentOps\", \"initialize AgentOps docs\".",
-      "disposition": "keep_specialist",
-      "effects": [
-        "write_project_docs"
-      ],
-      "graph_root": true,
-      "hexagonal_role": "driving-adapter",
-      "name": "bootstrap",
-      "practices": [
-        "hermetic-builds",
-        "code-complete"
-      ],
-      "produces": [],
-      "references_count": 2,
-      "tier": "session",
       "user_invocable": true
     },
     {
@@ -267,8 +159,8 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Mine past agent sessions for working prompts, decisions, and patterns (session archaeology). Triggers: \"cass\", \"mine past agent sessions for\", \"cass skill\".",
-      "disposition": "keep_specialist",
+      "description": "Search agent session logs and cited episodes with CASS. Use when: past prompts, decisions or failures may answer a question; repeated text is not a proven lesson.",
+      "disposition": "keep_optional_adapter",
       "effects": [
         "rebuild_local_index",
         "sync_remote_sources",
@@ -283,7 +175,7 @@
       "produces": [],
       "references_count": 17,
       "tier": "execution",
-      "user_invocable": false
+      "user_invocable": true
     },
     {
       "canonical_status": "canonical",
@@ -294,8 +186,8 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Configure default Claude Code enforcement hooks and opt-in guard recipes. Triggers: \"cc-hooks\", \"configure Claude Code hooks\", \"install hooks\".",
-      "disposition": "keep_specialist",
+      "description": "Configure Claude Code hooks and narrow enforcement guards. Use when: the caller requests hook installation, repair or policy changes; a hook is not required to use other skills.",
+      "disposition": "keep_optional_adapter",
       "effects": [
         "write_hook_config",
         "append_guardrail_telemetry",
@@ -308,53 +200,7 @@
         "pragmatic-programmer"
       ],
       "produces": [],
-      "references_count": 7,
-      "tier": "execution",
-      "user_invocable": false
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
-        "codebase_recon"
-      ],
-      "codex_override_present": true,
-      "consumes": [
-        "repo-context",
-        "existing-docs"
-      ],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "research"
-        },
-        {
-          "kind": "customer-of",
-          "with": "validate"
-        },
-        {
-          "kind": "customer-of",
-          "with": "doc"
-        }
-      ],
-      "dependencies": [],
-      "description": "Trace a repo into cited flows. Not for a bounded question; that is research. Triggers: \"codebase recon\", \"trace this codebase\", \"repository audit\", \"refresh the prior recon\".",
-      "disposition": "keep_specialist",
-      "effects": [
-        "write_recon_pack"
-      ],
-      "graph_root": false,
-      "hexagonal_role": "supporting",
-      "name": "codebase-recon",
-      "practices": [
-        "legacy-code-seams",
-        "ddd-bounded-context",
-        "design-by-contract"
-      ],
-      "produces": [
-        "codebase-recon.v1",
-        "evidence-bounded-recon-report"
-      ],
-      "references_count": 1,
+      "references_count": 8,
       "tier": "execution",
       "user_invocable": true
     },
@@ -374,7 +220,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Run one caller-supplied Codex command non-interactively and capture evidence. Triggers: \"run Codex headless\", \"capture Codex evidence\".",
+      "description": "Run one prompt through headless Codex and capture its result. Use when: requesting a single noninteractive Codex process. Not for worker batches or retries.",
       "disposition": "keep_optional_adapter",
       "effects": [
         "run_codex_process",
@@ -391,35 +237,7 @@
       ],
       "references_count": 0,
       "tier": "orchestration",
-      "user_invocable": false
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
-        "converter"
-      ],
-      "codex_override_present": true,
-      "consumes": [],
-      "context_rel": [],
-      "dependencies": [],
-      "description": "Convert AgentOps skill formats. Triggers: \"converter\", \"convert agentops skill formats.\", \"converter skill\".",
-      "disposition": "keep_specialist",
-      "effects": [
-        "write_converted_skill_projection"
-      ],
-      "graph_root": false,
-      "hexagonal_role": "driven-adapter",
-      "name": "converter",
-      "practices": [
-        "refactoring",
-        "design-patterns"
-      ],
-      "produces": [
-        "converted-skill"
-      ],
-      "references_count": 1,
-      "tier": "cross-vendor",
-      "user_invocable": false
+      "user_invocable": true
     },
     {
       "canonical_status": "canonical",
@@ -434,7 +252,7 @@
       ],
       "context_rel": [],
       "dependencies": [],
-      "description": "Gather independent views on a high-stakes judgment. Not for one-judge plan challenge; that is premortem. Triggers: \"council\", \"multi-judge review\", \"independent perspectives\".",
+      "description": "Compare independent views on a consequential or contested decision. Use when: the caller selects multiple judges; evidence resolves disagreement, not voting.",
       "disposition": "keep_strategy",
       "effects": [
         "write_advisory_council_report"
@@ -471,8 +289,8 @@
         }
       ],
       "dependencies": [],
-      "description": "Compile or lint a persistent Mayor-style goal prompt that ratchets a bead graph through bounded RPI experiments toward one larger outcome. Triggers: \"craft a goal prompt\", \"mayor goal\", \"goal-runner prompt\", \"lint this goal\", \"is this goal safe\". (Shaping one experiment's intent routes to plan.)",
-      "disposition": "keep_specialist",
+      "description": "Draft or lint a bounded persistent goal above a bead graph of RPI experiments. Use when: this goal workflow is explicitly selected; shaping a single change belongs to Plan.",
+      "disposition": "keep_strategy",
       "effects": [],
       "graph_root": false,
       "hexagonal_role": "supporting",
@@ -492,53 +310,14 @@
     {
       "canonical_status": "canonical",
       "capabilities": [
-        "execute_wave"
-      ],
-      "codex_override_present": true,
-      "consumes": [
-        "rpi",
-        "caller-selected-wave"
-      ],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "rpi"
-        }
-      ],
-      "dependencies": [
-        "rpi"
-      ],
-      "description": "Execute one caller-selected wave by invoking RPI once per lane and return the wave evidence, then stop. Triggers: \"crank\", \"execute the next wave\", \"run this wave\".",
-      "disposition": "keep",
-      "effects": [
-        "dispatch_rpi_per_lane"
-      ],
-      "graph_root": true,
-      "hexagonal_role": "domain",
-      "name": "crank",
-      "practices": [
-        "small-batch-flow",
-        "design-by-contract",
-        "team-topologies"
-      ],
-      "produces": [
-        "wave-evidence"
-      ],
-      "references_count": 0,
-      "tier": "meta",
-      "user_invocable": true
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
         "dcg"
       ],
       "codex_override_present": true,
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Handle blocked destructive commands and configure agent safety guardrails. Triggers: \"dcg\", \"handle a DCG block\", \"configure agent safety guardrails\".",
-      "disposition": "keep_specialist",
+      "description": "Diagnose a Destructive Command Guard block or configure its rules. Use when: DCG rejected an operation or policy work is requested; never disguise commands to bypass it.",
+      "disposition": "keep_optional_adapter",
       "effects": [
         "write_dcg_config"
       ],
@@ -551,12 +330,14 @@
       "produces": [],
       "references_count": 6,
       "tier": "execution",
-      "user_invocable": false
+      "user_invocable": true
     },
     {
       "canonical_status": "canonical",
       "capabilities": [
-        "doc"
+        "doc",
+        "initialize_missing_docs",
+        "write_session_handoff"
       ],
       "codex_override_present": true,
       "consumes": [
@@ -564,10 +345,12 @@
       ],
       "context_rel": [],
       "dependencies": [],
-      "description": "Generate and validate repo docs, READMEs, and OSS doc packs. Triggers: \"doc\", \"generate and validate repo docs\", \"doc skill\".",
+      "description": "Write grounded docs, READMEs, repo instructions or continuity handoffs. Use when: these documents are requested; no reports as a routine completion ritual.",
       "disposition": "keep_specialist",
       "effects": [
-        "write_documentation"
+        "write_documentation",
+        "write_requested_handoff",
+        "create_requested_evidence_directory"
       ],
       "graph_root": false,
       "hexagonal_role": "supporting",
@@ -578,24 +361,29 @@
         "pragmatic-programmer"
       ],
       "produces": [
-        "documentation"
+        "documentation",
+        "session-handoff"
       ],
-      "references_count": 14,
+      "references_count": 15,
       "tier": "product",
-      "user_invocable": false
+      "user_invocable": true
     },
     {
       "canonical_status": "canonical",
       "capabilities": [
-        "domain"
+        "domain",
+        "clarify_domain_language",
+        "reconcile_domain_names"
       ],
       "codex_override_present": true,
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Load the AgentOps language and bounded-context contracts when a term needs precise meaning. Triggers: \"define this domain term\", \"check the bounded context\".",
+      "description": "Clarify domain terms, bounded contexts and repository conventions. Use when: naming, rule ownership or Go and other language standards are unclear; avoid a broad survey.",
       "disposition": "keep_specialist",
-      "effects": [],
+      "effects": [
+        "update_existing_domain_contracts"
+      ],
       "graph_root": false,
       "hexagonal_role": "domain",
       "name": "domain",
@@ -604,100 +392,10 @@
         "pragmatic-programmer"
       ],
       "produces": [
-        "stdout"
+        "domain-language-guidance"
       ],
-      "references_count": 0,
+      "references_count": 2,
       "tier": "knowledge",
-      "user_invocable": false
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
-        "fitness"
-      ],
-      "codex_override_present": true,
-      "consumes": [],
-      "context_rel": [
-        {
-          "kind": "shared-kernel",
-          "with": "standards"
-        }
-      ],
-      "dependencies": [],
-      "description": "Measure declared project fitness goals without recommending or applying work. Triggers: \"fitness\", \"check project fitness\", \"measure goals\".",
-      "disposition": "keep_specialist",
-      "effects": [
-        "write_goal_snapshot",
-        "write_rendered_spec"
-      ],
-      "graph_root": false,
-      "hexagonal_role": "domain",
-      "name": "fitness",
-      "practices": [
-        "dora-metrics",
-        "lean-startup"
-      ],
-      "produces": [
-        "goal-measurement-report"
-      ],
-      "references_count": 0,
-      "tier": "product",
-      "user_invocable": false
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
-        "handoff"
-      ],
-      "codex_override_present": true,
-      "consumes": [],
-      "context_rel": [],
-      "dependencies": [],
-      "description": "Write compact caller-authored session evidence without choosing continuation. Triggers: \"handoff\", \"write compact session handoff\".",
-      "disposition": "keep_specialist",
-      "effects": [
-        "write_handoff_artifact",
-        "read_git_state",
-        "read_clock"
-      ],
-      "graph_root": true,
-      "hexagonal_role": "supporting",
-      "name": "handoff",
-      "practices": [
-        "adr",
-        "wiki-knowledge-surface",
-        "code-complete"
-      ],
-      "produces": [
-        "caller-selected handoff artifact"
-      ],
-      "references_count": 1,
-      "tier": "session",
-      "user_invocable": false
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
-        "human_only_skill_routing"
-      ],
-      "codex_override_present": true,
-      "consumes": [],
-      "context_rel": [],
-      "dependencies": [],
-      "description": "Name the skills reserved for people to invoke \u2014 where the runtime honors disable-model-invocation \u2014 and when to reach for each. Triggers: \"human-only skills\", \"which skills must I run myself\".",
-      "disposition": "keep_specialist",
-      "effects": [],
-      "graph_root": false,
-      "hexagonal_role": "supporting",
-      "name": "human-only-skills",
-      "practices": [
-        "design-by-contract"
-      ],
-      "produces": [
-        "stdout"
-      ],
-      "references_count": 0,
-      "tier": "meta",
       "user_invocable": true
     },
     {
@@ -723,7 +421,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Generate evidenced opportunities or challenge an idea with sealed perspectives. Triggers: \"idea genie\", \"what should we build\", \"challenge this idea\", \"compare proposals\".",
+      "description": "Generate evidenced options or challenge an idea. Use when: deciding what to build or comparing alternatives; exploration does not authorize implementation.",
       "disposition": "keep_strategy",
       "effects": [
         "write_idea_portfolio"
@@ -761,7 +459,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Implement authorized work and repair understood defects; return derived subject identity and check facts. Triggers: \"implement\", \"implement this bead\", \"run the experiment\". Full plan-to-validation requests route to rpi.",
+      "description": "Implement accepted behavior, repair defects or execute a selected wave with per-lane evidence. Use when: coding is authorized and ready; return facts, not a binding verdict.",
       "disposition": "keep",
       "effects": [
         "modify_declared_subject",
@@ -778,41 +476,6 @@
       "produces": [
         "subject-manifest.v1"
       ],
-      "references_count": 1,
-      "tier": "execution",
-      "user_invocable": true
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
-        "analyze_bounded_evidence"
-      ],
-      "codex_override_present": true,
-      "consumes": [
-        "authorized-episode-evidence"
-      ],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "validate"
-        }
-      ],
-      "dependencies": [],
-      "description": "Optionally mine bounded episodes, verdicts and corrections after the critical path. Triggers: \"learn from verdicts\", \"mine validation history\".",
-      "disposition": "keep_off_path",
-      "effects": [
-        "write_advisory_observations"
-      ],
-      "graph_root": false,
-      "hexagonal_role": "supporting",
-      "name": "learn",
-      "practices": [
-        "continuous-learning",
-        "evidence-based-engineering"
-      ],
-      "produces": [
-        "learning-observations"
-      ],
       "references_count": 2,
       "tier": "execution",
       "user_invocable": true
@@ -822,17 +485,19 @@
       "capabilities": [
         "recall_applicable_context",
         "mine_supported_observations",
-        "curate_topic_pages"
+        "curate_topic_pages",
+        "toil_mining"
       ],
       "codex_override_present": true,
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Recall applicable reviewed topic pages or maintain them through separately budgeted mining, learning and curation. Triggers: \"memory\", \"recall prior work\", \"mine and learn\", \"curate memory\", \"qualify or retire a lesson\".",
+      "description": "Recall reviewed lessons or deliberately mine and curate experience. Use when: prior evidence can change an action, or learning is requested; no mandatory recall or lesson.",
       "disposition": "keep_off_path",
       "effects": [
         "write_protected_drafts",
-        "update_authorized_topic_pages"
+        "update_authorized_topic_pages",
+        "write_requested_toil_report"
       ],
       "graph_root": true,
       "hexagonal_role": "supporting",
@@ -843,9 +508,10 @@
       ],
       "produces": [
         "applicable-context",
-        "reviewed-topic-pages"
+        "reviewed-topic-pages",
+        "ranked-toil-evidence"
       ],
-      "references_count": 3,
+      "references_count": 4,
       "tier": "execution",
       "user_invocable": true
     },
@@ -858,8 +524,8 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "meta_skill (ms) \u2014 the skill-search/load engine over both corpora (agentops + jsm). Find a skill for a task, search skills, or load runnable skill guidance. Triggers: \"ms\", \"meta_skill\", \"skill search\", \"find a skill for\", \"load skill guidance\".",
-      "disposition": "keep_specialist",
+      "description": "Find and load guidance with the meta_skill search engine. Use when: searching a skill corpus; CASS owns past sessions and Skill Builder owns package authoring.",
+      "disposition": "keep_optional_adapter",
       "effects": [
         "spawn_search_server",
         "write_feedback_outcomes",
@@ -874,7 +540,7 @@
       "produces": [],
       "references_count": 0,
       "tier": "execution",
-      "user_invocable": false
+      "user_invocable": true
     },
     {
       "canonical_status": "canonical",
@@ -892,7 +558,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Use NTM as an optional pane adapter for caller-supplied roles and commands. Triggers: \"ntm\", \"tmux panes\", \"ntm robot state\".",
+      "description": "Operate selected NTM agent panes and inspect native state. Use when: persistent tmux roles are requested; pane liveness and prompt delivery are not validation.",
       "disposition": "keep_optional_adapter",
       "effects": [
         "manage_ntm_panes",
@@ -910,129 +576,6 @@
       ],
       "references_count": 0,
       "tier": "execution",
-      "user_invocable": false
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
-        "classify_decision_reversibility",
-        "escalate_user_challenge"
-      ],
-      "codex_override_present": true,
-      "consumes": [],
-      "context_rel": [
-        {
-          "kind": "supplier-to",
-          "with": "premortem"
-        },
-        {
-          "kind": "supplier-to",
-          "with": "council"
-        }
-      ],
-      "dependencies": [],
-      "description": "Classify a pending decision as reversible or irreversible; route irreversible ones to the caller. Not for challenging a frozen plan; that is premortem. Triggers: \"is this a one-way door\", \"can we undo this\", \"should I just decide this\", \"the models disagree with me\", before any auto-decided approval gate.",
-      "disposition": "keep_strategy",
-      "effects": [
-        "write_advisory_decision_classification"
-      ],
-      "graph_root": false,
-      "hexagonal_role": "domain",
-      "name": "one-way-door",
-      "practices": [
-        "design-by-contract",
-        "fail-safe-defaults"
-      ],
-      "produces": [
-        "decision-classification.v1"
-      ],
-      "references_count": 2,
-      "tier": "judgment",
-      "user_invocable": true
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
-        "distill_expertise",
-        "propose_artifact_shape"
-      ],
-      "codex_override_present": true,
-      "consumes": [
-        "evidence-backed-expertise"
-      ],
-      "context_rel": [
-        {
-          "kind": "supplier-to",
-          "with": "skill-builder"
-        },
-        {
-          "kind": "supplier-to",
-          "with": "workflow-builder"
-        }
-      ],
-      "dependencies": [],
-      "description": "Distill repeated, evidence-backed expertise into a proposed skill, check, reference, or workflow artifact. Triggers: \"operationalize this\", \"turn this expertise into a reusable capability\".",
-      "disposition": "keep_specialist",
-      "effects": [
-        "write_advisory_proposal"
-      ],
-      "graph_root": false,
-      "hexagonal_role": "supporting",
-      "name": "operationalize",
-      "practices": [
-        "continuous-learning",
-        "design-by-contract"
-      ],
-      "produces": [
-        "operationalization-proposal"
-      ],
-      "references_count": 0,
-      "tier": "meta",
-      "user_invocable": true
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
-        "pattern_mining"
-      ],
-      "codex_override_present": true,
-      "consumes": [
-        "repo-context",
-        "task-question"
-      ],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "research"
-        },
-        {
-          "kind": "customer-of",
-          "with": "validate"
-        },
-        {
-          "kind": "supplier-to",
-          "with": "operationalize"
-        }
-      ],
-      "dependencies": [],
-      "description": "Test repeated implementation shapes against independent exemplars and a holdout before routing an earned abstraction. Triggers: \"mine a recurring code pattern\", \"is this abstraction earned\", \"extract invariants from implementations\".",
-      "disposition": "keep_specialist",
-      "effects": [
-        "write_pattern_evidence"
-      ],
-      "graph_root": false,
-      "hexagonal_role": "supporting",
-      "name": "pattern-mining",
-      "practices": [
-        "design-patterns",
-        "legacy-code-seams",
-        "design-by-contract"
-      ],
-      "produces": [
-        "pattern-mining.v1"
-      ],
-      "references_count": 1,
-      "tier": "execution",
       "user_invocable": true
     },
     {
@@ -1046,7 +589,7 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Shape or refine the existing bead or caller intent in place. Triggers: \"plan\", \"discover and plan\", \"shape this goal\", \"review write scope\", \"check scope boundaries\", \"scope this change\".",
+      "description": "Define intended behavior, review write scope and assess reversible decisions. Use when: acceptance or approach is unclear before coding; stop once actionable.",
       "disposition": "keep",
       "effects": [
         "update_intent_source"
@@ -1070,12 +613,10 @@
         "postmortem"
       ],
       "codex_override_present": true,
-      "consumes": [
-        "verdict.v2"
-      ],
+      "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Optionally test a retrospective causal question against durable verdict evidence. Triggers: \"postmortem\", \"causal retrospective\", \"test a retrospective hypothesis\".",
+      "description": "Analyze outcomes or an interim cutoff. Use when: a postmortem is explicitly requested; consumes available judgment, never gates code acceptance or requires a lesson.",
       "disposition": "keep_strategy",
       "effects": [
         "write_postmortem_report"
@@ -1108,7 +649,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Fresh-judge a frozen plan. Not for a live decision's reversibility; that is one-way-door. Triggers: \"premortem\", \"challenge this plan\", \"one judge\", \"what could make this plan fail\".",
+      "description": "Challenge a rollout plan with one fresh judge before implementation; identify what could make it fail. Not for finished-code judgment. Triggers: \"one judge\", \"challenge this plan\".",
       "disposition": "keep_strategy",
       "effects": [
         "write_advisory_plan_review"
@@ -1130,47 +671,14 @@
     {
       "canonical_status": "canonical",
       "capabilities": [
-        "shape_product_boundary"
-      ],
-      "codex_override_present": true,
-      "consumes": [],
-      "context_rel": [
-        {
-          "kind": "supplier-to",
-          "with": "plan"
-        }
-      ],
-      "dependencies": [],
-      "description": "Create or refine PRODUCT.md while separating evidence, aspiration, users, value, and non-goals. Triggers: \"product\", \"create PRODUCT.md\", \"product boundary\".",
-      "disposition": "keep_specialist",
-      "effects": [
-        "write_product_document"
-      ],
-      "graph_root": false,
-      "hexagonal_role": "domain",
-      "name": "product",
-      "practices": [
-        "lean-startup",
-        "ddd-bounded-context"
-      ],
-      "produces": [
-        "PRODUCT.md"
-      ],
-      "references_count": 0,
-      "tier": "product",
-      "user_invocable": true
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
         "rch"
       ],
       "codex_override_present": true,
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Use RCH once to offload a build or collect remote-compilation diagnostics. Triggers: \"use RCH\", \"offload this build\".",
-      "disposition": "keep_specialist",
+      "description": "Offload one build through RCH or diagnose its remote compiler. Use when: remote compilation is selected; report errors without creating a retry controller.",
+      "disposition": "keep_optional_adapter",
       "effects": [
         "remote_compilation_offload",
         "authorized_remote_daemon_worker_mutation"
@@ -1184,17 +692,19 @@
       "produces": [],
       "references_count": 7,
       "tier": "execution",
-      "user_invocable": false
+      "user_invocable": true
     },
     {
       "canonical_status": "canonical",
       "capabilities": [
-        "compare_claim_to_evidence"
+        "compare_claim_to_evidence",
+        "measure_declared_goals",
+        "report_native_status"
       ],
       "codex_override_present": true,
       "consumes": [
-        "claim",
-        "repository-evidence"
+        "caller-question",
+        "native-source-evidence"
       ],
       "context_rel": [
         {
@@ -1203,10 +713,12 @@
         }
       ],
       "dependencies": [],
-      "description": "Compare a claimed state with observable repository evidence and report concrete gaps. Requires a claim or expected state to test. Triggers: \"reality check\", \"is this claim actually done\", \"compare claim to repo\".",
+      "description": "Check whether a claimed shipped feature, repo state or goal status holds up in evidence. Use when: comparing a claim with what exists; a gap report is not a verdict.",
       "disposition": "keep_strategy",
       "effects": [
-        "write_advisory_gap_report"
+        "write_advisory_gap_report",
+        "write_goal_snapshot",
+        "write_requested_rendered_spec"
       ],
       "graph_root": false,
       "hexagonal_role": "domain",
@@ -1216,7 +728,9 @@
         "evidence-based-engineering"
       ],
       "produces": [
-        "reality-check-report.v1"
+        "reality-check-report.v1",
+        "goal-measurement-report",
+        "native-status-snapshot"
       ],
       "references_count": 0,
       "tier": "judgment",
@@ -1233,7 +747,7 @@
       ],
       "context_rel": [],
       "dependencies": [],
-      "description": "Execute one behavior-preserving structural transformation and report evidence. Triggers: \"refactor this\", \"simplify without changing behavior\".",
+      "description": "Simplify structure, interfaces or responsibilities while preserving behavior. Use when: a focused refactor is requested; feature changes need their own intent.",
       "disposition": "keep_specialist",
       "effects": [
         "modify_source_files"
@@ -1251,12 +765,14 @@
       ],
       "references_count": 2,
       "tier": "execution",
-      "user_invocable": false
+      "user_invocable": true
     },
     {
       "canonical_status": "canonical",
       "capabilities": [
-        "research"
+        "research",
+        "codebase_recon",
+        "pattern_mining"
       ],
       "codex_override_present": true,
       "consumes": [
@@ -1264,10 +780,12 @@
       ],
       "context_rel": [],
       "dependencies": [],
-      "description": "Answer one bounded question, cited. Not for dissecting a codebase; that is codebase-recon or reverse-engineer. Triggers: \"research\", \"investigate this question\", \"find evidence\".",
+      "description": "Trace code or test a recurring pattern to answer one cited question. Use when: uncertainty needs evidence. Not for external feature teardowns; use reverse-engineer.",
       "disposition": "keep_specialist",
       "effects": [
-        "write_research_report"
+        "write_research_report",
+        "write_recon_pack",
+        "write_pattern_evidence"
       ],
       "graph_root": false,
       "hexagonal_role": "driving-adapter",
@@ -1277,11 +795,13 @@
         "ddd-bounded-context"
       ],
       "produces": [
-        "research-report"
+        "research-report",
+        "codebase-recon.v1",
+        "pattern-mining.v1"
       ],
-      "references_count": 1,
+      "references_count": 3,
       "tier": "execution",
-      "user_invocable": false
+      "user_invocable": true
     },
     {
       "canonical_status": "canonical",
@@ -1292,7 +812,7 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Inventory an authorized repo, binary, or product. Not for tracing your own repo; that is codebase-recon. Triggers: \"reverse-engineer X\", \"tear down Y\", \"what should we steal from Z\", \"evaluate competitor/upstream\", \"should we fork/adopt/build-native\".",
+      "description": "Tear down an authorized competitor repo, binary or product into a feature inventory and adoption choices. Use when: comparing an external system; local questions go to Research.",
       "disposition": "keep_specialist",
       "effects": [
         "clone_upstream_repo",
@@ -1312,31 +832,6 @@
       ],
       "references_count": 2,
       "tier": "execution",
-      "user_invocable": false
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
-        "route_request_to_skill"
-      ],
-      "codex_override_present": true,
-      "consumes": [],
-      "context_rel": [],
-      "dependencies": [],
-      "description": "Pick the one AgentOps skill that owns a request, or answer that none does. Triggers: \"which skill covers this\", \"route this\", \"is there a skill for X\", \"what should I use here\", or any request whose owning skill is not obvious.",
-      "disposition": "keep_specialist",
-      "effects": [],
-      "graph_root": false,
-      "hexagonal_role": "supporting",
-      "name": "route",
-      "practices": [
-        "least-astonishment"
-      ],
-      "produces": [
-        "routing-decision.v1"
-      ],
-      "references_count": 0,
-      "tier": "meta",
       "user_invocable": true
     },
     {
@@ -1370,8 +865,8 @@
         "implement",
         "validate"
       ],
-      "description": "Own an authorized outcome through implementation, checks and fresh final validation; load planning and memory only when useful. Triggers: \"run rpi\", \"run one traversal\", \"execute this plan\", orchestration or worker delegation that implements changes.",
-      "disposition": "keep",
+      "description": "Apply the outcome-to-judgment charter. Use when: the caller explicitly selects RPI; ordinary coding, delegation and native goals do not require this workflow.",
+      "disposition": "keep_strategy",
       "effects": [
         "dispatch_core_phases"
       ],
@@ -1399,8 +894,8 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Inspect disk pressure with SBH and run one explicitly authorized recovery action. Triggers: \"check disk pressure\", \"run SBH\".",
-      "disposition": "keep_specialist",
+      "description": "Inspect disk pressure with SBH and perform an authorized recovery action. Use when: storage diagnosis or SBH recovery is requested; inspection does not authorize deletion.",
+      "disposition": "keep_optional_adapter",
       "effects": [
         "delete_reclaimable_files",
         "release_disk_ballast",
@@ -1415,36 +910,7 @@
       "produces": [],
       "references_count": 0,
       "tier": "execution",
-      "user_invocable": false
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
-        "scaffold"
-      ],
-      "codex_override_present": true,
-      "consumes": [],
-      "context_rel": [],
-      "dependencies": [],
-      "description": "Stamp a bounded project, component, or CI scaffold and verify the generated result once. Triggers: \"scaffold\", \"create project component or boilerplate\".",
-      "disposition": "keep_specialist",
-      "effects": [
-        "write_project_files"
-      ],
-      "graph_root": false,
-      "hexagonal_role": "supporting",
-      "name": "scaffold",
-      "practices": [
-        "pragmatic-programmer",
-        "design-patterns",
-        "hexagonal-architecture"
-      ],
-      "produces": [
-        "project-scaffold"
-      ],
-      "references_count": 3,
-      "tier": "execution",
-      "user_invocable": false
+      "user_invocable": true
     },
     {
       "canonical_status": "canonical",
@@ -1462,7 +928,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Run authorized repository security scans for vulnerabilities, dependency risk, secrets, and binary policy. Triggers: \"security\", \"run repository security scans for\", \"security skill\".",
+      "description": "Review code or scan for security vulnerabilities, secrets, dependencies and prompt risks. Use when: concrete exposure needs assessment; never silently change policy.",
       "disposition": "keep_specialist",
       "effects": [
         "write_scan_artifacts"
@@ -1482,25 +948,29 @@
       ],
       "references_count": 6,
       "tier": "product",
-      "user_invocable": false
+      "user_invocable": true
     },
     {
       "canonical_status": "canonical",
       "capabilities": [
         "skill_builder",
-        "heal_skill"
+        "heal_skill",
+        "export_skill",
+        "distill_expertise"
       ],
       "codex_override_present": true,
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Create a metadata-complete AgentOps skill source package, regenerate its derived projections, and check or repair structural hygiene in skill packages. Triggers: \"create a skill\", \"scaffold skill\", \"absorb external skill\", \"new skill\", \"heal skill\", \"repair skill hygiene\", \"audit skill structure\", \"check skill package\".",
+      "description": "Create, adapt, consolidate or repair skill packages and projections. Use when: authoring guidance, descriptions or structure; Skill Eval measures behavioral benefit.",
       "disposition": "keep_specialist",
       "effects": [
         "write_skill_source",
         "write_build_report",
         "regenerate_skill_projections",
-        "repair_skill_projections"
+        "repair_skill_projections",
+        "write_converted_skill_projection",
+        "write_advisory_proposal"
       ],
       "graph_root": false,
       "hexagonal_role": "supporting",
@@ -1511,11 +981,13 @@
       ],
       "produces": [
         "skill-source-package",
-        "skill-hygiene-report"
+        "skill-hygiene-report",
+        "converted-skill",
+        "operationalization-proposal"
       ],
-      "references_count": 9,
+      "references_count": 10,
       "tier": "meta",
-      "user_invocable": false
+      "user_invocable": true
     },
     {
       "canonical_status": "canonical",
@@ -1535,7 +1007,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Evaluate a named maintenance decision with behavioral probes, controlled coding comparisons, or separate memory transfer tests. Triggers: \"measure this skill\", \"the probe came back INERT\", \"the control arm aces it\", \"harden this scenario\", \"is this skill actually doing anything\".",
+      "description": "Measure whether a skill helps a named task or needs revision or removal. Use when: a bounded routing or coding evaluation is requested; conformance alone cannot show benefit.",
       "disposition": "keep_specialist",
       "effects": [
         "write_probe_package",
@@ -1559,91 +1031,6 @@
     {
       "canonical_status": "canonical",
       "capabilities": [
-        "standards"
-      ],
-      "codex_override_present": true,
-      "consumes": [],
-      "context_rel": [],
-      "dependencies": [],
-      "description": "Load only the standards relevant to a caller-supplied change, then report concrete findings. Triggers: \"check standards\", \"which standards apply\".",
-      "disposition": "keep_specialist",
-      "effects": [],
-      "graph_root": false,
-      "hexagonal_role": "supporting",
-      "name": "standards",
-      "practices": [
-        "pragmatic-programmer",
-        "clean-code"
-      ],
-      "produces": [
-        "stdout"
-      ],
-      "references_count": 15,
-      "tier": "knowledge",
-      "user_invocable": false
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
-        "status"
-      ],
-      "codex_override_present": true,
-      "consumes": [],
-      "context_rel": [],
-      "dependencies": [],
-      "description": "Report observable AgentOps evidence without selecting work. Triggers: \"status\", \"show AgentOps status\".",
-      "disposition": "keep_specialist",
-      "effects": [
-        "read_filesystem",
-        "read_clock"
-      ],
-      "graph_root": true,
-      "hexagonal_role": "driving-adapter",
-      "name": "status",
-      "practices": [
-        "dora-metrics",
-        "sre"
-      ],
-      "produces": [
-        "stdout"
-      ],
-      "references_count": 1,
-      "tier": "session",
-      "user_invocable": false
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
-        "dispatch_once"
-      ],
-      "codex_override_present": true,
-      "consumes": [
-        "explicit-disjoint-packets"
-      ],
-      "context_rel": [],
-      "dependencies": [],
-      "description": "Dispatch explicit disjoint packets exactly once through a caller-selected executor. Triggers: \"swarm\", \"dispatch disjoint packets\", \"parallel explicit tasks\".",
-      "disposition": "keep_optional_adapter",
-      "effects": [
-        "invoke_selected_executor"
-      ],
-      "graph_root": false,
-      "hexagonal_role": "driving-adapter",
-      "name": "swarm",
-      "practices": [
-        "team-topologies",
-        "design-by-contract"
-      ],
-      "produces": [
-        "per-packet-results"
-      ],
-      "references_count": 0,
-      "tier": "execution",
-      "user_invocable": true
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
         "test"
       ],
       "codex_override_present": true,
@@ -1653,7 +1040,7 @@
       ],
       "context_rel": [],
       "dependencies": [],
-      "description": "Generate tests and coverage plans. Triggers: \"test\", \"generate tests and coverage plans.\", \"test skill\".",
+      "description": "Write behavioral tests, practice TDD or inspect important coverage gaps. Use when: test design or missing proof needs work; running an existing suite needs no skill.",
       "disposition": "keep_specialist",
       "effects": [
         "write_test_files",
@@ -1673,39 +1060,6 @@
       ],
       "references_count": 7,
       "tier": "execution",
-      "user_invocable": false
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
-        "toil_mining"
-      ],
-      "codex_override_present": true,
-      "consumes": [],
-      "context_rel": [
-        {
-          "kind": "supplier-to",
-          "with": "automation-shape-routing"
-        }
-      ],
-      "dependencies": [],
-      "description": "Mine caller-supplied usage history for repeated toil and emit ranked evidence. Triggers: \"mine toil\", \"find repeated operational work\".",
-      "disposition": "keep_specialist",
-      "effects": [
-        "write_toil_candidates"
-      ],
-      "graph_root": false,
-      "hexagonal_role": "supporting",
-      "name": "toil-mining",
-      "practices": [
-        "sre",
-        "lean-startup"
-      ],
-      "produces": [
-        "toil-candidates-report"
-      ],
-      "references_count": 0,
-      "tier": "meta",
       "user_invocable": true
     },
     {
@@ -1726,7 +1080,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Operate the Agentic Coding Flywheel as a caller-selected software factory; keep its runtime state out of AgentOps verdicts. Triggers: \"using flywheel\", \"agent flywheel\".",
+      "description": "Operate the Agentic Coding Flywheel through its native workflow. Use when: the caller explicitly selects this factory; convergence and closed work do not prove semantic acceptance.",
       "disposition": "keep_optional_adapter",
       "effects": [],
       "graph_root": false,
@@ -1762,7 +1116,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Operate a caller-selected Gas City 1.4 with upstream registry packs and native run-centered surfaces while keeping GC runtime state out of AgentOps verdicts. Triggers: \"using gc\", \"gas city\", \"drive the mayor\", \"dispatch through gc\".",
+      "description": "Operate Gas City through its Mayor, registry packs and native run state. Use when: the caller explicitly selects Gas City; factory completion does not replace independent judgment.",
       "disposition": "keep_optional_adapter",
       "effects": [
         "operate_gas_city",
@@ -1805,7 +1159,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Freshly judge a finished change against its acceptance: PASS, FAIL, or NOT_PROVEN. Not for claim-vs-tree checks; that is reality-check. Triggers: \"validate\", \"is this proven\", \"check this change\", \"cross-model review\".",
+      "description": "Freshly judge a finished change against original acceptance before merge. Use when: independent proof is needed; author tests cannot issue PASS. Triggers: \"check this change\".",
       "disposition": "keep",
       "effects": [
         "write_verdict_artifact"
@@ -1826,44 +1180,6 @@
       "references_count": 2,
       "tier": "judgment",
       "user_invocable": true
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
-        "workflow_builder"
-      ],
-      "codex_override_present": true,
-      "consumes": [],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "automation-shape-routing"
-        },
-        {
-          "kind": "shared-kernel",
-          "with": "operationalize"
-        }
-      ],
-      "dependencies": [],
-      "description": "Scaffold an explicit one-shot workflow adapter without lifecycle authority. Triggers: \"build a workflow adapter\", \"scaffold a one-shot workflow\".",
-      "disposition": "keep_specialist",
-      "effects": [
-        "write_workflow_script"
-      ],
-      "graph_root": false,
-      "hexagonal_role": "supporting",
-      "name": "workflow-builder",
-      "practices": [
-        "pragmatic-programmer",
-        "hexagonal-architecture",
-        "agile-manifesto"
-      ],
-      "produces": [
-        "workflow-script"
-      ],
-      "references_count": 0,
-      "tier": "meta",
-      "user_invocable": false
     }
   ]
 }

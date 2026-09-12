@@ -26,8 +26,8 @@ docs/standards/markdown-style-guide.md:image.png
 # Vibe markdown-standards example links (copy of style guide examples)
 
 # Standards reference example links
-skills/standards/references/markdown.md:url
-skills/standards/references/markdown.md:./docs/guide.md
+skills/domain/references/standards/markdown.md:url
+skills/domain/references/standards/markdown.md:./docs/guide.md
 
 # Doc skill template example links
 skills/doc/references/generation-templates.md:../path/to/doc.md
@@ -56,9 +56,9 @@ skills/release/references/release-notes.md:../../docs/CHANGELOG.md
 skills-codex/release/references/release-notes.md:../../docs/CHANGELOG.md
 
 # Go generics in backticks parsed as markdown links (false positive: `[T](err)`)
-skills/standards/references/go.md:err
-skills-codex/standards/references/go.md:err
-cli/embedded/skills/standards/references/go.md:err
+skills/domain/references/standards/go.md:err
+skills-codex/domain/references/standards/go.md:err
+cli/embedded/skills/domain/references/standards/go.md:err
 
 # Auto-generated session files (concurrency text parsed as links)
 cli/.agents/ao/sessions/2026-02-13-till-disable-it-with-cass-false-if-you-ever-want-7eb47b8.md:concurrency
@@ -138,4 +138,4 @@ docs/CHANGELOG.md:docs/architecture/codebase-overview.md
 # Known, accepted cross-skill limitation — not a real broken doc (same pattern as the
 # swarm/using-atm bespoke-omission entries above).
 skills-codex/skill-builder/SKILL.md:../forge/SKILL.md
-skills-codex/automation-shape-routing/SKILL.md:../operationalize/SKILL.md
+skills-codex/implement/SKILL.md:../operationalize/SKILL.md

@@ -1,6 +1,6 @@
 ---
 name: rpi
-description: 'Own an authorized outcome through implementation, checks and fresh final validation; load planning and memory only when useful. Triggers: "run rpi", "run one traversal", "execute this plan", orchestration or worker delegation that implements changes.'
+description: 'Apply the outcome-to-judgment charter. Use when: the caller explicitly selects RPI; ordinary coding, delegation and native goals do not require this workflow.'
 practices:
 - bdd-gherkin
 - tdd
@@ -21,6 +21,7 @@ context_rel:
   with: validate
 skill_api_version: 1
 user-invocable: true
+disable-model-invocation: true
 metadata:
   graph_root: true
   tier: meta
@@ -28,7 +29,7 @@ metadata:
   capabilities: [own_authorized_outcome, report]
   effects: [dispatch_core_phases]
   canonical_status: canonical
-  disposition: keep
+  disposition: keep_strategy
 output_contract: 'concise human-readable result; optional rpi-report.v1 when a caller or declared consumer requests machine-readable evidence'
 ---
 
@@ -73,6 +74,10 @@ needs. A reference link is available context, not a reading list. Search before
 opening large files; expand only for consequential uncertainty. Keep successful
 output compact at the tool boundary; retain full logs for inspection. Reuse the
 worker's component-check list and current receipts instead of rediscovering them.
+Use native completion watches or bounded waits for ongoing checks and helpers.
+At completion, verify the expected subject and required results; a quiet or
+partial status is not success. Inspect further for a failure, suspected stall or
+decision need. Keep required user updates concise rather than narrating each poll.
 
 When delegation is authorized and useful, select the runtime's task-only
 dispatch option for independent work; a short prompt in a full-history fork

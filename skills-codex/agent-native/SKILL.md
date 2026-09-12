@@ -1,6 +1,6 @@
 ---
 name: agent-native
-description: 'Operate explicit orchestrator, implementer, validator, and scribe roles through a caller-selected agent runtime. Triggers: "agent-native factory", "role-shaped agent panes", "persistent workers".'
+description: 'Dispatch independent tasks to parallel workers or selected persistent roles. Use when: delegation is authorized with disjoint scopes; execution does not validate output.'
 ---
 # Agent Native
 
@@ -20,12 +20,13 @@ controls must enforce it. A prompt, worktree, chmod or unrestricted same-user
 process does not establish isolation. Observe synthetic canary denials before
 restricted-source work; unavailable protection remains unavailable.
 
-When a worker looks stuck, score interventions by evidence and reversibility
-before acting: observe more (free, fully reversible), then nudge, then replace
-the worker, then restart the runtime — escalate only when observable state,
-not impatience, rules out the cheaper step. Stop the observe-nudge cycle once
-the worker reaches a terminal status or the caller's observation window ends;
-past that point further intervention manufactures noise, not evidence.
+Use native waits or status notifications while workers or checks are pending.
+Unchanged state is no reason for another analysis, review or provisional
+retrospective. Observation consumes time and context; it is not free. A known
+blocking failure deserves action even while other jobs run. For a suspected
+stall, inspect observable state before choosing a nudge or replacement within
+authority and remaining bounds. Stop observing at terminal status or the end
+of the caller's observation window; impatience alone does not justify restart.
 
 Named failure mode — **prompt-send optimism**: treating a successfully
 delivered prompt as a working worker; delivery proves transport, not
@@ -42,12 +43,39 @@ stalled, and rescue is usually cheaper than rerun.
 
 ## Roles
 
-- **Orchestrator:** passes explicit packets and reports runtime facts.
+- **Orchestrator:** passes focused intent, scope and evidence references, names
+  the integration/final-review owner, and reports runtime facts. Retrieve extra
+  history only for a consequential uncertainty; a fresh context is not
+  necessarily small. A new goal does not clear history or renew spent bounds.
 - **Implementer:** may modify only its packet's declared subject.
 - **Validator:** receives exact candidate content in a fresh, read-only context.
 - **Scribe:** records runtime evidence without judging acceptance.
 
+Reader and Writer are bounded cheap delegations, not roles with authority: a
+Reader returns line-referenced bullets over files the caller never loads, and a
+Writer lands one patterned file from a spec plus a reference file and returns a
+receipt the caller never reads back. Both are caller-selected per call, default
+to a cheap model, and yield runtime facts only — a receipt is not validation.
+See [context-budget delegation](references/context-budget-delegation.md).
+
 ## Contract
+
+For a caller-selected parallel batch, validate every complete packet before the
+first launch. Require the selected executor, packet identity and all transitive
+effects, with canonical workspace-relative write scopes in separate isolation.
+Resolve symlinks and normalize paths; compare scopes case-insensitively so an
+alias cannot hide a collision. A lexical disjointness check alone cannot prove
+symlink or runtime isolation. The reference batch contract rejects nonempty
+`write_scope.exclude` because its proof cannot honor those exclusions.
+
+Dispatch each validated packet once and preserve its identity with the result:
+candidate, evidence or executor error. Do not partly launch a batch that later
+fails validation, or retry an error as if it had never happened. Native caller
+authority determines any repair or follow-up. The developer reference
+`scripts/swarm/dispatch_once.py` requires an AgentOps source checkout; it is
+exercised by repository tests and is not bundled with standalone skills.
+Installed use dispatches through the selected native runtime. This optional
+batch mode selects no backlog work, creates no queue and integrates no changes.
 
 1. Require caller intent, role, workspace, authorized source/output scope and
    evidence destination before starting a worker. Pass source-store/project/work

@@ -16,7 +16,7 @@ echo "=== Cursor Runtime Smoke Tests ==="
 echo "Proof tier: Tier S structural/export smoke"
 echo ""
 
-CONVERTER="$REPO_ROOT/skills/converter/scripts/convert.sh"
+CONVERTER="$REPO_ROOT/skills/skill-builder/scripts/converter/convert.sh"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
@@ -26,20 +26,20 @@ else
     fail "converter script not found at $CONVERTER"
 fi
 
-if bash "$CONVERTER" "$REPO_ROOT/skills/converter" cursor "$TMP_DIR" >/dev/null 2>&1; then
+if bash "$CONVERTER" "$REPO_ROOT/skills/skill-builder" cursor "$TMP_DIR" >/dev/null 2>&1; then
     pass "converter exports a skill to Cursor format"
 else
     fail "converter failed to export Cursor format"
 fi
 
-CURSOR_RULE="$TMP_DIR/converter.mdc"
+CURSOR_RULE="$TMP_DIR/skill-builder.mdc"
 if [[ -f "$CURSOR_RULE" ]]; then
     pass "Cursor .mdc rule was written"
     head -1 "$CURSOR_RULE" | grep -q '^---$' \
         && pass "Cursor rule has YAML frontmatter" || fail "Cursor rule missing YAML frontmatter"
     grep -q '^alwaysApply: false$' "$CURSOR_RULE" \
         && pass "Cursor rule marks alwaysApply false" || fail "Cursor rule missing alwaysApply false"
-    grep -q '^# Converter' "$CURSOR_RULE" \
+    grep -qi '^# Skill Builder' "$CURSOR_RULE" \
         && pass "Cursor rule contains skill body" || fail "Cursor rule missing skill body"
 else
     fail "Cursor .mdc rule missing at $CURSOR_RULE"

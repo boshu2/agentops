@@ -12,9 +12,12 @@ write_skill() {
 }
 
 @test "checked-in Codex release projection is portable" {
+  local expected
+  expected="$(python3 -c 'import json,sys; print(len(json.load(open(sys.argv[1]))["skills"]))' "$REPO_ROOT/skills/catalog.json")"
+  [ "$expected" -gt 0 ]
   run bash "$GATE"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"PASS [portable] 55 package(s)"* ]]
+  [[ "$output" == *"PASS [portable] $expected package(s)"* ]]
 }
 
 @test "portable gate accepts the minimal Agent Skills package" {

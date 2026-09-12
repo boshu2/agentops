@@ -1,6 +1,6 @@
 ---
 name: craft-goal
-description: 'Compile or lint a persistent Mayor-style goal prompt that ratchets a bead graph through bounded RPI experiments toward one larger outcome. Triggers: "craft a goal prompt", "mayor goal", "goal-runner prompt", "lint this goal", "is this goal safe". (Shaping one experiment''s intent routes to plan.)'
+description: 'Draft or lint a bounded persistent goal above a bead graph of RPI experiments. Use when: this goal workflow is explicitly selected; shaping a single change belongs to Plan.'
 ---
 # Craft Goal
 
@@ -112,6 +112,10 @@ Use graph semantics deliberately:
 - `blocks` only for real execution ordering;
 - `related` for alternatives or correlated observations;
 - `discovered-from` for provenance of newly exposed work.
+
+Code and its requested retrospective can share a goal without the retrospective
+blocking code judgment. The analysis consumes the known outcome and judgment;
+both deliverables remain required before the overall goal is achieved.
 
 Use the caller's actual tracker as the authority for work and dependencies.
 In this repository that is BD (`bd`); verify `bd context --json` before mutation.

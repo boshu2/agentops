@@ -11,23 +11,10 @@
 # pin the repaired projection against the exact defects the 2026-09-02 field
 # audit found, so the fragment cannot come back silently.
 #
-# ORACLE DISCIPLINE. Test B deliberately does NOT re-implement
-# `first_sentence`. Copying the implementation's regex would make the test
-# agree with the generator by construction, including on its bugs. Instead it
-# applies a WEAKER, independently stated rule that no fragment can satisfy
-# (twin prose is a prefix of source prose, ending at a terminator followed by a
-# space, plus the full Triggers clause), and Test B2 pins five named skills to
-# LITERAL expected strings. The abbreviation and closing-quote edge cases are
-# pinned end-to-end, against the real generator, in
-# tests/scripts/test-codex-sync-generator.sh.
-#
-# Witness inventory (each maps to one observed defect):
-#   A   description cut mid-clause immediately before `Triggers:`   (51 files)
-#   B   prose cut inside a sentence rather than at a boundary       (all 56)
-#   B2  the five core router entries, pinned literally
-#   C   cross-runtime body corrupted by runtime substitution        (flywheel)
-#   D   H1 title slash-rewritten to `# $skill`                      (3 files)
-#   E   dormant emitter for the non-existent `ao codex ensure-start` (deleted)
+# Later first-sentence truncation also lost use cases and preconditions from
+# reality-check and ms. Complete source-description parity is now the oracle;
+# fixture regression tests exercise independent required-input and exclusion
+# sentences without pinning mutable catalog copy to historical prose.
 #
 # These run against the generated tree in the checkout, so they are only
 # meaningful after `bash scripts/regen-all.sh` has projected the current
@@ -52,123 +39,39 @@ setup() {
     [ -z "$output" ]
 }
 
-# B ── every twin, checked against an INDEPENDENT rule (see ORACLE DISCIPLINE):
-#   1. the twin ends with the source's full Triggers clause, verbatim;
-#   2. the twin's prose is a prefix of the source's prose;
-#   3. that prefix is either the whole prose, or ends at a sentence terminator
-#      (optionally followed by one closing quote) that the source follows with a
-#      space.
-# A fragment fails (2)+(3); a dropped or reworded clause fails (1).
-@test "every twin description ends at a sentence boundary and keeps the full Triggers clause" {
+# B ── every generated twin retains the source's complete routing signal.
+@test "every twin description preserves all source routing content" {
     run python3 - <<'PYCHECK'
-import re
+import os
 import pathlib
+import yaml
 
-REPO = pathlib.Path(__import__("os").environ["REPO_ROOT"])
-TERMINATORS = ".!?"
-CLOSING_QUOTES = "\"'”"
+repo = pathlib.Path(os.environ["REPO_ROOT"])
 
 
 def description(path):
-    """The frontmatter description, unfolded and unquoted."""
-    lines = path.read_text(encoding="utf-8").splitlines()
-    if not lines or lines[0].strip() != "---":
-        raise SystemExit(f"{path}: no frontmatter")
-    out = None
-    for line in lines[1:]:
-        if line.strip() == "---":
-            break
-        if out is None:
-            if line.startswith("description:"):
-                out = line[len("description:"):].strip()
-            continue
-        if re.match(r"^[A-Za-z0-9_-]+:", line):
-            break
-        out = f"{out} {line.strip()}"
-    if out is None:
-        raise SystemExit(f"{path}: no description")
-    out = re.sub(r"\s+", " ", out).strip()
-    # Unwrap the YAML scalar exactly once, then unescape a doubled quote.
-    if len(out) >= 2 and out[0] == out[-1] and out[0] in "'\"":
-        quote, out = out[0], out[1:-1]
-        out = out.replace(quote * 2, quote)
-    return out.strip()
+    frontmatter = path.read_text(encoding="utf-8").split("---", 2)[1]
+    return " ".join(yaml.safe_load(frontmatter)["description"].split())
 
 
-def split(desc):
-    m = re.search(r"\s+[Tt]riggers?:", desc)
-    if not m:
-        return desc.strip(), ""
-    return desc[: m.start()].strip(), desc[m.start():].strip()
-
-
-twins = sorted(p for p in (REPO / "skills-codex").iterdir() if (p / "SKILL.md").is_file())
+twins = sorted((repo / "skills-codex").glob("*/SKILL.md"))
 if not twins:
     raise SystemExit("no skills-codex twins found")
 
 failures = []
-for twin_dir in twins:
-    name = twin_dir.name
-    source = REPO / "skills" / name / "SKILL.md"
+for twin in twins:
+    source = repo / "skills" / twin.parent.name / "SKILL.md"
     if not source.is_file():
-        failures.append(f"{name}: twin has no source skill")
-        continue
-    src_prose, src_trig = split(description(source))
-    twin_prose, twin_trig = split(description(twin_dir / "SKILL.md"))
-
-    if twin_trig != src_trig:
-        failures.append(
-            f"{name}: Triggers clause not preserved verbatim\n"
-            f"  source: {src_trig!r}\n  twin:   {twin_trig!r}"
-        )
-
-    if twin_prose == src_prose:
-        continue
-    if not twin_prose or not src_prose.startswith(twin_prose):
-        failures.append(
-            f"{name}: twin prose is not a prefix of the source prose\n"
-            f"  source: {src_prose!r}\n  twin:   {twin_prose!r}"
-        )
-        continue
-    end = twin_prose
-    if end[-1] in CLOSING_QUOTES:
-        end = end[:-1]
-    tail = src_prose[len(twin_prose):]
-    if not end or end[-1] not in TERMINATORS or not tail.startswith(" "):
-        failures.append(
-            f"{name}: twin prose does not end at a sentence boundary\n"
-            f"  source: {src_prose!r}\n  twin:   {twin_prose!r}"
-        )
+        failures.append(f"{twin.parent.name}: twin has no source skill")
+    elif description(twin) != description(source):
+        failures.append(f"{twin.parent.name}: source description was changed or truncated")
 
 if failures:
-    print("\n".join(failures))
-    raise SystemExit(1)
-print(f"checked {len(twins)} twins against the independent boundary rule")
+    raise SystemExit("\n".join(failures))
+print(f"checked complete descriptions for {len(twins)} twins")
 PYCHECK
     echo "$output" >&2
     [ "$status" -eq 0 ]
-}
-
-# B2 ── the five core router entries a stranger hits first, pinned to literal
-# expected text. No rule, no derivation: if the projection changes, this fails.
-@test "the five core twin descriptions are exactly the expected literal strings" {
-    expect() { # expect <skill> <literal description value>
-        local skill="$1" want="$2" got
-        got="$(sed -n '2,/^---$/p' "$REPO_ROOT/skills-codex/$skill/SKILL.md" \
-               | sed -n "s/^description: '\(.*\)'$/\1/p" | sed "s/''/'/g")"
-        if [ "$got" != "$want" ]; then
-            echo "$skill:" >&2
-            echo "  want: $want" >&2
-            echo "  got:  $got" >&2
-            return 1
-        fi
-    }
-
-    expect validate 'Freshly judge a finished change against its acceptance: PASS, FAIL, or NOT_PROVEN. Not for claim-vs-tree checks; that is reality-check. Triggers: "validate", "is this proven", "check this change", "cross-model review".'
-    expect rpi 'Own an authorized outcome through implementation, checks and fresh final validation; load planning and memory only when useful. Triggers: "run rpi", "run one traversal", "execute this plan", orchestration or worker delegation that implements changes.'
-    expect plan 'Shape or refine the existing bead or caller intent in place. Triggers: "plan", "discover and plan", "shape this goal", "review write scope", "check scope boundaries", "scope this change".'
-    expect council 'Gather independent views on a high-stakes judgment. Not for one-judge plan challenge; that is premortem. Triggers: "council", "multi-judge review", "independent perspectives".'
-    expect domain 'Load the AgentOps language and bounded-context contracts when a term needs precise meaning. Triggers: "define this domain term", "check the bounded context".'
 }
 
 # C ── using-flywheel is a CROSS-RUNTIME skill: it names three worker runtimes

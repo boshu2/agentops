@@ -190,6 +190,45 @@ func TestMineSession_RollbackOnContentRewrite(t *testing.T) {
 	}
 }
 
+func TestMineSession_CodexCustomInputRewrite(t *testing.T) {
+	// age-85vu.5: native custom calls carry freeform input, not arguments.
+	// Round-trip the production checkpoint before changing only that input.
+	dir := t.TempDir()
+	const original = `{"type":"response_item","payload":{"type":"custom_tool_call","name":"apply_patch","call_id":"c2","input":"*** Begin Patch\n*** Add File: example.txt\n+before\n*** End Patch"}}
+{"type":"response_item","payload":{"type":"custom_tool_call_output","call_id":"c2","output":"done"}}
+`
+	sess := writeMineSession(t, dir, "custom.jsonl", original)
+	opts := MineOptions{File: sess, State: filepath.Join(dir, "state.json")}
+
+	for _, step := range []struct {
+		name       string
+		content    string
+		wantEvents int
+	}{
+		{"first mine", original, 1},
+		{"unchanged original", original, 0},
+		{"input-only rewrite", strings.Replace(original, "+before", "+after", 1), 1},
+		{"unchanged rewrite", strings.Replace(original, "+before", "+after", 1), 0},
+	} {
+		if err := os.WriteFile(sess, []byte(step.content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		out, err := mine(t, opts)
+		if err != nil {
+			t.Fatalf("%s: %v", step.name, err)
+		}
+		events := parseMineEvents(t, out)
+		if len(events) != step.wantEvents {
+			t.Fatalf("%s: got %d events, want %d: %+v", step.name, len(events), step.wantEvents, events)
+		}
+		for _, event := range events {
+			if event.Kind != "tool_call" || event.Tool != "apply_patch" || event.SourceLine != 1 || event.SessionID != "custom" {
+				t.Errorf("%s: unexpected custom call event: %+v", step.name, event)
+			}
+		}
+	}
+}
+
 // TestMineSession_StateBoundToFile (DROP-CASE regression): a --state watermark is
 // bound to ONE transcript. Reusing it against a DIFFERENT file (whose line-prefix
 // happens to line up) must NOT trust the stale line watermark and silently drop
@@ -299,6 +338,136 @@ func TestMineSession_CodexFunctionCalls(t *testing.T) {
 	evs := parseMineEvents(t, out)
 	if len(evs) != 1 || evs[0].Tool != "exec_command" || evs[0].Kind != "tool_call" {
 		t.Fatalf("codex events = %+v, want exactly one exec_command tool_call", evs)
+	}
+}
+
+func TestMineSession_CheckpointSourceAliasesRejected(t *testing.T) {
+	for _, name := range []string{
+		"identical_absolute", "identical_relative", "relative_source_absolute_state",
+		"absolute_source_relative_state", "normalized_relative_state", "source_symlink",
+		"checkpoint_symlink", "parent_directory_symlink", "hardlink",
+	} {
+		t.Run(name, func(t *testing.T) {
+			dir := t.TempDir()
+			t.Chdir(dir)
+			const content = "{\"type\":\"tool_use\",\"tool_name\":\"Read\",\"tool_input\":{}}\n"
+			sess := writeMineSession(t, dir, "source.jsonl", content)
+			source, state := sess, sess
+			switch name {
+			case "identical_relative":
+				source, state = "source.jsonl", "source.jsonl"
+			case "relative_source_absolute_state":
+				source = "./source.jsonl"
+			case "absolute_source_relative_state":
+				state = "./source.jsonl"
+			case "normalized_relative_state":
+				if err := os.Mkdir("nested", 0o700); err != nil {
+					t.Fatal(err)
+				}
+				state = "./nested/../source.jsonl"
+			case "source_symlink", "checkpoint_symlink":
+				alias := filepath.Join(dir, "alias.jsonl")
+				if err := os.Symlink(sess, alias); err != nil {
+					t.Skipf("symlinks unavailable: %v", err)
+				}
+				if name == "source_symlink" {
+					source = alias
+				} else {
+					state = alias
+				}
+			case "parent_directory_symlink":
+				if err := os.Symlink(dir, "alias-dir"); err != nil {
+					t.Skipf("directory symlinks unavailable: %v", err)
+				}
+				state = filepath.Join("alias-dir", "source.jsonl")
+			case "hardlink":
+				state = filepath.Join(dir, "alias.jsonl")
+				if err := os.Link(sess, state); err != nil {
+					t.Skipf("hardlinks unavailable: %v", err)
+				}
+			}
+			before, err := os.Lstat(state)
+			if err != nil {
+				t.Fatal(err)
+			}
+			out, err := mine(t, MineOptions{File: source, State: state})
+			if err == nil || out != "" {
+				t.Errorf("source alias must fail before emission: output %q, error %v", out, err)
+			}
+			for _, path := range []string{source, state} {
+				if got, err := os.ReadFile(path); err != nil || string(got) != content {
+					t.Errorf("source alias %s changed: %q, error %v", path, got, err)
+				}
+			}
+			if after, err := os.Lstat(state); err != nil || !os.SameFile(before, after) {
+				t.Errorf("checkpoint entry replaced: %v", err)
+			}
+		})
+	}
+}
+
+func TestMineSession_DistinctCheckpointSameContent(t *testing.T) {
+	dir := t.TempDir()
+	const content = "{\"type\":\"tool_use\",\"tool_name\":\"Read\",\"tool_input\":{}}\n"
+	sess := writeMineSession(t, dir, "source.jsonl", content)
+	state := writeMineSession(t, dir, "state.json", content)
+	out, err := mine(t, MineOptions{File: sess, State: state})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if events := parseMineEvents(t, out); len(events) != 1 || events[0].Tool != "Read" {
+		t.Fatalf("distinct checkpoint must allow one Read event: %+v", events)
+	}
+	if again, err := mine(t, MineOptions{File: sess, State: state}); err != nil || again != "" {
+		t.Fatalf("distinct checkpoint did not preserve incremental mining: %q, %v", again, err)
+	}
+	if got, err := os.ReadFile(sess); err != nil || string(got) != content {
+		t.Fatalf("source changed with distinct checkpoint: %q, %v", got, err)
+	}
+}
+
+func TestMineSession_DryRunPreservesInputs(t *testing.T) {
+	dir := t.TempDir()
+	const first = "{\"type\":\"tool_use\",\"tool_name\":\"Read\",\"tool_input\":{}}\n"
+	const second = "{\"type\":\"tool_use\",\"tool_name\":\"Bash\",\"tool_input\":{}}\n"
+	sess := writeMineSession(t, dir, "session.jsonl", first)
+	state := filepath.Join(dir, "state.json")
+	opts := MineOptions{File: sess, State: state}
+	if _, err := mine(t, opts); err != nil {
+		t.Fatal(err)
+	}
+	before, err := os.ReadFile(state)
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeMineSession(t, dir, "session.jsonl", first+second)
+	opts.DryRun = true
+	var silent bytes.Buffer
+	if err := MineSession(opts, &silent); err != nil || silent.Len() != 0 {
+		t.Fatalf("dry-run without JSON: output %q, error %v", silent.String(), err)
+	}
+	preview, err := mine(t, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if events := parseMineEvents(t, preview); len(events) != 1 || events[0].Tool != "Bash" || events[0].SourceLine != 2 {
+		t.Errorf("dry-run must honor prior watermark: %+v", events)
+	}
+	if repeated, err := mine(t, opts); err != nil || repeated != preview {
+		t.Errorf("repeated dry-run changed pending events: %q, error %v", repeated, err)
+	}
+	if after, err := os.ReadFile(state); err != nil || !bytes.Equal(after, before) {
+		t.Errorf("dry-run changed checkpoint: before %q, after %q, error %v", before, after, err)
+	}
+	if after, err := os.ReadFile(sess); err != nil || string(after) != first+second {
+		t.Errorf("dry-run changed source: %q, error %v", after, err)
+	}
+	opts.DryRun = false
+	if normal, err := mine(t, opts); err != nil || normal != preview {
+		t.Errorf("normal run = %q, want preview %q, error %v", normal, preview, err)
+	}
+	if repeated, err := mine(t, opts); err != nil || repeated != "" {
+		t.Errorf("normal repeat replayed events: %q, error %v", repeated, err)
 	}
 }
 

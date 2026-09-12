@@ -1,10 +1,10 @@
 ---
 name: ms
-description: 'meta_skill (ms) — the skill-search/load engine over both corpora (agentops + jsm). Find a skill for a task, search skills, or load runnable skill guidance. Triggers: "ms", "meta_skill", "skill search", "find a skill for", "load skill guidance".'
+description: 'Find and load guidance with the meta_skill search engine. Use when: searching a skill corpus; CASS owns past sessions and Skill Builder owns package authoring.'
 practices:
 - pragmatic-programmer
 skill_api_version: 1
-user-invocable: false
+user-invocable: true
 hexagonal_role: supporting
 consumes: []
 produces: []
@@ -14,7 +14,7 @@ metadata:
   capabilities: [ms]
   effects: [spawn_search_server, write_feedback_outcomes, rebuild_search_index]
   canonical_status: canonical
-  disposition: keep_specialist
+  disposition: keep_optional_adapter
   tier: execution
   external_dependencies:
   - "ms binary (Jeffrey Emanuel's meta_skill). The 0.1.2 release binary corrupts IDs on Anthropic-frontmatter skills, so it must be built from a source checkout carrying the frontmatter-id fix; this operator builds from ~/dev/meta_skill, branch local/frontmatter-id."
@@ -37,6 +37,26 @@ output_contract: search and load results plus source identity on stdout; the loc
 - Treat the local index as disposable state, not a source of truth; the non-goal is editing indexed content instead of `skills/**`.
 - Keep `ms` retrieval-only for production skill work. It returns search and load
   results; the caller owns authoring, validation, and every subsequent decision.
+
+## Session evidence and instruction changes
+
+For a requested instruction-improvement task, use CASS to discover relevant
+episodes and `ms` to find existing guidance that could explain the behavior or
+already address it. Load only the relevant skills, then inspect their canonical
+source before proposing an edit. An `AGENTS.md` or task-prompt change does not
+require inventing a skill or loading an unrelated one.
+
+Upstream MS also offers `build --from-cass`; this adapter deliberately does not
+invoke that authoring path. Inspect `ms build --help` if the caller selects it
+separately. A generated skill, search rank,
+repeated prompt, or recorded outcome is not proof of downstream improvement.
+
+CASS search/pack supplies candidate evidence. Use AO's bounded excerpt view only
+when the investigation needs exact raw spans, literal fields or instruction
+identity that the selected CASS output does not establish. These are optional
+capabilities, not a required sequence on every task. The caller owns a supported
+candidate edit or no-change judgment, independent review and later usefulness
+testing; retrieval never awards that outcome itself.
 
 ## Quick Start
 

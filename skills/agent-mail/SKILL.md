@@ -1,6 +1,6 @@
 ---
 name: agent-mail
-user-invocable: false
+user-invocable: true
 skill_api_version: 1
 hexagonal_role: supporting
 consumes:
@@ -19,7 +19,7 @@ metadata:
   disposition: keep_optional_adapter
   tier: execution
   dependencies: []
-description: 'Use Agent Mail as an optional messaging and file-reservation adapter for explicitly coordinated writers. Triggers: "coordinate writers", "reserve files".'
+description: 'Coordinate selected writers with Agent Mail messages and advisory file reservations. Use when: this adapter is requested; mail does not own tracker status.'
 practices:
 - pragmatic-programmer
 output_contract: factual messaging and reservation adapter results

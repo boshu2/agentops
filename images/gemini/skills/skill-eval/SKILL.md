@@ -1,6 +1,6 @@
 ---
 name: skill-eval
-description: 'Evaluate a named maintenance decision with behavioral probes, controlled coding comparisons, or separate memory transfer tests. Triggers: "measure this skill", "the probe came back INERT", "the control arm aces it", "harden this scenario", "is this skill actually doing anything".'
+description: 'Measure whether a skill helps a named task or needs revision or removal. Use when: a bounded routing or coding evaluation is requested; conformance alone cannot show benefit.'
 practices:
 - measurement-over-assertion
 - ab-testing
@@ -89,6 +89,10 @@ memory questions, name unchanged task acceptance and the maintenance choice.
    uncertainty and failure disposition. Endpoint reward, worker done claim,
    in-workflow validator PASS and independent acceptance are different facts.
    Missing review, usage, billing, phase or feasibility evidence stays unknown.
+   A worker following an instruction establishes adherence, not reduced rework
+   or causal benefit. If its task prompt repeats the skill's direction, attribute
+   the observation to the combined instructions, not the skill alone. A passing
+   case far from a failed boundary does not prove the boundary is repaired.
 7. **Recommend once and stop.** State retain, revise, remove or insufficient
    evidence, the scope and supporting facts, and what remains unproven. A
    concrete reproduced defect with clean controls can support a provisional
@@ -120,6 +124,8 @@ must state its evidence and provisional scope.
   Harbor totals or assume parents exclude children. Split producer, in-workflow
   validation, orchestration and grading only where native identity supports it.
   State the measurement window and excluded setup/analysis overhead.
+  Fresh contexts can still carry large startup instructions and tool catalogs;
+  use actual input accounting when available, not freshness as a cost proxy.
 - Use `evals/_stats` for paired task-cluster uncertainty after verifying its
   dependencies and semantics. A pilot is descriptive unless sample size and
   decision thresholds were justified and fixed in advance. A zero-crossing

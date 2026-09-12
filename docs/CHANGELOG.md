@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The opt-in read-budget guard, `skills/cc-hooks/hooks/read-budget-guard.sh` (policy `core.context:unbounded-read`): a PreToolUse `Read|Bash` hook that blocks an unbounded `Read`, `cat`, `head` or `tail` of a file over the line budget (`AOP_READ_BUDGET_LINES`, default 350), names the two correct moves (a bounded slice or `bulk-reader` delegation), honors `AOP_WAIVE`, the waiver file and `AGENTOPS_HOOKS_DISABLED`, and appends hashed telemetry. It ships inert; `scripts/install-read-budget-guard.sh` is the opt-in installer (user, `--project` or `SETTINGS` scope).
+- The `bulk-read` workflow (`workflows/bulk-read.js`): one cheap reader agent per file, in parallel, reading in guard-compatible slices and returning line-referenced bullets with truthful `lines_covered` / `complete`; the file bytes never enter the caller's context.
+- The `code-write` workflow (`workflows/code-write.js`): one cheap writer agent per item from a spec plus a required reference file, matching the reference's patterns, writing only its distinct target and returning a receipt (path, line count, check result) the caller never reads back.
+- The `bulk-reader` and `code-writer` plugin subagents (`agents/bulk-reader.md`, `agents/code-writer.md`): the same reader and writer modes as Agent-tool `subagent_type` targets, `haiku` by default; `bulk-reader` is read-only.
+- Docs for the context-budget pattern: the `cc-hooks` `READ-BUDGET-GUARD.md` recipe, its `GUARDRAIL-VALUE-PROOF.md` entry and skill-spec reference, the `agent-native` `context-budget-delegation.md` reference plus a Reader / Writer note in its Roles, the `workflows/README.md` shapes and context-budget paragraph, and one pointer in `docs/agent-workflow-reference.md`.
+
 ## [3.6.0] - 2026-08-17
 
 AgentOps 3.6 is the **operations-layer alignment** release, and most of the

@@ -30,7 +30,7 @@
     "user-invocable": { "type": "boolean" },
     "disable-model-invocation": {
       "type": "boolean",
-      "description": "True iff only a human may invoke this skill. Claude Code contract (https://code.claude.com/docs/en/skills, \"Control who invokes a skill\"): the model cannot invoke the skill AND its description is kept out of the always-loaded context. Set it only for a skill nothing else reaches for — see skills/human-only-skills/SKILL.md for the roster and the invocation-graph evidence rule."
+      "description": "Require explicit invocation. Claude Code contract (https://code.claude.com/docs/en/skills, \"Control who invokes a skill\"): the model cannot invoke the skill and its description is excluded from the always-loaded context. See docs/contracts/codex-skill-api.md for the Codex policy mapping and docs/SKILL-ROUTER.md for current skill selection guidance."
     },
     "context": {
       "oneOf": [

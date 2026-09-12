@@ -1,6 +1,6 @@
 ---
 name: idea-genie
-description: 'Generate evidenced opportunities or challenge an idea with sealed perspectives. Triggers: "idea genie", "what should we build", "challenge this idea", "compare proposals".'
+description: 'Generate evidenced options or challenge an idea. Use when: deciding what to build or comparing alternatives; exploration does not authorize implementation.'
 practices: [lean-startup, bdd-gherkin, design-by-contract, llm-eval-harness, adr]
 hexagonal_role: domain
 consumes: [repo-context, task-question, idea-portfolio.v1]
