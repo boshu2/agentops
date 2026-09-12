@@ -2,8 +2,6 @@
   "generator": "codex-sync",
   "source_skill": "skills/cc-hooks",
   "layout": "modular",
-  "source_hash": "2049238b13ba6a4d40e2ddd3a241e2f3cb21a2c9e31c13fd9b9217e417806cbd",
-  "generated_hash": "c4d5f850d72570cdc2c69f94afc1d458f7074391ca0a9e74a838991062a3db4e"
-  "source_hash": "71fd2315bf3011ee7104c981c2ba521da66334e9d04a43d94e1d5d132853d9b4",
-  "generated_hash": "e0e151a82dc533b1a527e5269f25ce1dd35329ff6aa3d9f2661ba00ea2478e44"
+  "source_hash": "9551961ba8dfdaf801ce395e751adbcb9bc3faf8533a6c73ad9d9f09ce4c56c5",
+  "generated_hash": "80899cf2a1bf01ad8724555f6284609ac51b2671e999f9ade265ceb95a5b575b"
 }

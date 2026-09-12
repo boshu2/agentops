@@ -40,6 +40,7 @@ invoke() {
   [[ "$stderr" == *"sed -n"* ]]
   [[ "$stderr" == *"Codex: delegate"*"bulk-reader"* ]]
   [[ "$stderr" != *"Workflow:"* ]]
+  [[ "$stderr" != *"AgentOps plugin"* ]]
   [[ "$stderr" != *"Agent tool:"* ]]
   [[ "$stderr" != *"Read(file_path"* ]]
 }

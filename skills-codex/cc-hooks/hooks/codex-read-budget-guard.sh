@@ -31,7 +31,7 @@ while IFS= read -r line; do
       printf '%s\n' "→ Read a bounded shell slice: sed -n 'START,ENDp' <file>, within AOP_READ_BUDGET_LINES (default 350)." >&2 ;;
     '    Agent tool:'*)
       printf '%s\n' '    Codex: delegate the question and file path to the installed bulk-reader role; request path:line bullets only.' >&2 ;;
-    '    Workflow:'*) ;;
+    '    Workflow:'*|'    These names require the AgentOps plugin.'*) ;;
     *) printf '%s\n' "${line//offset+limit \/ sed -n/sed -n}" >&2 ;;
   esac
 done <<< "$diagnostic"
