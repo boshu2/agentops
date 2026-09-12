@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "7ec10c74fb30fa5bfa12b8ef56f2db558969458f240a565d37f6ef05e6ccae18",
+  "codex_override_catalog_hash": "cfde05a564c19e506c9bf62c8a54c676f802f9b2a63550a25b9590f15a9a65de",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -49,7 +49,7 @@
         "name": "agent-native",
         "treatment": "parity_only",
         "wave": "catalog-parity",
-        "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+        "reason": "Shared source guidance includes runtime-specific sections and Codex role templates; generate the complete parity twin with no handwritten override."
       },
       {
         "name": "agy-native",
@@ -255,8 +255,8 @@
     {
       "name": "agent-native",
       "source_skill": "skills/agent-native",
-      "source_hash": "a78ad40d824dadaea1c5a65ba67197f20c81d67e57c9d9800d9b336be3721262",
-      "generated_hash": "c84f55970f8b0383bb3a63c02015b0b0c8f8b52a9067a439d0f5a97ad0bc3e3e"
+      "source_hash": "86758074124994bb29b8c0e0032bb4772c1b0c6750f1c2e21374ad83d0f4b294",
+      "generated_hash": "7a3df3c940f3d47e1cd84d2b2abe5bc4e3e57939f2f370705f3b43c122b8da93"
     },
     {
       "name": "agy-native",
@@ -273,8 +273,8 @@
     {
       "name": "cc-hooks",
       "source_skill": "skills/cc-hooks",
-      "source_hash": "feb6977ea11a5f08ef94f9af5f4fb71119c716d92e98ed88241b8615159712b8",
-      "generated_hash": "8c7dc20c1a36f2993ef6bc8502661ff339c7b6c262de4bbf3efc2cc3611a0e8c"
+      "source_hash": "e6ef5ed340719b596106b52a615014ed5004b8d9c1966a7556499e8306ca46d4",
+      "generated_hash": "8c7a45dc79064e9721dea75b0087b969ff56d072f1619602471d08268cf56860"
     },
     {
       "name": "codex-exec",
