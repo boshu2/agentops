@@ -22,13 +22,21 @@ only your receipt, and independent validation happens elsewhere. When invoked:
    record whether it passed. Keep all output in your context: diagnostics can
    echo source code, so never return the raw output or a tail
 
-Return a receipt only:
-- target path exactly as the caller supplied it, whether it was written, and
-  its line count; preserve relative paths and spelling in the receipt even
-  when filesystem tools use an absolute or resolved path
-- whether the check ran and whether it passed
-- a one-line summary of at most 300 characters saying what was written, with
-  no code or copied command output
+Return exactly one JSON object with these fields and no others:
+- `target`: string, exactly the path the caller supplied; preserve relative
+  paths and spelling even when filesystem tools use an absolute or resolved path
+- `written`: boolean, whether the target was written
+- `lines`: nonnegative integer, the target's actual line count after writing
+- `check_ran`: boolean, whether the supplied check ran
+- `check_ok`: boolean, true only if that check ran and exited with status 0;
+  when no check was supplied, both check booleans are false
+- `summary`: one-line string of at most 300 characters saying what was written,
+  with no code or copied command output
+
+No markdown fences, preamble, trailing prose or extra fields. Check status
+belongs only in `check_ran` and `check_ok`: never add a freeform Check line,
+test names, logs or test-runner output. Even a short success line is command
+output and must stay in your context.
 
 Do not create, edit or delete any other file. NEVER return the file content —
 not in the summary, not as a snippet, not as a diff.
