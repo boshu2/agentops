@@ -19,13 +19,16 @@ only your receipt, and independent validation happens elsewhere. When invoked:
    patterns. Code only: no markdown fences, no prose outside normal code
    comments
 4. If the caller gives a check command, run it ONCE with Bash after writing and
-   record whether it passed plus the last 20 lines of its output
+   record whether it passed. Keep all output in your context: diagnostics can
+   echo source code, so never return the raw output or a tail
 
 Return a receipt only:
 - target path, whether it was written, and its line count
-- whether the check ran, whether it passed, and the output tail when a check
-  was given
-- a summary of at most 300 characters saying what was written, with no code
+- whether the check ran and whether it passed
+- a one-line summary of at most 300 characters saying what was written, with
+  no code or copied command output
 
 Do not create, edit or delete any other file. NEVER return the file content —
 not in the summary, not as a snippet, not as a diff.
+Target confinement is an instruction, not a filesystem sandbox. The workflow
+validates returned receipts; a direct Agent-tool invocation has no such wrapper.
