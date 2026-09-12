@@ -71,6 +71,19 @@ stdout_only() {
   out="$("$@" 2>/dev/null)" || rc=$?
 }
 
+# Negative head counts are GNU semantics. On Darwin, point a command named
+# head at the installed GNU inode instead of asserting BSD rejected input reads.
+require_negative_head() {
+  NEGATIVE_HEAD=head
+  if [ "$(uname -s)" = Darwin ] && [ "$(type -P head)" -ef /usr/bin/head ]; then
+    local candidate
+    candidate="$(command -v ghead)" || skip "GNU head is not installed"
+    mkdir -p "$TMPDIR/gnu"
+    ln -s "$candidate" "$TMPDIR/gnu/head"
+    NEGATIVE_HEAD="$TMPDIR/gnu/head"
+  fi
+}
+
 # --- FIRE (exit 2, stderr names the policy id) --------------------------------
 
 @test "FIRE: Read of a 400-line file without limit blocks (exit 2, names the policy)" {
@@ -115,8 +128,9 @@ stdout_only() {
   [ "$status" -eq 2 ]
 }
 
-@test "FIRE: Bash 'head -n -5 big.txt' blocks (negative count = whole file minus a tail)" {
-  run run_bash "head -n -5 big.txt" "f-head-neg"
+@test "FIRE: GNU head -n -5 blocks (negative count = whole file minus a tail)" {
+  require_negative_head
+  run run_bash "\"$NEGATIVE_HEAD\" -n -5 big.txt" "f-head-neg"
   [ "$status" -eq 2 ]
   # A1 requires the effective read count: 400 - 5, not the full file size.
   [[ "$output" == *"is 395 lines"* ]]

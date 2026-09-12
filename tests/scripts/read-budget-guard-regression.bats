@@ -34,6 +34,19 @@ guard_command() {
   fi
 }
 
+# Negative head counts are GNU semantics. On Darwin, point a command named
+# head at the installed GNU inode instead of asserting BSD rejected input reads.
+require_negative_head() {
+  NEGATIVE_HEAD=head
+  if [ "$(uname -s)" = Darwin ] && [ "$(type -P head)" -ef /usr/bin/head ]; then
+    local candidate
+    candidate="$(command -v ghead)" || skip "GNU head is not installed"
+    mkdir -p "$TMPDIR/gnu"
+    ln -s "$candidate" "$TMPDIR/gnu/head"
+    NEGATIVE_HEAD="$TMPDIR/gnu/head"
+  fi
+}
+
 @test "REGRESSION: ANSI-C quoted prose does not become a cat command" {
   guard_command 0 "echo \$'it\\'s; cat big.txt; end'"
 }
@@ -43,11 +56,13 @@ guard_command() {
 }
 
 @test "REGRESSION: head excluding 390 of 400 lines is a bounded ten-line read" {
-  guard_command 0 'head -n -390 big.txt'
+  require_negative_head
+  guard_command 0 "\"$NEGATIVE_HEAD\" -n -390 big.txt"
 }
 
 @test "REGRESSION: negative head reports its effective count" {
-  guard_command 2 'head -n -20 big.txt'
+  require_negative_head
+  guard_command 2 "\"$NEGATIVE_HEAD\" -n -20 big.txt"
   [[ "$(cat "$TMPDIR/stderr")" == *"is 380 lines"* ]]
   [ "$(jq -r .lines "$AGENTOPS_GUARDRAIL_TELEMETRY")" -eq 380 ]
 }

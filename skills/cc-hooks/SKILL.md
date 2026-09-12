@@ -192,9 +192,10 @@ the exact argument), so it is a standalone guard, never a registry policy. A
 `limit`-bounded slice, a file at/below budget, a pipe, a redirect or quoted text
 that merely mentions `cat` passes. Literal quoted/escaped paths are preserved;
 unsupported shell syntax and directory-changing chains fail open. Negative
-`head` counts use the actual number of retained lines. Nothing un-reads bytes
-once in context → every
-attempt blocks (exit 2 + stderr): full message once per session naming the two
+`head` counts use the actual number of retained lines for GNU head; rejected
+Darwin system utility flags pass after checking executable identity. Positive
+signed head counts are bounded by their numeric value. Nothing un-reads bytes
+once in context → every attempt blocks (exit 2 + stderr): full message once per session naming the two
 correct moves (slice it, or delegate to the `bulk-reader` subagent /
 `bulk-read` workflow), one short line after. Waive once with
 `AOP_WAIVE=core.context:unbounded-read`; hashed telemetry adds `tool`, `lines`,
