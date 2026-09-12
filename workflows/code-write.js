@@ -207,6 +207,10 @@ for (const item of input.items) {
         (item.check
           ? '- After writing, run this check ONCE with Bash and report only check_ran: true and check_ok (exit status 0). Keep all command output in your context; it can contain source code. Do not return it:\n  ' + item.check + '\n'
           : '- No check was given: report check_ran: false and check_ok: false.\n') +
+        '- After the write and any check, run this metadata-only line counter ONCE with Bash in the selected working directory:\n  ' +
+        "awk 'END { print NR }' < " + shellQuote(item.target) + '\n' +
+        'Copy its observed nonnegative integer into lines. Count physical file lines, including a final line without a newline. ' +
+        'Never infer this number from rendered Write/Read output, requested slice sizes, or a trailing empty split element.\n' +
         '- NEVER return the file content. Return a receipt only: key, target, written, lines (line count of the target after writing), ' +
         'the check fields, and a one-line summary of at most 300 characters saying what was written (no code or copied command output).\n' +
         '- Preserve the caller\'s receipt identity EXACTLY: key must be ' + JSON.stringify(item.key) + ' and target must be ' + JSON.stringify(item.target) +

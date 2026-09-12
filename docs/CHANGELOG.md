@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Code writers measure physical target lines with a metadata-only counter after writing and checking instead of inferring counts from rendered tool output.
 - Code-writer child schemas preserve the caller's exact key and target path so successful writes do not become unknown receipts after path normalization. Direct writers return one JSON receipt with boolean check status and no copied test output.
 - Claude context-budget guidance uses the plugin-qualified Agent and Workflow names; readers treat slice limits as per-call budgets and continue through EOF despite answer caps, early matches or truncated output.
 - Read-budget shell parsing now preserves literal quoted paths, rejects uncertain shell constructs without false attribution, honors end-of-options, and counts negative head limits correctly without integer overflow.

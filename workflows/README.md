@@ -151,6 +151,7 @@ The preflight is child-reported metadata at one instant, not a filesystem lock o
 
 Args: `{ context?: string, root?: string, model?: string (default 'haiku'), budgetLines?: positive safe integer (default 350), items: [{ key, spec, reference, target, check? }] }` — duplicate target strings or filesystem identities throw before writing. The selected model also applies to the metadata probe.
 Each writer's output schema fixes `key` and `target` to the caller's exact strings. A relative target stays relative in the receipt even when the child uses an absolute filesystem path. The wrapper still rejects a mismatched receipt.
+After writing and any check, each writer runs a metadata-only `awk` line counter against its safely quoted target and copies the observed physical line count into `lines`, including a final line without a newline. Rendered tool output and trailing empty split elements are not line-count evidence.
 Returns: `{ items: [{ key, target, written, lines, check_ran, check_ok, summary }] }`. The workflow validates key/target identity, booleans, nonnegative integer line count, and a one-line summary of at most 300 characters. Raw check output is excluded because diagnostics can contain source code. Dead writers and invalid receipts return `written: null`, `lines: null`, `check_ran: null`, `check_ok: null`, an empty summary, and an `error`: file and check state are unknown, since a worker can write before it dies. Short-summary semantics remain an agent instruction.
 
 ```js
