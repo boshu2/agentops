@@ -23,7 +23,7 @@ supported calls. Shell and unified exec use `Bash` / `tool_input.command`.
 Canonical common fields include session_id, cwd, hook_event_name, model,
 permission_mode and transcript_path; PreToolUse adds turn_id and tool_use_id.
 Local hooks use `~/.codex/hooks.json` or the primary checkout's
-`.codex/hooks.json`, with exact-definition trust via `/hooks`.
+`.codex/hooks.json`, with exact-definition trust through the native hook manager.
 Untrusted project layers and untrusted hook definitions do not run. Shell
 sandbox/approval policy also restrict operations, but is not a line-budget
 predicate. Hosted tools and some specialized paths are not intercepted, and
@@ -223,7 +223,8 @@ wrapper captured the native payload for one controlled synthetic file and
 forwarded it to the installed adapter. The interactive CLI was launched with
 an explicit session `hooks.PreToolUse` definition matching `^Bash$`, command
 `bash <scratch>/capture-hook.sh`, timeout 10. Its exact definition was reviewed
-and trusted in `/hooks`; existing user hook settings were not enabled or disabled.
+and trusted in the native hook manager; existing user hook settings were not
+enabled or disabled.
 Native parent: `01a09769-14d2-7c22-9b7d-50847de07c90`.
 
 The actual captured input included `hook_event_name: PreToolUse`,
@@ -270,6 +271,8 @@ it does not establish live Claude integration. The remaining native checks also 
   tests/scripts/context-budget-workflows.bats tests/scripts/codex-context-agents.bats
   tests/scripts/codex-read-budget-guard.bats
   tests/scripts/install-codex-read-budget-guard.bats`: 222 passed, zero skipped.
+- `bats tests/scripts/check-doc-skill-refs*.bats`: 21 passed;
+  `bash scripts/check-doc-skill-refs.sh --all-docs --strict`: passed.
 - `bash scripts/validate-codex-install-bundle.sh`: passed, 34 skill packages.
   `cmp CHANGELOG.md docs/CHANGELOG.md` and `git diff --check`: passed.
 
