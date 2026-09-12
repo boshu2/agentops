@@ -35,3 +35,15 @@ checkout updates its existing links; repeat the same selectors to restore them.
 See [installation and updates](../docs/install-day2-ops.md) for Homebrew,
 building development features from source, full bundles and removal, and
 [migration](../docs/MIGRATION.md) for legacy installations.
+
+## Optional context-budget roles and hook
+
+From the source checkout, `bash scripts/install-codex-context-agents.sh`
+installs the generated reader/writer roles and registers them in personal
+Codex config. Add `--project` to install in the current project. This requires
+Node and an installed Codex with its native config editor. Restart Codex.
+
+`bash scripts/install-codex-read-budget-guard.sh` separately installs the
+opt-in shell read guard. Review and trust its definition in Codex `/hooks`.
+See [the verified runtime contract and live evidence](../docs/design/codex-context-budget.md)
+for scope, invocation and limitations.

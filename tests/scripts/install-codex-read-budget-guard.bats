@@ -83,6 +83,7 @@ teardown() { rm -rf "$TMPDIR"; }
 
 @test "codex installer: --project keeps hooks and assets project-local" {
   cd "$TMPDIR/project"
+  git init -q .
   run bash "$INSTALLER" --project
   [ "$status" -eq 0 ]
   [ -f .codex/hooks.json ]
@@ -136,6 +137,42 @@ teardown() { rm -rf "$TMPDIR"; }
 @test "codex installer: unknown arguments fail before writing configuration" {
   run bash "$INSTALLER" --typo
   [ "$status" -eq 2 ]
+  [ ! -e "$HOOKS" ]
+  [ ! -e "$CODEX_HOME/hooks" ]
+}
+
+make_linked_worktree() {
+  PRIMARY="$TMPDIR/primary"
+  LINKED="$TMPDIR/linked"
+  git init -q "$PRIMARY"
+  git -C "$PRIMARY" -c user.name=Fixture -c user.email=fixture@example.invalid \
+    commit --allow-empty -qm fixture
+  git -C "$PRIMARY" worktree add --detach -q "$LINKED"
+}
+
+@test "codex installer: linked --project refuses before writing either checkout" {
+  make_linked_worktree
+  cd "$LINKED"
+  run bash "$INSTALLER" --project
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"Codex 0.154"*"primary checkout"* ]]
+  [[ "$output" == *"without --project"* ]]
+  [ ! -e "$LINKED/.codex" ]
+  [ ! -e "$PRIMARY/.codex" ]
+  [ ! -e "$HOOKS" ]
+  [ ! -e "$CODEX_HOME/hooks" ]
+}
+
+@test "codex installer: linked worktree permits an explicit hooks file destination" {
+  make_linked_worktree
+  export CODEX_HOOKS_FILE="$TMPDIR/selected/hooks.json"
+  cd "$LINKED"
+  run bash "$INSTALLER" --project
+  [ "$status" -eq 0 ]
+  [ -f "$CODEX_HOOKS_FILE" ]
+  [ -x "$TMPDIR/selected/hooks/agentops-read-budget/codex-read-budget-guard.sh" ]
+  [ ! -e "$LINKED/.codex" ]
+  [ ! -e "$PRIMARY/.codex" ]
   [ ! -e "$HOOKS" ]
   [ ! -e "$CODEX_HOME/hooks" ]
 }

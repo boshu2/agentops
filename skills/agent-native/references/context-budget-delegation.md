@@ -60,13 +60,17 @@ The Codex guard is an optional installation from the checkout:
 ```sh
 bash scripts/install-codex-context-agents.sh          # personal roles
 bash scripts/install-codex-read-budget-guard.sh       # optional shell guard
-# Add --project to either installer for a project-scoped installation.
+# Add --project for project scope; see the linked-worktree limit below.
 ```
 
 Restart Codex to load the roles, and review the exact hook in `/hooks` before
 trusting it. Installing files does not activate an untrusted hook. The guard is
 inert in the plugin and its default hook manifest remains unchanged. The
-Codex installer wires only the verified Bash shape. It does not claim coverage
+0.154 CLI resolves project hooks from the primary checkout even when launched
+in a linked worktree. The hook installer rejects `--project` there before
+writing anything; install personally or run it in the primary checkout.
+Project trust must be saved in Codex config, and does not replace hook trust.
+The Codex installer wires only the verified Bash shape. It does not claim coverage
 of arbitrary MCP reads, hosted tools, or tool paths that opt out of hooks.
 It uses the same policy `core.context:unbounded-read`, budget
 `AOP_READ_BUDGET_LINES` (350 by default), waivers and hashed telemetry ledger
@@ -78,7 +82,12 @@ The role templates are canonical source files under this skill's `agents/`
 directory, mirrored into `skills-codex/agent-native/agents/` by regeneration.
 The checkout exposes them at `.codex/agents/` using relative symlinks; the
 installer copies the generated templates to the runtime's personal or project
-agent directory. They do not add skills to the 34-skill menu.
+agent directory and registers `agents.<name>.description` and `config_file`
+using the installed Codex config editor. The checkout has equivalent explicit
+registrations in `.codex/config.toml`; standalone file discovery did not work
+in the measured CLI, while registered roles ran successfully. Installation
+requires Node and the installed Codex runtime. They do not add skills to the
+34-skill menu.
 
 - `bulk-reader` (`agents/bulk-reader.toml`): one question and one file, slices
   of at most 350 lines (or a smaller configured budget), up to 40 paraphrased

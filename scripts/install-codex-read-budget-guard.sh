@@ -23,6 +23,21 @@ require_cmd jq
 hooks_file="${CODEX_HOOKS_FILE:-}"
 if [[ -z "$hooks_file" ]]; then
   if [[ "${1:-}" == --project ]]; then
+    # Codex 0.154 loads project hooks.json from the primary checkout even when
+    # config.toml comes from a linked worktree. Never silently write that other
+    # checkout or install into an undiscovered local hook path.
+    if git_dir="$(git rev-parse --absolute-git-dir 2>/dev/null)" &&
+       git_common_dir="$(git rev-parse --git-common-dir 2>/dev/null)"; then
+      git_dir="$(CDPATH= cd "$git_dir" && pwd -P)"
+      git_common_dir="$(CDPATH= cd "$git_common_dir" && pwd -P)"
+      if [[ "$git_dir" != "$git_common_dir" ]]; then
+        printf '%s\n' \
+          'ERROR: Codex 0.154 discovers project hooks from the primary checkout, not this linked worktree.' \
+          'Run this installer without --project for personal hooks, or run --project from the primary checkout.' \
+          'CODEX_HOOKS_FILE may select an explicit destination; this installer will not write another checkout automatically.' >&2
+        exit 2
+      fi
+    fi
     hooks_file="$PWD/.codex/hooks.json"
   else
     hooks_file="${CODEX_HOME:-${HOME:?HOME or CODEX_HOME is required}/.codex}/hooks.json"

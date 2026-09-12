@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Codex-native `bulk-reader` and `code-writer` role templates pinned to `gpt-5.6-luna`, generated with the existing skill bundle, explicit project registrations, and an opt-in personal/project installer that preserves existing configuration.
+- An opt-in Codex `PreToolUse` Bash adapter and installer reuse the read-budget guard's refusal, waivers and hashed telemetry; hook trust remains with the runtime. Native role instructions and runtime limitations are documented with live reader, writer and refusal evidence in `docs/design/codex-context-budget.md`.
 - The opt-in read-budget guard, `skills/cc-hooks/hooks/read-budget-guard.sh` (policy `core.context:unbounded-read`): a PreToolUse `Read|Bash` hook that blocks an unbounded `Read`, `cat`, `head` or `tail` of a file over the line budget (`AOP_READ_BUDGET_LINES`, default 350), names the two correct moves (a bounded slice or `bulk-reader` delegation), honors `AOP_WAIVE`, the waiver file and `AGENTOPS_HOOKS_DISABLED`, and appends hashed telemetry. It ships inert; `scripts/install-read-budget-guard.sh` is the opt-in installer (user, `--project` or `SETTINGS` scope).
 - The `bulk-read` workflow (`workflows/bulk-read.js`): one cheap reader agent per file, in parallel, reading in guard-compatible slices and returning line-referenced bullets with truthful `lines_covered` / `complete`; the file bytes never enter the caller's context.
 - The `code-write` workflow (`workflows/code-write.js`): one cheap writer agent per item from a spec plus a required reference file, matching the reference's patterns, writing only its distinct target and returning a receipt (path, line count, check result) the caller never reads back.

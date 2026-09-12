@@ -255,8 +255,8 @@
     {
       "name": "agent-native",
       "source_skill": "skills/agent-native",
-      "source_hash": "86758074124994bb29b8c0e0032bb4772c1b0c6750f1c2e21374ad83d0f4b294",
-      "generated_hash": "7a3df3c940f3d47e1cd84d2b2abe5bc4e3e57939f2f370705f3b43c122b8da93"
+      "source_hash": "3cfc355e2eb26da1d823a0b19771e3db0c115e120ef6e4dc85943b84ba327018",
+      "generated_hash": "292ff7357cdef40a05f98c03a9b63ea6455a30163f32983594f6699e58b36688"
     },
     {
       "name": "agy-native",
@@ -273,12 +273,8 @@
     {
       "name": "cc-hooks",
       "source_skill": "skills/cc-hooks",
-      "source_hash": "e6ef5ed340719b596106b52a615014ed5004b8d9c1966a7556499e8306ca46d4",
-      "generated_hash": "8c7a45dc79064e9721dea75b0087b969ff56d072f1619602471d08268cf56860"
-      "source_hash": "991cddda32019d4ddaee0be95ec2089811c363257b66bcca128c137a06e36377",
-      "generated_hash": "b1da93eaa24785e0b223b3fb616e16c5056706f21f5ba11e4c1943c8c06b2b3d"
-      "source_hash": "8382731b8c7daccb7107cb0e37c6f205ca27ce6dae0123098909c3084cc20404",
-      "generated_hash": "42f760c00a58ded08fd8ae3e0c8e54ca07ed760d4cf3e189c577cda864fbffcc"
+      "source_hash": "2049238b13ba6a4d40e2ddd3a241e2f3cb21a2c9e31c13fd9b9217e417806cbd",
+      "generated_hash": "c4d5f850d72570cdc2c69f94afc1d458f7074391ca0a9e74a838991062a3db4e"
     },
     {
       "name": "codex-exec",
