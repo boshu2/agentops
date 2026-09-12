@@ -110,7 +110,7 @@
         "worker-handoff",
         "per-packet-results"
       ],
-      "references_count": 2,
+      "references_count": 3,
       "tier": "meta",
       "user_invocable": true
     },
@@ -200,7 +200,7 @@
         "pragmatic-programmer"
       ],
       "produces": [],
-      "references_count": 7,
+      "references_count": 8,
       "tier": "execution",
       "user_invocable": true
     },

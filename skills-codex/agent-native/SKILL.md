@@ -51,6 +51,13 @@ stalled, and rescue is usually cheaper than rerun.
 - **Validator:** receives exact candidate content in a fresh, read-only context.
 - **Scribe:** records runtime evidence without judging acceptance.
 
+Reader and Writer are bounded cheap delegations, not roles with authority: a
+Reader returns line-referenced bullets over files the caller never loads, and a
+Writer lands one patterned file from a spec plus a reference file and returns a
+receipt the caller never reads back. Both are caller-selected per call, default
+to a cheap model, and yield runtime facts only — a receipt is not validation.
+See [context-budget delegation](references/context-budget-delegation.md).
+
 ## Contract
 
 For a caller-selected parallel batch, validate every complete packet before the

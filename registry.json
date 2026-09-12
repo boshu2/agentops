@@ -698,7 +698,7 @@
         "has_skill_md": true,
         "name": "agent-native",
         "path": "skills/agent-native/",
-        "reference_count": 2,
+        "reference_count": 3,
         "tier": "meta"
       },
       {
@@ -748,7 +748,7 @@
         "has_skill_md": true,
         "name": "cc-hooks",
         "path": "skills/cc-hooks/",
-        "reference_count": 7,
+        "reference_count": 8,
         "tier": "execution"
       },
       {
