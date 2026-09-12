@@ -5,13 +5,15 @@ are a **Claude-only runtime adapter** — the same doctrine as `skills-codex/`
 (Codex-only): canonical source lives here, and a runtime link step installs it
 where the one runtime that consumes it resolves names.
 
-Three generic conveyor shapes:
+Five generic conveyor shapes:
 
 | Workflow | Shape | Use when |
 |---|---|---|
 | `audit-dimensions` | pipeline: finder → skeptic, per dimension | auditing a subject across independent lenses |
 | `verify-fixes` | parallel adversarial verifiers, one per group | refuting "it's fixed" claims after a change |
 | `implement-wave` | parallel disjoint-scope lanes → one fresh verifier | executing a wave of bead-shaped work items |
+| `bulk-read` | parallel cheap readers, one per file → line-referenced bullets | answering a question about big files without their bytes entering the caller's context |
+| `code-write` | parallel cheap writers, one per item (spec + reference → target) → receipts | writing patterned or boilerplate files the caller should not read back |
 
 Two repository-delivery conveyors also live here, outside the AgentOps
 semantic core: `bdd-foundry` (behavior-first planning → acceptance-gated
@@ -110,3 +112,41 @@ Workflow({ name: 'implement-wave', args: {
 }})
 ```
 
+## bulk-read
+
+Delegate large or many files to cheap readers. One reader per file reads the whole file in bounded slices (`Read` with `offset` + `limit ≤ budgetLines`, so the readers pass the opt-in read-budget guard themselves) and answers one question with line-referenced bullets only — `{ ref: 'path:line' | 'path:start-end', text }`, most relevant first, at most `maxBullets`. The file bytes never enter the caller's context; a follow-up question is another cheap call, not a re-read into the main context. Readers are read-only and report `lines_covered` / `complete` truthfully; a missing, binary or unreadable file comes back with zero bullets and a `note`.
+
+Args: `{ question: string, files: [string], root?: string, model?: string (default 'haiku'), maxBullets?: number (default 40), budgetLines?: number (default 350) }`
+Returns: `{ question, files: [{ file, bullets: [{ ref, text }], lines_covered, complete, note? }], bullets_total }` — a file whose reader died comes back with empty `bullets`, `complete: false` and an `error` field: an unread file is reported unread, never as an empty answer.
+
+```js
+Workflow({ name: 'bulk-read', args: {
+  question: 'Where are exit codes decided, and which paths return non-zero?',
+  files: ['cli/internal/gates/runner.go', 'scripts/check-go-lint.sh'],
+  maxBullets: 20,
+}})
+```
+
+## code-write
+
+Delegate patterned file writes to cheap writers. One writer per item reads the required `reference` file in bounded slices to learn its patterns (naming, imports, error handling, test shape), writes ONLY its `target` to satisfy `spec`, optionally runs `check` once, and returns a receipt — never the content. `reference` is required: no reference, no writer. Targets must be distinct, and writers land files directly in the working tree (no worktree isolation), so give each item a target nobody else is editing. A receipt is a runtime fact, not validation: judge the written files with a fresh, author-distinct Validate as usual.
+
+Args: `{ context?: string, root?: string, model?: string (default 'haiku'), budgetLines?: number (default 350), items: [{ key, spec, reference, target, check? }] }` — a duplicate `target` throws naming it.
+Returns: `{ items: [{ key, target, written, lines, check_ran, check_ok, check_output_tail?, summary }] }` — an item whose writer died comes back with `written: false`, `lines: 0` and an `error` field, never as a receipt.
+
+```js
+Workflow({ name: 'code-write', args: {
+  context: 'Go CLI; tests are table-driven and live next to the source',
+  items: [
+    { key: 'parse-tests',
+      spec: 'Table-driven tests for ParseFlags covering aliases, unknown flags and the --json/--robot pair.',
+      reference: 'cli/internal/gates/runner_test.go',
+      target: 'cli/internal/parse/parse_test.go',
+      check: 'cd cli && go test ./internal/parse/...' },
+  ],
+}})
+```
+
+## Context budget
+
+`bulk-read` and `code-write` are the delegation half of the context-budget pattern; the enforcement half is the opt-in read-budget guard shipped inert in the `cc-hooks` skill (`scripts/install-read-budget-guard.sh` wires it as an opt-in PreToolUse hook; nothing installs it automatically). Once installed, that opt-in hook blocks an unbounded `Read`, `cat`, `head` or `tail` of a file over the line budget (`AOP_READ_BUDGET_LINES`, default 350) and its message names both correct moves: slice the file, or delegate it to `bulk-read` / the `bulk-reader` subagent. The readers and writers here slice with `limit ≤ budgetLines`, so they pass the same opt-in hook themselves. Model choice belongs to the caller (`model`, default `haiku`); a receipt or a bullet list is a runtime fact, not validation; nothing here owns a budget account, retry or scheduler. The full pattern lives in `skills/agent-native/references/context-budget-delegation.md`.

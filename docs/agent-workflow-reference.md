@@ -31,6 +31,9 @@ native goals and direct coding do not require it. A skill earns its context
 cost by resolving a task-specific need, not by occupying a phase in a sequence.
 No new scheduler, command or process ledger is needed. The grandfathered pure
 fixed-dispatch adapter is separately described in its own reference.
+Optional context-budget tooling (an opt-in read-budget hook plus bulk-read /
+code-write delegation) is described in
+[context-budget delegation](../skills/agent-native/references/context-budget-delegation.md).
 
 For exact intent snapshots, subject manifests, evidence storage, scope and
 freshness, use [RPI traversal](architecture/rpi-traversal.md) and
