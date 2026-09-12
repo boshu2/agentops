@@ -255,8 +255,8 @@
     {
       "name": "agent-native",
       "source_skill": "skills/agent-native",
-      "source_hash": "82f389223bdab8db77e7b0c02dd3501a8bfdcf89ae32b3f7ebe24ac79413ee5b",
-      "generated_hash": "dabc8fc0fba6ebdf14c491403094907abfbd395a944f46ba41ef767d603c88b9"
+      "source_hash": "a78ad40d824dadaea1c5a65ba67197f20c81d67e57c9d9800d9b336be3721262",
+      "generated_hash": "c84f55970f8b0383bb3a63c02015b0b0c8f8b52a9067a439d0f5a97ad0bc3e3e"
     },
     {
       "name": "agy-native",
