@@ -40,7 +40,8 @@
 #
 # Fail OPEN: no jq -> exit 0; malformed JSON -> exit 0 silent; empty or unknown
 # tool -> exit 0. Portable bash 3.2 + BSD tools: no GNU-only flags, no sed -i,
-# no mapfile, no associative arrays; head/tail flags parsed with case.
+# no mapfile, no associative arrays; head/tail flags parsed with case. Bash
+# judging also fails open without awk or uname.
 set -uo pipefail
 # Tokens are matched literally: a `*` / `?` / `[` in a command must never be
 # expanded against the hook's own cwd.
@@ -226,18 +227,29 @@ check_read() {
 
 # ---------------------------------------------------------------- Bash ------
 
+# Resolve an executable without invoking it. Bare names use the command's
+# literal PATH assignments and cwd; paths containing / resolve against cwd.
+resolve_command() {
+  case "$1" in
+    */*) resolve_path "$1" literal ;;
+    *) (cd "$cwd" 2>/dev/null && PATH="$2" type -P -- "$1" 2>/dev/null) ;;
+  esac
+}
+
 # check_segment receives literal words from the lexer, prefixed with "a" for
 # syntactic assignments or "w" for ordinary words. Never eval command input.
 check_segment() {
   local -a toks files
   toks=("$@"); files=()
-  local n i t cmdw v n_raw want_next sign num options
+  local n i t cmdw command_literal command_path utility_family platform v n_raw want_next sign num options
+  local lookup_path="${PATH:-}"
   n=${#toks[@]}
   [ "$n" -gt 0 ] || return 0
   i=0
   while [ "$i" -lt "$n" ]; do
     t="${toks[$i]}"
     case "$t" in
+      aPATH=*) lookup_path="${t#aPATH=}" ;;
       aAOP_WAIVE=*)
         v="${t#aAOP_WAIVE=}"
         case ",${v}," in *",${policy_id},"*) inline_waived=1 ;; esac ;;
@@ -247,9 +259,25 @@ check_segment() {
     i=$((i + 1))
   done
   [ "$i" -lt "$n" ] || return 0
-  cmdw="${toks[$i]#w}"
-  cmdw="${cmdw##*/}"
+  command_literal="${toks[$i]#w}"
+  cmdw="${command_literal##*/}"
   case "$cmdw" in cat|head|tail) ;; *) return 0 ;; esac
+  command_path="$(resolve_command "$command_literal" "$lookup_path")" || return 0
+  [ -n "$command_path" ] || return 0
+  command_path="$(resolve_path "$command_path" literal)"
+  [ -f "$command_path" ] && [ -x "$command_path" ] || return 0
+  # Darwin system utilities reject some GNU forms without reading. Follow
+  # executable identity, including symlinks: basename alone is insufficient.
+  # uname is a guard dependency; never probe a caller-selected executable.
+  utility_family=generic
+  platform="$(uname -s 2>/dev/null)" || return 0
+  if [ "$platform" = Darwin ]; then
+    case "$cmdw" in
+      cat) [ "$command_path" -ef /bin/cat ] && utility_family=bsd-cat ;;
+      head) [ "$command_path" -ef /usr/bin/head ] && utility_family=bsd-head ;;
+      tail) [ "$command_path" -ef /usr/bin/tail ] && utility_family=bsd-tail ;;
+    esac
+  fi
   i=$((i + 1))
 
   n_raw=10; want_next=""; options=1
@@ -268,6 +296,9 @@ check_segment() {
       if [ "$cmdw" = cat ]; then
         # Only known output-format flags are non-bounding. Unknown options
         # may terminate without reading any file, so fail open.
+        if [ "$utility_family" = bsd-cat ]; then
+          case "$t" in --*|-*[AET]*) return 0 ;; esac
+        fi
         case "$t" in
           --number|--number-nonblank|--squeeze-blank|--show-all|--show-ends|--show-nonprinting|--show-tabs) continue ;;
           -*) v="${t#-}"; case "$v" in *[!AbensTtuvE]*) return 0 ;; *) continue ;; esac ;;
@@ -279,8 +310,12 @@ check_segment() {
           -n*) n_raw="${t#-n}"; continue ;;
           --lines=*) n_raw="${t#--lines=}"; continue ;;
           -[0-9]*) n_raw="${t#-}"; continue ;;
-          --quiet|--silent|--verbose) continue ;;
-          -*) v="${t#-}"; case "$v" in *[!qv]*) return 0 ;; *) continue ;; esac ;;
+          --quiet|--silent|--verbose) [ "$utility_family" = bsd-head ] && return 0; continue ;;
+          -*)
+            v="${t#-}"
+            case "$v" in *[!qv]*) return 0 ;; esac
+            [ "$utility_family" = bsd-head ] && return 0
+            continue ;;
         esac
       fi
     fi
@@ -320,7 +355,7 @@ check_segment() {
     +*) sign="+"; num="${n_raw#+}" ;;
     -*) sign="-"; num="${n_raw#-}" ;;
   esac
-  [ "$cmdw" = head ] && [ "$sign" = + ] && return 0
+  [ "$utility_family" = bsd-head ] && [ "$sign" = - ] && return 0
   num="$(normalize_uint "$num" exact)" || return 0
   for t in "${files[@]}"; do
     abs="$(resolve_path "$t" literal)"

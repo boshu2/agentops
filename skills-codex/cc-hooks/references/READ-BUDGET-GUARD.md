@@ -90,7 +90,16 @@ JSON on stdin (`{tool_name, tool_input, session_id, cwd}`) with `jq`; a missing
 - Leading syntactic `VAR=value` assignments are removed; a quoted assignment
   word such as `"NAME=value"` is still a command word. An `AOP_WAIVE=...`
   prefix containing the policy id waives the whole call. The basename of the
-  first remaining word must be `cat`, `head` or `tail`.
+  first remaining word must be `cat`, `head` or `tail`. Resolve that literal
+  executable against the command cwd and PATH (including literal leading PATH
+  assignments); missing or non-executable paths pass. Resolution never invokes
+  the selected executable.
+- On Darwin, compare executable identity (`-ef`, following symlinks) with
+  `/bin/cat`, `/usr/bin/head` and `/usr/bin/tail`. The system `cat` rejects
+  GNU-only `-A`, `-E`, `-T` (including combinations) and long flags; the system
+  `head` rejects negative counts and quiet/verbose flags. Those forms pass
+  because the native utility does not read the file. GNU executables named
+  `cat`/`head`/`tail` retain the generic GNU forms below, even on Darwin.
 - Unquoted leading `~/` expands against `HOME`; quoted/escaped tildes remain
   literal. Other files resolve against the input `cwd`; missing, non-regular
   and binary files are skipped. `--` ends flag parsing, including before an
@@ -100,13 +109,14 @@ JSON on stdin (`{tool_name, tool_input, session_id, cwd}`) with `jq`; a missing
   formatting flags (`-n`, `-b`, `-s`, `-A`, `-e`, `-E`, `-t`, `-T`, `-u`,
   `-v`, their combinations and GNU long equivalents) do not bound the read.
 - `head`: `-n N`, `-nN`, `-N`, `--lines=N`, `--lines N` (default 10).
-  Positive effective count = `min(N, lines)` per file; negative `-n -K`
-  (all but the last K) = `max(lines - K, 0)`. FIRE if any is over budget.
+  Positive counts, including `-n +N`, use `min(N, lines)` per file; GNU
+  negative `-n -K` (all but the last K) uses `max(lines - K, 0)`. FIRE if any is over budget.
 - `tail`: the same flag forms; negative counts use `min(K, lines)`;
   `-n +K` = `max(lines - K + 1, 0)`, with `+0` and `+1` both meaning the
   whole file. FIRE if any effective count is over budget.
 - `--help`, `--version`, unknown flags, byte counts and follow modes skip the
-  segment. `head`/`tail` quiet/verbose formatting flags are accepted. Invalid
+  segment. Supported `head`/`tail` quiet/verbose formatting flags are accepted,
+  except for the Darwin system `head` as described above. Invalid
   or missing numeric option values skip the segment.
 - Decimal normalization removes leading zeroes before arithmetic. Budgets
   above `9223372036854775807` saturate at that value; command counts outside
@@ -135,7 +145,8 @@ A waived call exits 0 with zero output and writes one telemetry line with
 ### Fail OPEN
 
 No `jq` on `PATH` → exit 0. Malformed JSON → exit 0, silent. Empty or unknown
-tool → exit 0. A guard that cannot decide must never brick the tool call.
+tool → exit 0. Bash judging also passes without `awk` or `uname`. A guard
+that cannot decide must never brick the tool call.
 Telemetry failure never changes the exit decision.
 
 ### The message
@@ -244,7 +255,7 @@ line the installer prints: remove the matcher, then `rm` the copied script.
 
 ## Test it
 
-Four bats files round-trip the real PreToolUse JSON (built with `jq -nc`,
+Five bats files round-trip the real PreToolUse JSON (built with `jq -nc`,
 never hand-written strings) under an isolated `TMPDIR` and `HOME`, with
 `AGENTOPS_GUARDRAIL_TELEMETRY` pointed into `TMPDIR`:
 
@@ -267,10 +278,17 @@ never hand-written strings) under an isolated `TMPDIR` and `HOME`, with
   help/unknown flags, literal spaced paths, quoted continuations, `--`, integer
   overflow, quoted tildes, malformed syntax and shell control flow. Every case
   captures stdout and stderr separately. The legacy negative-head expectation
-  was corrected from 400 to 395 for `head -n -5` on a 400-line file; the legacy
+  was corrected from 400 to 395 for GNU `head -n -5` on a 400-line file; the legacy
   silent expectation for a 400-line spaced filename was corrected to denial.
   Both changes restore the effective-read contract; a separate small spaced
   file with a large sibling checks that paths are not misattributed.
+- `tests/scripts/read-budget-guard-utility.bats` — compare actual utility exit
+  status and stdout line counts with guard decisions. Darwin system rejects
+  remain silent; positive signed head reads block; GNU formatting and negative
+  counts remain guarded. GNU-specific tests use the installed GNU executable
+  through a command named `cat`/`head`, and explicitly skip when GNU is absent.
+  Darwin-only tests explicitly skip on other hosts. The earlier negative-head
+  tests use this same distinction instead of claiming BSD rejected input reads.
 - `tests/scripts/read-budget-guard-telemetry.bats` — one line per fire; valid
   JSON with every field; `lines` and `budget` are numbers; `path_sha256` is 64
   hex and equals the hash of the resolved path; the raw path and the raw
@@ -285,6 +303,7 @@ never hand-written strings) under an isolated `TMPDIR` and `HOME`, with
 bats tests/scripts/read-budget-guard.bats \
      tests/scripts/read-budget-guard-regression.bats \
      tests/scripts/read-budget-guard-telemetry.bats \
+     tests/scripts/read-budget-guard-utility.bats \
      tests/scripts/install-read-budget-guard.bats
 ```
 
@@ -308,6 +327,9 @@ false-negative shapes:
 - **`sed`, `awk`, `less`, `more`, `grep`, `xargs`, `sh -c`** are silent by
   design; only `cat`, `head` and `tail` are inspected. `head -c` and `tail -f`
   skip their segment.
+- **Other utility implementations**: executable names use the generic flag
+  set unless they match the Darwin system identities above. Arbitrary custom
+  replacements and their option contracts are not inspected or executed.
 - **Lines, not bytes**: `wc -l` is the predicate, so a one-line multi-megabyte
   file passes.
 - **A subagent's own reads run under the same hook.** A `bulk-reader` that
