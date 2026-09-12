@@ -1,7 +1,7 @@
 # Codex context-budget design and evidence
 
 Status: implemented; observed runtime behavior and remaining limits below.
-Evidence cutoff: 2026-09-12. Final gate results are recorded below.
+Evidence cutoff: 2026-09-12. Final gate results and the remaining Claude writer failure are recorded below.
 Acceptance is the two-job caller request recorded in private BD `age-z25n`.
 The exact e32e88c verdict was written before this job began and posted at
 https://github.com/boshu2/agentops/pull/1137#issuecomment-5648513520.
@@ -246,12 +246,80 @@ It contains no raw path or command; allowed slices add no line. The separate
 explicit proof capture contains synthetic command metadata solely to verify
 the real runtime shape and is not the product telemetry stream.
 
+## Claude live follow-up
+
+On 2026-09-12 the caller explicitly authorized native Claude Opus sessions.
+The installed CLI was 2.1.263; `--model opus` resolved in native init metadata
+to `claude-opus-5`. The source workflows and plugin agents selected Haiku;
+native child envelopes reported `claude-haiku-4-5-20251001`. Each fixture run
+used a separate parent session, an external temporary working directory,
+explicit tool permissions, no inherited MCP configuration, a 300-second
+wall limit and a 2 MiB combined output limit. These are bounded test conditions,
+not shipped runtime limits or claimed typical latency. Runtime transcripts
+remain private outside Git under the native Claude session store.
+
+Real plugin registration requires `agentops:bulk-reader`,
+`agentops:code-writer`, `agentops:bulk-read` and `agentops:code-write`.
+Bare names failed. Shared Claude advice now uses the registered names;
+Codex advice keeps its native `bulk-reader` name on first and repeated denial.
+Standalone names are appropriate only when that runtime actually lists them.
+
+Hook parent `663916c8-8a83-4c94-97dc-d152b65b91c0` made four real calls:
+an unbounded Read was refused, a repeat received the short refusal, a one-line
+Read succeeded, and an unbounded Bash cat was refused. Exactly three hashed
+ledger entries recorded 1,105 lines and budget 100; allowed reads were silent.
+Actual hook inputs include child agent and tool-use identities, which match
+the reader and writer child transcripts. This closes the hook-inheritance gap.
+
+Reader parent `e075d6ee-5e6c-4a9a-bced-f8b04c8c62b1` invoked one direct
+`agentops:bulk-reader` and one native `agentops:bulk-read` workflow. The direct
+child `abea59d59d07ca070` and workflow child `a20371eed359e8342` each read
+12 slices at offsets 1, 101, through 1101, with limit 100. Independent transcript
+comparison verified all 1,105 real lines exactly once, zero citation mismatches,
+and correct decision references 10, 560 and 1095. Both returned complete
+coverage of 1,105 lines; the missing-file child returned zero and incomplete.
+The parent called only Agent, Workflow and TaskOutput. Its native transcript
+contains no source-only sentinel. The CLI stream multiplexes child events with
+`parent_tool_use_id`; those observable child events are not parent model input.
+
+Writer parent `4b97e6e7-8620-4319-b94e-a10216cccddc` ran the native
+`agentops:code-write` workflow for `eta.bats` and `theta.bats` and a direct
+`agentops:code-writer` for `iota.bats`. All three measured physical line counts
+with the requested metadata-only awk command; actual files and receipts each
+contain seven lines. Independent Bats checks passed for all three files, with
+unchanged before/after digests. The fixture inventory gained only the three
+assigned targets; all prior files stayed unchanged. Parent calls were only
+Workflow, Agent and TaskOutput. Independent transcript comparison found no
+complete child write payload, raw check output or source/check sentinel in the
+native parent context. The shared source in this run is fixes commit
+`53bcfec1480c205290f286b4a7ccd582216eb6f9`.
+
+**Remaining observed failure:** eta and iota each invoked the supplied check
+twice, while theta invoked it once. The fixture's independent invocation ledger
+and native child tool IDs agree. This violates the source instruction to run the
+check once; measured line counts and passing tests do not clear that failure.
+Direct iota also wrapped its metadata JSON receipt in Markdown fences despite
+the requested plain JSON format. The writer has therefore not established the
+complete requested one-shot behavior in these live runs. Do not interpret the
+successful reader/native Codex evidence as a full Claude writer PASS.
+
+Earlier attempts are preserved and excluded: a direct reader stopped after
+one slice; a zero-based workflow reader mislabelled its first slice and counted
+an EOF display line; writer permissions initially denied fixture operations;
+writers returned absolute paths for relative receipt identities; one direct
+writer copied a test-success line; two workflow writers estimated eight lines
+for seven-line files. These findings prompted explicit one-based continuation,
+per-item receipt identity constraints, status-only receipts and an actual
+post-write line-count command. A fenced JSON receipt observed in a direct
+agent reply illustrates that direct-role formatting remains an instruction.
+No byte-filtering or strict direct-agent output parser is claimed.
+
 ## Checks and delivery
 
 The repair PR is [#1139](https://github.com/boshu2/agentops/pull/1139), separate
 from the Codex-native branch. Its final exact-content review of `60779f5bc`
 found no remaining reproduced major defect; 33 gates and 196 tests passed.
-Its live Claude criteria remain NOT_PROVEN.
+Subsequent Claude repairs and live evidence are recorded above; the PR carries the final exact-content judgment.
 
 `bash tests/run-all.sh` exited 0: 10 passed, 0 failed, 1 skipped (optional OL
 integration directory absent). This is the repository's default static tier;
@@ -270,7 +338,7 @@ it does not establish live Claude integration. The remaining native checks also 
   tests/scripts/install-read-budget-guard.bats tests/scripts/policy-dispatch.bats
   tests/scripts/context-budget-workflows.bats tests/scripts/codex-context-agents.bats
   tests/scripts/codex-read-budget-guard.bats
-  tests/scripts/install-codex-read-budget-guard.bats`: 222 passed, zero skipped.
+  tests/scripts/install-codex-read-budget-guard.bats`: 223 passed, zero skipped.
 - `bats tests/scripts/check-doc-skill-refs*.bats`: 21 passed;
   `bash scripts/check-doc-skill-refs.sh --all-docs --strict`: passed.
 - `bash scripts/validate-codex-install-bundle.sh`: passed, 34 skill packages.
@@ -284,11 +352,14 @@ checked: native refusal shape and live denial; same-predicate waivers,
 quiet allowed path and hashed telemetry fixtures; inert default manifests;
 ordinary personal/project discovery and linked-worktree refusal; native role
 registration/model pins; complete six-slice reader run; receipt-only writer
-and independent Bats exit status; configuration preservation; generated
+and independent Bats exit status; live Claude plugin names, inherited hook,
+complete reader coverage, writer target/count/content separation and repeated-check failure; configuration preservation; generated
 34-skill delivery and the checks above.
 
-not_checked: live Claude Workflow-tool execution and plugin agent-name
-resolution inherited from #1137; other Codex versions/accounts; hosted/MCP
+known_failed: Claude writer check-once behavior (two of three final workers
+repeated their checks); direct Claude receipt fencing.
+
+not_checked: other Codex or Claude versions/accounts; hosted/MCP
 read interception outside the verified Bash shape; adversarial enforcement
 of advisory target-only/receipt-only role instructions; cost-savings or
 latency comparisons and ADR-0002 value-proof clearance. The absent optional
