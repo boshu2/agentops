@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Read-budget shell parsing now preserves literal quoted paths, rejects uncertain shell constructs without false attribution, honors end-of-options, and counts negative head limits correctly without integer overflow.
+- Opt-in read-budget installation preserves unique settings backups and checks the matcher and handler type before declaring the guard installed.
+- Context-budget workflows validate bounded worker returns, remove raw check output, report unknown state after worker failures, and preflight target identities before serial batch writes.
+
 ### Added
 
 - The opt-in read-budget guard, `skills/cc-hooks/hooks/read-budget-guard.sh` (policy `core.context:unbounded-read`): a PreToolUse `Read|Bash` hook that blocks an unbounded `Read`, `cat`, `head` or `tail` of a file over the line budget (`AOP_READ_BUDGET_LINES`, default 350), names the two correct moves (a bounded slice or `bulk-reader` delegation), honors `AOP_WAIVE`, the waiver file and `AGENTOPS_HOOKS_DISABLED`, and appends hashed telemetry. It ships inert; `scripts/install-read-budget-guard.sh` is the opt-in installer (user, `--project` or `SETTINGS` scope).

@@ -188,7 +188,7 @@ bullets or a receipt, never bytes, and nothing is kept between calls:
 |---|---|
 | `agents/bulk-reader.md` — subagent `bulk-reader` (`Read`/`Grep`/`Glob`/`Bash`, no `Write`/`Edit`, haiku) | line-referenced bullets (`path:line`, at most 40 unless the caller sets another cap), no prose |
 | `workflows/bulk-read.js` — `bulk-read { question, files, root?, model?, maxBullets?, budgetLines? }` | one reader per file in parallel; `{question, files:[{file, bullets, lines_covered, complete, note?, error?}], bullets_total}` |
-| `workflows/code-write.js` with `agents/code-writer.md` — `code-write { items:[{key, spec, reference, target, check?}] }` | a receipt per item (`written`, `lines`, `check_ok`, `summary`); the caller never reads the file back; a reference file is REQUIRED |
+| `workflows/code-write.js` with `agents/code-writer.md` — `code-write { items:[{key, spec, reference, target, check?}] }` | metadata-only realpath/stat preflight for batches, then sequential writers; bounded receipts (`written`, `lines`, `check_ok`, `summary`), no check output; a reference file is REQUIRED |
 
 Guard compatibility: the reader and writer prompts read in **slices** (`Read`
 with `offset` + `limit ≤ budgetLines`, advancing until a slice comes back
@@ -197,6 +197,8 @@ reads pass this guard on a host where it is installed — the delegation is not
 an exemption, it is a reader that obeys the same rule. A follow-up question
 about the same file costs another delegation, not another copy of the file in
 this context.
+
+Malformed worker replies produce explicit errors. Missing reader receipts leave coverage unknown (`lines_covered: null`); missing writer receipts leave write and check state unknown, never proving that no file changed. Metadata preflight and target-only edits still require worker compliance; the Workflow surface is not a filesystem sandbox.
 
 A receipt or a bullet list is a runtime fact, not validation. Whatever a writer
 lands still gets fresh, author-distinct judgment like any other change. Pattern
@@ -218,8 +220,8 @@ SETTINGS=/path/to/settings.json scripts/install-read-budget-guard.sh
 ```
 
 The installer copies the guard to `~/.claude/hooks/read-budget-guard.sh`, takes
-a timestamped `.bak` of the settings file before mutating it, and adds
-(idempotently) one PreToolUse `Read|Bash` matcher:
+a uniquely named timestamped `.bak` before changing existing settings, and adds
+(idempotently, matching command type and matcher) one PreToolUse `Read|Bash` matcher:
 
 ```json
 {

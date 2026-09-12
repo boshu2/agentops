@@ -174,7 +174,10 @@ the same rule in CLAUDE.md was advisory and ignored, and an over-budget read
 re-sends its lines on every later turn. The predicate is a LOOKUP (`wc -l` on
 the exact argument), so it is a standalone guard, never a registry policy. A
 `limit`-bounded slice, a file at/below budget, a pipe, a redirect or quoted text
-that merely mentions `cat` never fires. Nothing un-reads bytes once in context → every
+that merely mentions `cat` passes. Literal quoted/escaped paths are preserved;
+unsupported shell syntax and directory-changing chains fail open. Negative
+`head` counts use the actual number of retained lines. Nothing un-reads bytes
+once in context → every
 attempt blocks (exit 2 + stderr): full message once per session naming the two
 correct moves (slice it, or delegate to the `bulk-reader` subagent /
 `bulk-read` workflow), one short line after. Waive once with
