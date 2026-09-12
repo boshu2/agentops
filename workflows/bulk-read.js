@@ -22,13 +22,13 @@ const READER_SCHEMA = {
         required: ['ref', 'text'],
         properties: {
           ref: { type: 'string' },
-          text: { type: 'string' },
+          text: { type: 'string', maxLength: 200, pattern: '^[^\\r\\n\\u0085\\u2028\\u2029]*$' },
         },
       },
     },
-    lines_covered: { type: 'number' },
+    lines_covered: { type: 'integer', minimum: 0 },
     complete: { type: 'boolean' },
-    note: { type: 'string' },
+    note: { type: 'string', maxLength: 300, pattern: '^[^\\r\\n\\u0085\\u2028\\u2029]*$' },
   },
 };
 
@@ -36,7 +36,7 @@ function badArgs(detail) {
   throw new Error(
     'bulk-read: bad args (' + detail + '). Expected ' +
       '{ question: string, files: [string, ...], root?: string, model?: string, ' +
-      'maxBullets?: positive number, budgetLines?: positive number }'
+      'maxBullets?: positive integer, budgetLines?: positive integer }'
   );
 }
 
@@ -44,18 +44,18 @@ function badArgs(detail) {
 // docs); normalize before validating so both shapes work.
 const input = typeof args === 'string' ? JSON.parse(args) : args;
 log('args received as ' + (typeof args) + (input ? ' (normalized ok)' : ' (empty)'));
-if (!args || typeof input !== 'object') badArgs('args missing');
+if (!input || typeof input !== 'object' || Array.isArray(input)) badArgs('args missing');
 if (typeof input.question !== 'string' || !input.question.trim()) badArgs('question must be a non-empty string');
 if (!Array.isArray(input.files) || input.files.length === 0 || input.files.some((f) => typeof f !== 'string' || !f.trim())) {
   badArgs('files must be a non-empty array of non-empty path strings');
 }
 if (input.root !== undefined && typeof input.root !== 'string') badArgs('root must be a string when given');
 if (input.model !== undefined && (typeof input.model !== 'string' || !input.model.trim())) badArgs('model must be a non-empty string when given');
-if (input.maxBullets !== undefined && (typeof input.maxBullets !== 'number' || !(input.maxBullets > 0))) {
-  badArgs('maxBullets must be a positive number when given');
+if (input.maxBullets !== undefined && (!Number.isSafeInteger(input.maxBullets) || input.maxBullets <= 0)) {
+  badArgs('maxBullets must be a positive safe integer when given');
 }
-if (input.budgetLines !== undefined && (typeof input.budgetLines !== 'number' || !(input.budgetLines > 0))) {
-  badArgs('budgetLines must be a positive number when given');
+if (input.budgetLines !== undefined && (!Number.isSafeInteger(input.budgetLines) || input.budgetLines <= 0)) {
+  badArgs('budgetLines must be a positive safe integer when given');
 }
 
 const model = input.model || 'haiku';
@@ -65,6 +65,23 @@ const where = input.root
   ? 'Work in ' + input.root + '.'
   : 'Work in the current repository (the session working directory).';
 const basename = (p) => p.split('/').filter(Boolean).pop() || p;
+const singleLine = (value, cap) => typeof value === 'string' && value.length <= cap && !/[\r\n\u0085\u2028\u2029]/.test(value);
+function validResult(r, file) {
+  if (!r || typeof r !== 'object' || Array.isArray(r) || r.file !== file ||
+      !Array.isArray(r.bullets) || !Number.isSafeInteger(r.lines_covered) || r.lines_covered < 0 ||
+      typeof r.complete !== 'boolean' || (r.note !== undefined && !singleLine(r.note, 300)) ||
+      Object.keys(r).some((key) => !['file', 'bullets', 'lines_covered', 'complete', 'note'].includes(key))) return false;
+  return r.bullets.every((b) => {
+    if (!b || typeof b !== 'object' || Array.isArray(b) || !singleLine(b.text, 200) ||
+        typeof b.ref !== 'string' || !b.ref.startsWith(file + ':') ||
+        Object.keys(b).some((key) => !['ref', 'text'].includes(key))) return false;
+    const range = /^([1-9][0-9]*)(?:-([1-9][0-9]*))?$/.exec(b.ref.slice(file.length + 1));
+    if (!range) return false;
+    const start = Number(range[1]);
+    const end = Number(range[2] || range[1]);
+    return Number.isSafeInteger(start) && Number.isSafeInteger(end) && end >= start && end <= r.lines_covered;
+  });
+}
 
 phase('Read');
 
@@ -82,20 +99,22 @@ const results = await parallel(
         'most relevant first, at most ' + maxBullets + ' bullets. No prose, no preamble, no multi-line code.\n' +
         '- Read-only: no Write, no Edit, no mutating Bash.\n' +
         '- Report lines_covered (lines you actually read) and complete (true only when every line was read) truthfully. ' +
-        'A missing, binary or unreadable file gets zero bullets and a note saying why.\n' +
+        'A missing, binary or unreadable file gets zero bullets and a note saying why (one line, at most 300 characters). ' +
+        'Summarize; do not copy source code or file content into text or note.\n' +
         '- Return file as the path given above.',
       { label: 'bulk-read:' + basename(file), phase: 'Read', schema: READER_SCHEMA, model, effort: 'low' }
     )
   )
 );
 
-// CONTRACT: parallel() resolves failed thunks to null — a dead reader must
-// surface as an unread file with an explicit error, never as an empty answer.
+// CONTRACT: parallel() resolves failed thunks to null. A dead reader or invalid
+// result yields an explicit error; missing output cannot establish coverage.
 const files = input.files.map((file, i) => {
   const r = results[i];
-  if (!r) {
-    log('bulk-read[' + basename(file) + ']: reader failed; 0 bullets');
-    return { file, bullets: [], lines_covered: 0, complete: false, error: 'reader agent failed; file was never read' };
+  if (!r || !validResult(r, file)) {
+    const error = r ? 'reader returned an invalid result; coverage unknown' : 'reader agent failed; coverage unknown';
+    log('bulk-read[' + basename(file) + ']: ' + error);
+    return { file, bullets: [], lines_covered: null, complete: false, error };
   }
   // The prompt caps bullets at maxBullets; enforce the cap here too so an
   // over-eager reader cannot push more than the caller asked for into context.
