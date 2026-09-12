@@ -4,10 +4,11 @@
 # shellcheck disable=SC1091
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/preamble.sh"
 
-agent_dir="${CODEX_HOME:-$HOME/.codex}/agents"
+config_dir="${CODEX_HOME:-$HOME/.codex}"
+agent_dir="$config_dir/agents"
 case "${1:-}" in
   '') ;;
-  --project) agent_dir="$PWD/.codex/agents"; shift ;;
+  --project) config_dir="$PWD/.codex"; agent_dir="$config_dir/agents"; shift ;;
   --help|-h)
     echo 'Usage: scripts/install-codex-context-agents.sh [--project]'
     printf 'Default: %s. Restart Codex after installation.\n' "$agent_dir"
@@ -24,7 +25,18 @@ for role in bulk-reader code-writer; do
     echo "Missing generated role $role; run bash scripts/regen-all.sh" >&2; exit 1;
   }
 done
+require_cmd node
+require_cmd codex
 mkdir -p "$agent_dir"
+config_dir="$(cd "$config_dir" && pwd -P)"
+agent_dir="$config_dir/agents"
+stage="$(mktemp -d)"
+trap 'rm -rf "$stage"' EXIT
+chmod 700 "$stage"
+config="$config_dir/config.toml"
+if [ -f "$config" ]; then cp -p "$config" "$stage/config.toml"; fi
+node "$REPO_ROOT/scripts/lib/codex-agent-config.mjs" "$stage" "$agent_dir"
+
 for role in bulk-reader code-writer; do
   target="$agent_dir/$role.toml"
   if [ -e "$target" ] || [ -L "$target" ]; then
@@ -42,5 +54,15 @@ for role in bulk-reader code-writer; do
     echo "Cannot install $target" >&2; exit 1
   fi
 done
+if ! cmp -s "$stage/config.toml" "$config"; then
+  if [ -e "$config" ] || [ -L "$config" ]; then
+    backup="$(mktemp "$config.bak.XXXXXX")"
+    cp -p "$config" "$backup"
+  fi
+  config_staging="$(mktemp "$config_dir/.config.toml.XXXXXX")"
+  cp "$stage/config.toml" "$config_staging"
+  chmod 600 "$config_staging"
+  mv -f "$config_staging" "$config"
+fi
 printf 'Installed bulk-reader and code-writer in %s. Restart Codex to discover them.\n' "$agent_dir"
 printf 'Roles use gpt-5.6-luna. The read-budget hook is a separate opt-in installation.\n'
