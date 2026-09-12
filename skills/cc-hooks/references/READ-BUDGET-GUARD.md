@@ -33,13 +33,12 @@ recipe next to [INSTALLED-SKILL-EDIT-GUARD.md](INSTALLED-SKILL-EDIT-GUARD.md)
 and never as a registry policy, even though it borrows the registry's id form
 (`core.context:unbounded-read`), its waiver mechanics and its telemetry line.
 
-No false-positive surface by construction for the shapes it judges: a `Read`
-with a numeric `limit` never fires (a bounded slice is the correct move,
-whatever `offset` says); a file at or below budget never fires; a path that is
-missing, a directory or binary never fires; a pipe or redirect never fires;
-quoted text that merely mentions `cat` (a commit message, an `echo`) is skipped
-by the quote rule below. The only thing that fires is a whole-file read that
-would exceed the budget — and that is the mistake.
+The guard passes numeric-limit `Read` calls, missing/non-regular/binary files,
+and commands containing pipes or redirects. Its Bash lexer recognizes a
+conservative literal-command subset described below; unsupported syntax fails
+open. Regression tests check both missed reads and false attribution. The
+parser is not a full shell interpreter, and a passing test suite does not
+establish that every possible shell command is classified correctly.
 
 ## Deny, not route
 
@@ -77,33 +76,42 @@ JSON on stdin (`{tool_name, tool_input, session_id, cwd}`) with `jq`; a missing
 - The command contains any of `|`, `<`, `>` → **PASS**. A pipe feeds a bounded
   consumer, a redirect feeds a file sink; neither lands whole in context. Out
   of scope by design, not by accident.
-- Otherwise split on `;`, `&&` and newlines into segments — a quote-aware
-  split: a separator counts only outside single or double quotes (backslash
-  escapes honored outside single quotes), so quoted text that mentions `cat`
-  stays inside its own command's segment and is never judged, a `# comment`
-  runs to end of line and is dropped before splitting, and a backslash-newline
-  is deleted exactly as the shell does (`cat big\` + newline + `.txt` is
-  `cat big.txt`). `git commit -m "fix; cat big.txt; now routes"` never
-  fires. Per segment: whitespace-tokenize; a word whose quotes are not a
-  matched pair around the whole word (or around a `NAME=value` value) — a
-  quoted path with a space, `foo"bar"`, `-n"500"` — is unparseable and skips
-  the segment; strip leading `VAR=value` assignments (an
-  `AOP_WAIVE=...` prefix whose list contains the id waives the WHOLE call — see
-  below). The command word is the basename of the first remaining token and
-  must be `cat`, `head` or `tail`; any other command skips the segment.
-- Per remaining token: strip one layer of surrounding single or double quotes.
-  A token starting with `$` or containing a backtick, `*`, `?` or `[` is
-  unresolvable and is skipped. Flags start with `-`. Files are the non-flag
-  tokens, resolved against `cwd`; missing, non-regular and binary files are
-  skipped.
-- `cat`: effective = **sum** of the resolved files' line counts → FIRE if over
-  budget (the message names the largest file; `N` is the total).
-- `head`: `-n N`, `-nN`, `-N`, `--lines=N`, `--lines N` (default 10). A
-  negative count (`-n -K`, "all but the last K") makes effective = the file's
-  lines. Any `-c` / `--bytes` form skips the segment. Effective =
-  `min(N, lines)` per file → FIRE if any is over budget.
-- `tail`: same flag forms; `-n +K` → effective = `lines - K + 1` (min 0);
-  `-f` / `--follow` skips the segment → FIRE if any effective is over budget.
+- Otherwise tokenize literal words and split on `;`, `&&` and newlines
+  outside single/double quotes. Quoted and escaped spaces remain part of the
+  same filename; concatenated literal fragments (`my" notes".md`) work too.
+  Backslash-newline is deleted outside single quotes, including inside double
+  quotes. Other quoted newlines remain literal filename bytes. A `#` at a word
+  start begins a comment through the newline.
+- Parsing completes before any segment is judged. Unmatched quotes, malformed
+  separators, expansion syntax (`$VAR`, substitution, ANSI-C `$'...'`, unquoted globs), shell control
+  syntax and directory-changing commands (`cd`, `pushd`, `popd`, including
+  `builtin`/`command` wrappers) skip the whole call. Later segments are never
+  attributed to the original `cwd` after a recognized directory change.
+- Leading syntactic `VAR=value` assignments are removed; a quoted assignment
+  word such as `"NAME=value"` is still a command word. An `AOP_WAIVE=...`
+  prefix containing the policy id waives the whole call. The basename of the
+  first remaining word must be `cat`, `head` or `tail`.
+- Unquoted leading `~/` expands against `HOME`; quoted/escaped tildes remain
+  literal. Other files resolve against the input `cwd`; missing, non-regular
+  and binary files are skipped. `--` ends flag parsing, including before an
+  option-looking filename. `-` denotes stdin and is skipped.
+- `cat`: effective = **sum** of resolved files' line counts; FIRE when over
+  budget (the message names the largest file; `N` is the total). Known output
+  formatting flags (`-n`, `-b`, `-s`, `-A`, `-e`, `-E`, `-t`, `-T`, `-u`,
+  `-v`, their combinations and GNU long equivalents) do not bound the read.
+- `head`: `-n N`, `-nN`, `-N`, `--lines=N`, `--lines N` (default 10).
+  Positive effective count = `min(N, lines)` per file; negative `-n -K`
+  (all but the last K) = `max(lines - K, 0)`. FIRE if any is over budget.
+- `tail`: the same flag forms; negative counts use `min(K, lines)`;
+  `-n +K` = `max(lines - K + 1, 0)`, with `+0` and `+1` both meaning the
+  whole file. FIRE if any effective count is over budget.
+- `--help`, `--version`, unknown flags, byte counts and follow modes skip the
+  segment. `head`/`tail` quiet/verbose formatting flags are accepted. Invalid
+  or missing numeric option values skip the segment.
+- Decimal normalization removes leading zeroes before arithmetic. Budgets
+  above `9223372036854775807` saturate at that value; command counts outside
+  that range skip the segment because the utility may reject them. Huge
+  positive values cannot wrap into tiny budgets or negative read indices.
 
 ### Always PASS (exit 0, zero output)
 
@@ -116,7 +124,7 @@ by design because they *are* the correct moves.
 
 | Control | Effect |
 |---|---|
-| `AOP_READ_BUDGET_LINES=<n>` | the budget; default 350, and anything that is not a positive integer falls back to 350. Hook env only — an operator setting, never honored as a command prefix (that would be an uncounted self-relax) |
+| `AOP_READ_BUDGET_LINES=<n>` | the budget; default 350, and anything that is not a positive integer falls back to 350; larger than signed 64-bit values saturate as described above. Hook env only — an operator setting, never honored as a command prefix (that would be an uncounted self-relax) |
 | `AOP_WAIVE=core.context:unbounded-read` | waive once — as hook env, or as a prefix on the Bash command itself (comma list; the id must be in it) |
 | `AOP_WAIVER_FILE` line `core.context:unbounded-read <expiry-epoch>` | timed waiver; default file `${AGENTOPS_HOME:-$HOME/.agents/ao}/policy-waivers`, same semantics as the dispatcher; an expired line still fires |
 | `AGENTOPS_HOOKS_DISABLED=1` | kill switch: exit 0, silent, no telemetry |
@@ -234,7 +242,7 @@ line the installer prints: remove the matcher, then `rm` the copied script.
 
 ## Test it
 
-Three bats files round-trip the real PreToolUse JSON (built with `jq -nc`,
+Four bats files round-trip the real PreToolUse JSON (built with `jq -nc`,
 never hand-written strings) under an isolated `TMPDIR` and `HOME`, with
 `AGENTOPS_GUARDRAIL_TELEMETRY` pointed into `TMPDIR`:
 
@@ -252,6 +260,15 @@ never hand-written strings) under an isolated `TMPDIR` and `HOME`, with
   **WAIVERS**: env, command prefix, waiver file (future expiry passes, expired
   still fires), `AGENTOPS_HOOKS_DISABLED=1`, `AOP_READ_BUDGET_LINES=1000`.
   **FAIL-OPEN**: malformed JSON `{`, no `jq` on `PATH`.
+- `tests/scripts/read-budget-guard-regression.bats` — independent-review
+  reproductions for ANSI-C quoted prose, cwd collisions, negative-head counts,
+  help/unknown flags, literal spaced paths, quoted continuations, `--`, integer
+  overflow, quoted tildes, malformed syntax and shell control flow. Every case
+  captures stdout and stderr separately. The legacy negative-head expectation
+  was corrected from 400 to 395 for `head -n -5` on a 400-line file; the legacy
+  silent expectation for a 400-line spaced filename was corrected to denial.
+  Both changes restore the effective-read contract; a separate small spaced
+  file with a large sibling checks that paths are not misattributed.
 - `tests/scripts/read-budget-guard-telemetry.bats` — one line per fire; valid
   JSON with every field; `lines` and `budget` are numbers; `path_sha256` is 64
   hex and equals the hash of the resolved path; the raw path and the raw
@@ -264,29 +281,28 @@ never hand-written strings) under an isolated `TMPDIR` and `HOME`, with
 
 ```bash
 bats tests/scripts/read-budget-guard.bats \
+     tests/scripts/read-budget-guard-regression.bats \
      tests/scripts/read-budget-guard-telemetry.bats \
      tests/scripts/install-read-budget-guard.bats
 ```
 
 ## Known limitations
 
-Every gap errs toward silence: a missed case is one un-guarded read, never a
-broken tool call. Known false-negative shapes:
+The parser deliberately skips unsupported shapes instead of guessing. Known
+false-negative shapes:
 
 - **Pipes and redirects** pass wholesale (`cat big.txt | cat` included) — the
   `|` / `<` / `>` check does not inspect the consumer.
-- **Globs and variables** (`cat *.log`, `cat "$f"`, backticks) are
-  unresolvable tokens and are skipped, not expanded. A leading `~/` is the one
-  expansion mirrored (against `HOME`).
+- **Expansions and shell grammar** (`cat *.log`, `cat "$f"`, backticks,
+  ANSI-C quotes, conditionals, subshells) skip the whole call. The hook never
+  evaluates shell input. Literal quoted/escaped special characters are
+  preserved, and unquoted leading `~/` is the one expansion mirrored.
 - **Command prefixes** (`sudo cat`, `time cat`, `env X=1 cat`) are silent:
-  only a segment whose first word is `cat`, `head` or `tail` is judged.
-- **Quoted paths with spaces** (`cat "my notes.md"`) tokenize on whitespace
-  into words whose quotes are not a matched pair → the segment is skipped,
-  silent. The same rule silences `-n"500"` and `foo"bar"` forms; a whole
-  quoted word or a quoted `NAME=`/`--opt=` value (`cat "big.txt"`,
-  `head -n "500"`, `head --lines="500"`, `LC_ALL="C" cat`) is judged.
-- **`cd`-chained segments** (`cd sub && cat big.txt`) resolve against the
-  original `cwd`, not `sub` → not found → silent (a bats-documented gap).
+  only a segment whose command word is `cat`, `head` or `tail` is judged.
+- **Directory changes and evaluation builtins** (`cd`, `pushd`, `popd`,
+  `builtin`, `command`, `source`, `eval`, `exec`) skip the whole call. Shell
+  functions, aliases and the exit status of earlier commands are not resolved;
+  this guard cannot establish runtime reachability or arbitrary shell state.
 - **`sed`, `awk`, `less`, `more`, `grep`, `xargs`, `sh -c`** are silent by
   design; only `cat`, `head` and `tail` are inspected. `head -c` and `tail -f`
   skip their segment.
