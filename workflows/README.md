@@ -13,7 +13,7 @@ Five generic conveyor shapes:
 | `verify-fixes` | parallel adversarial verifiers, one per group | refuting "it's fixed" claims after a change |
 | `implement-wave` | parallel disjoint-scope lanes → one fresh verifier | executing a wave of bead-shaped work items |
 | `bulk-read` | parallel cheap readers, one per file → line-referenced bullets | answering a question about big files without their bytes entering the caller's context |
-| `code-write` | parallel cheap writers, one per item (spec + reference → target) → receipts | writing patterned or boilerplate files the caller should not read back |
+| `code-write` | metadata probe for batches → sequential cheap writers, one per item (spec + reference → target) → receipts | writing patterned or boilerplate files the caller should not read back |
 
 Two repository-delivery conveyors also live here, outside the AgentOps
 semantic core: `bdd-foundry` (behavior-first planning → acceptance-gated
@@ -42,6 +42,12 @@ removes only links pointing back into this checkout.
 **Session-snapshot caveat:** Claude Code snapshots the named-workflow registry
 at session start. Newly minted links appear in the next session, not the one
 already running.
+
+With the AgentOps plugin loaded, the context-budget workflows are listed as
+`agentops:bulk-read` and `agentops:code-write`; the plugin agents are
+`agentops:bulk-reader` and `agentops:code-writer`. Use bare names only for
+standalone definitions or links when the runtime actually lists those names.
+The plugin supplies the namespace; each source `meta.name` remains bare.
 
 ## Doctrine: thin conveyors
 
@@ -114,13 +120,19 @@ Workflow({ name: 'implement-wave', args: {
 
 ## bulk-read
 
-Delegate large or many files to cheap readers. One reader per file reads the whole file in bounded slices (`Read` with `offset` + `limit ≤ budgetLines`, so the readers pass the opt-in read-budget guard themselves) and answers one question with line-referenced bullets only — `{ ref: 'path:line' | 'path:start-end', text }`, most relevant first, at most `maxBullets`. The file bytes never enter the caller's context; a follow-up question is another cheap call, not a re-read into the main context. Readers are read-only and report `lines_covered` / `complete` truthfully; a missing, binary or unreadable file comes back with zero bullets and a `note`.
+Delegate large or many files to cheap readers. One reader per file is instructed to read the whole file in bounded slices (`Read` with `offset` + `limit ≤ budgetLines`) and answer one question with line-referenced summaries — `{ ref: 'path:line' | 'path:start-end', text }`, most relevant first, at most `maxBullets`. The workflow requires refs to name the requested file and a positive line or ascending range within `lines_covered`, one-line text of at most 200 characters, and a one-line optional `note` of at most 300 characters. It validates nonnegative integer coverage and caps the bullet count, logging dropped bullets. Invalid results become explicit errors without echoing their content.
 
-Args: `{ question: string, files: [string], root?: string, model?: string (default 'haiku'), maxBullets?: number (default 40), budgetLines?: number (default 350) }`
-Returns: `{ question, files: [{ file, bullets: [{ ref, text }], lines_covered, complete, note? }], bullets_total }` — a file whose reader died comes back with empty `bullets`, `complete: false` and an `error` field: an unread file is reported unread, never as an empty answer.
+Readers are instructed to be read-only, summarize without copying source, and report `lines_covered` / `complete` truthfully. A missing, binary or unreadable file comes back with zero bullets and a `note`. The wrapper verifies return structure and bounds, not whether the worker actually read the file or whether a short summary is accurate. Bash read-only behavior and content-free summaries remain agent instructions; neither tool confinement nor live child-to-parent context isolation is established by the stub harness.
+
+`budgetLines` limits each Read, and `maxBullets` limits the answer; neither caps total file coverage. Readers start at offset 1 and continue through EOF even after finding an early answer. Truncated output requires another Read from the first unread line with a smaller limit, not an assumption that the file ended. Incomplete coverage cannot establish the final file-wide decision.
+
+Citations and coverage use source line-number labels. Tool wrappers, system reminders and EOF notices are not file lines; a complete read's `lines_covered` equals the last actual source line number (0 for an empty file). Readers report verified coverage as incomplete when the exact count cannot be established.
+
+Args: `{ question: string, files: [string], root?: string, model?: string (default 'haiku'), maxBullets?: positive safe integer (default 40), budgetLines?: positive safe integer (default 350) }`
+Returns: `{ question, files: [{ file, bullets: [{ ref, text }], lines_covered, complete, note? }], bullets_total }` — a dead reader or invalid result produces empty `bullets`, `lines_covered: null`, `complete: false` and an `error` field. A missing result means coverage is unknown, even if the worker read some lines before dying.
 
 ```js
-Workflow({ name: 'bulk-read', args: {
+Workflow({ name: 'agentops:bulk-read', args: {
   question: 'Where are exit codes decided, and which paths return non-zero?',
   files: ['cli/internal/gates/runner.go', 'scripts/check-go-lint.sh'],
   maxBullets: 20,
@@ -129,13 +141,21 @@ Workflow({ name: 'bulk-read', args: {
 
 ## code-write
 
-Delegate patterned file writes to cheap writers. One writer per item reads the required `reference` file in bounded slices to learn its patterns (naming, imports, error handling, test shape), writes ONLY its `target` to satisfy `spec`, optionally runs `check` once, and returns a receipt — never the content. `reference` is required: no reference, no writer. Targets must be distinct, and writers land files directly in the working tree (no worktree isolation), so give each item a target nobody else is editing. A receipt is a runtime fact, not validation: judge the written files with a fresh, author-distinct Validate as usual.
+Delegate patterned file writes to cheap writers. One writer per item is instructed to read the required `reference` file in bounded slices to learn its patterns (naming, imports, error handling, test shape), write ONLY its `target` to satisfy `spec`, optionally run `check` once, and return a bounded receipt. `reference` is required: no reference, no worker.
 
-Args: `{ context?: string, root?: string, model?: string (default 'haiku'), budgetLines?: number (default 350), items: [{ key, spec, reference, target, check? }] }` — a duplicate `target` throws naming it.
-Returns: `{ items: [{ key, target, written, lines, check_ran, check_ok, check_output_tail?, summary }] }` — an item whose writer died comes back with `written: false`, `lines: 0` and an `error` field, never as a receipt.
+Before a batch, one additional cheap agent runs an exact Node command through Bash to resolve target paths with `realpath` and obtain existing files' device/inode identities with `stat`. It reads no file contents. The workflow rejects aliases (including symlinks and hardlinks), missing or invalid metadata, and failed probes before any writer starts. Missing targets resolve through the nearest existing ancestor; dangling symlinks and non-file targets fail the probe. Node must be available to that agent. Writers then run sequentially, one per item, in the shared working tree. A single-item call needs no cross-item identity check.
+
+Absent targets in a batch must have ASCII canonical paths, including all existing ancestors. Without inode identities, JavaScript Unicode normalization and case conversion cannot prove that names are distinct on APFS. Non-ASCII missing paths therefore reject before any writer with a request to use separate calls. ASCII case variants such as `New.js` and `new.js` are also conservatively rejected on every host when either file is absent. Existing Unicode targets remain supported through their native device/inode identities.
+
+The preflight is child-reported metadata at one instant, not a filesystem lock or sandbox. Use targets nobody else is editing; another process could change paths after preflight. Target-only writes remain an agent instruction. A receipt is a child report, not validation: judge the written files with a fresh, author-distinct Validate as usual.
+
+Args: `{ context?: string, root?: string, model?: string (default 'haiku'), budgetLines?: positive safe integer (default 350), items: [{ key, spec, reference, target, check? }] }` — duplicate target strings or filesystem identities throw before writing. The selected model also applies to the metadata probe.
+Each writer's output schema fixes `key` and `target` to the caller's exact strings. A relative target stays relative in the receipt even when the child uses an absolute filesystem path. The wrapper still rejects a mismatched receipt.
+After writing and any check, each writer runs a metadata-only `awk` line counter against its safely quoted target and copies the observed physical line count into `lines`, including a final line without a newline. Rendered tool output and trailing empty split elements are not line-count evidence.
+Returns: `{ items: [{ key, target, written, lines, check_ran, check_ok, summary }] }`. The workflow validates key/target identity, booleans, nonnegative integer line count, and a one-line summary of at most 300 characters. Raw check output is excluded because diagnostics can contain source code. Dead writers and invalid receipts return `written: null`, `lines: null`, `check_ran: null`, `check_ok: null`, an empty summary, and an `error`: file and check state are unknown, since a worker can write before it dies. Short-summary semantics remain an agent instruction.
 
 ```js
-Workflow({ name: 'code-write', args: {
+Workflow({ name: 'agentops:code-write', args: {
   context: 'Go CLI; tests are table-driven and live next to the source',
   items: [
     { key: 'parse-tests',
@@ -149,4 +169,4 @@ Workflow({ name: 'code-write', args: {
 
 ## Context budget
 
-`bulk-read` and `code-write` are the delegation half of the context-budget pattern; the enforcement half is the opt-in read-budget guard shipped inert in the `cc-hooks` skill (`scripts/install-read-budget-guard.sh` wires it as an opt-in PreToolUse hook; nothing installs it automatically). Once installed, that opt-in hook blocks an unbounded `Read`, `cat`, `head` or `tail` of a file over the line budget (`AOP_READ_BUDGET_LINES`, default 350) and its message names both correct moves: slice the file, or delegate it to `bulk-read` / the `bulk-reader` subagent. The readers and writers here slice with `limit ≤ budgetLines`, so they pass the same opt-in hook themselves. Model choice belongs to the caller (`model`, default `haiku`); a receipt or a bullet list is a runtime fact, not validation; nothing here owns a budget account, retry or scheduler. The full pattern lives in `skills/agent-native/references/context-budget-delegation.md`.
+`bulk-read` and `code-write` are the delegation half of the context-budget pattern; the enforcement half is the opt-in read-budget guard shipped inert in the `cc-hooks` skill (`scripts/install-read-budget-guard.sh` wires it as an opt-in PreToolUse hook; nothing installs it automatically). Once installed, that opt-in hook blocks an unbounded `Read`, `cat`, `head` or `tail` of a file over the line budget (`AOP_READ_BUDGET_LINES`, default 350) and its message names both correct moves: slice the file, or delegate it to `bulk-read` / the `bulk-reader` subagent. Readers and writers are instructed to use slices with `limit ≤ budgetLines`; a compliant slice passes the hook. Model choice belongs to the caller (`model`, default `haiku`); a receipt or a bullet list is a child report, not validation. Nothing here owns a budget account, retry or scheduler. The full pattern lives in `skills/agent-native/references/context-budget-delegation.md`.

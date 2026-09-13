@@ -19,6 +19,12 @@ an unbounded read is re-sent on every later turn for the rest of the session.
 The delegation surfaces live in the AgentOps source checkout: the subagents are
 Claude Code plugin agents and the workflows are Claude-only thin conveyors
 (`workflows/README.md`). Neither ships with a standalone installed skill.
+With the AgentOps plugin loaded, select Agent `subagent_type:
+"agentops:bulk-reader"` or `"agentops:code-writer"`, and Workflow `name:
+"agentops:bulk-read"` or `"agentops:code-write"`. Use bare names only for
+standalone definitions or workflow links when the runtime actually lists those
+names. The plugin adds the namespace; source frontmatter and workflow `meta.name`
+remain bare.
 
 ## Reader and Writer as bounded cheap delegations
 
@@ -28,6 +34,13 @@ Claude Code plugin agents and the workflows are Claude-only thin conveyors
   most 40 unless the caller sets another cap, plus truthful `lines_covered` and
   `complete`. The caller sees bullets, never bytes, so a follow-up question costs
   one more cheap call and zero main-context lines.
+  The slice budget applies to each Read, and the bullet cap applies only to
+  the answer: neither caps total coverage. Readers start at offset 1 and
+  continue through EOF, retrying truncated output from the first unread line
+  with a smaller limit. An early answer may be revised later in the file;
+  incomplete coverage cannot establish the final file-wide decision.
+  Citations and coverage use actual source line labels, excluding tool wrappers
+  and EOF notices. Uncertain counts must remain incomplete, never guessed.
 - **Writer** (`code-writer` subagent, `code-write` workflow): the caller passes a
   spec, a REQUIRED reference file and one target path; the writer matches the
   reference's patterns, writes only the target, optionally runs one check, and

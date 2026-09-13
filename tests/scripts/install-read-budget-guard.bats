@@ -146,3 +146,74 @@ matcher_count() {
   run grep -c "read-budget-guard" "$repo/hooks/hooks.json"
   [ "$output" = "0" ]
 }
+
+@test "installer: same-second settings changes retain both original backups" {
+  mkdir -p "$TMPDIR/bin" "$(dirname "$USER_SETTINGS")"
+  printf '#!/bin/sh\nprintf "%%s\\n" 20260912120000\n' > "$TMPDIR/bin/date"
+  chmod +x "$TMPDIR/bin/date"
+  export PATH="$TMPDIR/bin:$PATH"
+  printf '{"model":"first"}\n' > "$USER_SETTINGS"
+  cp "$USER_SETTINGS" "$TMPDIR/first.json"
+  run bash "$INSTALLER"
+  [ "$status" -eq 0 ]
+
+  printf '{"model":"second"}\n' > "$USER_SETTINGS"
+  cp "$USER_SETTINGS" "$TMPDIR/second.json"
+  run bash "$INSTALLER"
+  [ "$status" -eq 0 ]
+
+  backups=("$USER_SETTINGS".bak.*)
+  [ "${#backups[@]}" -eq 2 ]
+  first_found=0
+  second_found=0
+  for backup in "${backups[@]}"; do
+    if cmp -s "$TMPDIR/first.json" "$backup"; then first_found=1; fi
+    if cmp -s "$TMPDIR/second.json" "$backup"; then second_found=1; fi
+  done
+  [ "$first_found" -eq 1 ]
+  [ "$second_found" -eq 1 ]
+}
+
+@test "installer: an unchanged rerun preserves the original backup and creates none" {
+  mkdir -p "$TMPDIR/bin" "$(dirname "$USER_SETTINGS")"
+  printf '#!/bin/sh\nprintf "%%s\\n" 20260912120000\n' > "$TMPDIR/bin/date"
+  chmod +x "$TMPDIR/bin/date"
+  export PATH="$TMPDIR/bin:$PATH"
+  printf '{"model":"original"}\n' > "$USER_SETTINGS"
+  cp "$USER_SETTINGS" "$TMPDIR/original.json"
+  run bash "$INSTALLER"
+  [ "$status" -eq 0 ]
+  cp "$USER_SETTINGS" "$TMPDIR/installed.json"
+
+  printf '#!/bin/sh\nprintf "%%s\\n" 20260912120001\n' > "$TMPDIR/bin/date"
+  run bash "$INSTALLER"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"backed up settings"* ]]
+  cmp -s "$USER_SETTINGS" "$TMPDIR/installed.json"
+  backups=("$USER_SETTINGS".bak.*)
+  [ "${#backups[@]}" -eq 1 ]
+  cmp -s "${backups[0]}" "$TMPDIR/original.json"
+}
+
+@test "installer: the same command under Edit does not prevent Read|Bash installation" {
+  mkdir -p "$(dirname "$USER_SETTINGS")"
+  jq -nc --arg cmd "$DST" '{hooks:{PreToolUse:[{matcher:"Edit",hooks:[{type:"command",command:$cmd}]}]}}' > "$USER_SETTINGS"
+  run bash "$INSTALLER"
+  [ "$status" -eq 0 ]
+  [ "$(matcher_count "$USER_SETTINGS")" -eq 1 ]
+  run jq -e --arg cmd "$DST" 'any(.hooks.PreToolUse[]; .matcher == "Read|Bash" and any(.hooks[]; .type == "command" and .command == $cmd))' "$USER_SETTINGS"
+  [ "$status" -eq 0 ]
+  run jq -r '.hooks.PreToolUse[0].matcher' "$USER_SETTINGS"
+  [ "$output" = "Edit" ]
+}
+
+@test "installer: a non-command hook does not prevent command hook installation" {
+  mkdir -p "$(dirname "$USER_SETTINGS")"
+  jq -nc --arg cmd "$DST" '{hooks:{PreToolUse:[{matcher:"Read|Bash",hooks:[{type:"prompt",command:$cmd,prompt:"Existing prompt"}]}]}}' > "$USER_SETTINGS"
+  run bash "$INSTALLER"
+  [ "$status" -eq 0 ]
+  run jq -e --arg cmd "$DST" 'any(.hooks.PreToolUse[]; .matcher == "Read|Bash" and any(.hooks[]; .type == "command" and .command == $cmd))' "$USER_SETTINGS"
+  [ "$status" -eq 0 ]
+  run jq -r '.hooks.PreToolUse[0].hooks[0].prompt' "$USER_SETTINGS"
+  [ "$output" = "Existing prompt" ]
+}
