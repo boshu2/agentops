@@ -131,6 +131,11 @@ teardown() {
     mkdir -p "$TMP_DIR/scripts" "$TMP_DIR/artifacts"
     cat > "$TMP_DIR/scripts/security-gate.sh" <<'EOF'
 #!/usr/bin/env bash
+if [[ "$2" == "full" ]]; then
+    [[ "${4:-}" == "--require-tools" ]] || exit 9
+else
+    [[ "$#" == 3 ]] || exit 10
+fi
 printf '{"gate_status":"PASS","gitleaks_mode":"%s"}\n' "$TOOLCHAIN_GITLEAKS_MODE"
 EOF
     chmod +x "$TMP_DIR/scripts/security-gate.sh"
