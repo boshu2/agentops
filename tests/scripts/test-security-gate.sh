@@ -8,9 +8,16 @@ cd "$REPO_ROOT"
 PASS_COUNT=0
 FAIL_COUNT=0
 MOCK_TOOLCHAIN="$(mktemp)"
+MOCK_ARGS="$(mktemp)"
+TEST_OUTPUT="$(mktemp -d)"
+export SECURITY_GATE_OUTPUT_DIR="$TEST_OUTPUT/security"
+export TOOLCHAIN_OUTPUT_DIR="$TEST_OUTPUT/tooling"
+export MOCK_ARGS
 
 cleanup() {
   rm -f "$MOCK_TOOLCHAIN"
+  rm -f "$MOCK_ARGS"
+  rm -rf "$TEST_OUTPUT"
 }
 trap cleanup EXIT
 
@@ -27,6 +34,7 @@ fail() {
 create_mock_toolchain() {
   cat >"$MOCK_TOOLCHAIN" <<'MOCK'
 #!/bin/bash
+printf '%s\n' "$@" > "$MOCK_ARGS"
 cat <<'JSON'
 {
   "timestamp": "2026-02-19T00:00:00Z",
@@ -55,10 +63,27 @@ cat <<'JSON'
   "gate_status": "PASS",
   "output_dir": "/tmp/agentops-tooling"
 }
+
 JSON
 exit 0
 MOCK
   chmod +x "$MOCK_TOOLCHAIN"
+}
+
+test_scope_arguments() {
+  create_mock_toolchain
+  SECURITY_GATE_TOOLCHAIN_SCRIPT="$MOCK_TOOLCHAIN" scripts/security-gate.sh --mode full --json >/dev/null
+  if grep -qx -- '--all' "$MOCK_ARGS" && grep -qx -- '--gate' "$MOCK_ARGS"; then
+    pass "full security explicitly requests full-repository gate scope"
+  else
+    fail "full security did not request --all --gate"
+  fi
+  SECURITY_GATE_TOOLCHAIN_SCRIPT="$MOCK_TOOLCHAIN" scripts/security-gate.sh --mode quick --json >/dev/null
+  if grep -qx -- '--quick' "$MOCK_ARGS" && grep -qx -- '--gate' "$MOCK_ARGS" && ! grep -qx -- '--all' "$MOCK_ARGS"; then
+    pass "quick security preserves ordinary changed-scope gate arguments"
+  else
+    fail "quick security scope was broadened"
+  fi
 }
 
 test_executable() {
@@ -145,6 +170,7 @@ test_help
 test_invalid_mode
 test_json_output
 test_artifacts
+test_scope_arguments
 
 echo ""
 echo "================================"

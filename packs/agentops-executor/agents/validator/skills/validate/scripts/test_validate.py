@@ -35,7 +35,14 @@ class ValidateV2Tests(unittest.TestCase):
         }
 
     def assert_schema_valid(self, artifact):
-        schema = json.loads((Path(__file__).parents[3] / "schemas" / "verdict.v2.schema.json").read_text())
+        # This retained pack copy is deeper than the original skills tree.
+        # Both tests must validate against the repository's canonical schema.
+        schema_path = next(
+            ancestor / "schemas" / "verdict.v2.schema.json"
+            for ancestor in Path(__file__).resolve().parents
+            if (ancestor / "schemas" / "verdict.v2.schema.json").is_file()
+        )
+        schema = json.loads(schema_path.read_text())
         jsonschema.Draft202012Validator(schema).validate(artifact)
 
     def runtime_facts(self):

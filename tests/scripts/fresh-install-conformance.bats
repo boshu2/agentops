@@ -61,8 +61,16 @@ case "$1" in
   skills)
     # Fresh-install section (b) runs `ao skills link`.
     if [[ "${2:-}" == "link" ]]; then
-      mkdir -p "${HOME}/.agents/skills/plan"
-      printf 'linked\n' >"${HOME}/.agents/skills/plan/.link-ok"
+      mkdir -p "${HOME}/.agents/skills"
+      for skill in "$PWD"/skills/*; do
+        [[ -f "$skill/SKILL.md" ]] || continue
+        ln -s "$skill" "${HOME}/.agents/skills/${skill##*/}"
+      done
+      case "${AO_FAKE_MODE:-}" in
+        missing-skill) rm "${HOME}/.agents/skills/plan" ;;
+        wrong-skill) rm "${HOME}/.agents/skills/plan"; ln -s "$PWD/skills/test" "${HOME}/.agents/skills/plan" ;;
+        unexpected-skill) ln -s "$PWD/skills/plan" "${HOME}/.agents/skills/retired-skill" ;;
+      esac
       exit 0
     fi
     exit 0
@@ -110,6 +118,30 @@ run_harness() {
   run_harness "$tarball"
   [ "$status" -eq 0 ]
   [[ "$output" == *"FRESH-INSTALL CONFORMANCE: PASS"* ]]
+}
+
+@test "harness rejects a partial skill installation" {
+  tarball="$(make_fake_ao_tarball)"
+  export AO_FAKE_MODE="missing-skill"
+  run_harness "$tarball"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"missing=['plan']"* ]]
+}
+
+@test "harness rejects a wrong skill target even when counts match" {
+  tarball="$(make_fake_ao_tarball)"
+  export AO_FAKE_MODE="wrong-skill"
+  run_harness "$tarball"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"plan is not linked to its source skill"* ]]
+}
+
+@test "harness rejects an unexpected retired skill" {
+  tarball="$(make_fake_ao_tarball)"
+  export AO_FAKE_MODE="unexpected-skill"
+  run_harness "$tarball"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"unexpected=['retired-skill']"* ]]
 }
 
 @test "harness loud-SKIPs (exit 0) when the release asset is unreachable offline" {

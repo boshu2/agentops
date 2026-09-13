@@ -3,8 +3,12 @@ import json
 import io
 import tarfile
 from pathlib import Path
+import sys
 import tempfile
 import unittest
+
+# Keep sibling CLI modules importable under pytest's importlib collection.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from prepare import extract_cli, sha, tree_hash, write_json
 from receipts import collect
 

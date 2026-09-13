@@ -656,14 +656,20 @@ run_security_gate() {
     local output_file="$ARTIFACT_DIR/security-gate-${SECURITY_MODE}.json"
     local security_dir="$SECURITY_TMP_BASE/security"
     local tooling_dir="$SECURITY_TMP_BASE/tooling"
+    local gitleaks_mode="range"
+    local -a tool_requirement=()
+    if [[ "$SECURITY_MODE" == "full" ]]; then
+        gitleaks_mode="full"
+        tool_requirement=(--require-tools)
+    fi
     mkdir -p "$security_dir" "$tooling_dir"
 
     SECURITY_GATE_OUTPUT_DIR="$security_dir" \
     TOOLCHAIN_OUTPUT_DIR="$tooling_dir" \
-    TOOLCHAIN_GITLEAKS_MODE="${TOOLCHAIN_GITLEAKS_MODE:-range}" \
+    TOOLCHAIN_GITLEAKS_MODE="${TOOLCHAIN_GITLEAKS_MODE:-$gitleaks_mode}" \
     TOOLCHAIN_GITLEAKS_RANGE="${TOOLCHAIN_GITLEAKS_RANGE:-origin/main..HEAD}" \
     TOOLCHAIN_GITLEAKS_GOMAXPROCS="${TOOLCHAIN_GITLEAKS_GOMAXPROCS:-2}" \
-    ./scripts/security-gate.sh --mode "$SECURITY_MODE" --json > "$output_file"
+    ./scripts/security-gate.sh --mode "$SECURITY_MODE" --json "${tool_requirement[@]}" > "$output_file"
     jq -e '.gate_status' "$output_file" >/dev/null
     echo "Security report:  $output_file"
     echo "Security artifacts: $security_dir"
