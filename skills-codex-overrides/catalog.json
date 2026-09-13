@@ -24,7 +24,7 @@
       "name": "agent-native",
       "treatment": "parity_only",
       "wave": "catalog-parity",
-      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
+      "reason": "Shared source guidance includes runtime-specific sections and Codex role templates; generate the complete parity twin with no handwritten override."
     },
     {
       "name": "agy-native",

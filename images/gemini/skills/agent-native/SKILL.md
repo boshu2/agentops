@@ -78,7 +78,13 @@ Reader returns line-referenced bullets over files the caller never loads, and a
 Writer lands one patterned file from a spec plus a reference file and returns a
 receipt the caller never reads back. Both are caller-selected per call, default
 to a cheap model, and yield runtime facts only — a receipt is not validation.
-See [context-budget delegation](references/context-budget-delegation.md).
+For Codex, use the source-owned `bulk-reader` or `code-writer` native role
+(`gpt-5.6-luna`); pass a fresh bounded task and receive findings or a receipt.
+The reader uses explicit slices of at most 350 lines; the parent keeps file
+content out of its context. A reference file is required for a writer. See
+[context-budget delegation](references/context-budget-delegation.md) for
+installation, native invocation, opt-in refusal hooks and the limits of role
+instructions.
 
 ## Contract
 
