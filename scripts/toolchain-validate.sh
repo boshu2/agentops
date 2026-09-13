@@ -10,6 +10,7 @@ set -euo pipefail
 #   --quick   Skip slow tools (tests, comprehensive scans)
 #   --json    Output summary as JSON to stdout
 #   --gate    Exit non-zero on CRITICAL or HIGH findings
+#   --all     Scan the full repository even with --gate (default: changed scope)
 #
 # Exit Codes:
 #   0 - Pass (no critical/high findings, or --gate not specified)
@@ -26,12 +27,14 @@ OUTPUT_DIR="${TOOLCHAIN_OUTPUT_DIR:-${TMPDIR:-/tmp}/agentops-tooling}"
 QUICK=false
 JSON_OUTPUT=false
 GATE=false
+ALL_FILES=false
 
 for arg in "$@"; do
     case $arg in
         --quick) QUICK=true ;;
         --json) JSON_OUTPUT=true ;;
         --gate) GATE=true ;;
+        --all) ALL_FILES=true ;;
         --help|-h)
             head -20 "$0" | grep "^#" | sed 's/^# *//'
             exit 0
@@ -46,7 +49,12 @@ done
 # Initialize output directory
 mkdir -p "$OUTPUT_DIR"
 
-# Determine scope (for --gate, default to changed files only)
+# Determine scope independently of whether findings should fail the command.
+# Pre-commit/post-commit --gate callers retain their changed-file default.
+SCOPE="all"
+if [[ "$GATE" == "true" && "$ALL_FILES" != "true" ]]; then
+    SCOPE="changed"
+fi
 TARGET_FILES=()
 
 in_git_repo() {
@@ -84,7 +92,7 @@ collect_target_files() {
     return 0
 }
 
-if [[ "$GATE" == "true" ]]; then
+if [[ "$SCOPE" == "changed" ]]; then
     while IFS= read -r f; do
         [[ -z "$f" ]] && continue
         TARGET_FILES+=("$REPO_ROOT/$f")
@@ -202,7 +210,7 @@ ensure_json_or_error() {
 run_ruff() {
     local output_file="$OUTPUT_DIR/ruff.txt"
 
-    if [[ "$GATE" == "true" ]] && ! target_has_ext "py"; then
+    if [[ "$SCOPE" == "changed" ]] && ! target_has_ext "py"; then
         echo "NO_PYTHON_FILES_IN_TARGET" > "$output_file"
         TOOL_STATUS["ruff"]="skipped"
         TOOLS_SKIPPED=$((TOOLS_SKIPPED + 1))
@@ -212,7 +220,7 @@ run_ruff() {
     if ! run_tool "ruff" ruff; then return 0; fi
 
     # Check if there are Python files
-    if ! find "$REPO_ROOT" -name "*.py" -type f | head -1 | grep -q .; then
+    if ! find "$REPO_ROOT" -name "*.py" -type f -print -quit | grep -q .; then
         echo "NO_PYTHON_FILES" > "$output_file"
         TOOL_STATUS["ruff"]="skipped"
         return 0
@@ -241,7 +249,7 @@ run_golangci() {
     local output_file="$OUTPUT_DIR/golangci-lint.txt"
     local golangci_cmd="$REPO_ROOT/scripts/golangci-lint-v2.sh"
 
-    if [[ "$GATE" == "true" ]] && ! target_has_any_ext go mod sum; then
+    if [[ "$SCOPE" == "changed" ]] && ! target_has_any_ext go mod sum; then
         echo "NO_GO_CHANGES_IN_TARGET" > "$output_file"
         TOOL_STATUS["golangci-lint"]="skipped"
         TOOLS_SKIPPED=$((TOOLS_SKIPPED + 1))
@@ -389,7 +397,7 @@ run_gitleaks() {
 run_shellcheck() {
     local output_file="$OUTPUT_DIR/shellcheck.txt"
 
-    if [[ "$GATE" == "true" ]] && ! target_has_ext "sh"; then
+    if [[ "$SCOPE" == "changed" ]] && ! target_has_ext "sh"; then
         echo "NO_SHELL_FILES_IN_TARGET" > "$output_file"
         TOOL_STATUS["shellcheck"]="skipped"
         TOOLS_SKIPPED=$((TOOLS_SKIPPED + 1))
@@ -400,7 +408,7 @@ run_shellcheck() {
 
     # Find all shell scripts
     local scripts
-    if [[ "$GATE" == "true" ]] && [[ "${#TARGET_FILES[@]}" -gt 0 ]]; then
+    if [[ "$SCOPE" == "changed" ]] && [[ "${#TARGET_FILES[@]}" -gt 0 ]]; then
         scripts="$(printf "%s\n" "${TARGET_FILES[@]}" | grep -E '\\.sh$' || true)"
     else
         scripts="$(find "$REPO_ROOT" -name "*.sh" -type f ! -path "*/.git/*" ! -path "*/.claude/worktrees/*" 2>/dev/null || true)"
@@ -445,7 +453,7 @@ run_shellcheck() {
 run_radon() {
     local output_file="$OUTPUT_DIR/radon.txt"
 
-    if [[ "$GATE" == "true" ]] && ! target_has_ext "py"; then
+    if [[ "$SCOPE" == "changed" ]] && ! target_has_ext "py"; then
         echo "NO_PYTHON_FILES_IN_TARGET" > "$output_file"
         TOOL_STATUS["radon"]="skipped"
         TOOLS_SKIPPED=$((TOOLS_SKIPPED + 1))
@@ -455,7 +463,7 @@ run_radon() {
     if ! run_tool "radon" radon; then return 0; fi
 
     # Check if there are Python files
-    if ! find "$REPO_ROOT" -name "*.py" -type f | head -1 | grep -q .; then
+    if ! find "$REPO_ROOT" -name "*.py" -type f -print -quit | grep -q .; then
         echo "NO_PYTHON_FILES" > "$output_file"
         TOOL_STATUS["radon"]="skipped"
         TOOLS_SKIPPED=$((TOOLS_SKIPPED + 1))
@@ -501,14 +509,17 @@ run_pytest() {
     if ! run_tool "pytest" pytest; then return 0; fi
 
     # Check if there are test files
-    if ! find "$REPO_ROOT" -name "test_*.py" -o -name "*_test.py" | head -1 | grep -q .; then
+    if ! find "$REPO_ROOT" -type f \( -name "test_*.py" -o -name "*_test.py" \) -print -quit | grep -q .; then
         echo "NO_TEST_FILES" > "$output_file"
         TOOL_STATUS["pytest"]="skipped"
         return 0
     fi
 
-    # Run pytest with minimal output
-    if pytest "$REPO_ROOT" --tb=short -q > "$output_file" 2>&1; then
+    # Source skills and their generated projections can share test basenames.
+    # Importlib collects both without Python module-name collisions.
+    local pytest_rc=0
+    pytest "$REPO_ROOT" --import-mode=importlib --tb=short -q > "$output_file" 2>&1 || pytest_rc=$?
+    if [[ "$pytest_rc" -eq 0 ]]; then
         echo "PASS" >> "$output_file"
         TOOL_STATUS["pytest"]="pass"
     else
@@ -516,8 +527,16 @@ run_pytest() {
         failures=$(grep -cE "^FAILED" "$output_file" 2>/dev/null || true)
         failures=${failures:-0}
         failures=$(echo "$failures" | tr -d '[:space:]')
+        # Collection errors, interrupted runs, and usage/internal errors may
+        # contain no FAILED lines. A nonzero run still blocks the gate.
+        if [[ "$failures" -lt 1 ]]; then failures=1; fi
         CRITICAL_COUNT=$((CRITICAL_COUNT + failures))
-        TOOL_STATUS["pytest"]="findings"
+        if [[ "$pytest_rc" -eq 1 ]]; then
+            TOOL_STATUS["pytest"]="findings"
+        else
+            TOOL_STATUS["pytest"]="error"
+        fi
+        printf '\nPYTEST_EXIT_CODE=%s\n' "$pytest_rc" >> "$output_file"
     fi
 }
 
@@ -535,7 +554,7 @@ run_gotest() {
 
     local output_file="$OUTPUT_DIR/gotest.txt"
 
-    if [[ "$GATE" == "true" ]] && ! target_has_any_ext go mod sum; then
+    if [[ "$SCOPE" == "changed" ]] && ! target_has_any_ext go mod sum; then
         echo "NO_GO_CHANGES_IN_TARGET" > "$output_file"
         TOOL_STATUS["go-test"]="skipped"
         TOOLS_SKIPPED=$((TOOLS_SKIPPED + 1))
@@ -594,7 +613,7 @@ run_semgrep() {
     local output_file="$OUTPUT_DIR/semgrep.txt"
     local stderr_file="$OUTPUT_DIR/semgrep.stderr.txt"
 
-    if [[ "$GATE" == "true" ]] && ! target_has_any_ext go py js ts tsx jsx java rb php cs; then
+    if [[ "$SCOPE" == "changed" ]] && ! target_has_any_ext go py js ts tsx jsx java rb php cs; then
         echo "NO_CODE_FILES_IN_TARGET" > "$output_file"
         TOOL_STATUS["semgrep"]="skipped"
         TOOLS_SKIPPED=$((TOOLS_SKIPPED + 1))
@@ -658,7 +677,7 @@ run_trivy() {
     local output_file="$OUTPUT_DIR/trivy.txt"
     local stderr_file="$OUTPUT_DIR/trivy.stderr.txt"
 
-    if [[ "$GATE" == "true" ]] && ! target_has_any_ext go mod sum json lock yaml yml; then
+    if [[ "$SCOPE" == "changed" ]] && ! target_has_any_ext go mod sum json lock yaml yml; then
         echo "NO_DEPENDENCY_CHANGES_IN_TARGET" > "$output_file"
         TOOL_STATUS["trivy"]="skipped"
         TOOLS_SKIPPED=$((TOOLS_SKIPPED + 1))
@@ -736,7 +755,7 @@ run_gosec() {
     local output_file="$OUTPUT_DIR/gosec.txt"
     local stderr_file="$OUTPUT_DIR/gosec.stderr.txt"
 
-    if [[ "$GATE" == "true" ]] && ! target_has_any_ext go mod sum; then
+    if [[ "$SCOPE" == "changed" ]] && ! target_has_any_ext go mod sum; then
         echo "NO_GO_CHANGES_IN_TARGET" > "$output_file"
         TOOL_STATUS["gosec"]="skipped"
         TOOLS_SKIPPED=$((TOOLS_SKIPPED + 1))
@@ -846,7 +865,7 @@ run_govulncheck() {
     local output_file="$OUTPUT_DIR/govulncheck.txt"
     local stderr_file="$OUTPUT_DIR/govulncheck.stderr.txt"
 
-    if [[ "$GATE" == "true" ]] && ! target_has_any_ext go mod sum; then
+    if [[ "$SCOPE" == "changed" ]] && ! target_has_any_ext go mod sum; then
         echo "NO_GO_CHANGES_IN_TARGET" > "$output_file"
         TOOL_STATUS["govulncheck"]="skipped"
         TOOLS_SKIPPED=$((TOOLS_SKIPPED + 1))
@@ -970,9 +989,7 @@ log "Toolchain Validation"
 log "===================="
 log "Target: $REPO_ROOT"
 log "Output: $OUTPUT_DIR"
-if [[ "$GATE" == "true" ]] && [[ "${#TARGET_FILES[@]}" -gt 0 ]]; then
-    log "Scope: changed files only"
-fi
+log "Scope: $SCOPE"
 log ""
 
 # Run all tools
@@ -1022,6 +1039,7 @@ SUMMARY=$(cat <<EOF
 {
   "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
   "target": "$REPO_ROOT",
+  "scope": "$SCOPE",
   "tools_run": $TOOLS_RUN,
   "tools_skipped": $TOOLS_SKIPPED,
   "tools": $TOOLS_JSON,
