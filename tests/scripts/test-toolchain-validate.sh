@@ -32,7 +32,25 @@ case "$name" in
     trivy) printf '{"Results":[]}\n' ;;
     gosec) printf '{"Issues":[]}\n' ;;
     hadolint) printf '[]\n' ;;
+    go)
+        if [[ "${1:-}" == "build" ]]; then
+            printf 'go-build-cwd %s\n' "$PWD" >> "$SCANNER_LOG"
+            if [[ "${AO_BUILD_EXIT:-0}" -ne 0 ]]; then
+                printf 'fixture build error\n' >&2
+                exit "$AO_BUILD_EXIT"
+            fi
+            [[ "${2:-}" == "-o" && "${4:-}" == "./cmd/ao" ]] || exit 9
+            printf '#!/bin/sh\nprintf "candidate-ready\\n"\n' > "$3"
+            chmod +x "$3"
+        fi
+        ;;
     pytest)
+        printf 'pytest-ao %s\n' "${AO_BIN:-}" >> "$SCANNER_LOG"
+        if [[ ! -x "${AO_BIN:-}" ]]; then
+            printf 'ERROR: AO_BIN is not an executable candidate\n'
+            exit 2
+        fi
+        "$AO_BIN" >> "$SCANNER_LOG" || exit 2
         if [[ "${PYTEST_EXIT:-0}" -eq 1 ]]; then
             printf 'FAILED test_example.py::test_example - AssertionError\n'
         elif [[ "${PYTEST_EXIT:-0}" -ne 0 ]]; then
@@ -246,6 +264,56 @@ test_large_python_inventory() {
     fi
 }
 
+test_pytest_candidate_binary() {
+    local output candidate build_dir status
+    : > "$SCANNER_LOG"
+    output=$(AO_BIN='' ./scripts/toolchain-validate.sh --all --gate --json)
+    candidate=$(sed -n 's/^pytest-ao //p' "$SCANNER_LOG")
+    build_dir="${candidate%/*}"
+    if jq -e '.tools.pytest == "pass"' <<< "$output" >/dev/null &&
+        grep -Fxq "go-build-cwd $PWD/cli" "$SCANNER_LOG" &&
+        grep -Fxq 'candidate-ready' "$SCANNER_LOG" && [[ -n "$candidate" && ! -e "$build_dir" ]]; then
+        pass "pytest executes this checkout's temporary ao and cleans it afterward"
+    else
+        fail "pytest did not receive or clean the candidate ao"
+    fi
+
+    candidate="$MOCK_DIR/caller-ao"
+    printf '#!/bin/sh\nprintf "caller-candidate\\n"\n' > "$candidate"
+    chmod +x "$candidate"
+    : > "$SCANNER_LOG"
+    output=$(AO_BIN="$candidate" ./scripts/toolchain-validate.sh --all --gate --json)
+    if jq -e '.tools.pytest == "pass"' <<< "$output" >/dev/null &&
+        grep -Fxq "pytest-ao $candidate" "$SCANNER_LOG" &&
+        grep -Fxq 'caller-candidate' "$SCANNER_LOG" &&
+        ! grep -q '^go build ' "$SCANNER_LOG" && [[ -x "$candidate" ]]; then
+        pass "explicit AO_BIN is preserved without building or deleting it"
+    else
+        fail "explicit AO_BIN was replaced or removed"
+    fi
+
+    : > "$SCANNER_LOG"
+    status=0
+    output=$(AO_BIN='' AO_BUILD_EXIT=7 ./scripts/toolchain-validate.sh --all --gate --json) || status=$?
+    candidate=$(sed -n 's/^go build -o \(.*\) \.\/cmd\/ao$/\1/p' "$SCANNER_LOG")
+    if [[ "$status" -eq 2 ]] && jq -e '.tools.pytest == "error" and .gate_status == "BLOCKED_CRITICAL"' <<< "$output" >/dev/null &&
+        ! grep -q '^pytest ' "$SCANNER_LOG" && [[ -n "$candidate" && ! -e "${candidate%/*}" ]]; then
+        pass "candidate build failure blocks before pytest and cleans temporary output"
+    else
+        fail "failed candidate build reached pytest or left a green gate"
+    fi
+
+    : > "$SCANNER_LOG"
+    status=0
+    output=$(AO_BIN='' PYTEST_EXIT=2 ./scripts/toolchain-validate.sh --all --gate --json) || status=$?
+    candidate=$(sed -n 's/^pytest-ao //p' "$SCANNER_LOG")
+    if [[ "$status" -eq 2 && -n "$candidate" && ! -e "${candidate%/*}" ]]; then
+        pass "pytest failure also cleans the temporary candidate binary"
+    else
+        fail "pytest failure leaked its temporary candidate binary"
+    fi
+}
+
 # Test 8: Output directory is created
 test_output_dir() {
     local test_dir
@@ -278,6 +346,7 @@ test_gate_scope
 test_pytest_failure_exits
 test_duplicate_test_modules
 test_large_python_inventory
+test_pytest_candidate_binary
 
 echo ""
 echo "================================"

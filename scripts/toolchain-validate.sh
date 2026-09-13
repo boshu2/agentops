@@ -515,10 +515,30 @@ run_pytest() {
         return 0
     fi
 
+    # Evidence CLI tests require the exact candidate, never an ambient ao on
+    # PATH. Honor an explicit caller candidate; otherwise build this checkout.
+    local ao_bin="${AO_BIN:-}"
+    local ao_build_dir=""
+    if [[ -z "$ao_bin" ]]; then
+        ao_build_dir="$(mktemp -d "${TMPDIR:-/tmp}/agentops-pytest-ao.XXXXXX")"
+        ao_bin="$ao_build_dir/ao"
+        local build_rc=0
+        (cd "$REPO_ROOT/cli" && go build -o "$ao_bin" ./cmd/ao) > "$OUTPUT_DIR/pytest-build.txt" 2>&1 || build_rc=$?
+        if [[ "$build_rc" -ne 0 || ! -x "$ao_bin" ]]; then
+            printf 'ERROR: candidate ao build failed (exit %s); pytest was not run\n' "$build_rc" > "$output_file"
+            cat "$OUTPUT_DIR/pytest-build.txt" >> "$output_file"
+            TOOL_STATUS["pytest"]="error"
+            CRITICAL_COUNT=$((CRITICAL_COUNT + 1))
+            rm -rf "$ao_build_dir"
+            return 0
+        fi
+    fi
+
     # Source skills and their generated projections can share test basenames.
     # Importlib collects both without Python module-name collisions.
     local pytest_rc=0
-    pytest "$REPO_ROOT" --import-mode=importlib --tb=short -q > "$output_file" 2>&1 || pytest_rc=$?
+    AO_BIN="$ao_bin" pytest "$REPO_ROOT" --import-mode=importlib --tb=short -q > "$output_file" 2>&1 || pytest_rc=$?
+    if [[ -n "$ao_build_dir" ]]; then rm -rf "$ao_build_dir"; fi
     if [[ "$pytest_rc" -eq 0 ]]; then
         echo "PASS" >> "$output_file"
         TOOL_STATUS["pytest"]="pass"

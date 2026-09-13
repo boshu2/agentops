@@ -84,6 +84,8 @@ jobs:
 
       - name: Install scanner tools
         run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y shellcheck
           python -m pip install --upgrade pip
           python -m pip install semgrep==1.169.0 ruff==0.15.21 radon==6.0.1 pytest==9.1.1 \
             -r evals/skills-rpi/requirements.txt \
@@ -115,7 +117,7 @@ jobs:
       - name: Run security gate (full)
         run: |
           chmod +x scripts/security-gate.sh
-          ./scripts/security-gate.sh --mode full
+          ./scripts/security-gate.sh --mode full --require-tools
         env:
           SECURITY_GATE_OUTPUT_DIR: ${{ runner.temp }}/agentops-security
           TOOLCHAIN_OUTPUT_DIR: ${{ runner.temp }}/agentops-tooling
