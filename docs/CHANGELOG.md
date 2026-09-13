@@ -66,6 +66,8 @@ for upgrade instructions, the complete product-area summary and known limits.
 
 ### Fixed
 
+- Claude writers capture a supplied check's status in its original invocation, avoiding the observed status-confirmation rerun. Native success, failing-check and direct-writer trials each ran the check once; the direct child returned plain JSON.
+- Plugin conformance verifies exact skill membership and link destinations. Clean Claude and Codex plugin installs and upgrades are exercised separately from source linking; Codex metadata checks use the current Skills-only manifest contract.
 - Doctor keeps unique per-action backups and preflights undo integrity before
   restoration. Session mining protects checkpoint paths and concurrent writers;
   handoffs preserve work/session associations and use correct newest-first ordering.
