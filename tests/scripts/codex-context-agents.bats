@@ -18,7 +18,10 @@ for name in ('bulk-reader', 'code-writer'):
     source = root / 'skills/agent-native/agents' / (name + '.toml')
     project = root / '.codex/agents' / (name + '.toml')
     assert project.resolve() == source.resolve()
-    assert (root / '.codex' / config['agents'][name]['config_file']).resolve() == source.resolve()
+    registered = root / '.codex' / config['agents'][name]['config_file']
+    assert registered.resolve() == source.resolve()
+    # Native role loading uses no-follow access and rejects symlink files.
+    assert not registered.is_symlink()
     data = tomllib.loads(project.read_text())
     assert data['name'] == name and data['description'] and data['developer_instructions']
     assert data['model'] == 'gpt-5.6-luna'
