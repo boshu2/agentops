@@ -170,9 +170,12 @@ says nothing about pipes, redirects, globs, `sed`, `awk`, `less` — silent by d
 
 **Countermetric:** waiver rate = `waived / (deny + waived)` per session.
 
-**CUT signals (any one):** a fire on a `limit`-bounded Read or on a file at or
-below budget — a false positive the predicate is built to make impossible, so
-one such line is a defect, not noise; or a waiver rate above 50% at N ≥ 30 —
+**CUT signals (any one):** a fire on a `limit`-bounded Read, a bounded
+effective read, a command that does not read the attributed file, or a file at
+or below budget (except a `cat` sum over budget). Each false positive is a
+defect, not noise; regression coverage is evidence for the tested shapes,
+not proof that a shell parser makes false positives impossible; or a waiver
+rate above 50% at N ≥ 30 —
 the budget is wrong for this repository, not the agent (retune
 `AOP_READ_BUDGET_LINES`; do not keep a guard everyone waives).
 
