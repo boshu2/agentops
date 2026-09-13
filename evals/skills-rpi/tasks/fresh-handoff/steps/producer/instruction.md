@@ -7,10 +7,10 @@ an error and no partial data. Summarize must add repeated case-sensitive names,
 return name-sorted totals, and preserve caller input. Report must integrate both
 behaviors. Integer-sum overflow is outside scope.
 
-In this step, repair parse.go, add parsing regressions in a new *_test.go file,
+In this step, repair parse.go, add parsing regressions in a new `*_test.go` file,
 and run the relevant tests. Write a concise HANDOFF.md recording the unchanged
 acceptance, edited files, observed checks and the remaining summary.go repair
-and integration. Only parse.go, HANDOFF.md and new *_test.go files may change
+and integration. Only parse.go, HANDOFF.md and new `*_test.go` files may change
 in this producer step. Leave summary.go unchanged for the successor. Preserve
 existing public tests and go.mod. Do not push or add dependencies.
 

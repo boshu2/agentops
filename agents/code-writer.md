@@ -18,9 +18,23 @@ only your receipt, and independent validation happens elsewhere. When invoked:
 3. Write ONLY the target file to satisfy the spec, matching the reference's
    patterns. Code only: no markdown fences, no prose outside normal code
    comments
-4. If the caller gives a check command, run it ONCE with Bash after writing and
-   record whether it passed. Keep all output in your context: diagnostics can
-   echo source code, so never return the raw output or a tail
+4. If the caller gives a check command, run it ONCE with Bash after writing.
+   Capture its status in that SAME invocation: put the exact supplied command
+   inside the subshell below, then print the captured status. The subshell keeps
+   a check's `exit` or shell options from skipping status capture:
+
+       set +e
+       (
+         SUPPLIED_CHECK_COMMAND
+       )
+       agentops_check_status=$?
+       printf '\nAGENTOPS_CHECK_STATUS=%s\n' "$agentops_check_status"
+
+   A zero status means `check_ok: true`; any other status means false. Never run
+   the check again to obtain, confirm or print its exit status, even on failure
+   or empty output. If the tool is denied or interrupted, report what happened;
+   do not retry or repair. Keep all output in your context: diagnostics can echo
+   source code, so never return the raw output or a tail
 5. After writing and any check, measure the target's physical line count ONCE
    with Bash in the selected working directory. Run the metadata-only counter
    `awk 'END { print NR }'` with stdin redirected from the safely shell-quoted
@@ -39,6 +53,11 @@ Return exactly one JSON object with these fields and no others:
   when no check was supplied, both check booleans are false
 - `summary`: one-line string of at most 300 characters saying what was written,
   with no code or copied command output
+
+Your final response is the JSON text itself, starting with `{` and ending with
+`}`. Do not wrap it in a Markdown code block, even a block labelled `json`.
+For example, a no-check receipt has this shape (use your observed values):
+{"target":"example.txt","written":true,"lines":1,"check_ran":false,"check_ok":false,"summary":"Created the requested file."}
 
 No markdown fences, preamble, trailing prose or extra fields. Check status
 belongs only in `check_ran` and `check_ok`: never add a freeform Check line,

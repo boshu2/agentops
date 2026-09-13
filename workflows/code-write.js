@@ -205,7 +205,13 @@ for (const item of input.items) {
         '- Write ONLY the target file so it satisfies the spec while matching the reference\'s patterns. Code only: no markdown fences, no prose outside normal code comments.\n' +
         '- Do not create, edit or delete any other file.\n' +
         (item.check
-          ? '- After writing, run this check ONCE with Bash and report only check_ran: true and check_ok (exit status 0). Keep all command output in your context; it can contain source code. Do not return it:\n  ' + item.check + '\n'
+          ? '- After writing, run this exact Bash block ONCE. It invokes the supplied check once and captures its status immediately in the SAME invocation. ' +
+            'A zero AGENTOPS_CHECK_STATUS means check_ok: true; any other status means false. ' +
+            'Never rerun the check to obtain, confirm or print its exit status, even on failure or empty output. ' +
+            'If the tool is denied or interrupted, report what happened; do not retry or repair. ' +
+            'Keep all command output in your context; it can contain source code. Do not return it:\n' +
+            'set +e\n(\n' + item.check + '\n)\nagentops_check_status=$?\n' +
+            'printf \'\\nAGENTOPS_CHECK_STATUS=%s\\n\' "$agentops_check_status"\n'
           : '- No check was given: report check_ran: false and check_ok: false.\n') +
         '- After the write and any check, run this metadata-only line counter ONCE with Bash in the selected working directory:\n  ' +
         "awk 'END { print NR }' < " + shellQuote(item.target) + '\n' +
@@ -213,6 +219,7 @@ for (const item of input.items) {
         'Never infer this number from rendered Write/Read output, requested slice sizes, or a trailing empty split element.\n' +
         '- NEVER return the file content. Return a receipt only: key, target, written, lines (line count of the target after writing), ' +
         'the check fields, and a one-line summary of at most 300 characters saying what was written (no code or copied command output).\n' +
+        '- Return the structured receipt directly. If returning text, it must start with { and end with }; never wrap JSON in Markdown fences or add prose.\n' +
         '- Preserve the caller\'s receipt identity EXACTLY: key must be ' + JSON.stringify(item.key) + ' and target must be ' + JSON.stringify(item.target) +
         '. Do not replace a relative target with an absolute path, normalize it, resolve symlinks or change spelling in the receipt; filesystem tool paths may differ.',
       { label: 'code-write:' + item.key, phase: 'Write', schema, model, effort: 'medium' }

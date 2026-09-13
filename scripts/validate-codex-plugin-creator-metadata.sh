@@ -81,13 +81,14 @@ jq -e '
   .name == "agentops"
   and .skills == "./skills-codex"
   and .interface.displayName == "AgentOps"
-  and .interface.shortDescription == "Repo-native memory, validation gates, and agent workflows."
+  and (.interface.shortDescription | type == "string" and length > 0)
   and (.interface.longDescription | type == "string" and length > 0)
   and .interface.developerName == "AgentOps"
   and .interface.category == "Productivity"
-  and (.interface.capabilities as $capabilities
-    | ($capabilities | type == "array" and length > 0)
-    and (["Skills", "Hooks"] | all(. as $capability | ($capabilities | index($capability) != null))))
+  # The plugin delivers skills. Native hook installation is separately opt-in;
+  # advertising Hooks here would claim a capability the plugin does not wire.
+  and .interface.capabilities == ["Skills"]
+  and (has("hooks") | not)
   and (.interface.defaultPrompt | type == "array" and length > 0 and length <= 3)
   and all(.interface.defaultPrompt[]; type == "string" and length > 0 and length <= 128)
 ' "$PLUGIN_MANIFEST" >/dev/null || fail ".codex-plugin/plugin.json is missing required plugin-creator interface metadata"

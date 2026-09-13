@@ -1,7 +1,7 @@
 # Codex context-budget design and evidence
 
 Status: implemented; observed runtime behavior and remaining limits below.
-Evidence cutoff: 2026-09-12. Final gate results and the remaining Claude writer failure are recorded below.
+Original evidence cutoff: 2026-09-12. The 4.0.0 writer follow-up below records the 2026-09-13 repair and live results.
 Acceptance is the two-job caller request recorded in private BD `age-z25n`.
 The exact e32e88c verdict was written before this job began and posted at
 https://github.com/boshu2/agentops/pull/1137#issuecomment-5648513520.
@@ -294,7 +294,7 @@ complete child write payload, raw check output or source/check sentinel in the
 native parent context. The shared source in this run is fixes commit
 `53bcfec1480c205290f286b4a7ccd582216eb6f9`.
 
-**Remaining observed failure:** eta and iota each invoked the supplied check
+**Observed failure at this cutoff:** eta and iota each invoked the supplied check
 twice, while theta invoked it once. The fixture's independent invocation ledger
 and native child tool IDs agree. This violates the source instruction to run the
 check once; measured line counts and passing tests do not clear that failure.
@@ -313,6 +313,30 @@ per-item receipt identity constraints, status-only receipts and an actual
 post-write line-count command. A fenced JSON receipt observed in a direct
 agent reply illustrates that direct-role formatting remains an instruction.
 No byte-filtering or strict direct-agent output parser is claimed.
+
+### 4.0.0 writer follow-up — 2026-09-13
+
+The duplicate invocation recovered a check's status by running the check again.
+Both writer prompts now capture that status immediately in the original Bash
+invocation, including silent checks and checks that enable `set -e` internally.
+The direct role also supplies an explicit raw-JSON receipt example.
+
+Source repair `eae6f00c236ef88e38a9de43b8cdf289c3779123` passed 20 focused
+tests. Native Opus parent `7910a1c7-7670-4a11-8a18-89fe4b46c4b9` delegated to
+three Haiku 4.5 writers: workflow success, workflow deliberate check failure,
+and direct writer success. Each supplied check ran once; receipts reported
+the respective true, false and true status. The direct child's raw native
+receipt was JSON without Markdown fences. All three targets had seven physical
+lines and passed independent Bats checks. Only assigned targets were added.
+The parent used delegation/wait tools and received neither generated contents
+nor the check-output sentinel. The bounded run exited 0 after 49.97 seconds;
+owned-process cleanup found no remaining processes.
+
+These observations close the reproduced check-count and direct-child receipt
+failures for the tested cases. The coordinating parent's final presentation
+still added fences, so parent presentation is not evidence of raw child format.
+Direct-role formatting and target confinement remain instructions rather than
+an output filter or per-file sandbox.
 
 ## Checks and delivery
 

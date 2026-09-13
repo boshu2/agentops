@@ -9,8 +9,8 @@ and preserve caller input. Report must integrate both behaviors. Integer-sum
 overflow is outside scope.
 
 Inspect the handoff and actual source. Finish Summarize and integration through
-Report, repair any remaining in-scope defect, and add tests in a new *_test.go
+Report, repair any remaining in-scope defect, and add tests in a new `*_test.go`
 file. Recheck the completed exact source with go test ./... and obtain a fresh
 independent final review. A fresh successor session is not itself that review.
-Only parse.go, summary.go, HANDOFF.md and new *_test.go files may change. Do not
+Only parse.go, summary.go, HANDOFF.md and new `*_test.go` files may change. Do not
 alter acceptance, public tests or dependencies. Report checks and any gaps.

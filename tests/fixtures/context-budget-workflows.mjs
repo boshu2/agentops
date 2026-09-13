@@ -132,6 +132,27 @@ const tests = {
   async 'required-reference'() {
     for (const reference of [undefined, '', ' ']) rejected(await run('code-write', { ...writeArgs, items: [{ ...item(), reference }] }, () => receipt()));
   },
+  async 'writer-check-once'() {
+    const agentSource = fs.readFileSync(path.join(subject, 'agents/code-writer.md'), 'utf8');
+    const template = agentSource.match(/       set \+e\n[\s\S]*?       printf[^\n]+/)[0]
+      .replace(/^       /gm, '');
+    for (const [name, check, expectedStatus] of [
+      ['silent', 'printf "called\\n" >> check-count; exit 0', 0],
+      ['failure', 'printf "called\\n" >> check-count; exit 7', 7],
+      ['errexit', 'set -e; printf "called\\n" >> check-count; false; printf "UNREACHABLE"', 1],
+    ]) {
+      const result = good(await run('code-write', { ...writeArgs, items: [{ ...item(), check }] }, () =>
+        receipt('out.js', 'one', { check_ran: true, check_ok: expectedStatus === 0 })));
+      const block = result.writers[0].prompt.match(/set \+e\n[\s\S]*?printf '\\nAGENTOPS_CHECK_STATUS[^\n]+/)[0];
+      for (const [kind, command] of [['workflow', block], ['direct', template.replace('SUPPLIED_CHECK_COMMAND', check)]]) {
+        const counter = path.join(fixture, 'check-count');
+        fs.rmSync(counter, { force: true });
+        const output = execFileSync('bash', ['-c', command], { cwd: fixture, encoding: 'utf8', timeout: 5000 });
+        assert.equal(fs.readFileSync(counter, 'utf8'), 'called\n', name + ': ' + kind + ' repeats the check');
+        assert.equal(output, '\nAGENTOPS_CHECK_STATUS=' + expectedStatus + '\n', name + ': ' + kind + ' loses the original exit status');
+      }
+    }
+  },
   async 'writer-receipt-identity'() {
     const inputs = [item('./out.js', 'relative-key'), item(path.join(fixture, 'second.js'), 'absolute-key')];
     const result = good(await run('code-write', { ...writeArgs, items: inputs }, (_prompt, options) => {

@@ -5,7 +5,7 @@
 # It consumes the product the way a brand-new user receives it — a clean HOME,
 # a fresh non-agentops git project, the ao binary, and the offline Codex
 # bundle — and then exercises first-run: quick-start's advertised commands,
-# doctor on a pristine install, and the installer's skill-count identity.
+# doctor on a pristine install, and the installer's exact skill-link identity.
 #
 # Sibling beads already fixed the five staleness classes at the unit level
 # (quick-start strings + cobra-tree guard, doctor audience calibration,
@@ -264,13 +264,6 @@ if __name__ == "__main__":
     sys.exit(main())
 PY
 
-# ── read a top-level integer JSON field without jq (sed, like install-codex) ─
-json_int_field() {
-  local path="$1" key="$2"
-  [[ -f "$path" ]] || return 0
-  sed -n "s/.*\"${key}\"[[:space:]]*:[[:space:]]*\\([0-9][0-9]*\\).*/\\1/p" "$path" | head -1
-}
-
 # ════════════════════════════════════════════════════════════════════════════
 printf 'fresh-install conformance harness (age-wl5vm / FU1)\n'
 printf '  mode:       %s\n' "$MODE"
@@ -435,16 +428,33 @@ fi
 
 # ── (e) linked skill identity (source checkout vs live links) ────────────────
 section "e. linked skill identity"
-repo_count="$(find "$REPO_ROOT/skills" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')"
-linked_count=0
-if [[ -d "$LINKED_SKILLS" ]]; then
-  linked_count="$(find "$LINKED_SKILLS" -mindepth 1 -maxdepth 1 \( -type d -o -type l \) 2>/dev/null | wc -l | tr -d ' ')"
-fi
-detail="repo=$repo_count linked=$linked_count root=$LINKED_SKILLS"
-if [[ -n "$repo_count" && "$repo_count" -gt 0 && "$linked_count" -gt 0 ]]; then
-  pass "skills linked into fresh HOME ($detail)"
+if identity_out="$(python3 - "$REPO_ROOT/skills" "$LINKED_SKILLS" <<'PY'
+from pathlib import Path
+import sys
+
+source, installed = map(Path, sys.argv[1:])
+expected = {p.name for p in source.iterdir() if (p / "SKILL.md").is_file()}
+actual = {p.name for p in installed.iterdir()} if installed.is_dir() else set()
+errors = []
+if not expected:
+    errors.append("source has no skills")
+if expected != actual:
+    errors.append("missing=%s unexpected=%s" % (sorted(expected - actual), sorted(actual - expected)))
+for name in sorted(expected & actual):
+    link = installed / name
+    if not link.is_symlink() or link.resolve() != (source / name).resolve():
+        errors.append("%s is not linked to its source skill" % name)
+    elif not (link / "SKILL.md").is_file():
+        errors.append("%s has no readable SKILL.md" % name)
+print("expected=%d installed=%d" % (len(expected), len(actual)))
+for error in errors:
+    print(error)
+sys.exit(bool(errors))
+PY
+)"; then
+  pass "all source skills linked into fresh HOME ($identity_out)"
 else
-  fail "expected linked skills under ~/.agents/skills after ao skills link" "$detail"
+  fail "linked skill identity differs from source checkout" "$identity_out"
 fi
 
 # ── summary table ────────────────────────────────────────────────────────────

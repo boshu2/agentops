@@ -12,8 +12,9 @@ import io
 import sys
 import tempfile
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from unittest.mock import patch
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = REPO_ROOT / "skills" / "skill-builder" / "scripts" / "scan_descriptions.py"
@@ -27,7 +28,10 @@ def _load_module():
     # Register before exec so dataclass introspection can resolve the module
     # (required on Python 3.14+ for importlib-loaded modules with dataclasses).
     sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
+    # Match direct script execution: its sibling modules are importable even
+    # when pytest's importlib mode does not modify sys.path for test files.
+    with patch.object(sys, "path", [str(SCRIPT.parent), *sys.path]):
+        spec.loader.exec_module(module)
     return module
 
 
@@ -55,11 +59,11 @@ class TestTriggerDetection(unittest.TestCase):
         md = _write_skill(
             self.root,
             "alpha",
-            'name: alpha\ndescription: Does a thing. Triggers: "do thing", "alpha".',
+            "name: alpha\ndescription: 'Does a thing. Triggers: \"do thing\", \"alpha\".'",
         )
         result = scan.scan_skill(md)
         self.assertTrue(result.has_trigger)
-        self.assertIn("explicit-marker", result.forms)
+        self.assertIn("inline-marker", result.forms)
 
     def test_block_scalar_use_when_detected(self):
         md = _write_skill(
@@ -69,7 +73,7 @@ class TestTriggerDetection(unittest.TestCase):
         )
         result = scan.scan_skill(md)
         self.assertTrue(result.has_trigger)
-        self.assertIn("block-scalar", result.forms)
+        self.assertIn("block-marker", result.forms)
 
     def test_triggers_list_with_three_items_detected(self):
         md = _write_skill(
@@ -80,7 +84,7 @@ class TestTriggerDetection(unittest.TestCase):
         )
         result = scan.scan_skill(md)
         self.assertTrue(result.has_trigger)
-        self.assertIn("triggers-list", result.forms)
+        self.assertIn("metadata-list", result.forms)
 
     def test_two_item_triggers_list_not_enough(self):
         md = _write_skill(
@@ -111,6 +115,15 @@ class TestTriggerDetection(unittest.TestCase):
         # "compile compile" must not appear — verb equals the only name token.
         self.assertNotIn("compile compile", result.suggestion)
 
+    def test_invalid_frontmatter_is_rejected(self):
+        md = _write_skill(
+            self.root,
+            "invalid",
+            "name: invalid\ndescription: Unquoted colon: is invalid YAML.",
+        )
+        with self.assertRaisesRegex(scan.ProfileError, "frontmatter configuration error"):
+            scan.scan_skill(md)
+
 
 class TestCli(unittest.TestCase):
     def setUp(self):
@@ -130,7 +143,7 @@ class TestCli(unittest.TestCase):
         _write_skill(
             self.root,
             "ok",
-            'name: ok\ndescription: Does X. Triggers: "ok", "do x".',
+            "name: ok\ndescription: 'Does X. Triggers: \"ok\", \"do x\".'",
         )
         with redirect_stdout(io.StringIO()):
             code = scan.main([str(self.root), "--strict", "--quiet"])
@@ -139,6 +152,15 @@ class TestCli(unittest.TestCase):
     def test_missing_dir_exits_two(self):
         code = scan.main([str(self.root / "does-not-exist")])
         self.assertEqual(code, 2)
+
+    def test_unknown_profile_exits_two(self):
+        _write_skill(self.root, "plain", "name: plain\ndescription: Plain description.")
+        error = io.StringIO()
+        with patch.dict(scan.os.environ, {"SKILL_CONFORMANCE_PROFILE_ID": "unknown-test-profile"}):
+            with redirect_stderr(error):
+                code = scan.main([str(self.root), "--strict", "--quiet"])
+        self.assertEqual(code, 2)
+        self.assertIn("unknown profile", error.getvalue())
 
     def test_probe_flow_form_allows_quoted_commas(self):
         _write_skill(
@@ -152,7 +174,7 @@ class TestCli(unittest.TestCase):
 
     def test_json_output_reports_counts(self):
         _write_skill(self.root, "a", "name: a\ndescription: Plain.")
-        _write_skill(self.root, "b", 'name: b\ndescription: X. Triggers: "b", "x".')
+        _write_skill(self.root, "b", "name: b\ndescription: 'X. Triggers: \"b\", \"x\".'")
         buf = io.StringIO()
         with redirect_stdout(buf):
             scan.main([str(self.root), "--json"])

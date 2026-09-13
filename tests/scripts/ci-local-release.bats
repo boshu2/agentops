@@ -127,6 +127,42 @@ teardown() {
     [ "$status" -eq 0 ]
 }
 
+@test "full security scans all secrets while quick mode and explicit overrides preserve their scope" {
+    mkdir -p "$TMP_DIR/scripts" "$TMP_DIR/artifacts"
+    cat > "$TMP_DIR/scripts/security-gate.sh" <<'EOF'
+#!/usr/bin/env bash
+if [[ "$2" == "full" ]]; then
+    [[ "${4:-}" == "--require-tools" ]] || exit 9
+else
+    [[ "$#" == 3 ]] || exit 10
+fi
+printf '{"gate_status":"PASS","gitleaks_mode":"%s"}\n' "$TOOLCHAIN_GITLEAKS_MODE"
+EOF
+    chmod +x "$TMP_DIR/scripts/security-gate.sh"
+
+    run env SCRIPT_UNDER_TEST="$SCRIPT" FIXTURE_DIR="$TMP_DIR" bash -c '
+        set -euo pipefail
+        set --
+        export AGENTOPS_CI_LOCAL_RELEASE_SOURCE_ONLY=1
+        source "$SCRIPT_UNDER_TEST"
+        cd "$FIXTURE_DIR"
+        ARTIFACT_DIR="$FIXTURE_DIR/artifacts"
+        SECURITY_TMP_BASE="$FIXTURE_DIR/security-temp"
+        unset TOOLCHAIN_GITLEAKS_MODE
+        SECURITY_MODE=full
+        run_security_gate
+        jq -e '\''.gitleaks_mode == "full"'\'' "$ARTIFACT_DIR/security-gate-full.json"
+        SECURITY_MODE=quick
+        run_security_gate
+        jq -e '\''.gitleaks_mode == "range"'\'' "$ARTIFACT_DIR/security-gate-quick.json"
+        SECURITY_MODE=full
+        TOOLCHAIN_GITLEAKS_MODE=staged
+        run_security_gate
+        jq -e '\''.gitleaks_mode == "staged"'\'' "$ARTIFACT_DIR/security-gate-full.json"
+    '
+    [ "$status" -eq 0 ]
+}
+
 @test "--release-version rejects garbage values" {
     run bash "$SCRIPT" --release-version not-a-version
     [ "$status" -eq 1 ]

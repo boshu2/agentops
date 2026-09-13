@@ -16,7 +16,7 @@ Usage: scripts/security-gate.sh [--mode quick|full] [--json] [--require-tools]
 Runs the unified security gate using scripts/toolchain-validate.sh.
 
 Options:
-  --mode quick|full   quick = skip slow tests (default), full = full suite
+  --mode quick|full   quick = changed scope, skip slow tests (default); full = repository-wide suite
   --json              output machine-readable summary JSON
   --require-tools     fail if any scanner reports not_installed/error
   -h, --help          show this help
@@ -66,7 +66,7 @@ SECURITY_BASE="${SECURITY_GATE_OUTPUT_DIR:-${TMPDIR:-/tmp}/agentops-security}"
 SECURITY_DIR="$SECURITY_BASE/$RUN_ID"
 mkdir -p "$SECURITY_DIR"
 
-TOOLCHAIN_ARGS=(--gate --json)
+TOOLCHAIN_ARGS=(--all --gate --json)
 if [[ "$MODE" == "quick" ]]; then
   TOOLCHAIN_ARGS=(--quick --gate --json)
 fi

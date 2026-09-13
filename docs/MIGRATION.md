@@ -1,4 +1,4 @@
-# Cathedral Cut migration
+# AgentOps migration
 
 AgentOps now owns one small product boundary:
 
@@ -49,7 +49,7 @@ the same exact-content, author-distinct judgment bar without invoking them.
 | `ao session memory` | Use caller-authored `ao session handoff` evidence or maintain repository memory through the caller's own policy. |
 | `ao config models` | Model-tier configuration was removed; nothing consumed it. Model choice belongs to the caller's runtime. Existing `models:` config sections still parse and are ignored. |
 | `ao verify` | Use the Validate skill for semantic judgment and `ao gate check` for deterministic checks. Delete any `ao verify init` pre-push ratchet from `.git/hooks/pre-push` (restore `pre-push.agentops-orig` if one was set aside); `ao verify init --remove` no longer exists, and `git push --no-verify` bypasses a stale hook once. |
-| `ao flywheel` | The CLI surface remains retired; existing `flywheel:` config sections still parse and are ignored. Optional Memory and Learn skills can review useful episodes and curate topic pages. They do not automatically compute compounding or claim benefit without later work. |
+| `ao flywheel` | The CLI surface remains retired; existing `flywheel:` config sections still parse and are ignored. The optional Memory skill can review useful episodes and curate topic pages. They do not automatically compute compounding or claim benefit without later work. |
 | `ao eval` | The offline eval surface was retired unconsumed (no gate, workflow, or script ran it); use a repository-selected evaluator and record the result as generic `ao provenance` evidence. |
 | `ao redact` | Its only declared caller (the compile skill's render-write) never existed. Use owner-authorized disclosure review before storage; removing or replacing this command does not authorize reading restricted sources. |
 
@@ -77,20 +77,66 @@ warning:
 mkdir -p ~/.agents/ao && mv ~/.agentops/config.yaml ~/.agents/ao/config.yaml
 ```
 
+## Upgrade from 3.6 to 4.0
+
+Version 4.0 removes published commands and skill entry points. Update explicit
+invocations before upgrading automation; the new names are not compatibility
+aliases. Ordinary native coding requires no replacement invocation.
+
+- Replace `ao eval` calls with the evaluator selected by your repository. Replace
+  `ao redact` calls with the owner's disclosure-review process. Both command
+  names now fail with a migration pointer. Generic `ao provenance` records can
+  retain the resulting facts, but do not run either retired service.
+- Replace scripted `workflows/rpi.js` invocations with native execution, or invoke
+  the optional RPI skill explicitly. The skill retains the outcome-to-judgment
+  contract; it does not recreate the old script's retry controller.
+- Existing `.agents/` evidence stays where its owner placed it. New CDLC proof
+  requires a selected protected external non-Git destination; a missing route
+  must not silently write new proof into the repository.
+- The build toolchain is Go 1.27.1 (`cli/go.mod` still declares Go 1.26.0 as its
+  language floor). An older local toolchain may download the selected toolchain
+  or fail according to `GOTOOLCHAIN`.
+
 ## Skills
 
-- `plan` now contains the useful behavior from `discovery`,
-  `behavior-first-planning`, and `goal-design`.
-- `swarm` and `crank` are optional caller-selected dispatch adapters, not
-  lifecycle authorities.
-- `memory` offers optional recall, mining and topic curation; `learn` is a
-  compatible mining entrypoint for authorized episodes, including corrections
-  and failures. Neither is a required lifecycle phase.
-- Canonical mortem names are `premortem` and `postmortem`. Hyphenated and
-  underscored variants were removed.
-- `beads-br` and `beads-bv` were removed from the bundle. This repository uses
-  native BD for work authority; BR is a different implementation, not a fallback.
-  Beads Viewer is optional advice over an explicitly refreshed BD export.
+The release menu has 34 skills, compared with 52 in 3.6.0. Twenty former roots
+were retired; `memory` and `skill-eval` are new relative to that release. Use
+[the current menu](SKILL-ROUTER.md) to choose guidance for the actual task.
+
+| Retired 3.6 skill | Current owner or migration |
+|---|---|
+| `learn`, `toil-mining` | `memory` for explicitly requested recall, mining or curation. |
+| `codebase-recon`, `pattern-mining` | `research` for cited local questions, recon packs and pattern evidence. |
+| `bootstrap`, `handoff` | `doc` for requested missing documents and factual continuity handoffs; native work needs no bootstrap. |
+| `standards` | `domain` for repository conventions and their existing owners. |
+| `converter`, `operationalize` | `skill-builder` for exports and supported expertise proposals. |
+| `swarm` | `agent-native` for explicitly selected delegation; use the native runtime for ordinary execution. |
+| `fitness`, `status` | `reality-check` for a requested comparison of claims with evidence; CLI status remains available. |
+| `scope`, `product` | `plan` for missing acceptance/scope; `domain` for vocabulary; `doc` for a requested product document. |
+| `goals` | Use the native goal/tracker; `craft-goal` remains optional guidance for an explicitly selected persistent-goal workflow. |
+| `scaffold`, `workflow-builder` | Implement the requested repository change natively; use `skill-builder` only when the output is a skill. No generic workflow generator replaces these names. |
+| `anti-ceremony`, `automation-shape-routing`, `shared` | No standalone invocation. The operating contract retains the artifact-creation boundary, runtime choice stays with the caller, and surviving skills link their needed references. |
+
+For source-linked installations, inspect old links before removing them: a
+retired name may still be visible as a dangling link after updating the checkout.
+Use the install's owned unlink path and relink the selected surviving names;
+never remove a real directory or another tool's link just to match the count.
+Managed plugin upgrades should use the runtime's update mechanism. Avoid loading
+both a plugin copy and source links for the same skill.
+
+The new context-budget roles are optional. Claude's plugin includes the
+`agentops:bulk-reader` and `agentops:code-writer` subagent definitions. Codex's
+plugin includes their generated TOML resources, but role activation is separate:
+from a source checkout run `bash scripts/install-codex-context-agents.sh`, or add
+`--project` for the current project, then restart Codex. The installer preserves
+unrelated configuration and makes backups when replacing owned values.
+
+Read-budget hooks are also separate opt-ins. Use
+`scripts/install-read-budget-guard.sh` for Claude or
+`scripts/install-codex-read-budget-guard.sh` for Codex. Codex requires native
+hook review/trust. Do not infer that installing a skill or role activates a hook;
+see [the Codex runtime contract](design/codex-context-budget.md) for discovery,
+linked-worktree restrictions and the sandbox limitation.
 
 ## Verdicts and identity
 
@@ -108,7 +154,7 @@ outcomes.
 
 ## Install migration
 
-AgentOps 3.3 supports three install paths: `npx skills@latest add
+AgentOps supports three optional skill install paths: `npx skills@latest add
 boshu2/agentops --all -g` (universal across coding agents), runtime plugins for
 Claude Code and Codex (managed bundles that update with the release), and one
 canonical checkout plus source symlinks for users who edit skills or

@@ -22,8 +22,8 @@ Three optional skill installation paths remain supported:
 - One canonical checkout plus `ao skills link` — source-tracked symlinks for
   users who edit skills or contribute.
 
-With npx or a plugin, install and updates are handled by that tool. The rest of
-this page covers the checkout path and its day-2 operations.
+With npx or a plugin, install and updates are handled by that tool. The plugin
+commands below install the managed bundle; the checkout path follows afterward.
 
 Whichever path you install through, the skills themselves have runtime
 requirements. Most need nothing beyond the coding agent; these need more:
@@ -44,6 +44,60 @@ requirements. Most need nothing beyond the coding agent; these need more:
 | `cass` | `python3`, optional | `scripts/prompt_miner.py` mines repeated prompts; one of several selectable Scripts-table entries |
 
 The plugin and `npx skills@latest add boshu2/agentops --all -g` install the generated skill catalog, regardless of whether you have `python3` or `ao`.
+
+## Install and update runtime plugins
+
+Install the full bundle using the runtime's plugin manager:
+
+```bash
+# Claude Code
+claude plugin marketplace add boshu2/agentops
+claude plugin install agentops@agentops-marketplace
+claude plugin details agentops@agentops-marketplace
+
+# Codex
+codex plugin marketplace add boshu2/agentops
+codex plugin add agentops@agentops-marketplace
+codex plugin list --json
+```
+
+To update an existing installation, refresh its marketplace and installed cache:
+
+```bash
+# Claude Code
+claude plugin marketplace update agentops-marketplace
+claude plugin update agentops@agentops-marketplace
+
+# Codex (Git-backed marketplace)
+codex plugin marketplace upgrade agentops-marketplace
+codex plugin add agentops@agentops-marketplace
+```
+
+For a local Codex marketplace, re-run `codex plugin add` after updating its
+source; `marketplace upgrade` refreshes Git snapshots. Start a new session after
+an update. Claude's component inventory should show the 34 skills and four
+agents; Codex exposes the 34 skills with `agentops:` names.
+
+The Claude plugin also installs its policy dispatcher. The read-budget guard
+remains separately opt-in in both runtimes. Codex plugin installation does not
+register the `bulk-reader` and `code-writer` native roles. From a matching
+AgentOps checkout, install those roles explicitly:
+
+```bash
+bash scripts/install-codex-context-agents.sh
+# Optional, separate read-budget enforcement:
+bash scripts/install-codex-read-budget-guard.sh
+```
+
+The role installer requires Node.js and Codex, writes regular role files under
+`${CODEX_HOME:-$HOME/.codex}/agents`, and preserves backups when replacing changed
+configuration. Use `--project` from the target project for project-local setup.
+Restart Codex to discover the roles. If installing the optional hook, review and
+trust that exact hook in Codex's native hook manager before expecting enforcement.
+After a plugin upgrade, update the matching checkout and re-run any separately
+selected role or hook installer; plugin updates do not refresh those copied files.
+See [the context-budget design](design/codex-context-budget.md) for runtime
+limitations and validation evidence.
 
 ## Maintainer / contributor: the `ao` binary
 

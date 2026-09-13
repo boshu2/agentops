@@ -18,13 +18,17 @@ fail() {
 [[ -f "$IMPLEMENT" ]] || fail "Implement contract is missing"
 [[ -f "$MANIFEST_SCHEMA" ]] || fail "subject-manifest.v1 schema is missing"
 
-grep -Fq 'Execute exactly one bounded experiment' "$IMPLEMENT" || fail "Implement is not bounded to one experiment"
-grep -Fq 'fails for the expected missing' "$IMPLEMENT" || fail "Implement does not require a RED behavior-change baseline"
-grep -Fq 'Refactor only while those checks stay green' "$IMPLEMENT" || fail "Implement does not preserve GREEN while refactoring"
-grep -Fq 'Refactoring does not change the' "$IMPLEMENT" || fail "Implement does not preserve acceptance tests"
+# The native contract owns the accepted outcome, including direct repair. Its
+# scope, acceptance and evidence boundaries replace the retired one-shot limit.
+grep -Fq 'Implement the accepted outcome' "$IMPLEMENT" || fail "Implement does not own the accepted outcome"
+grep -Fq 'Carry the accepted behavior examples forward unchanged' "$IMPLEMENT" || fail "Implement does not preserve accepted behavior"
+grep -Fq 'for the expected missing behavior' "$IMPLEMENT" || fail "Implement does not require a RED behavior-change baseline"
+grep -Fq 'Refactor while acceptance remains green' "$IMPLEMENT" || fail "Implement does not preserve GREEN while refactoring"
+grep -Fq 'goldens, tolerances, suppressions and specification text against original' "$IMPLEMENT" || fail "Implement does not check oracle changes against original intent"
 grep -Fq 'runtime derive actual changed paths' "$IMPLEMENT" || fail "Implement does not derive changed paths from the subject"
-grep -Fq 'Return the manifest digest, author context ID, and exact check receipts' "$IMPLEMENT" || fail "Implement does not return derived identity and check facts"
-grep -Fq 'Do not commit, push, claim, close, release, land, reserve, retry' "$IMPLEMENT" || fail "Implement retains lifecycle authority"
+grep -Fq 'content digests, author context ID and check facts' "$IMPLEMENT" || fail "Implement does not return derived identity and check facts"
+grep -Fq 'An implement-only handoff does not authorize' "$IMPLEMENT" || fail "Implement retains lifecycle authority"
+grep -Fq 'Git, tracker or delivery transitions; existing caller authority remains usable' "$IMPLEMENT" || fail "Implement does not preserve caller-owned lifecycle authority"
 if grep -Eq 'CandidatePacket|candidate-packet' "$IMPLEMENT"; then
   fail "Implement advertises the removed CandidatePacket contract"
 fi

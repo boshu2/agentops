@@ -13,7 +13,9 @@ grep -Fq 'dependencies: []' "$PREMORTEM"
 grep -Fq 'dependencies: []' "$POSTMORTEM"
 grep -Fq 'advisory evidence for Plan' "$DUELING"
 grep -Fq 'Emit no readiness' "$DUELING"
-grep -Fq 'one active behavior' "$PLAN"
+# Plan now shapes caller-owned intent without imposing an experiment count.
+grep -Fq 'acceptance already supplied in the conversation or bead' "$PLAN"
+grep -Fq 'Stop planning once the implementer can act and the validator can judge' "$PLAN"
 
 for path in \
   "$ROOT/skills/discovery" \
