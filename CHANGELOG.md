@@ -7,24 +7,94 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
+## [4.0.0] - 2026-09-13
 
-- Code writers measure physical target lines with a metadata-only counter after writing and checking instead of inferring counts from rendered tool output.
-- Code-writer child schemas preserve the caller's exact key and target path so successful writes do not become unknown receipts after path normalization. Direct writers return one JSON receipt with boolean check status and no copied test output.
-- Claude context-budget guidance uses the plugin-qualified Agent and Workflow names; readers treat slice limits as per-call budgets and continue through EOF despite answer caps, early matches or truncated output.
-- Read-budget shell parsing now preserves literal quoted paths, rejects uncertain shell constructs without false attribution, honors end-of-options, and counts negative head limits correctly without integer overflow.
-- Opt-in read-budget installation preserves unique settings backups and checks the matcher and handler type before declaring the guard installed.
-- Context-budget workflows validate bounded worker returns, remove raw check output, report unknown state after worker failures, and preflight target identities before serial batch writes.
+AgentOps 4.0 makes native coding the default: accepted intent, implementation
+and checks, fresh independent judgment, then finish. No AgentOps skill,
+bootstrap, hook or orchestration service is required. The optional skill menu
+is consolidated from the 52 roots shipped in 3.6.0 to 34, and the CLI gains
+recovery and exact-content evidence helpers. This is a major release because
+published command, skill and scripted workflow entry points were removed.
+
+See the [curated release notes](https://github.com/boshu2/agentops/blob/main/docs/releases/2026-09-13-v4.0.0-notes.md)
+for upgrade instructions, the complete product-area summary and known limits.
 
 ### Added
 
-- Codex-native `bulk-reader` and `code-writer` role templates pinned to `gpt-5.6-luna`, generated with the existing skill bundle, explicit project registrations, and an opt-in personal/project installer that preserves existing configuration.
-- An opt-in Codex `PreToolUse` Bash adapter and installer reuse the read-budget guard's refusal, waivers and hashed telemetry; hook trust remains with the runtime. Native role instructions and runtime limitations are documented with live reader, writer and refusal evidence in `docs/design/codex-context-budget.md`.
-- The opt-in read-budget guard, `skills/cc-hooks/hooks/read-budget-guard.sh` (policy `core.context:unbounded-read`): a PreToolUse `Read|Bash` hook that blocks an unbounded `Read`, `cat`, `head` or `tail` of a file over the line budget (`AOP_READ_BUDGET_LINES`, default 350), names the two correct moves (a bounded slice or `bulk-reader` delegation), honors `AOP_WAIVE`, the waiver file and `AGENTOPS_HOOKS_DISABLED`, and appends hashed telemetry. It ships inert; `scripts/install-read-budget-guard.sh` is the opt-in installer (user, `--project` or `SETTINGS` scope).
-- The `bulk-read` workflow (`workflows/bulk-read.js`): one cheap reader agent per file, in parallel, reading in guard-compatible slices and returning line-referenced bullets with truthful `lines_covered` / `complete`; the file bytes never enter the caller's context.
-- The `code-write` workflow (`workflows/code-write.js`): one cheap writer agent per item from a spec plus a required reference file, matching the reference's patterns, writing only its distinct target and returning a receipt (path, line count, check result) the caller never reads back.
-- The `bulk-reader` and `code-writer` plugin subagents (`agents/bulk-reader.md`, `agents/code-writer.md`): the same reader and writer modes as Agent-tool `subagent_type` targets, `haiku` by default; `bulk-reader` is read-only.
-- Docs for the context-budget pattern: the `cc-hooks` `READ-BUDGET-GUARD.md` recipe, its `GUARDRAIL-VALUE-PROOF.md` entry and skill-spec reference, the `agent-native` `context-budget-delegation.md` reference plus a Reader / Writer note in its Roles, the `workflows/README.md` shapes and context-budget paragraph, and one pointer in `docs/agent-workflow-reference.md`.
+- Native Go evidence helpers under `ao provenance`: immutable intent snapshots,
+  subject manifests and digests, verdict storage, exact-subject verification,
+  required native judgment receipts, and orphaned-evidence inspection. Storage
+  uses an explicitly selected protected non-Git destination; mechanical
+  verification does not issue a semantic verdict.
+- `ao config context` resolves caller-owned external context routes, including
+  recovery from a selected native BD maintenance anchor. `ao session read-source`
+  returns explicitly bounded source spans and integrity facts for synthetic or
+  already-cleared sources; restricted-source access remains unsupported.
+- Bounded `ao provenance mine-session --view excerpts` extracts cited transcript
+  evidence without writing a checkpoint. Optional Memory guidance covers recall,
+  mining and reviewed topic curation; Skill Eval measures a named skill decision.
+- Claude `bulk-reader` and `code-writer` subagents, pinned to Haiku, and parallel
+  `bulk-read` / serial `code-write` workflows return compact findings or receipts
+  while keeping source and generated code out of the parent context.
+- Codex-native `bulk-reader` and `code-writer` roles pinned to `gpt-5.6-luna`,
+  generated with the portable bundle, plus explicit project registrations and
+  an opt-in personal/project installer that preserves existing configuration.
+- Separate opt-in Claude and Codex read-budget guards refuse oversized unbounded
+  file reads, suggest bounded slices or reader delegation, honor scoped waivers,
+  and record hashed telemetry. The default line budget is 350; installing skills
+  does not activate these hooks.
+
+### Changed
+
+- `ao quick-start`, `ao demo`, the README and runtime onboarding describe native
+  execution with zero mandatory skills. `ao demo --rpi` retains the explicitly
+  selected workflow; `ao init` remains optional. `ao skills link --skill NAME`
+  supports a selected subset while no-selector linking still installs the menu.
+- The 34-skill menu groups intent, implementation and judgment; engineering
+  specialists; Memory; deliberate review strategies; and optional tool/runtime
+  adapters. Consolidated names and replacements are documented in `docs/MIGRATION.md`.
+- Plan uses existing conversation or tracker acceptance, Implement repairs known
+  defects directly, and Validate judges exact content from a fresh author-distinct
+  context. RPI is optional; final review is assigned once with every required leg
+  preserved. Requested retrospectives follow the known outcome and judgment.
+- Memory and instruction-improvement guidance uses authorized source episodes,
+  bounded CASS/MS retrieval, protected drafts and independent support/disclosure
+  review. Later work must demonstrate benefit; a generated lesson is not proof.
+- The CLI and CI build with the Go 1.27.1 toolchain; CI Python moves to 3.14.
+  Dependency and pinned GitHub Actions updates are included across the full
+  3.6.0-to-4.0.0 interval.
+
+### Fixed
+
+- Doctor keeps unique per-action backups and preflights undo integrity before
+  restoration. Session mining protects checkpoint paths and concurrent writers;
+  handoffs preserve work/session associations and use correct newest-first ordering.
+- Evidence status, skill search, changed-file gate routing, constraint checks,
+  provenance graph validation and scenario-result publication handle previously
+  missed corruption, path, matching and recovery cases.
+- The read-budget parser preserves quoted paths, handles end-of-options and
+  negative `head` limits, and avoids attributing uncertain shell constructs to
+  the wrong file. Repeat refusals stay short; installers preserve unique backups.
+- Context-budget workers count physical lines, preserve the caller's target
+  identity, remove raw check output from returns and report unknown state after
+  worker failure. Batch writers preflight distinct target identities.
+- Codex role registration points to real source-owned TOML files instead of
+  symlink paths rejected by the installed runtime.
+- Generated skill projections, executable entry points, documentation checks,
+  seeded-defect probes and contamination detection received conformance repairs.
+
+### Removed
+
+- The published `ao eval` command family and `ao redact`. Use a repository-selected
+  evaluator and owner-authorized disclosure review; generic provenance can retain
+  the resulting evidence.
+- `workflows/rpi.js` and its scripted retry machinery. Invoke the optional RPI
+  skill when selected, or execute natively. AgentOps does not own an aggregate
+  retry controller, queue, work ownership, Git or delivery transition.
+- Twenty skill roots published in 3.6.0, including `learn`, `swarm`,
+  `codebase-recon`, `bootstrap`, `handoff`, `standards` and `workflow-builder`,
+  after useful behavior moved to surviving owners or native work. `memory` and
+  `skill-eval` are the two new roots relative to that tag.
 
 ## [3.6.0] - 2026-08-17
 
