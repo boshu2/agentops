@@ -85,7 +85,9 @@ jobs:
       - name: Install scanner tools
         run: |
           python -m pip install --upgrade pip
-          python -m pip install semgrep==1.169.0 ruff==0.15.21 radon==6.0.1 pytest==9.1.1
+          python -m pip install semgrep==1.169.0 ruff==0.15.21 radon==6.0.1 pytest==9.1.1 \
+            -r evals/skills-rpi/requirements.txt \
+            -r evals/skills-rpi/requirements-readout.txt
 
           GOBIN=/usr/local/bin go install github.com/securego/gosec/v2/cmd/gosec@v2.27.1
           GOBIN=/usr/local/bin go install github.com/zricethezav/gitleaks/v8@v8.30.1
