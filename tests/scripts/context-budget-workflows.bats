@@ -35,6 +35,11 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "code-write: status capture executes silent, failing, and errexit checks once" {
+  run node "$HARNESS" writer-check-once
+  [ "$status" -eq 0 ]
+}
+
 @test "code-write: path, symlink, hardlink, and missing-parent aliases start no writers" {
   run node "$HARNESS" target-aliases
   [ "$status" -eq 0 ]
