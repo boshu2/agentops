@@ -2,6 +2,7 @@
 package main
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 )
@@ -65,5 +66,21 @@ func TestVersion_RootVersionFlagWired(t *testing.T) {
 	}
 	if !strings.Contains(out, version) {
 		t.Errorf("ao --version output should contain %q, got: %s", version, out)
+	}
+}
+
+func TestVersion_SubcommandJSONUsesBuildVersion(t *testing.T) {
+	out, err := executeCommand("version", "--json")
+	if err != nil {
+		t.Fatalf("ao version --json returned error: %v", err)
+	}
+	var result struct {
+		Version string `json:"version"`
+	}
+	if err := json.Unmarshal([]byte(out), &result); err != nil {
+		t.Fatalf("ao version --json returned invalid JSON: %v", err)
+	}
+	if result.Version != version {
+		t.Errorf("ao version --json reports %q, want build version %q", result.Version, version)
 	}
 }
