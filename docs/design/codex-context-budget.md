@@ -1,7 +1,7 @@
 # Codex context-budget design and evidence
 
 Status: implemented; observed runtime behavior and remaining limits below.
-Original evidence cutoff: 2026-09-12. The 4.0.0 writer follow-up below records the 2026-09-13 repair and live results.
+Original evidence cutoff: 2026-09-12. The 3.7.0 writer follow-up below records the 2026-09-13 repair and live results.
 Acceptance is the two-job caller request recorded in private BD `age-z25n`.
 The exact e32e88c verdict was written before this job began and posted at
 https://github.com/boshu2/agentops/pull/1137#issuecomment-5648513520.
@@ -314,7 +314,7 @@ post-write line-count command. A fenced JSON receipt observed in a direct
 agent reply illustrates that direct-role formatting remains an instruction.
 No byte-filtering or strict direct-agent output parser is claimed.
 
-### 4.0.0 writer follow-up — 2026-09-13
+### 3.7.0 writer follow-up — 2026-09-13
 
 The duplicate invocation recovered a check's status by running the check again.
 Both writer prompts now capture that status immediately in the original Bash
