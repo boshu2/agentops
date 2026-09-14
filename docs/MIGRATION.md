@@ -77,9 +77,9 @@ warning:
 mkdir -p ~/.agents/ao && mv ~/.agentops/config.yaml ~/.agents/ao/config.yaml
 ```
 
-## Upgrade from 3.6 to 4.0
+## Upgrade from 3.6 to 3.7
 
-Version 4.0 removes published commands and skill entry points. Update explicit
+Version 3.7 removes published commands and skill entry points. Update explicit
 invocations before upgrading automation; the new names are not compatibility
 aliases. Ordinary native coding requires no replacement invocation.
 

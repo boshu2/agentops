@@ -7,16 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [4.0.0] - 2026-09-13
+## [3.7.0] - 2026-09-13
 
-AgentOps 4.0 makes native coding the default: accepted intent, implementation
+AgentOps 3.7 makes native coding the default: accepted intent, implementation
 and checks, fresh independent judgment, then finish. No AgentOps skill,
 bootstrap, hook or orchestration service is required. The optional skill menu
 is consolidated from the 52 roots shipped in 3.6.0 to 34, and the CLI gains
-recovery and exact-content evidence helpers. This is a major release because
-published command, skill and scripted workflow entry points were removed.
+recovery and exact-content evidence helpers. Upgrade guidance covers the
+published command, skill and scripted workflow entry points that were removed.
 
-See the [curated release notes](https://github.com/boshu2/agentops/blob/main/docs/releases/2026-09-13-v4.0.0-notes.md)
+See the [curated release notes](https://github.com/boshu2/agentops/blob/main/docs/releases/2026-09-13-v3.7.0-notes.md)
 for upgrade instructions, the complete product-area summary and known limits.
 
 ### Added
@@ -62,7 +62,7 @@ for upgrade instructions, the complete product-area summary and known limits.
   review. Later work must demonstrate benefit; a generated lesson is not proof.
 - The CLI and CI build with the Go 1.27.1 toolchain; CI Python moves to 3.14.
   Dependency and pinned GitHub Actions updates are included across the full
-  3.6.0-to-4.0.0 interval.
+  3.6.0-to-3.7.0 interval.
 
 ### Fixed
 
