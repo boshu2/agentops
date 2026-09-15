@@ -1,6 +1,6 @@
 {
   "schema_version": "3",
-  "skill_count": 34,
+  "skill_count": 35,
   "skills": [
     {
       "canonical_status": "canonical",
@@ -883,6 +883,34 @@
       ],
       "references_count": 4,
       "tier": "meta",
+      "user_invocable": true
+    },
+    {
+      "canonical_status": "canonical",
+      "capabilities": [
+        "run-forensics"
+      ],
+      "codex_override_present": false,
+      "consumes": [],
+      "context_rel": [],
+      "dependencies": [],
+      "description": "Answer questions about an agent run that already happened by reading its recording instead of the agent's memory. Triggers: \"why did it do that\", \"which step changed this file\", \"reproduce that run\", \"replay the failure\".",
+      "disposition": "keep_optional_adapter",
+      "effects": [
+        "read_recording",
+        "replay_recorded_run"
+      ],
+      "graph_root": false,
+      "hexagonal_role": "supporting",
+      "name": "run-forensics",
+      "practices": [
+        "sre"
+      ],
+      "produces": [
+        "run-forensics-report"
+      ],
+      "references_count": 0,
+      "tier": "execution",
       "user_invocable": true
     },
     {

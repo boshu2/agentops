@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "cfde05a564c19e506c9bf62c8a54c676f802f9b2a63550a25b9590f15a9a65de",
+  "codex_override_catalog_hash": "6902b2b7867fd770c55c96151b5551d938824086ee405c19397f337837594585",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -236,6 +236,12 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Auto-generated parity twin (codex-sync): skills/memory is the source of truth; no durable Codex-specific divergence yet."
+      },
+      {
+        "name": "run-forensics",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Auto-generated parity twin (codex-sync): skills/run-forensics is the source of truth; no durable Codex-specific divergence yet."
       }
     ]
   },
@@ -397,6 +403,12 @@
       "generated_hash": "e693c85afa9523379659186a8713724f30566ebae71dd864927dd434e089de38"
     },
     {
+      "name": "run-forensics",
+      "source_skill": "skills/run-forensics",
+      "source_hash": "62b723e2152df1c0a0f484befcf644ea969eaa41dd690be8ff8aa579366dd339",
+      "generated_hash": "38fcd1476376b86820cc63161babd92c3dd0f9b6dcbe6725a6eb162c44e8e172"
+    },
+    {
       "name": "sbh",
       "source_skill": "skills/sbh",
       "source_hash": "b1238323f1822de9ae1595b58df77bcee1526badc6a42106c7bdc67ce8ae84d5",
@@ -445,5 +457,5 @@
       "generated_hash": "c88209fb2cca50df76edb8395b6b2ccaa038b6d6cc4c5bba81dd4c8ee917bd09"
     }
   ],
-  "package_count": 34
+  "package_count": 35
 }

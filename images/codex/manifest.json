@@ -1,7 +1,7 @@
 {
   "image": "codex",
   "schema_version": "skill-image.v1",
-  "skill_count": 34,
+  "skill_count": 35,
   "skills": [
     {
       "disposition": "keep_optional_adapter",
@@ -158,6 +158,12 @@
       "slug": "rpi",
       "source_path": "skills/rpi/",
       "twin_path": "skills-codex/rpi/"
+    },
+    {
+      "disposition": "keep_optional_adapter",
+      "slug": "run-forensics",
+      "source_path": "skills/run-forensics/",
+      "twin_path": "skills-codex/run-forensics/"
     },
     {
       "disposition": "keep_optional_adapter",

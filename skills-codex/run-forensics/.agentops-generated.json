@@ -1,0 +1,7 @@
+{
+  "generator": "codex-sync",
+  "source_skill": "skills/run-forensics",
+  "layout": "modular",
+  "source_hash": "62b723e2152df1c0a0f484befcf644ea969eaa41dd690be8ff8aa579366dd339",
+  "generated_hash": "38fcd1476376b86820cc63161babd92c3dd0f9b6dcbe6725a6eb162c44e8e172"
+}

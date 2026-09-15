@@ -30,6 +30,7 @@ graph LR
   research["research"]
   reverse_engineer["reverse-engineer"]
   rpi["rpi"]
+  run_forensics["run-forensics"]
   sbh["sbh"]
   security["security"]
   skill_builder["skill-builder"]
