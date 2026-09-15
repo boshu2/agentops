@@ -16,7 +16,7 @@
 
 ## supporting
 
-`account-rotation`, `agent-mail`, `agent-native`, `cass`, `cc-hooks`, `craft-goal`, `dcg`, `doc`, `memory`, `ms`, `ntm`, `rch`, `refactor`, `reverse-engineer`, `sbh`, `skill-builder`, `skill-eval`, `test`
+`account-rotation`, `agent-mail`, `agent-native`, `cass`, `cc-hooks`, `craft-goal`, `dcg`, `doc`, `memory`, `ms`, `ntm`, `rch`, `refactor`, `reverse-engineer`, `run-forensics`, `sbh`, `skill-builder`, `skill-eval`, `test`
 
 ## Inventory
 
@@ -48,6 +48,7 @@
 | `research` | execution | `keep_specialist` | - | `research`, `codebase_recon`, `pattern_mining` | `write_research_report`, `write_recon_pack`, `write_pattern_evidence` |
 | `reverse-engineer` | execution | `keep_specialist` | - | `reverse_engineer` | `clone_upstream_repo`, `authorized_binary_execution`, `write_teardown_artifacts` |
 | `rpi` | meta | `keep_strategy` | `plan`, `implement`, `validate` | `own_authorized_outcome`, `report` | `dispatch_core_phases` |
+| `run-forensics` | execution | `keep_optional_adapter` | - | `run-forensics` | `read_recording`, `replay_recorded_run` |
 | `sbh` | execution | `keep_optional_adapter` | - | `sbh` | `delete_reclaimable_files`, `release_disk_ballast`, `modify_host_storage_config` |
 | `security` | product | `keep_specialist` | - | `security` | `write_scan_artifacts` |
 | `skill-builder` | meta | `keep_specialist` | - | `skill_builder`, `heal_skill`, `export_skill`, `distill_expertise` | `write_skill_source`, `write_build_report`, `regenerate_skill_projections`, `repair_skill_projections`, `write_converted_skill_projection`, `write_advisory_proposal` |

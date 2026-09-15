@@ -94,6 +94,7 @@
 | `rpi` | consumes | `implement` |
 | `rpi` | consumes | `validate` |
 | `rpi` | produces | `rpi-report.v1` |
+| `run-forensics` | produces | `run-forensics-report` |
 | `security` | consumes | `repo-context` |
 | `security` | produces | `security-gate-summary.json` |
 | `security` | produces | `suite-summary.json` |

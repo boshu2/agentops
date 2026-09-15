@@ -2,7 +2,7 @@
 
 # Skill Router
 
-34 live skills. Choose guidance for a concrete task need; no skill is mandatory.
+35 live skills. Choose guidance for a concrete task need; no skill is mandatory.
 A clear task can proceed in the native agent. Read a skill only when its description fits.
 Names and descriptions below come from each source SKILL.md; explicit invocation remains available.
 
@@ -61,6 +61,7 @@ Names and descriptions below come from each source SKILL.md; explicit invocation
 | [ms](../skills/ms/SKILL.md) | Find and load guidance with the meta_skill search engine. Use when: searching a skill corpus; CASS owns past sessions and Skill Builder owns package authoring. |
 | [ntm](../skills/ntm/SKILL.md) | Operate selected NTM agent panes and inspect native state. Use when: persistent tmux roles are requested; pane liveness and prompt delivery are not validation. |
 | [rch](../skills/rch/SKILL.md) | Offload one build through RCH or diagnose its remote compiler. Use when: remote compilation is selected; report errors without creating a retry controller. |
+| [run-forensics](../skills/run-forensics/SKILL.md) | Answer questions about an agent run that already happened by reading its recording instead of the agent's memory. Triggers: "why did it do that", "which step changed this file", "reproduce that run", "replay the failure". |
 | [sbh](../skills/sbh/SKILL.md) | Inspect disk pressure with SBH and perform an authorized recovery action. Use when: storage diagnosis or SBH recovery is requested; inspection does not authorize deletion. |
 | [using-flywheel](../skills/using-flywheel/SKILL.md) | Operate the Agentic Coding Flywheel through its native workflow. Use when: the caller explicitly selects this factory; convergence and closed work do not prove semantic acceptance. |
 | [using-gc](../skills/using-gc/SKILL.md) | Operate Gas City through its Mayor, registry packs and native run state. Use when: the caller explicitly selects Gas City; factory completion does not replace independent judgment. |
@@ -95,6 +96,7 @@ Names and descriptions below come from each source SKILL.md; explicit invocation
 | `research` | execution | `keep_specialist` | - | `research`, `codebase_recon`, `pattern_mining` | `write_research_report`, `write_recon_pack`, `write_pattern_evidence` |
 | `reverse-engineer` | execution | `keep_specialist` | - | `reverse_engineer` | `clone_upstream_repo`, `authorized_binary_execution`, `write_teardown_artifacts` |
 | `rpi` | meta | `keep_strategy` | `plan`, `implement`, `validate` | `own_authorized_outcome`, `report` | `dispatch_core_phases` |
+| `run-forensics` | execution | `keep_optional_adapter` | - | `run-forensics` | `read_recording`, `replay_recorded_run` |
 | `sbh` | execution | `keep_optional_adapter` | - | `sbh` | `delete_reclaimable_files`, `release_disk_ballast`, `modify_host_storage_config` |
 | `security` | product | `keep_specialist` | - | `security` | `write_scan_artifacts` |
 | `skill-builder` | meta | `keep_specialist` | - | `skill_builder`, `heal_skill`, `export_skill`, `distill_expertise` | `write_skill_source`, `write_build_report`, `regenerate_skill_projections`, `repair_skill_projections`, `write_converted_skill_projection`, `write_advisory_proposal` |
