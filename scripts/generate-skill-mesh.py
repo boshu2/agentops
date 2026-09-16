@@ -167,7 +167,7 @@ def router(entries: list[dict[str, Any]]) -> str:
         lines += [f"## {heading}", "", "| Skill | Use it for |", "|---|---|"]
         for entry in members:
             description = entry["description"].replace("|", "\\|").replace("\n", " ")
-            lines.append(f"| [{entry['name']}](../skills/{entry['name']}/SKILL.md) | {description} |")
+            lines.append(f"| [{entry['name']}](https://github.com/boshu2/agentops/blob/main/skills/{entry['name']}/SKILL.md) | {description} |")
         lines.append("")
     lines += ["## Complete inventory", "", md_table(entries), ""]
     return "\n".join(lines)
