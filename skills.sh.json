@@ -1,0 +1,31 @@
+{
+  "$schema": "https://skills.sh/schemas/skills.sh.schema.json",
+  "notGrouped": "bottom",
+  "groupings": [
+    {
+      "title": "Start here",
+      "description": "Trace a behavior, cover a regression, or simplify code. Use one skill for the task in front of you; no new workflow or ao CLI is required.",
+      "skills": ["research", "test", "refactor"]
+    },
+    {
+      "title": "Build and review",
+      "description": "Clarify a change, implement it, and check the result. Choose these independently; Validate requires the ao CLI.",
+      "skills": ["plan", "implement", "validate", "doc", "domain", "security", "reality-check"]
+    },
+    {
+      "title": "Explore and learn",
+      "description": "Compare ideas and retrieve relevant context when it can help the current task.",
+      "skills": ["idea-genie", "reverse-engineer", "memory", "cass", "ms"]
+    },
+    {
+      "title": "Deliberate workflows",
+      "description": "Select a review strategy, the RPI charter, goal planning, or skill authoring and evaluation when the task calls for it.",
+      "skills": ["premortem", "council", "postmortem", "rpi", "craft-goal", "skill-builder", "skill-eval"]
+    },
+    {
+      "title": "Optional tool adapters",
+      "description": "Use these only with the corresponding runtime or tool. They are not prerequisites for the starter skills.",
+      "skills": ["agent-native", "codex-exec", "agy-native", "ntm", "agent-mail", "using-gc", "using-flywheel", "cc-hooks", "dcg", "rch", "sbh", "account-rotation"]
+    }
+  ]
+}
