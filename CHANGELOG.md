@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Curated skills.sh groups put Research, Test, and Refactor first, followed by
+  the rest of the current 34-skill catalog. Ungrouped historical entries remain
+  below the current skills; this changes discovery, not installation behavior.
+
 ## [3.7.0] - 2026-09-13
 
 AgentOps 3.7 makes native coding the default: accepted intent, implementation
