@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the rest of the current 34-skill catalog. Ungrouped historical entries remain
   below the current skills; this changes discovery, not installation behavior.
 
+### Fixed
+
+- Skill catalog, schema, and setup links resolve to their repository sources
+  from the published documentation site, restoring its strict build check.
+
 ## [3.7.0] - 2026-09-13
 
 AgentOps 3.7 makes native coding the default: accepted intent, implementation
