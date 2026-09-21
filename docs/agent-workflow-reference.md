@@ -18,8 +18,11 @@ shell; the tracker, Git and runtime keep their existing authority.
    A genuine causal stall admits at most one bounded helper, never a chain.
    Report the outcome and evidence truthfully when complete or actually stopped.
 
-[Memory](../skills/memory/SKILL.md) supplies on-demand recall and separately
-budgeted mining/curation over caller-selected reviewed external topic pages.
+[Memory](../skills/memory/SKILL.md) owns on-demand find/recall, capture/mine/learn
+and curate operations over caller-selected reviewed project `.context/` or
+external topic pages. Mining is separately budgeted. Read cleared project pages
+with ordinary filesystem tools without BD or AO; existing docs, ADRs and code
+retain authority. Other roles use Memory's operation pointers.
 BD owns work/status/handoffs, Git content, and native/CASS sources episodes.
 Learning can update, qualify or remove a rule; no-change is valid. Only later
 work establishes benefit. This lean route uses public or already-cleared inputs

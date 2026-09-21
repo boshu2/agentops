@@ -1,1 +1,1 @@
-Run /doc to generate documentation for this project
+Run /agentops:doc to generate documentation for this project

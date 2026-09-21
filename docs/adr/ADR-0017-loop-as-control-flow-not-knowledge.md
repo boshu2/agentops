@@ -53,10 +53,13 @@ and spent real time/cost/quota skip help. No new invocation or compaction resets
 limits. Optional outer-goal guidance remains outside the core; no scheduler,
 evolve root, new AO command or process ledger is restored.
 
-Memory is an optional skill root with recall, mine/learn and curate/qualify/retire
-references. Use reviewed caller-selected external topic pages and update existing
-pages. Mining is separately budgeted off-path. Single incidents support narrow
-observations; stronger rules need stronger support, and benefit needs later work.
+Memory is the optional owner of find/recall, capture/mine/learn and
+curate/qualify/retire references. Use reviewed caller-selected project `.context/`
+or external topic pages and update existing pages. Portable reading of cleared
+project pages uses ordinary filesystem tools without BD or AO; existing docs,
+ADRs and code retain authority. Mining is separately budgeted off-path. Single
+incidents support narrow observations; stronger rules need stronger support,
+and benefit needs later work.
 Learning may remove rules; no-change and rare useful constraints remain valid.
 ADR-0016 still protects legacy evidence, external staging and review before Git.
 The lean trials use public/already-cleared inputs only and claim no native

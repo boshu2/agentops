@@ -20,6 +20,12 @@ Delegate focused intent, scope and evidence; retrieve history only when it can
 change a decision. Assign final review once, preserving required review legs.
 See [the skill menu](docs/SKILL-ROUTER.md) for optional guidance. Plan states observable behavior in existing domain terms; Validate checks those same accepted examples. Conversation or bead examples suffice.
 
+When prior context could change the task, optionally start at
+[the project context map](.context/README.md), then read only relevant pages and
+their current source owners. Cleared project pages use ordinary filesystem
+tools without BD or AO; [Memory](skills/memory/SKILL.md) owns find, capture and
+curate procedures. Docs/ADRs/code retain authority and BD retains work status.
+
 ## Repository map and mechanics
 
 | Path | What it is |
@@ -126,7 +132,7 @@ absorbs their authority.
 | Work, status, dependencies, close reasons | Beads or the caller's tracker | Query directly; never build a second work index. |
 | Source content and delivery history | Git and repository policy | Bind exact content when useful; a commit or merge never implies semantic PASS. |
 | Past agent sessions | Native sessions / CASS | Retrieve cited episodes on demand; search output is evidence, not policy. |
-| Curated cross-session memory | caller-selected reviewed external Markdown/OKF bundle, CM, ee, or another memory system | Check owner, task, model and destination access before retrieval; ADR-0016 governs disclosure. |
+| Curated cross-session memory | caller-selected reviewed project `.context/`, external Markdown/OKF bundle, CM, ee, or another memory system | Check owner, task, model and destination access before retrieval; ADR-0016 governs disclosure. |
 | Runtime execution | native coding agent and shell, or an explicitly selected factory | Read and report native state; runtime completion is never validation. |
 | Checks and test output | The executable that produced them | Store factual receipts; a fresh context judges meaning. |
 | Requested proof | caller-selected storage; existing `.agents/ao/` preserved | New CDLC proof defaults to protected external non-Git storage (ADR-0016). |
@@ -187,7 +193,7 @@ out-of-scope change or failed acceptance means `FAIL`. Repair known findings
 within authority and real bounds, then revalidate the changed exact subject.
 Persist machine evidence only for a caller request or declared consumer.
 
-[Memory](skills/memory/SKILL.md) owns optional recall, mining and curation:
+[Memory](skills/memory/SKILL.md) owns optional find/recall, capture/mining and curation:
 support, applicability, invalidation and preservation; no blind TTL/deletion.
 Benefit needs later work evidence. Use public or already-cleared inputs; this
 path supplies no native restricted-source enforcement. Protected external drafts and

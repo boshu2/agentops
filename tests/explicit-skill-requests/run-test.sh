@@ -1,41 +1,34 @@
 #!/usr/bin/env bash
-# Run a single explicit skill request test
-# Usage: ./run-test.sh <skill-name>
-
+# Structural resolution of one explicit qualified request. No runtime is launched.
+# Usage: ./run-test.sh <skill-name> [repo-root]
 set -euo pipefail
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../claude-code/test-helpers.sh"
-
+REPO_ROOT="${2:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
 SKILL_NAME="${1:-}"
-
-if [[ -z "$SKILL_NAME" ]]; then
-    echo "Usage: $0 <skill-name>"
-    echo "Example: $0 research"
+if [[ ! "$SKILL_NAME" =~ ^[a-z][a-z0-9-]*$ ]]; then
+    echo "FAIL: expected a canonical skill slug, got '$SKILL_NAME'" >&2
     exit 1
 fi
-
-PROMPT_FILE="$SCRIPT_DIR/prompts/${SKILL_NAME}.txt"
-
-if [[ ! -f "$PROMPT_FILE" ]]; then
-    echo "Prompt file not found: $PROMPT_FILE"
+PROMPT_FILE="$REPO_ROOT/tests/explicit-skill-requests/prompts/$SKILL_NAME.txt"
+if [[ ! -s "$PROMPT_FILE" ]]; then
+    echo "FAIL: prompt fixture missing or empty: $PROMPT_FILE" >&2
     exit 1
 fi
-
-PROMPT=$(cat "$PROMPT_FILE")
-
-echo "Testing explicit skill request: $SKILL_NAME"
-echo "Prompt: $PROMPT"
-echo ""
-
-# Run Claude with stream-json output
-LOG_FILE=$(run_claude_json "$PROMPT" 120) || true
-
-# Verify the skill was triggered
-assert_skill_triggered "$LOG_FILE" "$SKILL_NAME" "Skill triggered"
-
-# Verify no premature tool calls
-assert_no_premature_tools "$LOG_FILE" "No premature tools"
-
-echo ""
-echo "Log file: $LOG_FILE"
+# The qualified token is an explicit address, not natural-language trigger proof.
+if ! grep -oE "/agentops:[a-z][a-z0-9-]*" "$PROMPT_FILE" | grep -Fx "/agentops:$SKILL_NAME" >/dev/null; then
+    echo "FAIL: prompt does not explicitly address /agentops:$SKILL_NAME" >&2
+    exit 1
+fi
+for surface in skills skills-codex; do
+    target="$REPO_ROOT/$surface/$SKILL_NAME/SKILL.md"
+    if [[ ! -s "$target" ]]; then
+        echo "FAIL: canonical target missing or empty: $target" >&2
+        exit 1
+    fi
+    name=$(awk '/^---/{if(++c==1) next; exit} /^name:/{sub(/^name:[[:space:]]*/, ""); gsub(/^["\047]|["\047]$/, ""); print}' "$target")
+    if [[ "$name" != "$SKILL_NAME" ]]; then
+        echo "FAIL: $surface/$SKILL_NAME name '$name' differs from requested slug" >&2
+        exit 1
+    fi
+done
+echo "PASS: /agentops:$SKILL_NAME resolves structurally to canonical and Codex artifacts"

@@ -148,10 +148,16 @@ them. No new status ledger, process packet or lifecycle command is introduced.
 
 ## Optional Memory and specialists
 
-[Memory](../../skills/memory/SKILL.md) supplies on-demand recall, separately
-budgeted mining/learning, and curation/qualification/retirement. BD owns work,
+[Memory](../../skills/memory/SKILL.md) owns on-demand find/recall,
+capture/mine/learn and curation/qualification/retirement; mining is separately
+budgeted. Other roles point to those operations. BD owns work,
 status and handoffs; Git content; native/CASS sources episode evidence; and
-caller-selected reviewed external Markdown topic pages reusable claims.
+caller-selected reviewed Markdown topic pages in project `.context/` or external
+bundles reusable claims. Existing docs, ADRs and code retain authority. Read
+selected cleared project pages just in time through their small authored
+`README.md` map and ordinary filesystem tools; neither BD nor AO is required
+for those reads. The current `ao config context` external route requires native
+BD and rejects bundles overlapping the consumer checkout.
 Reuse/update an existing topic page. An entry gives applicability, action,
 support, limits and invalidation. Single incidents stay narrow; generalized
 rules need stronger evidence and later reapplication. Retain rare useful

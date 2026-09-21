@@ -492,7 +492,7 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Recall reviewed lessons or deliberately mine and curate experience. Use when: prior evidence can change an action, or learning is requested; no mandatory recall or lesson.",
+      "description": "Find reviewed context, capture evidence or curate maintained claims. Use when: prior evidence can change an action, or learning is requested; no mandatory recall or lesson.",
       "disposition": "keep_off_path",
       "effects": [
         "write_protected_drafts",

@@ -1,1 +1,1 @@
-Run /refactor to find high-complexity hotspots and execute a safe refactor
+Run /agentops:refactor to find high-complexity hotspots and execute a safe refactor

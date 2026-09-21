@@ -1,1 +1,1 @@
-Run /council to convene independent judges on this decision
+Run /agentops:council to convene independent judges on this decision

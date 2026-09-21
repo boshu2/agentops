@@ -1,65 +1,22 @@
-#!/bin/bash
-# Run all Codex integration tests
-# Usage: ./tests/codex/run-all.sh
-# ag-3b7.5
-# Test harness: intentionally -uo (not -euo) to accumulate passed/failed/skipped
+#!/usr/bin/env bash
+# Run all three live Codex CLI primitive probes, retaining every child's evidence.
 set -uo pipefail
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
-
-total=0
 passed=0
 failed=0
-skipped=0
-
-echo -e "${BLUE}════════════════════════════════════════════${NC}"
-echo -e "${BLUE} Codex Integration Tests${NC}"
-echo -e "${BLUE}════════════════════════════════════════════${NC}"
-echo ""
-
-for test_script in "$SCRIPT_DIR"/test-*.sh; do
-    [[ ! -f "$test_script" ]] && continue
-    test_name=$(basename "$test_script" .sh)
-    ((total++)) || true
-
-    echo -e "${BLUE}── $test_name ──${NC}"
-    test_output=""
-    if test_output=$(bash "$test_script" 2>&1); then
-        printf '%s\n' "$test_output"
-        if printf '%s\n' "$test_output" | grep -q "SKIPPED"; then
-            ((skipped++)) || true
-        else
-            ((passed++)) || true
-        fi
-    else
-        printf '%s\n' "$test_output"
-        if printf '%s\n' "$test_output" | grep -q "SKIPPED"; then
-            ((skipped++)) || true
-        else
-            ((failed++)) || true
-        fi
-    fi
-    echo ""
-done
-
-# Summary
-echo -e "${BLUE}════════════════════════════════════════════${NC}"
-echo -e "${BLUE} Summary: $total tests${NC}"
-echo -e "  ${GREEN}Passed:${NC}  $passed"
-echo -e "  ${RED}Failed:${NC}  $failed"
-echo -e "  ${YELLOW}Skipped:${NC} $skipped"
-echo -e "${BLUE}════════════════════════════════════════════${NC}"
-
-if [[ $failed -gt 0 ]]; then
-    echo -e "${RED}OVERALL: FAILED${NC}"
-    exit 1
-else
-    echo -e "${GREEN}OVERALL: PASSED${NC}"
-    exit 0
+if ! command -v codex >/dev/null 2>&1; then
+    echo "Codex live probes: 0 passed, 0 failed, 3 unavailable (CLI absent)"
+    exit 77
 fi
+for test_name in codex-review sandbox-mode structured-output; do
+    echo "=== Codex $test_name ==="
+    if bash "$SCRIPT_DIR/test-$test_name.sh"; then
+        passed=$((passed + 1))
+    else
+        status=$?
+        echo "FAIL: $test_name exited $status"
+        failed=$((failed + 1))
+    fi
+done
+echo "Codex live probes: $passed passed, $failed failed, 0 unavailable"
+[[ "$failed" -eq 0 ]] || exit 1

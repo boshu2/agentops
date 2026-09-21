@@ -1,0 +1,1 @@
+Use /agentops:skill-eval for the bounded task described by this skill.

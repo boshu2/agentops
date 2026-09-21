@@ -1,6 +1,21 @@
 # Testing Skills
 
-Comprehensive guide for writing and running skill tests in AgentOps.
+The Claude print helpers described below are archived and return a refusal.
+They do not provide current live skill invocation or first-tool ordering proof.
+Use the maintained Tier S checks:
+
+```bash
+bash tests/skills/test-runtime-claude-code-smoke.sh
+bash tests/explicit-skill-requests/run-all.sh
+```
+
+See [Testing](TESTING.md) and the [runtime charter](contracts/multi-runtime-tier-charter.md)
+for current proof boundaries. Required release C1/C8 live journeys remain separate.
+
+## Archived helper reference
+
+The remaining guide records the retired print-helper interface. Its live examples
+are historical and are not commands for the maintained test suite.
 
 ---
 

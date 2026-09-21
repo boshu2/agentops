@@ -1,69 +1,46 @@
 #!/usr/bin/env bash
-# test-release-e2e-validation.sh - Integration test for ci-local fast release E2E markers
-# Usage: bash tests/integration/test-release-e2e-validation.sh
-
+# Integration test for successful current ci-local fast release checks.
 set -euo pipefail
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-# Source shared colors and helpers
-source "${REPO_ROOT}/tests/lib/colors.sh"
-
-PASS=0
-FAIL=0
-
-pass() {
-    green "  PASS: $1"
-    PASS=$((PASS + 1))
+verify_release_output() {
+    local output_file="$1" marker failed=0
+    for marker in "Codex runtime sections" "Codex artifact metadata" \
+        "Install surface smoke" "ao init + live-waist smoke"; do
+        # The check's success line is required; a section header is not proof.
+        if sed -E $'s/\033\\[[0-9;]*m//g' "$output_file" | grep -Fx "  ✓ $marker" >/dev/null; then
+            echo "PASS: completed $marker"
+        else
+            echo "FAIL: missing successful completion of $marker" >&2
+            failed=1
+        fi
+    done
+    return "$failed"
 }
 
-fail() {
-    red "  FAIL: $1"
-    FAIL=$((FAIL + 1))
-}
-
-echo "=== Release E2E Validation (fast mode) ==="
-echo ""
-
-OUTPUT_FILE="$(mktemp)"
-AGENTS_HUB_TMP="$(mktemp -d)"
-trap 'rm -f "$OUTPUT_FILE"; rm -rf "$AGENTS_HUB_TMP"' EXIT
-
-log "Running ci-local release gate in fast mode..."
-set +e
-(cd "$REPO_ROOT" && AGENTS_HUB_OVERRIDE="$AGENTS_HUB_TMP" bash scripts/ci-local-release.sh --fast --jobs 4) >"$OUTPUT_FILE" 2>&1
-CI_EXIT=$?
-set -e
-
-if [ "$CI_EXIT" -ne 0 ]; then
-    fail "ci-local fast mode command exits 0 (got $CI_EXIT)"
-    echo "----- ci-local output (tail) -----"
-    tail -40 "$OUTPUT_FILE"
-    exit 1
-fi
-pass "ci-local fast mode command exits 0"
-
-check_marker() {
-    local marker="$1"
-    if grep -Fq "$marker" "$OUTPUT_FILE"; then
-        pass "Output contains marker: $marker"
+main() {
+    local log_root="${AGENTOPS_TEST_LOG_DIR:-${TMPDIR:-/tmp}}"
+    mkdir -p "$log_root"
+    local artifacts status
+    artifacts="$(mktemp -d "$log_root/release-e2e.XXXXXX")"
+    mkdir "$artifacts/agents-hub"
+    echo "Release E2E fast gate; retained diagnostics: $artifacts"
+    if (cd "$REPO_ROOT" && AGENTS_HUB_OVERRIDE="$artifacts/agents-hub" \
+        bash scripts/ci-local-release.sh --fast --jobs 4) > "$artifacts/release.log" 2>&1; then
+        status=0
     else
-        fail "Output contains marker: $marker"
+        status=$?
     fi
+    printf '%s\n' "$status" > "$artifacts/command.status"
+    if [[ "$status" -ne 0 ]]; then
+        echo "FAIL: ci-local fast mode exited $status; full log: $artifacts/release.log" >&2
+        tail -40 "$artifacts/release.log" >&2
+        return "$status"
+    fi
+    verify_release_output "$artifacts/release.log"
 }
 
-check_marker "Codex runtime sections"
-check_marker "Codex artifact metadata"
-check_marker "Hook install smoke (minimal + full)"
-check_marker "ao init --hooks + ao rpi smoke"
-
-echo ""
-echo "=== Summary ==="
-if [ "$FAIL" -gt 0 ]; then
-    red "FAILED - $FAIL checks failed"
-    exit 1
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    main "$@"
 fi
-
-green "PASSED - $PASS checks passed"
-exit 0

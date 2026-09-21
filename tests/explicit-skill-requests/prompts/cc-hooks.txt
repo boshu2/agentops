@@ -1,0 +1,1 @@
+Use /agentops:cc-hooks for the bounded task described by this skill.

@@ -1,0 +1,1 @@
+Use /agentops:domain for the bounded task described by this skill.

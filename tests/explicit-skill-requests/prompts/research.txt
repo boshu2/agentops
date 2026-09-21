@@ -1,1 +1,1 @@
-Please use the /research skill to explore this codebase
+Please use the /agentops:research skill to explore this codebase
