@@ -1,1 +1,1 @@
-Use the /plan skill to create a plan for adding a new feature
+Use the /agentops:plan skill to create a plan for adding a new feature

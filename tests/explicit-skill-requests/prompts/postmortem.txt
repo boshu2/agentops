@@ -1,1 +1,1 @@
-Execute /postmortem to analyze this completed run
+Execute /agentops:postmortem to analyze this completed run

@@ -1,1 +1,1 @@
-Run /premortem to simulate failures in this spec
+Run /agentops:premortem to simulate failures in this spec

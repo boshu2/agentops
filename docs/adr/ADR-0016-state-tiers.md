@@ -1,10 +1,37 @@
 # ADR-0016: State Tiers — One Authority per Claim; Projections Never Authoritative
 
-- **Status:** Accepted (2026-07-18), amended for external reviewed memory (2026-09-06)
+- **Status:** Accepted (2026-07-18), amended for selected project context (2026-09-21)
 - **Author:** AgentOps maintainers
 - **Builds on:** [ADR-0004](ADR-0004-corpus-moat-unproven-position-on-the-system.md) (corpus moat unproven — position on the verification system), [ADR-0011](ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md) (escape-corpus compounding demoted to hypothesis)
 - **Origin:** `.agents/brainstorm/2026-06-19-agentops-memory-state-substrate.md` (the governed-lakehouse brainstorm that first stated the one-authority invariant), `.agents/audits/2026-07-18-agents-writer-matrix.md` (the writer-matrix audit that exposed the junk drawer)
 - **Tracking:** epic `age-state-tiers-operationalize-5mzlm` (this ADR is `.1`), tracker epic `age-tracker-bd-dolt-return-jyg2g`
+
+## Active project-context amendment — 2026-09-21
+
+Caller-selected reviewed knowledge may live in project `.context/` alongside
+existing external Markdown/OKF bundles. This changes the maintained-page
+placement, not source authority or disclosure permission. Existing docs, ADRs
+and code stay at their owners; pages link them. A small authored `.context/README.md`
+maps useful topics and source owners without duplicating native work/status.
+Create only pages with a concrete consumer; no empty scaffold, automatic store
+creation or private import is authorized.
+
+[Memory](../../skills/memory/SKILL.md) owns find/recall, capture/mine/learn and
+curate/qualify/retire; other roles use its operation pointers. A worker may read
+selected cleared project pages just in time with ordinary filesystem tools.
+Portable reading does not require BD, AO, a private locator or a new configuration
+file. Existing external routes remain supported. The current `ao config context`
+command requires native BD and rejects a bundle overlapping the consumer
+checkout; this amendment does not claim CLI support for project `.context/`.
+
+Project pages use public or already-cleared inputs only. Exact content, intended
+paths and metadata receive fresh author-distinct factual-support and destination-
+disclosure review in protected external non-Git staging before any Git object,
+index, stash or import. Drafts and proof remain external; only approved bytes
+enter the selected destination. Legacy `.agents/` evidence, owner scope,
+withdrawal provenance and all confidentiality limits below remain intact. This
+instruction-level placement supplies no native restricted-source or privacy
+enforcement. Helpful reuse still needs later task evidence.
 
 ## Active lean-memory amendment — 2026-09-09
 
@@ -17,7 +44,8 @@ restricted-source or model-egress enforcement. Required future isolation is not
 supplied by these skills, labels, prompts or a same-user worktree.
 
 BD owns work/status/handoffs, Git content, native/CASS sources episodes and
-caller-selected reviewed external Markdown topic pages reusable claims. Update
+caller-selected reviewed Markdown topic pages in project `.context/` or external
+bundles reusable claims. Update
 an existing page; applicability, action, support, limits and invalidation belong
 in each entry. A single incident stays narrow; stronger rules need stronger
 support. Keep rare useful constraints and preserve withdrawal provenance. No
@@ -47,7 +75,7 @@ disposable agents, without weight training or deterministic-inference promises.
 | Work/status/dependencies/allowances/closure | Native BD/Dolt, never a second AO or memory work store. |
 | Revisions and delivery history | Native Git and caller repository policy; commits do not imply acceptance. |
 | Raw episodes | Native session/source systems; CASS locates sessions, authorized bounded raw reads establish coverage. |
-| Maintained claims | Caller-selected external reviewed Markdown/OKF bundle in ordinary Git, initially without a remote; evidence, not automatic policy. |
+| Maintained claims | Caller-selected reviewed project `.context/` pages or external Markdown/OKF bundle in ordinary Git; evidence, not automatic policy. External bundles initially have no remote; project pages follow existing repository delivery policy. |
 | Policy | Existing caller/repository policy owners; knowledge promotion is a separate authorized change. |
 | New CDLC drafts/proof/projections | Owner-selected protected external non-Git storage; projections inherit source access restrictions. |
 | Existing requested proof and unique research | Preserve exact existing files, citations and source ownership, including legacy `.agents/`. |
@@ -63,8 +91,8 @@ store on missing routing. Preserve legacy `_beads`, old `.beads` and private
 history. BV is optional read-only analysis over a fresh explicit BD export;
 recheck native readiness and goal constraints. No second work/status index.
 
-Caller/home configuration maps native project/source identity **plus owner
-scope** to permitted bundle, non-Git staging, evidence and access-policy
+For the existing AO external-bundle route, caller/home configuration maps native
+project/source identity **plus owner scope** to permitted bundle, non-Git staging, evidence and access-policy
 locators. Native maintenance work records permitted recovery references. Actual
 private locators/identities stay there, not in public product docs. Inspect
 existing caller content before reuse; never replace it. Missing or ambiguous
@@ -73,6 +101,8 @@ Same-named directories, clones and worktrees do not merge personal, employer
 or customer scopes. No consumer docs/wiki/root memory, tracked `.agents/`,
 submodule, symlink, hook or committed config is created by default. The old
 in-project wiki-init proposal is historical input, not the adopted recipe.
+Explicit project `.context/` selection follows the 2026-09-21 amendment above;
+it does not require this external-route configuration for portable cleared reads.
 
 Search the small Markdown bundle with metadata and `rg` first; a derived index
 needs a representative query comparison and a named consumer. CASS/CM/ee/MS

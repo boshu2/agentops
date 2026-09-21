@@ -23,6 +23,11 @@ TIER="${1:-}"
 total_passed=0
 total_failed=0
 total_skipped=0
+RUN_ALL_LOG_DIR="${RUN_ALL_LOG_DIR:-$(mktemp -d "${TMPDIR:-/tmp}/agentops-run-all.XXXXXX")}"
+mkdir -p "$RUN_ALL_LOG_DIR"
+export CODEX_TEST_LOG_DIR="${CODEX_TEST_LOG_DIR:-$RUN_ALL_LOG_DIR}"
+export AGENTOPS_TEST_LOG_DIR="${AGENTOPS_TEST_LOG_DIR:-$RUN_ALL_LOG_DIR}"
+echo "Retained suite diagnostics: $RUN_ALL_LOG_DIR"
 
 RUN_ALL_STATIC_LANE_TIMEOUT_SECONDS="${RUN_ALL_STATIC_LANE_TIMEOUT_SECONDS:-120}"
 RUN_ALL_CLAUDE_HELP_TIMEOUT_SECONDS="${RUN_ALL_CLAUDE_HELP_TIMEOUT_SECONDS:-10}"
@@ -39,7 +44,7 @@ skip() { echo -e "${YELLOW}  ⊘${NC} $1 (skipped)"; ((total_skipped++)) || true
 
 lane_log_file() {
     local name="${1//[^A-Za-z0-9_.-]/-}"
-    echo "/tmp/agentops-run-all-${name}.log"
+    echo "$RUN_ALL_LOG_DIR/${name}.log"
 }
 
 report_lane_status() {
@@ -54,6 +59,7 @@ report_lane_status() {
         fail "$label"
     fi
 
+    echo "    Full log: $log_file"
     if [[ -s "$log_file" ]]; then
         tail -20 "$log_file" | sed 's/^/    /'
     fi
@@ -155,7 +161,7 @@ if [[ -d "$SCRIPT_DIR/ol-integration" ]]; then
     for ol_test in "$SCRIPT_DIR"/ol-integration/*-ol-test.sh; do
         [[ ! -f "$ol_test" ]] && continue
         ol_name="$(basename "$ol_test" .sh)"
-        run_lane "$ol_name" "$RUN_ALL_STATIC_LANE_TIMEOUT_SECONDS" "/tmp/${ol_name}.log" bash "$ol_test"
+        run_lane "$ol_name" "$RUN_ALL_STATIC_LANE_TIMEOUT_SECONDS" "$(lane_log_file "$ol_name")" bash "$ol_test"
     done
 else
     skip "OL integration tests (directory not found)"
@@ -163,7 +169,7 @@ fi
 
 # Validate team-runner fixture scripts (static, no live runtime needed)
 if [[ -d "$SCRIPT_DIR/team-runner" ]]; then
-    run_lane "Team runner fixture tests" "$RUN_ALL_STATIC_LANE_TIMEOUT_SECONDS" /tmp/team-runner-tests.log \
+    run_lane "Team runner fixture tests" "$RUN_ALL_STATIC_LANE_TIMEOUT_SECONDS" "$(lane_log_file team-runner)" \
         bash "$SCRIPT_DIR/team-runner/run-all.sh"
 else
     skip "Team runner tests (directory not found)"
@@ -172,7 +178,7 @@ fi
 echo ""
 
 # =============================================================================
-# Tier 2: Smoke Tests (needs Claude CLI, fast)
+# Tier 2: Install smoke and live Codex CLI primitive probes
 # =============================================================================
 if [[ "$TIER" == "--tier=2" ]] || [[ "$TIER" == "--tier=3" ]] || [[ "$TIER" == "--all" ]]; then
     log "Tier 2: Smoke Tests"
@@ -211,8 +217,8 @@ if [[ "$TIER" == "--tier=2" ]] || [[ "$TIER" == "--tier=3" ]] || [[ "$TIER" == "
     if [[ -f "$SCRIPT_DIR/codex/integration/run-all.sh" ]]; then
         if command -v codex &>/dev/null; then
             log "  Running Codex integration tests..."
-            run_lane "Codex integration tests" "$RUN_ALL_CODEX_INTEGRATION_TIMEOUT_SECONDS" /tmp/codex-tests.log \
-                bash "$SCRIPT_DIR/codex/integration/run-all.sh"
+            run_lane "Codex integration tests" "$RUN_ALL_CODEX_INTEGRATION_TIMEOUT_SECONDS" "$(lane_log_file codex)" \
+                env CODEX_MODEL="${RUN_ALL_CODEX_MODEL:-${CODEX_MODEL:-}}" bash "$SCRIPT_DIR/codex/integration/run-all.sh"
         else
             skip "Codex CLI not available - skipping Codex integration tests"
         fi
@@ -222,67 +228,32 @@ if [[ "$TIER" == "--tier=2" ]] || [[ "$TIER" == "--tier=3" ]] || [[ "$TIER" == "
 fi
 
 # =============================================================================
-# Tier 3: Functional Tests (needs Claude CLI, slower)
+# Tier 3: Structural skill coverage and current CLI integration
 # =============================================================================
 if [[ "$TIER" == "--tier=3" ]] || [[ "$TIER" == "--all" ]]; then
-    log "Tier 3: Functional Tests"
+    log "Tier 3: Structural and CLI Integration Tests"
+    run_lane "Explicit request structure (Tier S)" "$RUN_ALL_FUNCTIONAL_LANE_TIMEOUT_SECONDS" "$(lane_log_file explicit-requests)" \
+        bash "$SCRIPT_DIR/explicit-skill-requests/run-all.sh"
 
-    if ! command -v claude &>/dev/null; then
-        skip "Claude CLI not available - skipping functional tests"
-    else
-        # Run explicit skill request tests
-        if [[ -d "$SCRIPT_DIR/explicit-skill-requests" ]]; then
-            log "  Running explicit skill request tests..."
-            run_lane "Explicit skill request tests" "$RUN_ALL_FUNCTIONAL_LANE_TIMEOUT_SECONDS" /tmp/explicit-tests.log \
-                bash "$SCRIPT_DIR/explicit-skill-requests/run-all.sh"
+    # Archived Claude print runners are not live proof and are not counted as passes.
+    # The integration registration entrypoint below invokes the maintained Tier S smoke.
+    log "  Live AgentOps workflow qualification is not established by structural checks."
+    run_lane "Release structural smoke" "$RUN_ALL_RELEASE_SMOKE_TIMEOUT_SECONDS" "$(lane_log_file release-smoke)" \
+        bash "$SCRIPT_DIR/release-smoke-test.sh" --full
+    run_lane "Harness regression fixtures" "$RUN_ALL_STATIC_LANE_TIMEOUT_SECONDS" "$(lane_log_file harness-fixtures)" \
+        bats "$SCRIPT_DIR/scripts/codex-integration-harness.bats" \
+        "$SCRIPT_DIR/scripts/explicit-skill-requests.bats" "$SCRIPT_DIR/scripts/release-e2e-evidence.bats"
+
+    for test_script in "$SCRIPT_DIR"/integration/test-*.sh; do
+        [[ -f "$test_script" ]] || continue
+        test_name="$(basename "$test_script" .sh)"
+        if [[ "$test_name" == "test-cli-commands" ]] && ! command -v go &>/dev/null; then
+            skip "$test_name (go not available)"
+            continue
         fi
-
-        # Run natural language triggering tests
-        if [[ -d "$SCRIPT_DIR/skill-triggering" ]]; then
-            log "  Running skill triggering tests..."
-            run_lane "Skill triggering tests" "$RUN_ALL_FUNCTIONAL_LANE_TIMEOUT_SECONDS" /tmp/triggering-tests.log \
-                bash "$SCRIPT_DIR/skill-triggering/run-all.sh"
-        fi
-
-        # Run claude-code unit tests
-        if [[ -d "$SCRIPT_DIR/claude-code" ]]; then
-            log "  Running Claude Code unit tests..."
-            run_lane "Claude Code unit tests" "$RUN_ALL_FUNCTIONAL_LANE_TIMEOUT_SECONDS" /tmp/unit-tests.log \
-                bash "$SCRIPT_DIR/claude-code/run-all.sh"
-        fi
-
-        # Run release smoke tests (agents + skills)
-        if [[ -f "$SCRIPT_DIR/release-smoke-test.sh" ]]; then
-            log "  Running release smoke tests..."
-            run_lane "Release smoke tests" "$RUN_ALL_RELEASE_SMOKE_TIMEOUT_SECONDS" /tmp/release-tests.log \
-                bash "$SCRIPT_DIR/release-smoke-test.sh"
-        fi
-
-        # Run integration tests (CLI commands, skill invocation, hook chain)
-        if [[ -d "$SCRIPT_DIR/integration" ]]; then
-            log "  Running integration tests..."
-            for test_script in "$SCRIPT_DIR"/integration/test-*.sh; do
-                [[ ! -f "$test_script" ]] && continue
-                test_name="$(basename "$test_script" .sh)"
-
-                # Skip skill invocation tests if Claude CLI not available
-                if [[ "$test_name" == "test-skill-invocation" ]] && ! command -v claude &>/dev/null; then
-                    skip "$test_name (claude CLI not available)"
-                    continue
-                fi
-
-                # Skip CLI tests if Go not available
-                if [[ "$test_name" == "test-cli-commands" ]] && ! command -v go &>/dev/null; then
-                    skip "$test_name (go not available)"
-                    continue
-                fi
-
-                run_lane "$test_name" "$RUN_ALL_INTEGRATION_SCRIPT_TIMEOUT_SECONDS" "/tmp/${test_name}.log" \
-                    bash "$test_script"
-            done
-        fi
-    fi
-
+        run_lane "$test_name" "$RUN_ALL_INTEGRATION_SCRIPT_TIMEOUT_SECONDS" "$(lane_log_file "$test_name")" \
+            bash "$test_script"
+    done
     echo ""
 fi
 

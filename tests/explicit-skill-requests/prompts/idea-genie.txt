@@ -1,0 +1,1 @@
+Use /agentops:idea-genie for the bounded task described by this skill.

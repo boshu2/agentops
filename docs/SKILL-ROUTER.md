@@ -32,7 +32,7 @@ Names and descriptions below come from each source SKILL.md; explicit invocation
 
 | Skill | Use it for |
 |---|---|
-| [memory](../skills/memory/SKILL.md) | Recall reviewed lessons or deliberately mine and curate experience. Use when: prior evidence can change an action, or learning is requested; no mandatory recall or lesson. |
+| [memory](../skills/memory/SKILL.md) | Find reviewed context, capture evidence or curate maintained claims. Use when: prior evidence can change an action, or learning is requested; no mandatory recall or lesson. |
 
 ## Deliberate planning and review strategies
 

@@ -1,1 +1,1 @@
-Run /implement to start working on a task
+Run /agentops:implement to start working on a task

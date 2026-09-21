@@ -122,8 +122,9 @@ A gate PASS is a deterministic fact, not a semantic verdict.
 The in-repo measurement surface (the former eval command family) was retired
 unconsumed — no gate, workflow, or script ran it (see
 [docs/MIGRATION.md](../MIGRATION.md)). Learn remains an optional, off-path
-consumer of authorized episodes and other evidence: the `learn` skill can
-update reviewed external topic pages under the Memory contract. No blind TTL
+consumer of authorized episodes and other evidence: [Memory capture](../../skills/memory/references/mine-learn.md)
+can propose reviewed project `.context/` or external topic-page updates through
+Memory curation. No blind TTL
 or per-session lesson is required. Rubric projections are
 still leak-guarded by `schemas/outcomes-rubric.v1.schema.json`
 (`internal/evalsubstrate`), and true holdout rubrics live in the external

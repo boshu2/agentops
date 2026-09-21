@@ -1,1 +1,0 @@
-Use /scaffold to start a new skill named handoff-lite from the handoff exemplar

@@ -1,14 +1,15 @@
 {
   "schema_version": 1,
   "id": "agentops-core.finding-prevention-governance",
-  "name": "AgentOps Finding Prevention Governance Canary",
-  "description": "Offline public canary for reusable findings, compiled prevention artifacts, task-validation constraints, constraint governance, and ratchet/finding CLI behavior.",
-  "practices": ["llm-eval-harness", "ai-assisted-dev"],
+  "name": "AgentOps Observation Provenance and Authority Boundary Canary",
+  "description": "Offline canary for generic observation provenance, retained source/evidence identity, and refusal of removed authority. This replaces the historical compiled-prevention/ratchet cases; it does not claim a recurrence reducer, policy promotion or task lifecycle control. Earlier results are not comparable to this contract.",
+  "practices": ["llm-eval-harness", "design-by-contract"],
   "domain": "mixed",
   "visibility": "public_canary",
   "tier": "deterministic",
+  "evidence_kind": "contract_canary",
   "owners": ["agentops"],
-  "tags": ["canary", "offline", "findings", "constraints", "ratchet", "prevention", "governance"],
+  "tags": ["canary", "offline", "observations", "provenance", "authority-boundary"],
   "allowed_runtimes": ["shell", "static"],
   "environment": {
     "offline_required": true,
@@ -20,96 +21,105 @@
     "aggregate_threshold": 1,
     "dimensions": [
       {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
-      {"name": "process_adherence", "weight": 2, "threshold": 1, "critical": true},
       {"name": "safety", "weight": 2, "threshold": 1, "critical": true},
-      {"name": "artifact_quality", "weight": 1, "threshold": 1},
-      {"name": "learning_closure", "weight": 1, "threshold": 1}
+      {"name": "runtime_compatibility", "weight": 1, "threshold": 1},
+      {"name": "artifact_quality", "weight": 1, "threshold": 1}
     ]
   },
-  "baseline_policy": {"mode": "compare", "baseline_path": ".agents/evals/baselines/agentops-core.finding-prevention-governance.baseline.json", "blocking_gate": "none"},
+  "baseline_policy": {"mode": "none", "blocking_gate": "none"},
   "cases": [
     {
-      "id": "finding-registry-skill-flow",
-      "title": "finding registry skill flow validates",
+      "id": "observation-provenance-e2e",
+      "title": "real CLI observations preserve evidence without acquiring authority",
       "kind": "command",
-      "objective": "Protect planning, premortem, vibe, and postmortem contracts for compiled prevention loading, registry fallback, dedup keys, fail-open behavior, atomic writes, and compiler refreshes.",
+      "objective": "Exercise removed membrane refusal without state, exact retry idempotence, distinct source/evidence identities, healthy and corrupt chains, and absence of policy/work mutation or producer candidates. Evidence references are opaque pointers, not verification of referenced file contents.",
       "runtime": "shell",
       "timeout_seconds": 120,
       "inputs": {
         "cwd": "../..",
-        "shell": "bash tests/skills/test-finding-registry-flow.sh"
+        "shell": "env GOPROXY=off bash tests/integration/test-observation-provenance.sh"
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "Results: 20 passed, 0 failed"}
+        {"type": "stdout_contains", "value": "PASS: removed membrane commands refuse with guidance and create no state"},
+        {"type": "stdout_contains", "value": "PASS: exact source/evidence retry returns the existing edge without appending"},
+        {"type": "stdout_contains", "value": "PASS: distinct observations retain source/evidence identities in a valid chain"},
+        {"type": "stdout_contains", "value": "PASS: repeated findings do not mutate caller policy/work or emit producer candidates"},
+        {"type": "stdout_contains", "value": "PASS: corrupt evidence identity fails chain verification"}
       ],
-      "dimensions": ["process_adherence", "artifact_quality", "learning_closure"],
+      "dimensions": ["correctness", "safety"],
       "critical": true
     },
     {
-      "id": "finding-prevention-ratchet-e2e",
-      "title": "finding prevention ratchet end-to-end passes",
+      "id": "provenance-command-tests",
+      "title": "maintained provenance command tests execute and pass",
       "kind": "command",
-      "objective": "Protect registry compilation into advisory findings, active mechanical constraints, task-validation enforcement, and close-loop citation feedback on finding artifacts.",
-      "runtime": "shell",
-      "timeout_seconds": 120,
-      "inputs": {
-        "cwd": "../..",
-        "shell": "bash tests/integration/test-finding-prevention-ratchet.sh"
-      },
-      "expectations": [
-        {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "Results: 11 passed, 0 failed, 0 skipped"}
-      ],
-      "dimensions": ["correctness", "safety", "learning_closure"],
-      "critical": true
-    },
-    {
-      "id": "finding-constraint-go-tests",
-      "title": "finding, constraint, ratchet, and router tests pass",
-      "kind": "command",
-      "objective": "Protect ao constraint lifecycle behavior, findings list/pull/stats JSON, ratchet gate checks, and Dream finding router enum compliance.",
+      "objective": "Check actual provenance add/list/verify behavior. Require each named test's PASS line so an empty test selection cannot satisfy the canary.",
       "runtime": "shell",
       "timeout_seconds": 120,
       "inputs": {
         "cwd": "../../cli",
-        "shell": "env -u AGENTOPS_RPI_RUNTIME go test -timeout=120s ./cmd/ao ./internal/overnight -run '^(TestConstraint_Integration_FullLifecycle|TestConstraintActivateJSONAndReviewStale|TestFindingsListJSON_ExcludesRetiredByDefault|TestFindingsPullAndExport_JSON|TestFindingsStats_JSON|TestRunRatchetCheck_GateChecker_PreMortemWithResearch|TestRunRatchetValidate_UnknownStep|TestRouteFindings_EmitsSchemaCompliantEnums)$'"
+        "shell": "env -u AGENTOPS_RPI_RUNTIME GOPROXY=off go test -count=1 -v -timeout=120s ./internal/commands/provenance -run '^(TestProvenanceAdd_ProducesSchemaValidEdgeAndReadsBack|TestProvenanceAdd_Idempotent|TestProvenanceList_FiltersByFromIDAndRelation|TestProvenanceVerify_IntactLedgerPasses|TestProvenanceVerify_TamperedLedgerFails)$'"
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "ok  \tgithub.com/boshu2/agentops/cli/cmd/ao"},
-        {"type": "stdout_contains", "value": "ok  \tgithub.com/boshu2/agentops/cli/internal/overnight"}
+        {"type": "stdout_contains", "value": "--- PASS: TestProvenanceAdd_ProducesSchemaValidEdgeAndReadsBack ("},
+        {"type": "stdout_contains", "value": "--- PASS: TestProvenanceAdd_Idempotent ("},
+        {"type": "stdout_contains", "value": "--- PASS: TestProvenanceList_FiltersByFromIDAndRelation ("},
+        {"type": "stdout_contains", "value": "--- PASS: TestProvenanceVerify_IntactLedgerPasses ("},
+        {"type": "stdout_contains", "value": "--- PASS: TestProvenanceVerify_TamperedLedgerFails ("}
       ],
-      "dimensions": ["correctness", "runtime_compatibility", "safety"],
+      "dimensions": ["correctness", "runtime_compatibility"],
       "critical": true
     },
     {
-      "id": "prevention-contract-docs",
-      "title": "finding prevention contracts document fail-open and compilation rules",
-      "kind": "artifact_check",
-      "objective": "Keep docs and runtime skill copies explicit about registry reader behavior, compiled prevention outputs, and mechanical constraint promotion.",
+      "id": "removed-authority-command-tests",
+      "title": "removed command names stay unavailable with migration guidance",
+      "kind": "command",
+      "objective": "Require executed tests for migration hints, migration rows, absent removed command registrations and root help that does not advertise retired authority.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../../cli",
+        "shell": "env -u AGENTOPS_RPI_RUNTIME GOPROXY=off go test -count=1 -v -timeout=120s ./cmd/ao -run '^(TestRemovedCommandHint_TombstonedVerbs|TestRemovedVerbsHaveMigrationRows|TestHintedVerbsAreNotLiveCommands|TestRootHelpNamesNoRemovedVerbs)$'"
+      },
       "expectations": [
-        {"type": "artifact_contains", "target": "../../skills/premortem/SKILL.md", "value": "malformed line -> warn and ignore that line"},
-        {"type": "artifact_contains", "target": "../../skills-codex/premortem/SKILL.md", "value": "malformed line -> warn and ignore that line"},
-        {"type": "artifact_contains", "target": "../../docs/contracts/finding-registry.md", "value": "Reader failure behavior is fail-open:"},
-        {"type": "artifact_contains", "target": "../../docs/contracts/finding-compiler.md", "value": ".agents/constraints/index.json"},
-        {"type": "artifact_contains", "target": "../../docs/contracts/finding-compiler.md", "value": "retired` or `superseded` findings must not leave active downstream outputs behind"}
+        {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "--- PASS: TestRemovedCommandHint_TombstonedVerbs ("},
+        {"type": "stdout_contains", "value": "--- PASS: TestRemovedVerbsHaveMigrationRows ("},
+        {"type": "stdout_contains", "value": "--- PASS: TestHintedVerbsAreNotLiveCommands ("},
+        {"type": "stdout_contains", "value": "--- PASS: TestRootHelpNamesNoRemovedVerbs ("}
       ],
-      "dimensions": ["process_adherence", "artifact_quality", "learning_closure"]
+      "dimensions": ["correctness", "safety"],
+      "critical": true
     },
     {
-      "id": "governance-cli-docs",
-      "title": "generated CLI docs expose findings, constraints, and ratchet commands",
+      "id": "observation-authority-docs",
+      "title": "current contracts separate observations from unimplemented promotion",
       "kind": "artifact_check",
-      "objective": "Keep operator docs aligned with the CLI surfaces that inspect, compile, enforce, and audit reusable prevention artifacts.",
+      "objective": "Keep migration guidance and the learning-loop description honest about generic observations, caller-owned work and the unimplemented recurrence reducer.",
       "expectations": [
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao findings`"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao constraint`"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao ratchet`"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Manage promoted finding artifacts under .agents/findings/."},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Manage constraints compiled from promoted findings."}
+        {"type": "artifact_contains", "target": "../../docs/MIGRATION.md", "value": "| `ao membrane` | Record observations as Validate findings or generic provenance. |"},
+        {"type": "artifact_contains", "target": "../../docs/MIGRATION.md", "value": "AgentOps no longer promotes findings into blocking state."},
+        {"type": "artifact_contains", "target": "../../docs/MIGRATION.md", "value": "AgentOps does not close work."},
+        {"type": "artifact_contains", "target": "../../docs/knowledge-flywheel.md", "value": "**Status: design, not implementation.**"},
+        {"type": "artifact_contains", "target": "../../docs/knowledge-flywheel.md", "value": "page exist on disk. The reducer they describe does not."}
       ],
-      "dimensions": ["process_adherence", "artifact_quality", "runtime_compatibility"]
+      "dimensions": ["safety", "artifact_quality"],
+      "critical": true
+    },
+    {
+      "id": "provenance-cli-docs",
+      "title": "generated CLI docs expose current generic provenance commands",
+      "kind": "artifact_check",
+      "objective": "Keep documented CLI command names aligned with the add/list/verify operations exercised above. Documentation alone does not establish execution or automatic authority.",
+      "expectations": [
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao provenance`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao provenance add`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao provenance list`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao provenance verify`"}
+      ],
+      "dimensions": ["artifact_quality", "runtime_compatibility"]
     }
   ]
 }
