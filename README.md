@@ -38,17 +38,38 @@ with your existing tests, issue tracker, and Git workflow.
 Choose guidance for the uncertainty and coordination your task needs.
 
 ```mermaid
-flowchart TD
-    intent["Clear, accepted intent"] --> implement["Implementation and checks"]
-    unclear["Unclear intent"] --> plan["Plan"]
-    plan -->|Intent settled| implement
-    existing["Existing change"] --> judge{"Fresh independent<br/>judgment"}
-    implement --> judge
-    judge -->|Acceptance established| finish["Finish"]
-    judge -->|Failed behavior| implement
-    judge -->|Missing evidence| evidence["Gather evidence"]
-    evidence --> judge
+flowchart RL
+    subgraph work["Engineering workflow"]
+        direction TB
+        intent["Clear, accepted intent"] --> implement["Implementation and checks"]
+        unclear["Unclear intent"] --> plan["Plan"]
+        plan -->|Intent settled| implement
+        existing["Existing change"] --> judge{"Fresh independent<br/>judgment"}
+        implement --> judge
+        judge -->|Acceptance established| finish["Finish"]
+        judge -->|Failed behavior| implement
+        judge -->|Missing evidence| evidence["Gather evidence"]
+        evidence --> judge
+    end
+
+    subgraph learning["Optional learning loop"]
+        direction TB
+        draft["Draft supported lessons<br/>Protected, outside Git"]
+        review["Fresh independent review<br/>Support + disclosure"]
+        context[(".context/<br/>Map + reviewed topics")]
+        query["Query relevant pages<br/>Recheck current sources"]
+        draft --> review
+        review -->|Approved content only| context
+        context --> query
+    end
+
+    work -.->|Results, failures,<br/>corrections| learning
+    learning -.->|Reuse applicable<br/>context in later work| work
 ```
+
+Query `.context/README.md` and relevant topics only when they can change the
+next action. Compounding is the aim; count it only when reuse improves later
+work, and retain failed reuse as evidence.
 
 ### Choose skills by the work
 
