@@ -901,11 +901,11 @@ PY
     # evidence on either host. Synthetic verified-set tests cover the positive
     # path; native launcher availability must not repair evaluator drift.
     [ "$(json_field "$output" measured)" = "0" ]
-    # Consolidation retired four judgment/product roots. Pin the surviving
-    # members as well as the count so denominator loss cannot earn coverage.
-    local expected_unmeasured="['council', 'craft-goal', 'doc', 'postmortem', 'premortem', 'reality-check', 'security', 'validate']"
-    [ "$(json_field "$output" gated_total)" = "8" ]
-    [ "$(json_field "$output" unmeasured_count)" = "8" ]
+    # Consolidation retired four judgment/product roots and Review added one.
+    # Pin every member and the count so denominator loss cannot earn coverage.
+    local expected_unmeasured="['council', 'craft-goal', 'doc', 'postmortem', 'premortem', 'reality-check', 'review', 'security', 'validate']"
+    [ "$(json_field "$output" gated_total)" = "9" ]
+    [ "$(json_field "$output" unmeasured_count)" = "9" ]
     [ "$(json_field "$output" unmeasured)" = "$expected_unmeasured" ]
     [[ "$output" == *'"scorecard":"docs/evals/scorecards/2026-09-03/premortem-plan-shape-t2-low.json","eligible":false,"reason":"evidence-unverified"'* ]]
     [[ "$output" == *'"scorecard":"docs/evals/scorecards/2026-09-03/premortem-plan-shape-t2-xhigh.json","eligible":false,"reason":"evidence-unverified"'* ]]
