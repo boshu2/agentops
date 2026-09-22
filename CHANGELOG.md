@@ -9,10 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.8.0] - 2026-09-22
 
-AgentOps 3.8 adds advisory Review, native-work coordination through Orchestrate,
-resumable Plan guidance and reviewed Git-shared project context. The optional
-menu grows from 34 to 36 skills. Existing 3.7 command and skill names remain
-available; native work still requires zero AgentOps skills.
+AgentOps 3.8 refactors the engineering workflow across 13 skills: 11 existing
+skills are updated and two are new, Review and Orchestrate. It builds on 3.7's
+native workflow with resumable planning, coordination, reviewed shared context
+and service-operation methods. Enter where the work needs you: implement clear
+intent directly, plan when behavior or scope is uncertain, and use fresh
+independent judgment to check the result. The optional menu grows from 34 to
+36 skills. Existing 3.7 command and skill names remain available; native work
+still requires zero AgentOps skills.
 
 See the [curated release notes](https://github.com/boshu2/agentops/blob/main/docs/releases/2026-09-22-v3.8.0-notes.md)
 for upgrade instructions, product changes and known limits.
