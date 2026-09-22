@@ -186,6 +186,12 @@ operations, preserving its install scope and recorded source. Do not use
 installed revision/version and selected destinations, and preserve local edits
 or user-owned collisions. See [failed-upgrade recovery](#recover).
 
+Skills 1.7.0's [update path resolution](https://github.com/vercel-labs/skills/blob/v1.7.0/src/update.ts)
+skips names present at multiple paths, including canonical/generated duplicates;
+`update` can still exit successfully with old copies installed. Inspect its
+output and compare installed `SKILL.md` bytes with the intended source before
+declaring the update complete.
+
 ## Audit
 
 Preview the complete runtime fan-out without changing anything:
@@ -313,8 +319,12 @@ has been checked in a cold session; there is no cross-host atomic rollback.
    and foreign links intact. After fixing the cause, rerun the same selected
    link command without `--dry-run`; do not accidentally expand to a full install.
 4. For plugin/npx failures, use that manager to inspect and retry the same
-   installation; preserve edits before replacing owned copies. Recheck optional
-   copied roles/hooks separately. If returning to an earlier source revision,
+   installation; preserve edits before replacing owned copies. For npx skills
+   skipped by `update`, repeat the original `add` command from the original
+   destination with the same source, skill selection, agents, project/global
+   scope and link/copy flags. Compare installed bytes with the intended source
+   afterward; adding new skill names is a separate selection change. Recheck
+   optional copied roles/hooks separately. If returning to an earlier source revision,
    preserve current changes and use the repository/manager's recovery policy;
    source links immediately follow the checkout and need no cache reinstall.
 5. Start a fresh session, verify actual selected loading and resume the bounded
