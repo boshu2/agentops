@@ -18,7 +18,7 @@ with your existing tests, issue tracker, and Git workflow.
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Latest release](https://img.shields.io/github/v/release/boshu2/agentops)](https://github.com/boshu2/agentops/releases/latest)
 
-[Install](#quickstart) · [Why these skills exist](#why-these-skills-exist) ·
+[Install](#quickstart) · [Workflow](#workflow) · [Why these skills exist](#why-these-skills-exist) ·
 [Skill library](#choose-skills-by-the-work) · [Documentation](docs/documentation-index.md)
 
 ## Why use AgentOps?
@@ -32,6 +32,35 @@ with your existing tests, issue tracker, and Git workflow.
 
 The 36-skill library packages established engineering practices. Select what
 helps the current task; a clear change can proceed directly in your coding agent.
+
+## Workflow
+
+**Start where the work is. You do not need to run Plan before Implement.**
+Choose an entrypoint based on what is already known and how much coordination
+the work needs. A bug with clear expected behavior can go straight to a fix;
+an unclear feature needs its behavior settled first.
+
+```text
+Accepted intent → Implementation and checks → Fresh independent judgment → Finish
+```
+
+| Your starting point | Where to enter |
+|---|---|
+| You know what needs to change | **Implement** directly from the existing request or issue. Use **Test** or **Refactor** for focused work. |
+| The desired behavior or scope is unclear | **Plan** to settle it; use **Research** when you need facts about the system. |
+| A change or design already exists | **Review** for advice; **Validate** in a fresh context for acceptance of an exact change. |
+| Work spans several tasks or agents | **Orchestrate** to coordinate scope, dependencies, integration and fresh validation. |
+| Earlier work may answer the current question | **Memory** to retrieve relevant, reviewed context. |
+
+These are entrypoints, not mandatory stages. Use one skill, combine a few, or
+follow the same workflow directly in your coding agent with no AgentOps skills.
+Planning, research and coordination scale with the work; fresh independent
+judgment still checks the implemented result against the accepted intent.
+
+Feedback goes back into the work: repair a demonstrated failure or gather
+missing evidence, then have a fresh reviewer judge the updated candidate.
+Keep the accepted behavior fixed unless you authorize a scope change. Finish
+through your repository's normal delivery process once acceptance is established.
 
 <a id="install"></a>
 
@@ -233,29 +262,33 @@ the engineering value AgentOps aims to preserve across sessions; a saved note
 alone does not establish that later work improved.
 
 <details>
-<summary>Try the example through planning, implementation, and review</summary>
+<summary>Try the example: implement directly, plan only if needed, then validate</summary>
 
 Use this in a repository with a Job worker, adapting the domain terms to the
 actual system. These are prompts for your coding agent, not shell commands.
 Here is the Codex form; in Claude Code, replace `$agentops:` with `/agentops:`.
 
-```text
-$agentops:plan Clarify this behavior and its scope: given a Job has completed,
-when the worker receives it again, return the completed result without
-repeating the side effect. Reuse our existing domain terms and identify the
-smallest check that distinguishes correct behavior from the current code.
-```
-
-After agreeing on the scope:
+If the behavior above is already agreed, start with implementation:
 
 ```text
 $agentops:implement Implement the accepted Job behavior within the agreed scope.
+When a completed Job is received again, return its result without repeating
+the side effect.
 Add a regression check for the returned result and the absence of a repeated
 side effect. Run the owning checks and report their results.
 ```
 
-Then use a **fresh reviewer context**, with access to the exact change, the
-accepted scope, and the check results. Validate requires the [optional `ao` CLI](#optional-ao-cli).
+If the intended behavior or scope is still unclear, use Plan first:
+
+```text
+$agentops:plan Clarify how a worker should handle a Job it has already completed.
+Reuse our existing domain terms, settle the expected behavior and scope, and
+identify the smallest check that distinguishes correct behavior from current code.
+```
+
+After implementation and checks, use a **fresh reviewer context**, with access
+to the exact change, the accepted scope, and the check results. Validate requires
+the [optional `ao` CLI](#optional-ao-cli).
 
 ```text
 $agentops:validate Review this change against the accepted scope and behavior:
@@ -263,6 +296,10 @@ a completed Job received again returns its result without repeating its side
 effect. Inspect the implementation and check evidence; report PASS, FAIL, or
 NOT_PROVEN with checked scope and any missing evidence. Do not change the code.
 ```
+
+If validation finds a failure, repair it within the accepted scope. If evidence
+is missing, obtain it. Then request fresh judgment of the updated candidate;
+do not treat a passing test or an advisory Review as acceptance.
 
 These prompts illustrate a workflow; they are not a transcript or a claim that
 the example has run in your repository. Individual skills can also be used on
