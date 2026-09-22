@@ -1,11 +1,10 @@
 # AgentOps
 
-**Keep your AI agents from becoming slop cannons.**
-
-AgentOps is a collection of software engineering practices I've found work with
-AI agents, packaged as reusable skills. They help your agent understand the code
-before changing it, write tests that check the requested behavior, and bring in
-a fresh reviewer to catch work that looks finished but isn't.
+AgentOps is an operations layer for AI coding agents. It encodes software
+engineering practices into reusable skills and tools for planning,
+implementation, coordination, testing, and independent review. AI agents are
+stochastic workers; AgentOps supplies the operational and engineering discipline
+for directing their work and checking the results.
 
 Use one skill for a bug fix or combine them for a larger project. The instructions
 are plain Markdown you can inspect and adapt. Your coding agent does the work
