@@ -156,13 +156,21 @@ Use `--dry-run` to preview and `--dest /path/to/skills` for one discovery root.
 The command links selected canonical `skills/<slug>/` directories into
 `~/.agents/skills` and detected runtime roots: `~/.claude/skills`,
 `~/.codex/skills`, `~/.gemini/skills`, `~/.cursor/skills` and `~/.pi/skills` when
-their parent config directories exist. This path uses canonical skill names,
-such as `$test` in Codex, rather than the plugin's `$agentops:test`.
+their parent config directories exist.
 It refuses to replace real directories, foreign links, or user-owned skills.
 For OpenCode's dedicated discovery root, use an explicit destination; its
 portable `~/.agents/skills` root is already included. Follow the
 [install guide](../.opencode/INSTALL.md). A `--dest` installation must use the
 same destination for later audit, update and unlink commands.
+
+Invocation uses the host's actual registered name, independently of the catalog
+slug passed to `--skill`. Observed Codex source discovery registered Plan as
+`agentops:plan`, invoked as `$agentops:plan`, with `scope: repo`, `pluginId: null`
+and a canonical `skills/plan/SKILL.md` path. Inspect native inventory for your
+installed host version and identify the installation from its path, scope and
+plugin identity; the `agentops:` prefix alone does not identify a plugin.
+Registration does not establish loaded content or successful execution; see the
+[host evidence limits](contracts/multi-runtime-tier-charter.md#host-and-install-surface-mapping).
 
 ## Update
 

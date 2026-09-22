@@ -118,10 +118,14 @@ This is the literal disposition of all 34 canonical roots at migration baseline
 `skills/<name>/SKILL.md` contracts. Each linked contract remains the method owner.
 The [generated catalog](../skills/catalog.json) and [router](SKILL-ROUTER.md)
 describe the current inventory; fewer roots or improved discovery is not claimed.
-For every **keep** row, its slug and explicit invocation remain compatible:
-`/agentops:<name>` in Claude's plugin, `$agentops:<name>` in Codex's plugin,
-and the unqualified catalog name for source-linked installs. Host loading is
-qualified separately from package presence.
+For every **keep** row, its catalog slug remains compatible. Managed plugin
+invocations remain `/agentops:<name>` in Claude and `$agentops:<name>` in Codex.
+For source-linked installs, use the host's actual registered name, including any
+namespace: observed Codex source Plan was registered as `agentops:plan`, invoked
+as `$agentops:plan`. Check native inventory for the installed host version;
+path, scope and plugin identity establish installation mechanism separately from
+invocation spelling. The [host evidence limits](contracts/multi-runtime-tier-charter.md#host-and-install-surface-mapping)
+apply, and host loading is qualified separately from package presence.
 
 | Baseline entrypoint | Disposition | Maintained owner and outcome |
 |---|---|---|
