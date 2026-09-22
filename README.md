@@ -481,6 +481,9 @@ and history, your tracker records work, and your coding agent or selected
 factory runs it. AgentOps supplies guidance, checks, and independent judgment.
 Your repository keeps its delivery rules.
 
+These systems form a federated integration graph: each keeps its own state and
+authority, with references connecting the work and its evidence.
+
 ```text
 Accepted behavior and domain terms
         |
