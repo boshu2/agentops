@@ -33,7 +33,7 @@ regenerated through [regen-all](../../scripts/regen-all.sh).
 | Consumer | Retained surface and owner | Structural checks | Actual load / execution obligation |
 |---|---|---|---|
 | Claude Code, first-class | Managed plugin: [.claude-plugin](../../.claude-plugin/plugin.json), canonical `skills/`, [agents](../../agents/) and [policy dispatcher](../../hooks/hooks.json). Source links: detected `~/.claude/skills`. | [Claude smoke](../../tests/skills/test-runtime-claude-code-smoke.sh), [manifest validation](../../scripts/validate-manifests.sh). | A fresh session must discover the chosen installation, load selected guidance and complete its accepted journey. Plugin inventory alone is insufficient. Optional hooks have separate activation/effect proof. |
-| Codex, first-class | Managed plugin: [.codex-plugin](../../.codex-plugin/plugin.json) points at generated `skills-codex/` under the [Codex API contract](codex-skill-api.md). Source links expose canonical `skills/` in detected `~/.codex/skills`. [Native roles](../../scripts/install-codex-context-agents.sh) and [read-budget hook](../../scripts/install-codex-read-budget-guard.sh) are separate opt-ins. | [Codex smoke](../../tests/skills/test-runtime-codex-smoke.sh), [bundle check](../../scripts/validate-codex-install-bundle.sh), generated parity checks in `regen-all.sh --check`. | Qualify the chosen plugin or source-link path independently. Confirm actual loaded content and names; plugin names use `agentops:`, source links use their catalog names. Copied roles and trusted hooks need separate upgrade checks. |
+| Codex, first-class | Managed plugin: [.codex-plugin](../../.codex-plugin/plugin.json) points at generated `skills-codex/` under the [Codex API contract](codex-skill-api.md). Source links expose canonical `skills/` in detected `~/.codex/skills`. [Native roles](../../scripts/install-codex-context-agents.sh) and [read-budget hook](../../scripts/install-codex-read-budget-guard.sh) are separate opt-ins. | [Codex smoke](../../tests/skills/test-runtime-codex-smoke.sh), [bundle check](../../scripts/validate-codex-install-bundle.sh), generated parity checks in `regen-all.sh --check`. | Qualify the chosen plugin or source-link path independently. Confirm actual loaded content and native registered names. Identify installation from path, scope and plugin identity, separately from invocation spelling. Copied roles and trusted hooks need separate upgrade checks. |
 | Cursor, retained structural coverage | [Converter](../../skills/skill-builder/scripts/converter/convert.sh) exports `.mdc` rules; source linking also detects `~/.cursor/skills`. | [Cursor export smoke](../../tests/skills/test-runtime-cursor-smoke.sh); source-link tests below cover destination mechanics. | No maintained automated inventory/execution lane is declared here. An authorized native session must establish discovery, selected loading and any claimed execution; export success proves only S. |
 | OpenCode, retained structural coverage | Canonical skills through portable `~/.agents/skills` or explicit `--dest ~/.config/opencode/skills`; [OpenCode install guide](../../.opencode/INSTALL.md) also describes optional plugin hooks. Automatic fan-out does not detect its dedicated config root. | [OpenCode smoke](../../tests/skills/test-runtime-opencode-smoke.sh), including explicit-destination installation and protection of existing entries. | No maintained automated inventory/execution lane is declared here. Qualify actual discovery and execution separately, including optional hooks when selected. |
 | Gemini / Antigravity, retained compatibility package and export | [Gemini image](../../images/gemini/README.md), generated [plugin manifest](../../images/gemini/plugin.json), bundled skills, agents, rules, hooks and optional Agent Mail configuration. The wrapper is migration-only compatibility under that owner. Source linking detects `~/.gemini/skills`. | [Image verification](../../images/gemini/verify.sh) checks inventory and byte identity; available `agy plugin validate` checks package shape. | Package validation is not Gemini or Antigravity load proof. Each claimed host journey, optional dependency and migration needs its own native evidence. |
@@ -46,6 +46,15 @@ applications: existing `~/.claude`, `~/.codex`, `~/.gemini`, `~/.cursor` and
 Selection with repeated `--skill` never removes unselected skills and does not
 install dependencies. Real files/directories and foreign or wrong links remain
 conflicts for explicit owner resolution.
+
+Codex source discovery has registered `agentops:implement`, `agentops:memory`,
+`agentops:orchestrate`, `agentops:plan`, `agentops:review` and `agentops:validate`
+with `scope: repo`, `pluginId: null` and canonical `skills/<slug>/SKILL.md` paths.
+For example, that Plan registration uses `$agentops:plan`; the namespace alone
+does not identify a managed plugin. This observation covers those six
+registrations in the inspected host/source version, not other skills or host
+versions. Use the installed host's native inventory for exact invocation names
+and installation identity. Registration alone proves neither loading nor execution.
 
 ## Existing runtime probe limits
 
@@ -79,8 +88,10 @@ prompt is positional, not a `--prompt` flag:
 codex exec --sandbox read-only '$agentops:research Trace repository input validation. Cite the loaded skill and relevant source files; change no files.'
 ```
 
-Use `$research` for the canonical source-linked skill instead. A read-only
-research invocation can establish a bounded loading/use observation; it does
+For source links, use native inventory's exact registered name, including any
+namespace. The six source registrations above do not establish Research's source
+registration or loading. A read-only research invocation can establish a bounded
+loading/use observation; it does
 not alone prove implementation, independent validation, or upgrade recovery.
 Claude's interactive route is supported; do not infer missing headless support
 from absence of an AgentOps automation lane. Cursor/OpenCode and
