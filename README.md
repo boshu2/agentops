@@ -1,28 +1,33 @@
 # AgentOps
 
-AgentOps gives Claude Code and Codex reusable instructions, called skills, for
-planning changes, implementing them, operating services, and independently
-checking the results. It also helps agents coordinate work and find reviewed
-project context. Start with one task and the guidance it needs; skills are optional.
+**Stop rebuilding your coding workflow in every prompt.**
 
-When a coding agent says a change is done, AgentOps helps a fresh reviewer check
-that exact change against what you asked for. Your coding agent runs the work;
-your repository keeps its existing tests, tracker, and Git workflow.
+AgentOps is a library of engineering skills for coding agents. The skills tell
+an agent how to turn a request into a plan, carry out the change, investigate
+failed checks, and bring in a fresh reviewer. Longer jobs can add worker
+coordination and shared project context.
 
-[Quickstart](#quickstart) · [Choose a skill](#choose-skills-by-the-work) ·
-[Shared context](#shared-project-context) ·
-[Optional CLI](#optional-ao-cli) · [Upgrade](#upgrading-to-37) ·
-[Documentation](docs/documentation-index.md)
+Use one skill for a bug fix or combine them for a larger project. The instructions
+are plain Markdown you can inspect and adapt. Your coding agent does the work
+with your existing tests, issue tracker, and Git workflow.
+
+[Install](#quickstart) · [Why these skills exist](#why-these-skills-exist) ·
+[Skill library](#choose-skills-by-the-work) · [Documentation](docs/documentation-index.md)
 
 <a id="install"></a>
 
 ## Quickstart
 
-Use an installed Claude Code or Codex with plugin support. Run the commands for
-**one** runtime in your terminal. They install the full managed skill bundle;
-`ao` is not needed for the first task below.
+Choose one installation method. The Claude Code and Codex plugins manage the
+skill bundle; the Skills installer lets you choose skills for Cursor or another
+supported agent. Installing the same skill through both can leave duplicate copies.
 
-### Claude Code
+### 1. Get the skills
+
+<details>
+<summary><strong>Claude Code</strong></summary>
+
+Run in your terminal:
 
 ```bash
 claude plugin marketplace add boshu2/agentops
@@ -30,7 +35,16 @@ claude plugin install agentops@agentops-marketplace
 claude plugin details agentops@agentops-marketplace
 ```
 
-### Codex
+Check that `agentops` appears in the plugin inventory. The bundle includes the
+[current skill catalog](docs/SKILL-ROUTER.md), four agents, and
+[tool-call guards](#optional-admission-control-hooks).
+
+</details>
+
+<details>
+<summary><strong>Codex</strong></summary>
+
+Run in your terminal:
 
 ```bash
 codex plugin marketplace add boshu2/agentops
@@ -38,97 +52,160 @@ codex plugin add agentops@agentops-marketplace
 codex plugin list --json
 ```
 
-The plugin should appear as `agentops`. Claude's inventory includes the
-[current skill catalog](docs/SKILL-ROUTER.md) and four agents; Codex exposes the
-same skills with `agentops:` names. Start a new
-session in a project you already work on to load the installed skills.
-
-Skills run inside your coding agent with its normal permissions. The Claude
-plugin also installs its [policy dispatcher](#optional-admission-control-hooks).
-Optional limits on source reads and Codex's additional agent roles have
+Check that `agentops` appears in the plugin inventory. Its skills use the
+`agentops:` prefix. Additional agent roles and optional read limits have
 [separate setup](docs/install-day2-ops.md#install-and-update-runtime-plugins).
-To remove the bundle, use `claude plugin uninstall
-agentops@agentops-marketplace` or `codex plugin remove
-agentops@agentops-marketplace` in your terminal.
 
-### Try one task
+</details>
 
-Paste this into your **Claude Code session**, not your terminal:
+<details>
+<summary><strong>Cursor and other agents</strong></summary>
 
-```text
-/agentops:research Find how this repository validates user input. Trace one
-path from the input through validation and its tests. Cite the relevant files
-and line numbers, explain one edge case, and identify any missing coverage.
-Identify the Research skill file you used. Answer here without changing files.
+With Node.js installed, run this from your project directory:
+
+```bash
+npx skills@latest add boshu2/agentops --agent cursor
 ```
 
-In a **Codex session**, use the same request with its skill prefix:
+Select `research` for the first task below, or choose the whole library. To pick
+a different agent interactively, omit `--agent cursor`. Add `-g` if you want a
+user-level installation instead of a project installation.
+
+Cursor discovers skills from its [native skill directories](https://cursor.com/docs/skills).
+Open its skill picker and check the installed skill's source path. The
+[host coverage guide](docs/contracts/multi-runtime-tier-charter.md#host-and-install-surface-mapping)
+distinguishes installation checks from observed runtime behavior.
+
+</details>
+
+### 2. Open a new session
+
+Start a new agent conversation in a project you already work on. Skills use
+your coding agent's normal permissions. The first task below is read-only and
+doesn't need the optional `ao` CLI.
+
+<a id="try-one-task"></a>
+
+### 3. Try one task
+
+Paste this into your agent conversation:
 
 ```text
-$agentops:research Find how this repository validates user input. Trace one
-path from the input through validation and its tests. Cite the relevant files
-and line numbers, explain one edge case, and identify any missing coverage.
-Identify the Research skill file you used. Answer here without changing files.
+Use the AgentOps Research skill to trace how this repository validates user
+input. Follow one path from the input through its checks and tests. Cite the
+files and line numbers, explain one edge case, and identify missing coverage.
+Name the Research skill file you loaded. Answer here without changing files.
 ```
 
-Expect a trace you can inspect: where input enters, which checks accept or reject
-it, and what the tests cover. If a step cannot be established, the answer should
-say what is missing. You can then request a fix or a regression test using those
-file references. Research itself does not authorize a code change.
-The reported skill path can help you spot a missing or duplicate installation;
-an inventory entry alone does not prove the agent loaded the intended guidance.
+**Check the result:** you should get a trace you can follow in the code, with
+file references and any gaps the agent couldn't resolve. Use those references
+to request a fix or a regression test. The reported skill path also helps you
+catch a missing or duplicate installation.
+
+You can select Research directly with `/agentops:research` in Claude Code,
+`$agentops:research` in Codex, or `/` and the installed Research entry in Cursor.
+
+## Why these skills exist
+
+An agent can produce a plausible patch while missing the request, repeating a
+failed approach, or leaving the next session to reconstruct what happened.
+AgentOps puts instructions for handling those problems into skills you can
+read, choose, and reuse.
+
+### The agent starts building before the request is clear
+
+[Plan](skills/plan/SKILL.md) checks the code and docs, asks you about decisions
+that change the outcome, and turns the request into observable examples. It
+prepares one complete change to build and test. If an assumption needs checking,
+it can run a small experiment before committing to an approach.
+
+For an API change, "validate email" leaves room for guesses. "Return HTTP 400
+for an empty email and keep valid requests working" gives the implementer and
+reviewer the same behavior to check. When work resumes, Plan reads the handoff
+and preserves decisions already made.
+
+<a id="how-independent-review-works"></a>
+
+### A passing test misses part of the request
+
+[Implement](skills/implement/SKILL.md) carries the agreed change through the
+repository's checks and repairs known failures. [Test](skills/test/SKILL.md)
+helps choose behavioral and regression tests. [Review](skills/review/SKILL.md)
+provides advice when you want another look at a plan, design, or patch.
+
+To establish whether the job is complete, [Validate](skills/validate/SKILL.md)
+brings a separate reviewer with a fresh context to the exact change and the
+original request. The author cannot issue its own binding approval. Validate
+requires the [optional `ao` CLI](#optional-ao-cli).
+
+Illustrative result for the email example:
+
+```text
+Request: Reject an empty email with HTTP 400. Keep valid requests working.
+Evidence: Valid requests checked. Empty-email behavior not checked.
+Verdict: NOT_PROVEN. The empty-email requirement still needs evidence.
+```
+
+The result is `PASS` when every accepted criterion has evidence, `FAIL` when a
+criterion fails or the change exceeds scope, and `NOT_PROVEN` when evidence or
+reviewer independence is missing. Advice doesn't substitute for this judgment.
+If your request could mean advice or acceptance, the agent clarifies it first.
+
+### Parallel agents get in each other's way
+
+[Orchestrate](skills/orchestrate/SKILL.md) checks prerequisites and active
+assignments before splitting work. It gives workers separate write scopes,
+brings their changes together, and reserves time for independent review of the
+combined result. [Agent Native](skills/agent-native/SKILL.md) supplies optional
+dispatch guidance.
+
+Start with one agent. Add workers when the work can be separated. Your tracker
+still records assignments and status; your coding runtime runs the agents.
+
+<a id="shared-project-context"></a>
+
+### The next session has to rediscover decisions
+
+[Memory](skills/memory/SKILL.md) finds relevant project notes and checks them
+against current code and docs. A project can opt into a `.context/README.md`
+that points to topic pages and their sources. This repository's
+[context map](.context/README.md) shows the layout. Reading cleared notes uses
+ordinary filesystem tools and needs neither `ao` nor Beads.
+
+Adding or correcting shared notes requires authorized sources, a selected
+destination, and fresh review of factual support and disclosure before Git
+admission. Drafts and review evidence stay in protected storage outside Git.
+Memory creates no context store or private import automatically. These procedures
+don't enforce access permissions or prove that saved notes improve later work.
+See [Memory's storage rules](skills/memory/SKILL.md#access-storage-and-honest-limits).
 
 ## Choose skills by the work
 
-Pick guidance for the task in front of you. These are independent choices, not
-steps you must run in order.
+These are independent entry points. Pick the one your task needs.
 
-| What you need | Skill | What to expect |
-|---|---|---|
-| Clarify or resume a change | [plan](skills/plan/SKILL.md) | Observable acceptance examples, one complete next slice and settled decisions preserved |
-| Complete an accepted change or service operation | [implement](skills/implement/SKILL.md) | The agreed behavior, meaningful checks, direct repairs and factual results |
-| Get advice on a plan, design or change | [review](skills/review/SKILL.md) | Supported findings, suggestions and gaps, without acceptance or delivery authority |
-| Independently judge a finished change | [validate](skills/validate/SKILL.md) | Fresh acceptance judgment of exact content; requires `ao` |
-| Coordinate authorized workers or recover assignments | [orchestrate](skills/orchestrate/SKILL.md) | Verified prerequisites, isolated assignments, room for review and an integrated candidate |
-| Find relevant experience or maintain shared context | [memory](skills/memory/SKILL.md) | Relevant reviewed pages, supported updates and corrections when evidence changes |
+| Skill | Use it to |
+|---|---|
+| [Plan](skills/plan/SKILL.md) | Clarify a change or resume from an existing handoff |
+| [Implement](skills/implement/SKILL.md) | Complete an accepted change or service operation, including checks and repairs |
+| [Review](skills/review/SKILL.md) | Get findings and suggestions on a plan, design, or change |
+| [Validate](skills/validate/SKILL.md) | Get an independent acceptance judgment on the exact result |
+| [Orchestrate](skills/orchestrate/SKILL.md) | Coordinate workers and bring their changes together for review |
+| [Memory](skills/memory/SKILL.md) | Find, capture, and maintain reviewed project context |
 
-Focused methods remain directly available: [Research](skills/research/SKILL.md)
-traces a source question, [Test](skills/test/SKILL.md) develops behavioral tests,
-and [Refactor](skills/refactor/SKILL.md) preserves behavior while simplifying code.
-Advisory review and plan challenge do not replace Validate's acceptance judgment.
+The library also includes focused skills for [research](skills/research/SKILL.md),
+[testing](skills/test/SKILL.md), [refactoring](skills/refactor/SKILL.md),
+[documentation](skills/doc/SKILL.md), and [security](skills/security/SKILL.md).
+Browse the [full skill catalog](docs/SKILL-ROUTER.md).
 
-Use `/agentops:test` in Claude Code or `$agentops:test` in Codex to select Test,
-and substitute another skill name when needed. Ordinary language also works:
-"Use AgentOps Test to cover the missing edge case we just traced. Preserve the
-current API and run the owning package checks."
-
-For advisory feedback, use `/agentops:review` in Claude Code or
-`$agentops:review` in Codex. A request to prove completion or issue an acceptance
-verdict belongs to Validate; advice cannot stand in for that fresh judgment.
-If a request could mean advice or an acceptance judgment, the agent clarifies
-that intent first.
-
-Plan investigates source facts, asks about consequential caller choices, and
-can use a bounded probe to resolve an assumption. It stops when one complete
-change is ready to implement and judge. Later work stays coarse; resuming uses
-the existing handoff and preserves decisions already made.
-
-Orchestrate checks actual prerequisite content and active assignments before
-delegating work. It coordinates through your tracker and coding runtime, keeps
-write scopes separate, and reserves capacity for integration and fresh review.
-Your existing tools continue to own work status, execution and delivery.
-
-The [Skill Router](docs/SKILL-ROUTER.md) lists every current skill, including
-implementation, documentation, security, and memory. Installing a skill makes
-it available; a clear task can proceed directly in your coding agent.
+For example, use `/agentops:test` in Claude Code or `$agentops:test` in Codex.
+Ordinary language works too: "Use AgentOps Test to cover the missing edge case
+we just traced. Preserve the current API and run the owning package checks."
 
 ## Optional `ao` CLI
 
-Install `ao` when you need its deterministic repository checks or evidence
-commands, or when a selected skill requires it. Research, Test, and Refactor
-can use your coding agent and the repository's existing tools.
-
-With Homebrew:
+The skills are Markdown instructions. `ao` adds deterministic repository checks
+and tools for identifying and saving evidence. Install it when a selected
+skill requires it or you want those commands.
 
 ```bash
 brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops
@@ -137,81 +214,25 @@ ao version
 ao quick-start
 ```
 
-With Go installed:
-
-```bash
-go install github.com/boshu2/agentops/cli/cmd/ao@latest
-```
-
+With Go installed, use `go install github.com/boshu2/agentops/cli/cmd/ao@latest`.
 `ao quick-start` gives read-only guidance; `ao demo` prints a sample coding task.
-Neither writes project state. `ao init` is optional local evidence setup. See
-[installation](docs/install-day2-ops.md#maintainer--contributor-the-ao-binary)
-for source builds and [the command reference](cli/docs/COMMANDS.md) for checks,
-inspection, and evidence operations.
+Neither writes project state. `ao init` is optional local evidence setup.
+See the [command reference](cli/docs/COMMANDS.md) and
+[installation guide](docs/install-day2-ops.md) for source builds and skill dependencies.
+
+## Updating and advanced setup
 
 <details>
-<summary>Skill dependencies: which ones need ao, Python, or another tool?</summary>
+<summary><strong>Upgrading to 3.7</strong></summary>
 
-Most skills need nothing beyond the coding agent and your repository's tools.
-These have additional requirements. "Conditional" means a selected task path
-uses the tool; "optional" means the skill can complete without it.
+<a id="upgrading-to-37"></a>
 
-| Skill | Needs | Why |
-|---|---|---|
-| `rpi` | `ao`, conditional | delegates exact-subject checks to Validate; only persists `verdict.v2` when requested, with the fixed-dispatch adapter optional |
-| `plan` | `ao`, conditional | runs `ao provenance snapshot-intent` with an explicit evidence root when the intent source is not durable |
-| `validate` | `ao` | derives exact subject identity with the helper and uses `ao provenance store-verdict` when persistence is requested; Python/schema checks are developer-only |
-| `reality-check` | `ao`, conditional | inspect selected goal measurements with `ao goals` or evidence-store facts with `ao status` |
-| `using-gc` | `ao` | rig prep runs `ao gc prepare` and `ao gc check` |
-| `doc` | `ao`, optional | a requested continuity handoff may use `ao session handoff`/`rehydrate` |
-| `reverse-engineer` | `python3` | Phase 1's mechanical teardown runs `scripts/reverse_engineer.py` |
-| `skill-builder` | `python3`, conditional | Create mode's `build.sh` runs `scripts/generate-skill-mesh.py`; heal/check/audit modes are bash-only |
-| `ms` | `python3`, conditional, plus `ms` binary | the MCP-search fallback runs `python3 skills/ms/scripts/mcp-search.py`; the `ms` binary is required for CLI load, write, and admin operations |
-| `memory` | `python3`, conditional | a selected toil investigation can use the repository helper `scripts/toil-mining/recent_human.py` on cleared Codex sources |
-| `security` | `python3`, conditional | the composable suite and offline redteam surfaces run `security_suite.py` when that scan type is selected |
-| `cass` | `python3`, optional | `scripts/prompt_miner.py` mines repeated prompts; one of several selectable Scripts-table entries |
+Read the [migration guide](docs/MIGRATION.md) before upgrading from 3.6. Version
+3.7 removes CLI commands and former skill names, including `learn`,
+`codebase-recon`, and `swarm`; their current owners are `memory`, `research`, and
+`agent-native`.
 
-Plugin installation and `npx skills@latest add boshu2/agentops --all -g` install
-the catalog even when these dependencies are absent. See the
-[installation guide](docs/install-day2-ops.md) before using a dependent skill.
-
-</details>
-
-## Other installation paths
-
-Choose one source for each skill to avoid duplicate copies in your coding agent.
-
-| Path | Use it when |
-|---|---|
-| Runtime plugin, shown above | You want a bundle managed through Claude Code or Codex |
-| `npx skills@latest add boshu2/agentops --all -g` | You want the full library installed for every agent supported by the Skills installer |
-| Checkout + `ao skills link` | You edit skills or want to expose a selected subset from source |
-
-From an AgentOps checkout with `ao` installed, preview and link only the skills
-you want:
-
-```bash
-ao skills link --skill test --skill refactor --dry-run
-ao skills link --skill test --skill refactor
-```
-
-Omit the selectors to link the whole catalog. Linking preserves existing real
-directories and foreign links. Follow the complete
-[source checkout instructions](docs/install-day2-ops.md#install-source-checkout)
-for cloning, updating, and removing owned links.
-The [host/install mapping](docs/contracts/multi-runtime-tier-charter.md#host-and-install-surface-mapping)
-also accounts for Cursor/OpenCode structural coverage, Gemini/Antigravity
-compatibility packaging and other source-link consumers. Package installation
-and CLI availability do not establish actual skill loading or execution.
-
-## Upgrading to 3.7
-
-**Read the [migration guide](docs/MIGRATION.md) before upgrading from 3.6.**
-Version 3.7 removes CLI commands and former skill names, including `learn`,
-`codebase-recon`, and `swarm`. Their current owners are `memory`, `research`, and
-`agent-native`; the guide covers the complete mapping and preserved evidence.
-
-Plugin updates require refreshing both the marketplace and the installed bundle:
+Refresh both the marketplace and the installed plugin:
 
 ```bash
 # Claude Code
@@ -223,132 +244,98 @@ codex plugin marketplace upgrade agentops-marketplace
 codex plugin add agentops@agentops-marketplace
 ```
 
-Start a new session afterward. If you also use the Homebrew CLI, run
-`brew update` followed by `brew upgrade agentops`. For local marketplaces,
-copied skills, or source links, follow the
-[update instructions](docs/install-day2-ops.md). New installs do not silently
-remove obsolete copied skills; inspect those separately before removing them.
-
-See the [3.7 release notes](docs/releases/2026-09-13-v3.7.0-notes.md) for the
-full change list and validation limits.
-
-## How independent review works
-
-AgentOps is the operations layer for agentic engineering. It connects your
-request, implementation, checks, and review while your existing tools keep
-ownership of the work.
-
-```text
-Accepted intent -> native implementation and checks -> fresh independent judgment -> finish
-```
-
-Describe the outcome and acceptance examples in a conversation, issue, or your
-tracker. Beads is an optional tracker. Let the coding agent implement and run
-your repository's checks, then have a fresh context review the exact change
-against that same request. By default, the reviewer uses the author's model
-family; a different model is an explicit choice.
-
-| Result | Meaning |
-|---|---|
-| `PASS` | The independent reviewer checked the full accepted scope and found evidence for every criterion |
-| `FAIL` | A criterion failed or the change exceeded the authorized scope |
-| `NOT_PROVEN` | Missing evidence, coverage, or reviewer independence prevents a complete judgment |
-
-A passing test is evidence for review. The author cannot issue its own binding
-`PASS`. When you request durable proof, Validate can save a `verdict.v2` record
-with exact content identity, checked scope, and evidence references. New proof
-uses caller-selected protected external non-Git storage; existing evidence is
-preserved.
-
-## Shared project context
-
-When earlier project knowledge could change the next action, an agent can start
-at a project-selected `.context/README.md`, read the relevant topic page, and
-follow its links to current code, docs and tests. This repository's
-[context map](.context/README.md) is a working example. Reading cleared pages
-uses ordinary filesystem tools and needs neither `ao` nor Beads.
-
-Ask for that lookup in either coding agent:
-
-```text
-Use AgentOps Memory to find reviewed project context relevant to this change.
-Read only the relevant pages and their current source owners. Explain which
-constraint affects the next action, or say that no applicable context was found.
-Do not create or update a context store.
-```
-
-[Memory](skills/memory/SKILL.md) owns finding, capturing and curating this
-guidance. Shared pages point to authoritative sources; your tracker keeps work
-status. No context directory or private import is created automatically.
-
-Adding or changing shared guidance requires authorized sources and a selected
-destination. Drafts and review evidence stay in protected external non-Git
-storage; a fresh reviewer checks factual support and disclosure of the exact
-content and destination before Git admission. Later contrary evidence can
-qualify or retire a claim. See [Memory's storage rules](skills/memory/SKILL.md#access-storage-and-honest-limits)
-and [ADR-0016](docs/adr/ADR-0016-state-tiers.md). These procedures do not provide
-native access isolation or establish that saved guidance improves outcomes.
-
-<details>
-<summary>Architecture, memory, and multi-agent workflows</summary>
-
-AgentOps connects caller-owned tools as a **federated integration graph**:
-Git owns content and history, the tracker owns work, and the coding agent or a
-selected factory owns execution. AgentOps supplies guidance, deterministic
-checks, and independent judgment. Native execution needs zero mandatory skills.
-The [architecture](docs/ARCHITECTURE.md) and
-[operating contract](docs/agent-workflow-reference.md) describe these boundaries.
-
-The [RPI charter](skills/rpi/SKILL.md) packages the workflow when explicitly
-selected. [Memory](skills/memory/SKILL.md) provides on-demand recall and deliberate
-curation of reviewed material. Saved lessons only demonstrate benefit when
-later work uses them successfully; [ADR-0016](docs/adr/ADR-0016-state-tiers.md)
-covers storage, disclosure, and preservation.
-
-One agent and one writer are the default. For selected multi-agent work,
-[agent-native](skills/agent-native/SKILL.md) dispatches focused tasks.
-[Gas City](skills/using-gc/SKILL.md) and
-[Agentic Coding Flywheel](skills/using-flywheel/SKILL.md) are optional factory
-integrations. Their completion reports do not replace independent review.
-See [model dispatch](skills/agent-native/references/model-dispatch.md) and
-[the evidence contract](docs/architecture/rpi-traversal.md) for the detailed rules.
+Start a new session afterward. For Homebrew, run `brew update` followed by
+`brew upgrade agentops`. For Skills installer copies, use `npx skills update`.
+Follow the [update guide](docs/install-day2-ops.md#update) for other install paths
+and obsolete copies; new installs don't silently remove old skills.
+See the [3.7 release notes](docs/releases/2026-09-13-v3.7.0-notes.md) for the full changes.
 
 </details>
 
-## Optional admission-control hooks
+<details>
+<summary><strong>Source installs and skill dependencies</strong></summary>
 
-The Claude Code plugin includes a PreToolUse policy dispatcher: guards against
-staging private tracker data, editing the provenance ledger by hand, and
-overwriting installed skill copies. It runs before matching tool calls and
-points blocked actions toward the supported command. Installing only `ao` does
-not install these hooks.
+<a id="other-installation-paths"></a>
 
-Other install paths can opt in through the [CC Hooks skill](skills/cc-hooks/SKILL.md).
-Disable the Claude plugin with `/plugin disable agentops` in Claude Code, or use
-the terminal uninstall command shown above.
+From an AgentOps checkout with `ao` installed, preview and link selected skills:
 
-Read-budget guards remain separately opt-in in both runtimes. Codex custom roles
-also require a separate installer and a restart; its hooks need review and trust
-in the native hook manager. See [role and hook setup](docs/install-day2-ops.md#install-and-update-runtime-plugins)
-for the exact steps and update requirements.
+```bash
+ao skills link --skill test --skill refactor --dry-run
+ao skills link --skill test --skill refactor
+```
+
+Omit selectors to link the whole catalog. Linking preserves existing real
+directories and foreign links. See the [source checkout instructions](docs/install-day2-ops.md#install-source-checkout)
+for cloning, updating, choosing a destination, and removing owned links.
+
+Some skills need `ao`, Python, or a specialist tool. Installation doesn't
+install those dependencies. Check the [installation guide](docs/install-day2-ops.md)
+and selected skill before using it. The [host mapping](docs/contracts/multi-runtime-tier-charter.md#host-and-install-surface-mapping)
+documents coverage and limits for each runtime.
+
+</details>
+
+<details>
+<summary><strong>Permissions, optional hooks, and removal</strong></summary>
+
+<a id="optional-admission-control-hooks"></a>
+
+The Claude Code plugin includes a PreToolUse policy dispatcher. Its guards
+check for private tracker data in commits, manual provenance-ledger edits, and
+overwrites of installed skills. Installing only `ao` doesn't install these hooks.
+Other install paths can opt in through [CC Hooks](skills/cc-hooks/SKILL.md).
+
+Read-budget guards and Codex custom roles require separate setup. Codex hooks
+need review and trust in its native hook manager. See the
+[role and hook instructions](docs/install-day2-ops.md#install-and-update-runtime-plugins).
+
+Disable the Claude plugin with `/plugin disable agentops` in Claude Code.
+To remove a plugin from your terminal, use `claude plugin uninstall
+agentops@agentops-marketplace` or `codex plugin remove
+agentops@agentops-marketplace`.
+
+</details>
+
+<details>
+<summary><strong>Architecture and saved review evidence</strong></summary>
+
+AgentOps is the operations layer for agentic engineering. Git stores content
+and history, your tracker records work, and your coding agent or selected
+factory runs it. AgentOps supplies guidance, checks, and independent judgment.
+Your repository keeps its delivery rules.
+
+Native execution needs no mandatory AgentOps skills. The [RPI charter](skills/rpi/SKILL.md)
+packages a workflow when selected. [Gas City](skills/using-gc/SKILL.md) and
+[Agentic Coding Flywheel](skills/using-flywheel/SKILL.md) are optional integrations.
+Their completion reports don't replace independent review.
+
+By default, the reviewer uses the author's model family; a different model is
+an explicit choice. On request, Validate can save a `verdict.v2` record identifying
+the exact content, checked scope, and evidence. New proof belongs in selected,
+protected storage outside Git; existing evidence is preserved. Beads is optional.
+
+Read the [architecture](docs/ARCHITECTURE.md), [operating contract](docs/agent-workflow-reference.md),
+and [storage rules](docs/adr/ADR-0016-state-tiers.md) for the details.
+
+</details>
 
 ## Troubleshooting
 
 | Symptom | What to check |
 |---|---|
-| `plugin` is not a recognized command | Update Claude Code or Codex to a version with plugin support, then retry its install commands |
-| A skill is missing after installation or update | Check the plugin inventory with the Quickstart commands, then start a new session |
-| `ao` is not found | Install the optional CLI and check your shell's PATH; Go installs usually place it in `$(go env GOPATH)/bin` |
-| A skill asks for Python or another tool | Check the dependency table above; installing the skill does not install its dependencies |
-| An old skill name no longer works | Use the current owner in the [migration guide](docs/MIGRATION.md#skills) and check for stale copies |
+| `plugin` is not a recognized command | Update Claude Code or Codex to a version with plugin support, then retry |
+| A skill is missing | Check its plugin inventory or skill picker, then start a new session |
+| `ao` is not found | Install the CLI and check PATH; Go installs usually use `$(go env GOPATH)/bin` |
+| A skill asks for Python or another tool | Check the skill's dependencies in the installation guide |
+| An old skill name no longer works | Check the [migration guide](docs/MIGRATION.md#skills) and stale copies |
 
 For a reproducible problem, [open an issue](https://github.com/boshu2/agentops/issues)
-with the runtime version, install method, command or prompt, and observed result.
-Include a saved verdict only if you requested one and it is safe to share.
+with your runtime version, install method, command or prompt, and observed result.
+Include saved evidence only when it's safe to share.
 
-Some engineering guidance draws on
-[Matt Pocock's skills](https://github.com/mattpocock/skills), including concrete
-acceptance examples, domain language, and interface-focused tests. These are
-design influences; they do not establish measured improvements in coding outcomes.
+Some engineering guidance draws on [Matt Pocock's skills](https://github.com/mattpocock/skills),
+including concrete acceptance examples, domain language, and interface-focused
+tests. These are design influences; they don't establish measured improvements
+in coding outcomes.
 
 Contributing: [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md). License: Apache-2.0.
