@@ -7,14 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.8.0] - 2026-09-22
+
+AgentOps 3.8 adds advisory Review, native-work coordination through Orchestrate,
+resumable Plan guidance and reviewed Git-shared project context. The optional
+menu grows from 34 to 36 skills. Existing 3.7 command and skill names remain
+available; native work still requires zero AgentOps skills.
+
+See the [curated release notes](https://github.com/boshu2/agentops/blob/main/docs/releases/2026-09-22-v3.8.0-notes.md)
+for upgrade instructions, product changes and known limits.
+
 ### Added
 
+- Review provides read-only advice on a supplied change or design. It resolves
+  ambiguous intent before choosing advice or fresh Validate acceptance judgment;
+  a no-finding review does not establish completion.
+- Orchestrate guides native task dispatch, integration and recovery from existing
+  tracker/runtime state. It preserves disjoint write scopes, real prerequisites
+  and fresh exact-content validation without adding a queue or scheduler.
+- Reviewed project `.context/` pages can carry reusable knowledge in Git after
+  factual-support and destination-disclosure review. An authored context map
+  points to current source owners; ordinary reads require neither BD nor AO.
+- `ao config context` accepts an explicitly bound canonical direct
+  `<consumer>/.context` bundle alongside external bundles. Other overlapping
+  bundle roots remain refused; staging and evidence stay protected and external.
+- Implement includes optional methods for service promises and SLOs, delivery,
+  incidents, bounded resilience experiments and measured toil reduction.
+
+### Changed
+
+- Plan resumes settled choices and accepted examples from existing handoffs,
+  distinguishes source facts from caller choices and empirical unknowns, and
+  rechecks inherited prototype evidence after source drift. Optional challenge
+  uses a bounded exchange and cannot replace acceptance judgment.
+- The skill router exposes Plan, Implement, Review, Validate, Orchestrate and
+  Memory as independent entrypoints. Named Validate requests retain their owner;
+  generic checking requests resolve their purpose before acceptance judgment.
 - Curated skills.sh groups put Research, Test, and Refactor first, followed by
   the rest of the current 36-skill catalog. Ungrouped historical entries remain
   below the current skills; this changes discovery, not installation behavior.
+- Runtime guidance separates package structure, native discovery/loading and
+  observed execution. Plugin, source-link, role and hook installation paths have
+  distinct activation and upgrade requirements.
 
 ### Fixed
 
+- Hook installers preserve unique settings backups even when rerun within the
+  same second. The planted good-skill test fixture is marked internal, and
+  installation guidance covers recovery from skipped Skills installer updates.
+- The headless adapter preserves native JSON output and checks prompt-content
+  reflection instead of treating marker text or output size as execution proof.
+- Skill-request and runtime tests preserve refusal assertions, require actual
+  observations for live claims and keep structural checks separate from live
+  probes. Aggregate coverage and proxy tests run deterministically.
 - Skill catalog, schema, and setup links resolve to their repository sources
   from the published documentation site, restoring its strict build check.
 

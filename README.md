@@ -385,9 +385,13 @@ Requested validation proof uses its separately selected external evidence root.
 ## Updating and advanced setup
 
 <details>
-<summary><strong>Upgrading to 3.7</strong></summary>
+<summary><strong>Upgrading to 3.8</strong></summary>
 
+<a id="upgrading-to-38"></a>
 <a id="upgrading-to-37"></a>
+
+Version 3.8 adds Review and Orchestrate to the optional skill menu and supports
+reviewed project context. Existing 3.7 command and skill names remain available.
 
 Read the [migration guide](docs/MIGRATION.md) before upgrading from 3.6. Version
 3.7 removes CLI commands and former skill names, including `learn`,
@@ -410,7 +414,8 @@ Start a new session afterward. For Homebrew, run `brew update` followed by
 `brew upgrade agentops`. For Skills installer copies, use `npx skills update`.
 Follow the [update guide](docs/install-day2-ops.md#update) for other install paths
 and obsolete copies; new installs don't silently remove old skills.
-See the [3.7 release notes](docs/releases/2026-09-13-v3.7.0-notes.md) for the full changes.
+See the [3.8 release notes](docs/releases/2026-09-22-v3.8.0-notes.md) for the current changes
+and the [3.7 release notes](docs/releases/2026-09-13-v3.7.0-notes.md) for the earlier removals.
 
 </details>
 
