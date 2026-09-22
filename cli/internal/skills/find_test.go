@@ -234,11 +234,9 @@ func TestScore_LiveCatalogOwnVocabulary(t *testing.T) {
 		"premortem the plan for this live rollout": "premortem",
 		"challenge this plan with one judge":       "premortem",
 		"is this live decision reversible":         "plan",
-		// The two triggers added in the 2026-09-03 repair, quoted verbatim:
-		// a declared phrase must beat a sibling that owns one of its words as
-		// a name token (reality-check, plan).
-		"check this change": "validate",
-		"one judge":         "premortem",
+		// A declared phrase must beat a sibling that owns one of its words
+		// as a name token (plan).
+		"one judge": "premortem",
 		// Phrase matching reads the query in order: "one council judge"
 		// must not collapse into premortem's "one judge".
 		"ask the council whether one council judge is enough": "council",
@@ -252,6 +250,25 @@ func TestScore_LiveCatalogOwnVocabulary(t *testing.T) {
 			}
 			t.Errorf("%q: want %s first, got %q (top: %+v)", q, want, top, got[:min(3, len(got))])
 		}
+	}
+}
+
+func TestScore_LiveCatalogAmbiguousCheckNeedsClarification(t *testing.T) {
+	root := repoSkillsDir(t)
+	if root == "" {
+		t.Skip("skills/ not found relative to test working dir")
+	}
+	metas, err := Load(root)
+	if err != nil {
+		t.Fatalf("Load(%s): %v", root, err)
+	}
+	// The 2026-09-21 intent contract replaced the old Validate trigger:
+	// generic checking needs advice-versus-acceptance clarification. Reality
+	// Check's "Establish the requested outcome" contract owns that boundary;
+	// discovery here does not authorize a claim audit or acceptance judgment.
+	got := Score("check this change", metas)
+	if len(got) == 0 || got[0].Name != "reality-check" {
+		t.Fatalf("ambiguous check: want reality-check clarification route, got %+v", got[:min(3, len(got))])
 	}
 }
 
