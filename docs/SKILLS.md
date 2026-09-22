@@ -16,7 +16,7 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 | [plan](../skills/plan/SKILL.md) | Define intended behavior, review write scope and assess reversible decisions. Use when: discovery needs clarification or resumption before one complete slice; stop once actionable. |
 | [implement](../skills/implement/SKILL.md) | Implement changes, repairs or waves; return per-lane evidence. Use when: coding, service operations, reliability, delivery, incident recovery, resilience or toil is authorized. |
 | [review](../skills/review/SKILL.md) | Give advisory feedback on a plan, design or code. Use when: suggestions, tradeoffs or a second look are wanted. Not for acceptance or write scope; use Validate or Plan. |
-| [validate](../skills/validate/SKILL.md) | Freshly judge a finished change and its claims against original acceptance. Use when: an acceptance verdict or independent proof is requested. Clarify generic checking or readiness intent first. |
+| [validate](../skills/validate/SKILL.md) | Freshly judge a finished change and its claims against original acceptance. Use when: acceptance verdict or independent proof is sought. Clarify generic checks or readiness first. |
 | [orchestrate](../skills/orchestrate/SKILL.md) | Coordinate authorized workers, prerequisites, isolated scopes and review capacity. Use when: dispatching, recovering or routing feedback. Not for implementation or judgment. |
 | [memory](../skills/memory/SKILL.md) | Find reviewed context, capture evidence or curate maintained claims. Use when: prior evidence can change an action, or learning is requested; no mandatory recall or lesson. |
 

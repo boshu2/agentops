@@ -1,6 +1,6 @@
 ---
 name: validate
-description: 'Freshly judge a finished change and its claims against original acceptance. Use when: an acceptance verdict or independent proof is requested. Clarify generic checking or readiness intent first.'
+description: 'Freshly judge a finished change and its claims against original acceptance. Use when: acceptance verdict or independent proof is sought. Clarify generic checks or readiness first.'
 practices:
 - design-by-contract
 - llm-eval-harness
