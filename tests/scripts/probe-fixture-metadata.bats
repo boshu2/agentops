@@ -1105,12 +1105,40 @@ PY
     # a destination that resolves into loopback or private space, so a local
     # stand-in upstream is unreachable without it. --allow-port is what makes
     # the ephemeral upstream port admissible; a capture pins 443.
-    python3 "$proxy" --allow-host 127.0.0.1 --allow-host chatgpt.com \
+    # Resolve only these fixture authorities to the real local listener. The
+    # proxy still checks their original names and ports before resolution;
+    # even a policy regression cannot make this test dial a public service.
+    python3 - "$proxy" "$upstream_port" \
+        --allow-host 127.0.0.1 --allow-host chatgpt.com \
         --allow-host .oaiusercontent.com \
         --allow-port "$upstream_port" --allow-port 443 \
         --allow-private-upstream \
         --log "$log" --port-file "$port_file" --rep-file "$rep_file" \
-        >/dev/null 2>&1 &
+        >/dev/null 2>&1 <<'PY' &
+import importlib.util, socket, sys
+
+proxy, upstream_port = sys.argv[1], int(sys.argv[2])
+sys.argv = [proxy, *sys.argv[3:]]
+getaddrinfo = socket.getaddrinfo
+fixture_hosts = {
+    "raw.githubusercontent.com",
+    "sdmntprsouthcentralus.oaiusercontent.com",
+    "evil-oaiusercontent.com",
+}
+
+def fixture_getaddrinfo(host, port, *args, **kwargs):
+    if host in fixture_hosts and int(port) == 443:
+        host, port = "127.0.0.1", upstream_port
+    if host != "127.0.0.1" or int(port) != upstream_port:
+        raise OSError(f"unexpected fixture destination: {host}:{port}")
+    return getaddrinfo(host, port, *args, **kwargs)
+
+socket.getaddrinfo = fixture_getaddrinfo
+spec = importlib.util.spec_from_file_location("probe_connect_proxy", proxy)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+raise SystemExit(module.main())
+PY
     local proxy_pid=$!
     while [[ ! -s "$port_file" ]]; do sleep 0.05; done
     local port
@@ -1120,16 +1148,23 @@ PY
     run python3 - "$port" "$upstream_port" <<'PY'
 import socket, sys
 
-def connect(port, authority):
-    sock = socket.create_connection(("127.0.0.1", int(port)), timeout=5)
-    sock.sendall(f"CONNECT {authority} HTTP/1.1\r\nHost: {authority}\r\n\r\n".encode())
-    head = sock.recv(4096).decode("latin-1", "replace")
-    sock.close()
-    return head.splitlines()[0]
+def connect(port, authority, tunnel=False):
+    with socket.create_connection(("127.0.0.1", int(port)), timeout=5) as sock:
+        sock.sendall(f"CONNECT {authority} HTTP/1.1\r\nHost: {authority}\r\n\r\n".encode())
+        with sock.makefile("rb") as reply:
+            head = reply.readline().decode("latin-1", "replace").rstrip("\r\n")
+            for line in reply:
+                if line == b"\r\n":
+                    break
+            if tunnel:
+                assert head == "HTTP/1.1 200 Connection established", head
+                sock.sendall(b"ping")
+                assert reply.read(4) == b"pong", "allowed tunnel did not relay upstream data"
+        return head
 
-print("allowed:", connect(sys.argv[1], f"127.0.0.1:{sys.argv[2]}"))
+print("allowed:", connect(sys.argv[1], f"127.0.0.1:{sys.argv[2]}", tunnel=True))
 print("denied:", connect(sys.argv[1], "raw.githubusercontent.com:443"))
-print("suffix:", connect(sys.argv[1], "sdmntprsouthcentralus.oaiusercontent.com:443"))
+print("suffix:", connect(sys.argv[1], "sdmntprsouthcentralus.oaiusercontent.com:443", tunnel=True))
 print("lookalike:", connect(sys.argv[1], "evil-oaiusercontent.com:443"))
 PY
     kill "$proxy_pid" "$upstream_pid" 2>/dev/null || true
@@ -1139,13 +1174,34 @@ PY
     [[ "$output" == *"denied: HTTP/1.1 403"* ]]
     # A rotating-region content host is allowed by the named domain suffix; a
     # lookalike that merely ends with the same characters is not.
+    [[ "$output" == *"suffix: HTTP/1.1 200"* ]]
     [[ "$output" == *"lookalike: HTTP/1.1 403"* ]]
 
     # Every attempt is on the record, attributed to the rep that made it.
+    run python3 - "$log" "$upstream_port" <<'PY'
+import json, sys
+
+with open(sys.argv[1]) as handle:
+    records = [json.loads(line) for line in handle]
+expected = [
+    ("127.0.0.1", int(sys.argv[2]), "allowed"),
+    ("raw.githubusercontent.com", 443, "refused"),
+    ("sdmntprsouthcentralus.oaiusercontent.com", 443, "allowed"),
+    ("evil-oaiusercontent.com", 443, "refused"),
+]
+actual = [(row["host"], row["port"], row["decision"], row["rep"]) for row in records]
+assert actual == [
+    (host, port, decision, "control-1")
+    for host, port, outcome in expected
+    for decision in ("attempt", outcome)
+], actual
+PY
+    [ "$status" -eq 0 ]
+
     run python3 "$META_TOOL" proxy-egress --log "$log" --rep control-1
     [ "$status" -eq 0 ]
-    [ "$(json_field "$output" allowed)" -ge 1 ]
-    [ "$(json_field "$output" refused)" -ge 2 ]
+    [ "$(json_field "$output" allowed)" -eq 2 ]
+    [ "$(json_field "$output" refused)" -eq 2 ]
     [[ "$(json_field "$output" log_sha256)" == sha256:* ]]
     grep -q 'raw.githubusercontent.com' "$log"
 
