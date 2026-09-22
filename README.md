@@ -1,15 +1,16 @@
 # AgentOps
 
 AgentOps gives Claude Code and Codex reusable instructions, called skills, for
-investigating code, writing useful tests, and independently reviewing changes.
-Start with one task and the guidance it needs; the full skill library is available
-without adopting a new workflow.
+planning changes, implementing them, operating services, and independently
+checking the results. It also helps agents coordinate work and find reviewed
+project context. Start with one task and the guidance it needs; skills are optional.
 
 When a coding agent says a change is done, AgentOps helps a fresh reviewer check
 that exact change against what you asked for. Your coding agent runs the work;
 your repository keeps its existing tests, tracker, and Git workflow.
 
 [Quickstart](#quickstart) · [Choose a skill](#choose-skills-by-the-work) ·
+[Shared context](#shared-project-context) ·
 [Optional CLI](#optional-ao-cli) · [Upgrade](#upgrading-to-37) ·
 [Documentation](docs/documentation-index.md)
 
@@ -58,7 +59,7 @@ Paste this into your **Claude Code session**, not your terminal:
 /agentops:research Find how this repository validates user input. Trace one
 path from the input through validation and its tests. Cite the relevant files
 and line numbers, explain one edge case, and identify any missing coverage.
-Answer in this conversation without changing files.
+Identify the Research skill file you used. Answer here without changing files.
 ```
 
 In a **Codex session**, use the same request with its skill prefix:
@@ -67,13 +68,15 @@ In a **Codex session**, use the same request with its skill prefix:
 $agentops:research Find how this repository validates user input. Trace one
 path from the input through validation and its tests. Cite the relevant files
 and line numbers, explain one edge case, and identify any missing coverage.
-Answer in this conversation without changing files.
+Identify the Research skill file you used. Answer here without changing files.
 ```
 
 Expect a trace you can inspect: where input enters, which checks accept or reject
 it, and what the tests cover. If a step cannot be established, the answer should
 say what is missing. You can then request a fix or a regression test using those
 file references. Research itself does not authorize a code change.
+The reported skill path can help you spot a missing or duplicate installation;
+an inventory entry alone does not prove the agent loaded the intended guidance.
 
 ## Choose skills by the work
 
@@ -82,12 +85,12 @@ steps you must run in order.
 
 | What you need | Skill | What to expect |
 |---|---|---|
-| Clarify what a change should do | [plan](skills/plan/SKILL.md) | Concrete acceptance examples and an agreed scope |
-| Complete an accepted change or service operation | [implement](skills/implement/SKILL.md) | A complete change, meaningful checks and factual results |
+| Clarify or resume a change | [plan](skills/plan/SKILL.md) | Observable acceptance examples, one complete next slice and settled decisions preserved |
+| Complete an accepted change or service operation | [implement](skills/implement/SKILL.md) | The agreed behavior, meaningful checks, direct repairs and factual results |
 | Get advice on a plan, design or change | [review](skills/review/SKILL.md) | Supported findings, suggestions and gaps, without acceptance or delivery authority |
 | Independently judge a finished change | [validate](skills/validate/SKILL.md) | Fresh acceptance judgment of exact content; requires `ao` |
-| Coordinate authorized workers or recover assignments | [orchestrate](skills/orchestrate/SKILL.md) | Actual prerequisites, isolated scopes, review capacity and native handoffs |
-| Find relevant experience or maintain shared context | [memory](skills/memory/SKILL.md) | Selective recall or reviewed corrections when useful |
+| Coordinate authorized workers or recover assignments | [orchestrate](skills/orchestrate/SKILL.md) | Verified prerequisites, isolated assignments, room for review and an integrated candidate |
+| Find relevant experience or maintain shared context | [memory](skills/memory/SKILL.md) | Relevant reviewed pages, supported updates and corrections when evidence changes |
 
 Focused methods remain directly available: [Research](skills/research/SKILL.md)
 traces a source question, [Test](skills/test/SKILL.md) develops behavioral tests,
@@ -102,6 +105,18 @@ current API and run the owning package checks."
 For advisory feedback, use `/agentops:review` in Claude Code or
 `$agentops:review` in Codex. A request to prove completion or issue an acceptance
 verdict belongs to Validate; advice cannot stand in for that fresh judgment.
+If a request could mean advice or an acceptance judgment, the agent clarifies
+that intent first.
+
+Plan investigates source facts, asks about consequential caller choices, and
+can use a bounded probe to resolve an assumption. It stops when one complete
+change is ready to implement and judge. Later work stays coarse; resuming uses
+the existing handoff and preserves decisions already made.
+
+Orchestrate checks actual prerequisite content and active assignments before
+delegating work. It coordinates through your tracker and coding runtime, keeps
+write scopes separate, and reserves capacity for integration and fresh review.
+Your existing tools continue to own work status, execution and delivery.
 
 The [Skill Router](docs/SKILL-ROUTER.md) lists every current skill, including
 implementation, documentation, security, and memory. Installing a skill makes
@@ -244,6 +259,35 @@ A passing test is evidence for review. The author cannot issue its own binding
 with exact content identity, checked scope, and evidence references. New proof
 uses caller-selected protected external non-Git storage; existing evidence is
 preserved.
+
+## Shared project context
+
+When earlier project knowledge could change the next action, an agent can start
+at a project-selected `.context/README.md`, read the relevant topic page, and
+follow its links to current code, docs and tests. This repository's
+[context map](.context/README.md) is a working example. Reading cleared pages
+uses ordinary filesystem tools and needs neither `ao` nor Beads.
+
+Ask for that lookup in either coding agent:
+
+```text
+Use AgentOps Memory to find reviewed project context relevant to this change.
+Read only the relevant pages and their current source owners. Explain which
+constraint affects the next action, or say that no applicable context was found.
+Do not create or update a context store.
+```
+
+[Memory](skills/memory/SKILL.md) owns finding, capturing and curating this
+guidance. Shared pages point to authoritative sources; your tracker keeps work
+status. No context directory or private import is created automatically.
+
+Adding or changing shared guidance requires authorized sources and a selected
+destination. Drafts and review evidence stay in protected external non-Git
+storage; a fresh reviewer checks factual support and disclosure of the exact
+content and destination before Git admission. Later contrary evidence can
+qualify or retire a claim. See [Memory's storage rules](skills/memory/SKILL.md#access-storage-and-honest-limits)
+and [ADR-0016](docs/adr/ADR-0016-state-tiers.md). These procedures do not provide
+native access isolation or establish that saved guidance improves outcomes.
 
 <details>
 <summary>Architecture, memory, and multi-agent workflows</summary>
