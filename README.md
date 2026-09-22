@@ -1,11 +1,11 @@
 # AgentOps
 
-**Stop rebuilding your coding workflow in every prompt.**
+**Keep your AI agents from becoming slop cannons.**
 
-AgentOps is a library of engineering skills for coding agents. The skills tell
-an agent how to turn a request into a plan, carry out the change, investigate
-failed checks, and bring in a fresh reviewer. Longer jobs can add worker
-coordination and shared project context.
+AgentOps is a collection of software engineering practices I've found work with
+AI agents, packaged as reusable skills. They help your agent understand the code
+before changing it, write tests that check the requested behavior, and bring in
+a fresh reviewer to catch work that looks finished but isn't.
 
 Use one skill for a bug fix or combine them for a larger project. The instructions
 are plain Markdown you can inspect and adapt. Your coding agent does the work
@@ -336,10 +336,5 @@ and [storage rules](docs/adr/ADR-0016-state-tiers.md) for the details.
 For a reproducible problem, [open an issue](https://github.com/boshu2/agentops/issues)
 with your runtime version, install method, command or prompt, and observed result.
 Include saved evidence only when it's safe to share.
-
-Some engineering guidance draws on [Matt Pocock's skills](https://github.com/mattpocock/skills),
-including concrete acceptance examples, domain language, and interface-focused
-tests. These are design influences; they don't establish measured improvements
-in coding outcomes.
 
 Contributing: [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md). License: Apache-2.0.
