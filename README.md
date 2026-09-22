@@ -158,7 +158,7 @@ Choose one source for each skill to avoid duplicate copies in your coding agent.
 | Path | Use it when |
 |---|---|
 | Runtime plugin, shown above | You want a bundle managed through Claude Code or Codex |
-| `npx skills@latest add boshu2/agentops --all -g` | You want the full library copied into supported coding agents |
+| `npx skills@latest add boshu2/agentops --all -g` | You want the full library installed for every agent supported by the Skills installer |
 | Checkout + `ao skills link` | You edit skills or want to expose a selected subset from source |
 
 From an AgentOps checkout with `ao` installed, preview and link only the skills
@@ -173,6 +173,10 @@ Omit the selectors to link the whole catalog. Linking preserves existing real
 directories and foreign links. Follow the complete
 [source checkout instructions](docs/install-day2-ops.md#install-source-checkout)
 for cloning, updating, and removing owned links.
+The [host/install mapping](docs/contracts/multi-runtime-tier-charter.md#host-and-install-surface-mapping)
+also accounts for Cursor/OpenCode structural coverage, Gemini/Antigravity
+compatibility packaging and other source-link consumers. Package installation
+and CLI availability do not establish actual skill loading or execution.
 
 ## Upgrading to 3.7
 

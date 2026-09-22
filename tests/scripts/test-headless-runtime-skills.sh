@@ -18,6 +18,8 @@ fi
 
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
+# Mock diagnostics must never read/copy the operator's real runtime auth.
+export HEADLESS_RUNTIME_SOURCE_CODEX_HOME="$TMP_DIR/no-auth"
 
 make_fixture() {
     local root="$1"
@@ -44,6 +46,9 @@ if [[ "${1:-}" == "skills" && "${2:-}" == "link" ]]; then
   done
   if [[ -n "$dest" ]]; then
     mkdir -p "$dest"
+    if [[ "${MOCK_CODEX_INSTALL_MARKER:-0}" == 1 ]]; then
+      touch "$(dirname "$dest")/.agentops-codex-install.json"
+    fi
   fi
   exit 0
 fi
@@ -130,6 +135,15 @@ if [[ "\$1" != "exec" ]]; then
   exit 1
 fi
 
+if [[ " \$* " == *" --help "* ]]; then
+  echo "Codex help"
+  exit 0
+fi
+if [[ "$mode" == exec-fail ]]; then
+  echo "mock inventory request failed" >&2
+  exit 9
+fi
+
 state_file="$(dirname "$0")/.codex-state"
 python3 - <<'PY'
 import json
@@ -171,9 +185,9 @@ test_passes_with_mocked_runtimes() {
     make_mock_codex "$bin_dir" pass
 
     if PATH="$bin_dir:$PATH" bash "$SCRIPT" --repo-root "$repo" --workdir "$TMP_DIR/workdir-pass" >"$TMP_DIR/pass.log" 2>&1; then
-        pass "passes with mocked Claude load check and Codex inventory"
+        pass "completes mocked Claude CLI smoke and Codex reported inventory"
     else
-        fail "passes with mocked Claude load check and Codex inventory"
+        fail "completes mocked Claude CLI smoke and Codex reported inventory"
         sed -n '1,80p' "$TMP_DIR/pass.log" >&2
     fi
 }
@@ -205,7 +219,7 @@ test_retries_when_codex_inventory_omits_skill_once() {
     if PATH="$bin_dir:$PATH" bash "$SCRIPT" --repo-root "$repo" --runtime codex --workdir "$TMP_DIR/workdir-codex-retry" \
         >"$TMP_DIR/codex-retry.log" 2>&1; then
         if contains_text 'Codex inventory mismatch on attempt 1/2; retrying' "$TMP_DIR/codex-retry.log" && \
-            contains_text 'codex: inventory verified' "$TMP_DIR/codex-retry.log"; then
+            contains_text 'codex: model-reported inventory matched expected names; content loading unverified' "$TMP_DIR/codex-retry.log"; then
             pass "retries when Codex inventory omits a skill once"
         else
             fail "retries when Codex inventory omits a skill once"
@@ -217,7 +231,7 @@ test_retries_when_codex_inventory_omits_skill_once() {
     fi
 }
 
-test_claude_runtime_uses_non_print_load_check_only() {
+test_claude_help_is_only_cli_availability_evidence() {
     local repo="$TMP_DIR/claude-load-repo"
     local bin_dir="$TMP_DIR/claude-load-bin"
     mkdir -p "$bin_dir"
@@ -225,15 +239,49 @@ test_claude_runtime_uses_non_print_load_check_only() {
     make_mock_claude "$bin_dir"
 
     if PATH="$bin_dir:$PATH" bash "$SCRIPT" --repo-root "$repo" --runtime claude --workdir "$TMP_DIR/workdir-claude-load" >"$TMP_DIR/claude-load.log" 2>&1; then
-        if contains_text 'claude: non-print load check passed' "$TMP_DIR/claude-load.log"; then
-            pass "Claude runtime uses non-print load check only"
+        if contains_text 'claude: CLI smoke succeeded (--help only); actual inventory and content loading unproven' "$TMP_DIR/claude-load.log" &&
+            ! grep -Eq 'Tier I|load check passed|validation passed' "$TMP_DIR/claude-load.log"; then
+            pass "Claude help establishes CLI availability without load or Tier I proof"
         else
-            fail "Claude runtime uses non-print load check only"
+            fail "Claude help establishes CLI availability without load or Tier I proof"
             sed -n '1,80p' "$TMP_DIR/claude-load.log" >&2
         fi
     else
-        fail "Claude runtime uses non-print load check only"
+        fail "Claude help establishes CLI availability without load or Tier I proof"
         sed -n '1,80p' "$TMP_DIR/claude-load.log" >&2
+    fi
+}
+
+test_codex_fallback_preserves_limits_and_strict_failure() {
+    local repo="$TMP_DIR/codex-fallback-repo"
+    local bin_dir="$TMP_DIR/codex-fallback-bin"
+    mkdir -p "$bin_dir"
+    make_fixture "$repo"
+    make_mock_codex "$bin_dir" exec-fail
+
+    if PATH="$bin_dir:$PATH" bash "$SCRIPT" --repo-root "$repo" --runtime codex >"$TMP_DIR/no-marker.log" 2>&1; then
+        fail "Codex fallback still requires the legacy marker"
+    elif contains_text 'Codex CLI smoke fallback unavailable or failed' "$TMP_DIR/no-marker.log"; then
+        pass "Codex fallback still requires the legacy marker"
+    else
+        fail "Codex fallback still requires the legacy marker"
+    fi
+
+    if MOCK_CODEX_INSTALL_MARKER=1 PATH="$bin_dir:$PATH" bash "$SCRIPT" --repo-root "$repo" --runtime codex >"$TMP_DIR/fallback.log" 2>&1 &&
+        contains_text 'codex: CLI smoke fallback only; actual content loading and execution unproven' "$TMP_DIR/fallback.log" &&
+        contains_text 'inventory remains unverified' "$TMP_DIR/fallback.log" &&
+        ! grep -Eq 'Tier I|load.check.*passed|validation passed|inventory matched' "$TMP_DIR/fallback.log"; then
+        pass "Codex help fallback never claims inventory, loading or execution proof"
+    else
+        fail "Codex help fallback never claims inventory, loading or execution proof"
+    fi
+
+    if MOCK_CODEX_INSTALL_MARKER=1 HEADLESS_RUNTIME_SKILL_CODEX_STRICT=1 PATH="$bin_dir:$PATH" bash "$SCRIPT" --repo-root "$repo" --runtime codex >"$TMP_DIR/strict.log" 2>&1; then
+        fail "Codex strict mode rejects CLI-only fallback"
+    elif contains_text 'HEADLESS_RUNTIME_SKILL_CODEX_STRICT=1 requires verified Codex inventory' "$TMP_DIR/strict.log"; then
+        pass "Codex strict mode rejects CLI-only fallback"
+    else
+        fail "Codex strict mode rejects CLI-only fallback"
     fi
 }
 
@@ -241,7 +289,8 @@ echo "== test-headless-runtime-skills =="
 test_passes_with_mocked_runtimes
 test_fails_when_codex_inventory_is_missing_skill
 test_retries_when_codex_inventory_omits_skill_once
-test_claude_runtime_uses_non_print_load_check_only
+test_claude_help_is_only_cli_availability_evidence
+test_codex_fallback_preserves_limits_and_strict_failure
 
 echo ""
 echo "Results: $PASS PASS, $FAIL FAIL"

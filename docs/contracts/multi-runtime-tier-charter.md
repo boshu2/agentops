@@ -1,149 +1,106 @@
 # Multi-runtime tier charter
 
-> Source-of-truth for the multi-runtime validation tier model. References:
-> `docs/contracts/hook-runtime-contract.md` (event mapping), `GOALS.md`
-> directive D1, bead `soc-ymph.1`.
+This contract owns the host/install surface mapping and the meaning of its
+validation tiers. [Install and day-2 operations](../install-day2-ops.md) owns
+operator steps; [migration](../MIGRATION.md) owns old-name dispositions.
+Claude Code and Codex remain first-class installs. Cursor and OpenCode retain
+their declared structural coverage; Gemini/Antigravity retains its packaged
+compatibility surface. Missing live evidence does not retire a promised journey.
 
-AgentOps supports four agentic runtimes (Claude Code, Codex, Cursor,
-OpenCode). Each runtime has different surface area, hook semantics, and
-authentication requirements. The validation surface is graded across
-three tiers; this charter is the explicit declaration of which tier is
-blocking in CI today and which is opt-in.
+## Evidence tiers
 
-## Tier Definitions
+| Tier | What establishes it | What does not establish it |
+|---|---|---|
+| S: structural / install smoke | Source files, manifests, generated bundles, exports and isolated filesystem installation checks agree with their owners. | A file on disk does not show that a host discovered or loaded it. |
+| I: actual inventory / load | A real host session exposes the intended inventory and loads the selected installed skill and its required references from the identified source. | CLI `--help`, manifest validation, package-manager listings and a successful link operation alone. |
+| E: live execution | An authorized real host completes the supported journey against frozen acceptance, with actual results and fresh author-distinct judgment. | Startup, inventory, model self-report, exit status or an output envelope alone. |
 
-### Tier S — Structural / install smoke
+The blocking check roster is maintained in [CI](../../.github/workflows/validate.yml),
+the [install CI workflow](../../.github/workflows/install-e2e.yml) and the
+[gate registry](../../cli/internal/gates/checks/seed.go), explained in
+[CI/CD](../CI-CD.md). Structural checks need no model request or authentication.
+The standalone smoke scripts below are available checks, not a claim that each
+is wired into every CI run. No live execution tier is a default CI gate.
+Live inventory and execution require explicit authority, available host access
+and real runtime bounds; missing access is missing evidence, never a pass.
 
-Files, manifests, generated bundles, installer scripts, and static
-runtime-specific entrypoints are present and internally consistent.
+## Host and install surface mapping
 
-**Gate behavior:** **Blocking in CI.** No live runtime or auth required.
-Verifies that installation surfaces don't drift from runtime contracts
-without anyone catching it.
+This is the single mapping of retained install consumers. The canonical catalog
+comes from [skills](../../skills/catalog.json); metadata-owned bundles are
+regenerated through [regen-all](../../scripts/regen-all.sh).
 
-**Current coverage:** all four runtimes have Tier S coverage today
-(see Coverage Matrix below).
-
-### Tier I — Live inventory / load proof
-
-A real runtime can load AgentOps and report the visible skill inventory,
-or a documented load-check fallback passes when inventory is unavailable.
-
-**Gate behavior:** **Skip or warn** when the runtime/auth is absent;
-strict env vars can make failures blocking. Not a default-blocking gate
-because CI runners do not carry runtime API keys.
-
-**Current coverage:** Claude Code + Codex have Tier I; Cursor + OpenCode
-do not.
-
-### Tier E — Live execution proof
-
-A real runtime executes an AgentOps workflow end to end against a
-scenario (e.g., a runtime actually runs `/rpi` or `/validate` and the
-output matches expected envelope shape).
-
-**Gate behavior:** **Opt-in / nightly only.** Not a default CI gate
-because:
-
-1. Requires runtime auth (Anthropic, OpenAI, or other API keys) that
-   public CI cannot safely carry.
-2. Has real budget cost — even a single execution may consume tokens
-   priced in dollars, multiplied by every CI run.
-3. Has wall-clock cost (minutes per scenario × multiple scenarios ×
-   multiple runtimes) that pushes CI past reasonable cadence.
-4. Brings live-service flakiness (rate limits, transient API outages)
-   into the merge gate.
-
-**Current coverage:** **No runtime has Tier E as a default CI gate.**
-This is intentional, not an oversight.
-
-## Coverage Matrix
-
-| Runtime | Tier S | Tier I | Tier E |
+| Consumer | Retained surface and owner | Structural checks | Actual load / execution obligation |
 |---|---|---|---|
-| Claude Code | `tests/skills/test-runtime-claude-code-smoke.sh` | `scripts/validate-headless-runtime-skills.sh --runtime claude` (load-check fallback) | Opt-in (no default CI lane) |
-| Codex | `tests/skills/test-runtime-codex-smoke.sh` | `scripts/validate-headless-runtime-skills.sh --runtime codex` (load-check fallback) | Opt-in (no default CI lane) |
-| Cursor | `tests/skills/test-runtime-cursor-smoke.sh` (`.mdc` export converter) | Not implemented | Opt-in (no default CI lane) |
-| OpenCode | `tests/skills/test-runtime-opencode-smoke.sh` | Not implemented | Opt-in (no default CI lane) |
+| Claude Code, first-class | Managed plugin: [.claude-plugin](../../.claude-plugin/plugin.json), canonical `skills/`, [agents](../../agents/) and [policy dispatcher](../../hooks/hooks.json). Source links: detected `~/.claude/skills`. | [Claude smoke](../../tests/skills/test-runtime-claude-code-smoke.sh), [manifest validation](../../scripts/validate-manifests.sh). | A fresh session must discover the chosen installation, load selected guidance and complete its accepted journey. Plugin inventory alone is insufficient. Optional hooks have separate activation/effect proof. |
+| Codex, first-class | Managed plugin: [.codex-plugin](../../.codex-plugin/plugin.json) points at generated `skills-codex/` under the [Codex API contract](codex-skill-api.md). Source links expose canonical `skills/` in detected `~/.codex/skills`. [Native roles](../../scripts/install-codex-context-agents.sh) and [read-budget hook](../../scripts/install-codex-read-budget-guard.sh) are separate opt-ins. | [Codex smoke](../../tests/skills/test-runtime-codex-smoke.sh), [bundle check](../../scripts/validate-codex-install-bundle.sh), generated parity checks in `regen-all.sh --check`. | Qualify the chosen plugin or source-link path independently. Confirm actual loaded content and names; plugin names use `agentops:`, source links use their catalog names. Copied roles and trusted hooks need separate upgrade checks. |
+| Cursor, retained structural coverage | [Converter](../../skills/skill-builder/scripts/converter/convert.sh) exports `.mdc` rules; source linking also detects `~/.cursor/skills`. | [Cursor export smoke](../../tests/skills/test-runtime-cursor-smoke.sh); source-link tests below cover destination mechanics. | No maintained automated inventory/execution lane is declared here. An authorized native session must establish discovery, selected loading and any claimed execution; export success proves only S. |
+| OpenCode, retained structural coverage | Canonical skills through portable `~/.agents/skills` or explicit `--dest ~/.config/opencode/skills`; [OpenCode install guide](../../.opencode/INSTALL.md) also describes optional plugin hooks. Automatic fan-out does not detect its dedicated config root. | [OpenCode smoke](../../tests/skills/test-runtime-opencode-smoke.sh), including explicit-destination installation and protection of existing entries. | No maintained automated inventory/execution lane is declared here. Qualify actual discovery and execution separately, including optional hooks when selected. |
+| Gemini / Antigravity, retained compatibility package and export | [Gemini image](../../images/gemini/README.md), generated [plugin manifest](../../images/gemini/plugin.json), bundled skills, agents, rules, hooks and optional Agent Mail configuration. The wrapper is migration-only compatibility under that owner. Source linking detects `~/.gemini/skills`. | [Image verification](../../images/gemini/verify.sh) checks inventory and byte identity; available `agy plugin validate` checks package shape. | Package validation is not Gemini or Antigravity load proof. Each claimed host journey, optional dependency and migration needs its own native evidence. |
+| Pi and portable source-link consumers | Existing [destination resolver](../../cli/internal/skillsapp/roots.go) always includes `~/.agents/skills` and detects `~/.pi/skills`; `--dest` selects one explicit root for other consumers. | [Source-link tests](../../cli/internal/skillsapp/link_test.go) and [unlink tests](../../cli/internal/skillsapp/unlink_test.go). | These are existing filesystem consumers, not a new claim of live host qualification. Host discovery and behavior remain separately unproven until exercised. |
+| `npx skills` consumers | External Skills installer reads this repository's skills. `npx skills@latest add boshu2/agentops --all -g` requests all skills and all agents supported by that installer; it does not install the runtime plugin, AO, roles or hooks. | Repository catalog/frontmatter checks cover the input. The external installer's current `--help` owns its selection, link/copy and update semantics. | Record installer version, selected agents and installed source. External installation success does not establish any host's I or E tier. |
 
-## Tier E Opt-in Recipes
+Source-link discovery is defined by the resolver, not by detecting running
+applications: existing `~/.claude`, `~/.codex`, `~/.gemini`, `~/.cursor` and
+`~/.pi` directories select their `skills/` roots. `--dest` overrides this fan-out.
+Selection with repeated `--skill` never removes unselected skills and does not
+install dependencies. Real files/directories and foreign or wrong links remain
+conflicts for explicit owner resolution.
 
-When an operator wants Tier E proof, the canonical entry points are:
+## Existing runtime probe limits
 
-### Claude Code
+[validate-headless-runtime-skills.sh](../../scripts/validate-headless-runtime-skills.sh)
+is a legacy diagnostic with unequal evidence strength:
+
+- Its Claude path runs `claude --plugin-dir <checkout> --help`. That establishes
+  CLI availability/argument acceptance, not actual plugin inventory or loading.
+- Its Codex path creates source links and requests a model-generated inventory.
+  The names comparison is narrower than tracing selected content loading or
+  executing a journey. It may copy authentication into an isolated home and make
+  live model requests, so it must not run as an unauthorized structural check.
+- Its advertised load-check fallback invokes `codex exec --help` and requires a
+  legacy install marker that the source-link path does not create. A fallback,
+  warning or skip cannot satisfy I or E. `HEADLESS_RUNTIME_SKILL_CODEX_STRICT=1`
+  rejects inventory fallback; it does not add content-loading proof.
+
+Do not promote the script's diagnostic output or exit status into a
+release qualification. Its behavior is recorded here without changing the
+accepted host outcomes.
+
+## Authorized live journeys
+
+Use the installed host's native help before dispatch. For a managed plugin,
+select `/agentops:research` inside Claude Code or `$agentops:research` inside
+Codex, as shown in the [quickstart](../../README.md#try-one-task). A Codex CLI
+prompt is positional, not a `--prompt` flag:
 
 ```bash
-# Inside a real Claude Code session, run:
-/rpi "smoke test the multi-runtime tier charter"
-# Then verify the session produces the expected RPI envelope.
+# Only within an authorized, prepared consumer checkout and installed plugin:
+codex exec --sandbox read-only '$agentops:research Trace repository input validation. Cite the loaded skill and relevant source files; change no files.'
 ```
 
-### Codex
+Use `$research` for the canonical source-linked skill instead. A read-only
+research invocation can establish a bounded loading/use observation; it does
+not alone prove implementation, independent validation, or upgrade recovery.
+Claude's interactive route is supported; do not infer missing headless support
+from absence of an AgentOps automation lane. Cursor/OpenCode and
+Gemini/Antigravity observations likewise use their native authorized hosts.
 
-```bash
-# With a Codex CLI install and valid auth:
-codex exec --prompt "Run /validate on the current branch and report status"
-# Then verify the output matches docs/contracts/eval-verdict-pipeline.md envelope.
-```
+Before release qualification, independently exercise the final declared
+journeys from reproducible installs, including selective retrieval, cold
+resume, final names, stale-copy collisions, upgrades and one recovery from a
+failed/partial upgrade with user-owned directories intact. Shared project
+context must be discoverable from a clean consumer checkout. Record exact
+source/version, install path, host/model, observed loaded content, checks and
+remaining gaps. Final G2 qualification owns this live evidence; a contract
+repair or earlier-source result does not complete it. Reducing promised
+behavior requires a caller decision, not a new caveat in this table.
 
-### Cursor
+## Related owners
 
-Cursor Tier E is intentionally manual. Open the editor with a real
-project, invoke a registered `.mdc` skill, and verify the produced
-artifact. There is no headless Cursor lane on the roadmap.
-
-### OpenCode
-
-OpenCode Tier E is intentionally manual today. The headless inventory
-gate is on the roadmap; opt-in execution proofs run from an operator's
-local OpenCode instance.
-
-## Why opt-in, not blocking
-
-The blocking surface for AgentOps merges is **Tier S structural** plus
-the various contract gates declared in `GOALS.md` (council coverage,
-durable learning, loop closure). Tier S catches the failure modes that
-matter for "did the code ship a coherent install bundle":
-
-- skills/hooks/manifests drift from runtime contracts
-- installer scripts break for one runtime but not others
-- generated artifacts (codex bundles, .mdc exports) miss a fresh runtime change
-
-Tier E catches a different failure class — "does a real runtime actually
-execute what we shipped end-to-end" — but the cost/reliability profile
-makes it unsuitable as a default merge gate. It belongs in nightly
-operator runs (one of the four runtimes per night, manually rotated) or
-in pre-release validation, not on the merge path.
-
-The honest framing is: **AgentOps is a hub-and-spoke library, not a
-multi-runtime end-to-end test harness.** Spoke runtimes own their
-own real-execution proof; AgentOps's contract is that the spoke
-artifacts are structurally correct.
-
-## When to revisit
-
-This charter should be revisited if:
-
-1. **A reusable mock-runtime harness emerges** that lets us run Tier E
-   scenarios in CI without real auth/budget (no such harness exists
-   today; the runtimes are closed systems).
-2. **A specific runtime's spoke ownership changes** — e.g., if Anthropic
-   ships an officially-supported headless Claude Code execution lane,
-   adopting it for Tier E becomes possible.
-3. **A regression class is discovered that Tier S structural cannot
-   catch but Tier E live can.** Document the class in a bead before
-   investing in CI Tier E lanes.
-
-## Compliance summary
-
-Directive D1 (`GOALS.md`): closed via this charter doc per the bead's
-"OR" acceptance — explicit charter doc OR CI Tier E lane. Tier E is
-declared opt-in here; no CI Tier E lane is added.
-
-## Related contracts
-
-- `docs/contracts/hook-runtime-contract.md` — event mapping per runtime,
-  hook capability matrix, install behavior
-- `docs/contracts/headless-invocation-standards.md` — what "headless
-  invocation" means for each runtime
-- `GOALS.md` — gate roster (search for `multi-runtime` / `runtime-`)
+- [Install and day-2 operations](../install-day2-ops.md) and [migration](../MIGRATION.md).
+- [Runtime neutrality](runtime-neutrality.md) and [Codex skill API](codex-skill-api.md).
+- [Hook event reference](../../skills/cc-hooks/references/HOOK-EVENTS.md) and
+  [Codex context-budget design](../design/codex-context-budget.md).
+- [RPI evidence semantics](../architecture/rpi-traversal.md), when that workflow
+  is selected; no runtime has a mandatory RPI invocation.
