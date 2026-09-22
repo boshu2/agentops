@@ -16,7 +16,7 @@ maps useful topics and source owners without duplicating native work/status.
 Create only pages with a concrete consumer; no empty scaffold, automatic store
 creation or private import is authorized.
 
-[Memory](../../skills/memory/SKILL.md) owns find/recall, capture/mine/learn and
+[Memory](https://github.com/boshu2/agentops/blob/main/skills/memory/SKILL.md) owns find/recall, capture/mine/learn and
 curate/qualify/retire; other roles use its operation pointers. A worker may read
 selected cleared project pages just in time with ordinary filesystem tools.
 Portable reading does not require BD, AO, a private locator or a new configuration

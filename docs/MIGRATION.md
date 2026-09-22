@@ -116,7 +116,7 @@ selecting Orchestrate does not require a skill chain.
 This is the literal disposition of all 34 canonical roots at migration baseline
 `3842ea0e0040ddc06ee4d45c98b9fc8c0eeffb6a`, derived from their
 `skills/<name>/SKILL.md` contracts. Each linked contract remains the method owner.
-The [generated catalog](../skills/catalog.json) and [router](SKILL-ROUTER.md)
+The [generated catalog](https://github.com/boshu2/agentops/blob/main/skills/catalog.json) and [router](SKILL-ROUTER.md)
 describe the current inventory; fewer roots or improved discovery is not claimed.
 For every **keep** row, its catalog slug remains compatible. Managed plugin
 invocations remain `/agentops:<name>` in Claude and `$agentops:<name>` in Codex.
@@ -129,42 +129,42 @@ apply, and host loading is qualified separately from package presence.
 
 | Baseline entrypoint | Disposition | Maintained owner and outcome |
 |---|---|---|
-| `account-rotation` | keep | [Account Rotation](../skills/account-rotation/SKILL.md): caller-selected account changes and identity checks. |
-| `agent-mail` | keep | [Agent Mail](../skills/agent-mail/SKILL.md): selected messaging and advisory file reservations; native tracker retains status. |
-| `agent-native` | keep | [Agent Native](../skills/agent-native/SKILL.md): runtime dispatch, observation, context identity, isolation and native follow-up. Orchestrate links these mechanics. |
-| `agy-native` | keep | [AGY Native](../skills/agy-native/SKILL.md): explicitly selected Antigravity execution. |
-| `cass` | keep | [CASS](../skills/cass/SKILL.md): cited session retrieval; Memory owns admission of reusable claims. |
-| `cc-hooks` | keep | [CC Hooks](../skills/cc-hooks/SKILL.md): authorized Claude hook and guard configuration. |
-| `codex-exec` | keep | [Codex Exec](../skills/codex-exec/SKILL.md): one selected headless Codex process. |
-| `council` | keep | [Council](../skills/council/SKILL.md): selected independent perspectives; advice does not supply acceptance. |
-| `craft-goal` | keep | [Craft Goal](../skills/craft-goal/SKILL.md): explicitly selected persistent-goal guidance; native goals retain continuity. |
-| `dcg` | keep | [DCG](../skills/dcg/SKILL.md): diagnose guard refusal and authorized policy changes. |
-| `doc` | keep | [Doc](../skills/doc/SKILL.md): requested source-grounded documents and continuity handoffs. |
-| `domain` | keep | [Domain](../skills/domain/SKILL.md): domain vocabulary, rule boundaries and repository conventions. |
-| `idea-genie` | keep | [Idea Genie](../skills/idea-genie/SKILL.md): evidence-backed options and idea challenge. |
-| `implement` | keep | [Implement](../skills/implement/SKILL.md): complete accepted changes, direct repair and authorized operations. |
-| `memory` | keep | [Memory](../skills/memory/SKILL.md): selective find/recall, capture/mine and curate/qualify/retire with support and disclosure review. |
-| `ms` | keep | [MS](../skills/ms/SKILL.md): selected meta_skill search and loading. |
-| `ntm` | keep | [NTM](../skills/ntm/SKILL.md): selected persistent panes and native runtime facts. |
-| `plan` | keep | [Plan](../skills/plan/SKILL.md): resumable discovery, uncertainty routing, optional challenge and one ready complete slice. |
-| `postmortem` | keep | [Postmortem](../skills/postmortem/SKILL.md): requested outcome analysis, separate from code acceptance. |
-| `premortem` | keep | [Premortem](../skills/premortem/SKILL.md): selected fresh plan challenge; Plan owns the shared challenge exchange. |
-| `rch` | keep | [RCH](../skills/rch/SKILL.md): selected remote compilation and diagnostics. |
-| `reality-check` | keep | [Reality Check](../skills/reality-check/SKILL.md): compare shipped-feature, repository or goal claims with evidence. |
-| `refactor` | keep | [Refactor](../skills/refactor/SKILL.md): structural simplification while preserving behavior. |
-| `research` | keep | [Research](../skills/research/SKILL.md): cited source investigation and pattern evidence. |
-| `reverse-engineer` | keep | [Reverse Engineer](../skills/reverse-engineer/SKILL.md): authorized external-system teardown and adoption choices. |
-| `rpi` | keep | [RPI](../skills/rpi/SKILL.md): explicitly selected outcome-to-judgment charter; unchanged hard dependency graph. |
-| `sbh` | keep | [SBH](../skills/sbh/SKILL.md): disk-pressure diagnosis and authorized recovery. |
-| `security` | keep | [Security](../skills/security/SKILL.md): concrete exposure review and selected scans. |
-| `skill-builder` | keep | [Skill Builder](../skills/skill-builder/SKILL.md): skill authoring, repair, projections and exports. |
-| `skill-eval` | keep | [Skill Eval](../skills/skill-eval/SKILL.md): bounded behavioral evaluation; structural conformance is not efficacy. |
-| `test` | keep | [Test](../skills/test/SKILL.md): behavioral test design and consequential coverage gaps. |
-| `using-flywheel` | keep | [Using Flywheel](../skills/using-flywheel/SKILL.md): selected factory through its native workflow. |
-| `using-gc` | keep | [Using GC](../skills/using-gc/SKILL.md): selected Gas City through its Mayor and supported native doors. |
-| `validate` | keep | [Validate](../skills/validate/SKILL.md): sole skill owner of fresh exact-content acceptance judgment and explicit missing proof. |
+| `account-rotation` | keep | [Account Rotation](https://github.com/boshu2/agentops/blob/main/skills/account-rotation/SKILL.md): caller-selected account changes and identity checks. |
+| `agent-mail` | keep | [Agent Mail](https://github.com/boshu2/agentops/blob/main/skills/agent-mail/SKILL.md): selected messaging and advisory file reservations; native tracker retains status. |
+| `agent-native` | keep | [Agent Native](https://github.com/boshu2/agentops/blob/main/skills/agent-native/SKILL.md): runtime dispatch, observation, context identity, isolation and native follow-up. Orchestrate links these mechanics. |
+| `agy-native` | keep | [AGY Native](https://github.com/boshu2/agentops/blob/main/skills/agy-native/SKILL.md): explicitly selected Antigravity execution. |
+| `cass` | keep | [CASS](https://github.com/boshu2/agentops/blob/main/skills/cass/SKILL.md): cited session retrieval; Memory owns admission of reusable claims. |
+| `cc-hooks` | keep | [CC Hooks](https://github.com/boshu2/agentops/blob/main/skills/cc-hooks/SKILL.md): authorized Claude hook and guard configuration. |
+| `codex-exec` | keep | [Codex Exec](https://github.com/boshu2/agentops/blob/main/skills/codex-exec/SKILL.md): one selected headless Codex process. |
+| `council` | keep | [Council](https://github.com/boshu2/agentops/blob/main/skills/council/SKILL.md): selected independent perspectives; advice does not supply acceptance. |
+| `craft-goal` | keep | [Craft Goal](https://github.com/boshu2/agentops/blob/main/skills/craft-goal/SKILL.md): explicitly selected persistent-goal guidance; native goals retain continuity. |
+| `dcg` | keep | [DCG](https://github.com/boshu2/agentops/blob/main/skills/dcg/SKILL.md): diagnose guard refusal and authorized policy changes. |
+| `doc` | keep | [Doc](https://github.com/boshu2/agentops/blob/main/skills/doc/SKILL.md): requested source-grounded documents and continuity handoffs. |
+| `domain` | keep | [Domain](https://github.com/boshu2/agentops/blob/main/skills/domain/SKILL.md): domain vocabulary, rule boundaries and repository conventions. |
+| `idea-genie` | keep | [Idea Genie](https://github.com/boshu2/agentops/blob/main/skills/idea-genie/SKILL.md): evidence-backed options and idea challenge. |
+| `implement` | keep | [Implement](https://github.com/boshu2/agentops/blob/main/skills/implement/SKILL.md): complete accepted changes, direct repair and authorized operations. |
+| `memory` | keep | [Memory](https://github.com/boshu2/agentops/blob/main/skills/memory/SKILL.md): selective find/recall, capture/mine and curate/qualify/retire with support and disclosure review. |
+| `ms` | keep | [MS](https://github.com/boshu2/agentops/blob/main/skills/ms/SKILL.md): selected meta_skill search and loading. |
+| `ntm` | keep | [NTM](https://github.com/boshu2/agentops/blob/main/skills/ntm/SKILL.md): selected persistent panes and native runtime facts. |
+| `plan` | keep | [Plan](https://github.com/boshu2/agentops/blob/main/skills/plan/SKILL.md): resumable discovery, uncertainty routing, optional challenge and one ready complete slice. |
+| `postmortem` | keep | [Postmortem](https://github.com/boshu2/agentops/blob/main/skills/postmortem/SKILL.md): requested outcome analysis, separate from code acceptance. |
+| `premortem` | keep | [Premortem](https://github.com/boshu2/agentops/blob/main/skills/premortem/SKILL.md): selected fresh plan challenge; Plan owns the shared challenge exchange. |
+| `rch` | keep | [RCH](https://github.com/boshu2/agentops/blob/main/skills/rch/SKILL.md): selected remote compilation and diagnostics. |
+| `reality-check` | keep | [Reality Check](https://github.com/boshu2/agentops/blob/main/skills/reality-check/SKILL.md): compare shipped-feature, repository or goal claims with evidence. |
+| `refactor` | keep | [Refactor](https://github.com/boshu2/agentops/blob/main/skills/refactor/SKILL.md): structural simplification while preserving behavior. |
+| `research` | keep | [Research](https://github.com/boshu2/agentops/blob/main/skills/research/SKILL.md): cited source investigation and pattern evidence. |
+| `reverse-engineer` | keep | [Reverse Engineer](https://github.com/boshu2/agentops/blob/main/skills/reverse-engineer/SKILL.md): authorized external-system teardown and adoption choices. |
+| `rpi` | keep | [RPI](https://github.com/boshu2/agentops/blob/main/skills/rpi/SKILL.md): explicitly selected outcome-to-judgment charter; unchanged hard dependency graph. |
+| `sbh` | keep | [SBH](https://github.com/boshu2/agentops/blob/main/skills/sbh/SKILL.md): disk-pressure diagnosis and authorized recovery. |
+| `security` | keep | [Security](https://github.com/boshu2/agentops/blob/main/skills/security/SKILL.md): concrete exposure review and selected scans. |
+| `skill-builder` | keep | [Skill Builder](https://github.com/boshu2/agentops/blob/main/skills/skill-builder/SKILL.md): skill authoring, repair, projections and exports. |
+| `skill-eval` | keep | [Skill Eval](https://github.com/boshu2/agentops/blob/main/skills/skill-eval/SKILL.md): bounded behavioral evaluation; structural conformance is not efficacy. |
+| `test` | keep | [Test](https://github.com/boshu2/agentops/blob/main/skills/test/SKILL.md): behavioral test design and consequential coverage gaps. |
+| `using-flywheel` | keep | [Using Flywheel](https://github.com/boshu2/agentops/blob/main/skills/using-flywheel/SKILL.md): selected factory through its native workflow. |
+| `using-gc` | keep | [Using GC](https://github.com/boshu2/agentops/blob/main/skills/using-gc/SKILL.md): selected Gas City through its Mayor and supported native doors. |
+| `validate` | keep | [Validate](https://github.com/boshu2/agentops/blob/main/skills/validate/SKILL.md): sole skill owner of fresh exact-content acceptance judgment and explicit missing proof. |
 
-[Orchestrate](../skills/orchestrate/SKILL.md) is an additive coordination entrypoint
+[Orchestrate](https://github.com/boshu2/agentops/blob/main/skills/orchestrate/SKILL.md) is an additive coordination entrypoint
 for actual prerequisites, native assignments, isolated scopes, integration/review
 capacity and affected-work feedback. Agent Native remains its runtime-mechanics
 owner; Plan owns uncertainty and slicing; Memory owns shared-context procedures;
@@ -275,33 +275,33 @@ outcomes.
 
 Every currently registered public command is **kept**, with unchanged names,
 flags and authority. The rows below cover each public top-level command and
-**every descendant** under it. The generated [command reference](../cli/docs/COMMANDS.md)
+**every descendant** under it. The generated [command reference](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md)
 enumerates those descendants and flags; the executable registry in
 [`cli/cmd/ao`](../cli/cmd/ao/) remains the source, checked by
-[surface parity](../scripts/check-cmdao-surface-parity.sh) against
+[surface parity](https://github.com/boshu2/agentops/blob/main/scripts/check-cmdao-surface-parity.sh) against
 [the complete leaf inventory](cli-surface.json). `ao help` is Cobra's retained
 framework helper, categorized `internal-hidden` by that inventory. Removed
 commands remain covered by the breaking-boundary table above, not aliases.
 
 | Registered consumer and all descendants | Disposition and source owner | Retained outcome / compatibility |
 |---|---|---|
-| [`ao capabilities`](../cli/docs/COMMANDS.md#ao-capabilities) | keep; [capabilities.go](../cli/cmd/ao/capabilities.go) | Machine-readable registered CLI contract. |
-| [`ao completion`](../cli/docs/COMMANDS.md#ao-completion) | keep; [completion.go](../cli/cmd/ao/completion.go) | Native shell completion generation. |
-| [`ao config`](../cli/docs/COMMANDS.md#ao-config) | keep; [config module](../cli/cmd/ao/config_module.go) | Explicit context-route bindings; no automatic context admission. |
-| [`ao demo`](../cli/docs/COMMANDS.md#ao-demo) | keep; [demo composition](../cli/cmd/ao/demo_composition.go) | Read-only native example and explicitly selected RPI example. |
-| [`ao doctor`](../cli/docs/COMMANDS.md#ao-doctor) | keep; [doctor module](../cli/cmd/ao/doctor_module.go) | Installation diagnosis, snapshots and explicitly authorized repair/undo. |
-| [`ao gate`](../cli/docs/COMMANDS.md#ao-gate) | keep; [gate composition](../cli/cmd/ao/gate_composition.go) | Deterministic repository checks; not semantic acceptance. |
-| [`ao gc`](../cli/docs/COMMANDS.md#ao-gc) | keep; [GC composition](../cli/cmd/ao/gc_composition.go) | Prepare/check selected upstream integration and authorized affinity recovery. |
-| [`ao goals`](../cli/docs/COMMANDS.md#ao-goals) | keep; [goals composition](../cli/cmd/ao/goals_composition.go) | Existing goal/scenario measurement and inspection; no work ownership or scheduler. |
-| [`ao init`](../cli/docs/COMMANDS.md#ao-init) | keep; [init composition](../cli/cmd/ao/init_composition.go) | Optional local evidence setup; native work needs no initialization. |
-| [`ao provenance`](../cli/docs/COMMANDS.md#ao-provenance) | keep; [provenance composition](../cli/cmd/ao/provenance_composition.go) | Exact identities, generic evidence and requested judgment persistence/verification. |
-| [`ao quick-start`](../cli/docs/COMMANDS.md#ao-quick-start) | keep; [quick-start composition](../cli/cmd/ao/quickstart_composition.go) | Read-only native execution brief. |
-| [`ao robot-docs`](../cli/docs/COMMANDS.md#ao-robot-docs) | keep; [robot-docs composition](../cli/cmd/ao/robotdocs_composition.go) | Agent-facing CLI documentation. |
-| [`ao session`](../cli/docs/COMMANDS.md#ao-session) | keep; [session composition](../cli/cmd/ao/session_composition.go) | Requested continuity and authorized source reads; no mandatory bootstrap. |
-| [`ao skills`](../cli/docs/COMMANDS.md#ao-skills) | keep; [skills composition](../cli/cmd/ao/skills_composition.go) | Catalog discovery/checks and selected or full owned source links. Orchestrate is another catalog entry, not a command. |
-| [`ao status`](../cli/docs/COMMANDS.md#ao-status) | keep; [status composition](../cli/cmd/ao/status_composition.go) | Evidence-store facts; tracker/runtime retain live work state. |
-| [`ao version`](../cli/docs/COMMANDS.md#ao-version) | keep; [version composition](../cli/cmd/ao/version_composition.go) | Installed CLI version identity. |
-| [`ao workflows`](../cli/docs/COMMANDS.md#ao-workflows) | keep; [workflows composition](../cli/cmd/ao/workflows_composition.go) | Owned project-local Claude workflow links/unlinks. |
+| [`ao capabilities`](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md#ao-capabilities) | keep; [capabilities.go](https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/capabilities.go) | Machine-readable registered CLI contract. |
+| [`ao completion`](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md#ao-completion) | keep; [completion.go](https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/completion.go) | Native shell completion generation. |
+| [`ao config`](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md#ao-config) | keep; [config module](https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/config_module.go) | Explicit context-route bindings; no automatic context admission. |
+| [`ao demo`](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md#ao-demo) | keep; [demo composition](https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/demo_composition.go) | Read-only native example and explicitly selected RPI example. |
+| [`ao doctor`](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md#ao-doctor) | keep; [doctor module](https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/doctor_module.go) | Installation diagnosis, snapshots and explicitly authorized repair/undo. |
+| [`ao gate`](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md#ao-gate) | keep; [gate composition](https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/gate_composition.go) | Deterministic repository checks; not semantic acceptance. |
+| [`ao gc`](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md#ao-gc) | keep; [GC composition](https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/gc_composition.go) | Prepare/check selected upstream integration and authorized affinity recovery. |
+| [`ao goals`](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md#ao-goals) | keep; [goals composition](https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/goals_composition.go) | Existing goal/scenario measurement and inspection; no work ownership or scheduler. |
+| [`ao init`](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md#ao-init) | keep; [init composition](https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/init_composition.go) | Optional local evidence setup; native work needs no initialization. |
+| [`ao provenance`](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md#ao-provenance) | keep; [provenance composition](https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/provenance_composition.go) | Exact identities, generic evidence and requested judgment persistence/verification. |
+| [`ao quick-start`](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md#ao-quick-start) | keep; [quick-start composition](https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/quickstart_composition.go) | Read-only native execution brief. |
+| [`ao robot-docs`](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md#ao-robot-docs) | keep; [robot-docs composition](https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/robotdocs_composition.go) | Agent-facing CLI documentation. |
+| [`ao session`](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md#ao-session) | keep; [session composition](https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/session_composition.go) | Requested continuity and authorized source reads; no mandatory bootstrap. |
+| [`ao skills`](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md#ao-skills) | keep; [skills composition](https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/skills_composition.go) | Catalog discovery/checks and selected or full owned source links. Orchestrate is another catalog entry, not a command. |
+| [`ao status`](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md#ao-status) | keep; [status composition](https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/status_composition.go) | Evidence-store facts; tracker/runtime retain live work state. |
+| [`ao version`](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md#ao-version) | keep; [version composition](https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/version_composition.go) | Installed CLI version identity. |
+| [`ao workflows`](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md#ao-workflows) | keep; [workflows composition](https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/workflows_composition.go) | Owned project-local Claude workflow links/unlinks. |
 
 ## Install migration
 
@@ -324,21 +324,21 @@ untested promise. Every live claim still needs evidence on the final installatio
 
 | Consumer | Disposition and owner | Compatibility treatment |
 |---|---|---|
-| Claude Code plugin and source links | keep; [.claude-plugin](../.claude-plugin/plugin.json), [marketplace](../.claude-plugin/marketplace.json), [Claude image](../images/claude/README.md) and canonical `skills/` | First-class host. Retain qualified plugin names, full bundle, agents and policy dispatcher; source linking keeps selected names. |
-| Codex plugin and source links | keep; [.codex-plugin](../.codex-plugin/plugin.json), [marketplace](../plugins/marketplace.json), [Codex image](../images/codex/README.md) and generated `skills-codex/` | First-class host. Preserve canonical/projection parity and qualified plugin names; source links retain catalog names. |
-| Cursor rules and source links | keep; [converter](../skills/skill-builder/scripts/converter/convert.sh) and [destination resolver](../cli/internal/skillsapp/roots.go) | Retain `.mdc` export and detected Cursor skills root; structural coverage remains distinct from live discovery/execution. |
-| OpenCode portable and explicit source roots | keep; [OpenCode guide](../.opencode/INSTALL.md) and [destination resolver](../cli/internal/skillsapp/roots.go) | Retain portable root and explicit `--dest` config-root installation, including selected optional hooks. |
-| Gemini / Antigravity package and export | keep; [Gemini package](../images/gemini/README.md), generated [manifest](../images/gemini/plugin.json), [bundle generator](../scripts/generate-skill-mesh.py) and detected Gemini root | Retain migration compatibility bundle, agents, rules, hooks and optional Agent Mail configuration. Each claimed host journey remains separately qualified. |
-| Skill Builder exports (`codex`, `cursor`, `test`) | keep; [converter](../skills/skill-builder/scripts/converter/convert.sh) | Preserve supported target selection and Codex modular/inline layouts. Exported files require separate host-load qualification. |
-| Pi, portable and explicit-destination source consumers | keep; [destination resolver](../cli/internal/skillsapp/roots.go) | Preserve detected Pi root, always-included portable root and explicit destination semantics; no new live-host claim. |
+| Claude Code plugin and source links | keep; [.claude-plugin](https://github.com/boshu2/agentops/blob/main/.claude-plugin/plugin.json), [marketplace](https://github.com/boshu2/agentops/blob/main/.claude-plugin/marketplace.json), [Claude image](https://github.com/boshu2/agentops/blob/main/images/claude/README.md) and canonical `skills/` | First-class host. Retain qualified plugin names, full bundle, agents and policy dispatcher; source linking keeps selected names. |
+| Codex plugin and source links | keep; [.codex-plugin](https://github.com/boshu2/agentops/blob/main/.codex-plugin/plugin.json), [marketplace](https://github.com/boshu2/agentops/blob/main/plugins/marketplace.json), [Codex image](https://github.com/boshu2/agentops/blob/main/images/codex/README.md) and generated `skills-codex/` | First-class host. Preserve canonical/projection parity and qualified plugin names; source links retain catalog names. |
+| Cursor rules and source links | keep; [converter](https://github.com/boshu2/agentops/blob/main/skills/skill-builder/scripts/converter/convert.sh) and [destination resolver](https://github.com/boshu2/agentops/blob/main/cli/internal/skillsapp/roots.go) | Retain `.mdc` export and detected Cursor skills root; structural coverage remains distinct from live discovery/execution. |
+| OpenCode portable and explicit source roots | keep; [OpenCode guide](https://github.com/boshu2/agentops/blob/main/.opencode/INSTALL.md) and [destination resolver](https://github.com/boshu2/agentops/blob/main/cli/internal/skillsapp/roots.go) | Retain portable root and explicit `--dest` config-root installation, including selected optional hooks. |
+| Gemini / Antigravity package and export | keep; [Gemini package](https://github.com/boshu2/agentops/blob/main/images/gemini/README.md), generated [manifest](https://github.com/boshu2/agentops/blob/main/images/gemini/plugin.json), [bundle generator](https://github.com/boshu2/agentops/blob/main/scripts/generate-skill-mesh.py) and detected Gemini root | Retain migration compatibility bundle, agents, rules, hooks and optional Agent Mail configuration. Each claimed host journey remains separately qualified. |
+| Skill Builder exports (`codex`, `cursor`, `test`) | keep; [converter](https://github.com/boshu2/agentops/blob/main/skills/skill-builder/scripts/converter/convert.sh) | Preserve supported target selection and Codex modular/inline layouts. Exported files require separate host-load qualification. |
+| Pi, portable and explicit-destination source consumers | keep; [destination resolver](https://github.com/boshu2/agentops/blob/main/cli/internal/skillsapp/roots.go) | Preserve detected Pi root, always-included portable root and explicit destination semantics; no new live-host claim. |
 | External `npx skills` installer | keep; canonical `skills/` and [install guide](install-day2-ops.md) | Preserve full and selected installs through the external installer's own contract; it does not install AO, runtime plugins, roles or hooks. |
-| AO source, Go, Homebrew and release-binary installs | keep; [CLI installation](install-day2-ops.md#maintainer--contributor-the-ao-binary), [release build](../.goreleaser.yml), [Windows AO installer](../scripts/install-ao.ps1) | Retain source builds and published-binary consumers, including the Windows CLI installer. Skill loading is separate from binary availability. |
-| Claude agent roles and optional Codex context roles | keep; [Claude agents](../agents/), [Codex role sources](../skills/agent-native/agents/) and [role installer](../scripts/install-codex-context-agents.sh) | Preserve role identity and explicit Codex activation, backups and unrelated configuration. Installing skills does not activate Codex roles. |
-| Claude policy dispatcher | keep; [plugin hooks](../hooks/hooks.json), [source wrapper](../scripts/install-policy-dispatch.sh) and [packaged owner](../skills/cc-hooks/scripts/install-hooks.sh) | The dispatcher is automatically active when installed through the Claude plugin; source/copy installation uses the existing owner-selected installer. Native zero-skill work remains hookless. |
-| Read-budget and installed-skill edit guards | keep; [Claude read guard](../scripts/install-read-budget-guard.sh), [Codex read guard](../scripts/install-codex-read-budget-guard.sh), [edit guard](../scripts/install-installed-skill-edit-guard.sh) | Preserve separate opt-in installation, Codex trust review, backups and documented enforcement limits. |
-| Claude named workflows | keep; [canonical workflows](../workflows/), [`ao workflows`](../cli/docs/COMMANDS.md#ao-workflows), [user-level installer](../scripts/install-workflows.sh) | Keep project-local owned-link refusal semantics. The user-level installer retains its distinct backed-up replacement semantics; do not assume the two installers are interchangeable. |
-| Optional BD binary installer | keep; [install-bd.sh](../scripts/install-bd.sh) | Installs selected native BD; does not create or replace the repository's work store. |
-| Optional MS post-merge index hook | keep; [install-ms-reindex-hook.sh](../scripts/install-ms-reindex-hook.sh) | Retain explicit installation and its canonical-checkout/main/changed-skills guards; no mandatory background indexing. |
+| AO source, Go, Homebrew and release-binary installs | keep; [CLI installation](install-day2-ops.md#maintainer-contributor-the-ao-binary), [release build](https://github.com/boshu2/agentops/blob/main/.goreleaser.yml), [Windows AO installer](https://github.com/boshu2/agentops/blob/main/scripts/install-ao.ps1) | Retain source builds and published-binary consumers, including the Windows CLI installer. Skill loading is separate from binary availability. |
+| Claude agent roles and optional Codex context roles | keep; [Claude agents](../agents/), [Codex role sources](../skills/agent-native/agents/) and [role installer](https://github.com/boshu2/agentops/blob/main/scripts/install-codex-context-agents.sh) | Preserve role identity and explicit Codex activation, backups and unrelated configuration. Installing skills does not activate Codex roles. |
+| Claude policy dispatcher | keep; [plugin hooks](https://github.com/boshu2/agentops/blob/main/hooks/hooks.json), [source wrapper](https://github.com/boshu2/agentops/blob/main/scripts/install-policy-dispatch.sh) and [packaged owner](https://github.com/boshu2/agentops/blob/main/skills/cc-hooks/scripts/install-hooks.sh) | The dispatcher is automatically active when installed through the Claude plugin; source/copy installation uses the existing owner-selected installer. Native zero-skill work remains hookless. |
+| Read-budget and installed-skill edit guards | keep; [Claude read guard](https://github.com/boshu2/agentops/blob/main/scripts/install-read-budget-guard.sh), [Codex read guard](https://github.com/boshu2/agentops/blob/main/scripts/install-codex-read-budget-guard.sh), [edit guard](https://github.com/boshu2/agentops/blob/main/scripts/install-installed-skill-edit-guard.sh) | Preserve separate opt-in installation, Codex trust review, backups and documented enforcement limits. |
+| Claude named workflows | keep; [canonical workflows](../workflows/), [`ao workflows`](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md#ao-workflows), [user-level installer](https://github.com/boshu2/agentops/blob/main/scripts/install-workflows.sh) | Keep project-local owned-link refusal semantics. The user-level installer retains its distinct backed-up replacement semantics; do not assume the two installers are interchangeable. |
+| Optional BD binary installer | keep; [install-bd.sh](https://github.com/boshu2/agentops/blob/main/scripts/install-bd.sh) | Installs selected native BD; does not create or replace the repository's work store. |
+| Optional MS post-merge index hook | keep; [install-ms-reindex-hook.sh](https://github.com/boshu2/agentops/blob/main/scripts/install-ms-reindex-hook.sh) | Retain explicit installation and its canonical-checkout/main/changed-skills guards; no mandatory background indexing. |
 | Legacy 3.x skill curl/PowerShell installers | retire, retained refusal tombstones; `install.sh`, `install-claude.sh`, `install-codex.sh`, `install-agy.sh`, `install-opencode.sh`, `install-codex.ps1` under [scripts](../scripts/) | Existing breaking boundary below remains unchanged. `install-ao.ps1` is a retained CLI installer, not this retired skill installer. |
 
 For a selected source installation, preserve the same selectors on upgrade:

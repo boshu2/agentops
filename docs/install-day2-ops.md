@@ -160,7 +160,7 @@ their parent config directories exist.
 It refuses to replace real directories, foreign links, or user-owned skills.
 For OpenCode's dedicated discovery root, use an explicit destination; its
 portable `~/.agents/skills` root is already included. Follow the
-[install guide](../.opencode/INSTALL.md). A `--dest` installation must use the
+[install guide](https://github.com/boshu2/agentops/blob/main/.opencode/INSTALL.md). A `--dest` installation must use the
 same destination for later audit, update and unlink commands.
 
 Invocation uses the host's actual registered name, independently of the catalog

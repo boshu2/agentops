@@ -122,7 +122,7 @@ A gate PASS is a deterministic fact, not a semantic verdict.
 The in-repo measurement surface (the former eval command family) was retired
 unconsumed — no gate, workflow, or script ran it (see
 [docs/MIGRATION.md](../MIGRATION.md)). Learn remains an optional, off-path
-consumer of authorized episodes and other evidence: [Memory capture](../../skills/memory/references/mine-learn.md)
+consumer of authorized episodes and other evidence: [Memory capture](https://github.com/boshu2/agentops/blob/main/skills/memory/references/mine-learn.md)
 can propose reviewed project `.context/` or external topic-page updates through
 Memory curation. No blind TTL
 or per-session lesson is required. Rubric projections are

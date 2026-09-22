@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-set -euo pipefail
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$ROOT"
+
+# shellcheck source=scripts/lib/preamble.sh
+# shellcheck disable=SC1007,SC1091
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/preamble.sh"
+cd "$REPO_ROOT" || exit 1
 
 for retired in using-atm pre-land-refuters automation-shape-routing swarm crank; do
   [ ! -f "skills/$retired/SKILL.md" ] || { echo "retired skill still active: $retired" >&2; exit 1; }
