@@ -4,6 +4,8 @@ name: Good Skill
 version: 0.1.0
 description: A planted fixture that satisfies every blocking skill-eval rule so the gate passes cleanly.
 tags: [fixture, testing]
+metadata:
+  internal: true
 ---
 
 # Good Skill
