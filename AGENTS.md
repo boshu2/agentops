@@ -4,27 +4,23 @@ Detailed workflow mechanics: [docs/agent-workflow-reference.md](docs/agent-workf
 
 AgentOps is the operations layer for agentic engineering: tools, optional skills
 and evidence for independently judgeable changes. Its federated integration graph
-connects evidence; tracker, Git and coding agents own work, history and execution.
-Native execution needs zero mandatory AgentOps skills.
+connects evidence; tracker, Git and coding agents own work, history and execution. Native execution needs zero mandatory AgentOps skills.
 
 ```text
 Accepted intent -> native implementation and checks -> fresh independent judgment -> finish
 ```
 
 Use the existing issue or conversation and load a skill only for a concrete
-uncertainty or an explicitly selected workflow. Without fresh independent
-judgment over the exact subject, the experiment remains unproven.
+uncertainty or an explicitly selected workflow. Without fresh independent judgment over the exact subject, the experiment remains unproven.
 Native goals supply continuity; BD keeps work and handoffs. Neither needs RPI.
 Creating a goal does not reset the conversation or enforce a resource limit.
-Delegate focused intent, scope and evidence; retrieve history only when it can
-change a decision. Assign final review once, preserving required review legs.
+Delegate focused intent, scope and evidence; retrieve history only when it can change a decision. Assign final review once, preserving required review legs.
 See [the skill menu](docs/SKILL-ROUTER.md) for optional guidance. Plan states observable behavior in existing domain terms; Validate checks those same accepted examples. Conversation or bead examples suffice.
 
 When prior context could change the task, optionally start at
 [the project context map](.context/README.md), then read only relevant pages and
 their current source owners. Cleared project pages use ordinary filesystem
-tools without BD or AO; [Memory](skills/memory/SKILL.md) owns find, capture and
-curate procedures. Docs/ADRs/code retain authority and BD retains work status.
+tools without BD or AO; [Memory](skills/memory/SKILL.md) owns find, capture and curate procedures. Docs/ADRs/code retain authority and BD retains work status.
 
 ## Repository map and mechanics
 
@@ -47,8 +43,7 @@ cd cli && go build ./... && go vet ./... && go test ./...
 ```
 
 During Go edits, run focused package tests and `bash scripts/check-go-lint.sh`
-from the repository root before broad integration and final review. A passing
-Go test does not establish the repository's lint contract.
+from the repository root before broad integration and final review. A passing Go test does not establish the repository's lint contract.
 
 Run the gates with `ao gate check` (`--full` for the whole registry). Regenerate every metadata-owned projection — `skills-codex/` included — with
 `scripts/regen-all.sh` (`--check` to verify without writing); edit `skills/`, then regenerate. `tests/run-all.sh` is the local aggregate runner and must be green.
@@ -62,8 +57,7 @@ implementation and is not a fallback or an alias for `bd`. The repo-local
 `.beads/redirect` resolves the verified private BD/Dolt store from the root and
 subdirectories; use `bd context --json` to inspect the actual destination before
 mutating work. Do not use the removed `ao beads dir` command or initialize a new
-store when routing is unavailable. The preserved `_beads` SQLite estate is
-migration history, not the live work queue.
+store when routing is unavailable. The preserved `_beads` SQLite estate is migration history, not the live work queue.
 
 Beads Viewer is optional advice over an explicitly refreshed BD export. BD owns
 status and dependencies; recheck suggested work there and against the goal's
@@ -124,8 +118,7 @@ authorization. `ao` is a repository tool, not a session ritual.
 
 ## Federated source authority
 
-The integration graph is federated: AgentOps cites source identities and never
-absorbs their authority.
+The integration graph is federated: AgentOps cites source identities and never absorbs their authority.
 
 | Information | Authority | AgentOps treatment |
 |---|---|---|
@@ -155,8 +148,7 @@ any authoritative plan or design.
 A synthesis frozen without an active constraint is invalid.
 Skill logic ships in Go via `ao`;
 `scripts/check-skill-python-ratchet.sh` enforces no new
-`skills/*/scripts/**/*.py`. Skill tests retain their documented exemption
-(ADR-0016, gate-enforced).
+`skills/*/scripts/**/*.py`. Skill tests retain their documented exemption (ADR-0016, gate-enforced).
 
 ## Native execution and optional Lean RPI operating charter
 
