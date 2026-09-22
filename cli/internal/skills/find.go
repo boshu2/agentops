@@ -88,8 +88,8 @@ func Score(query string, metas []SkillMeta) []Match {
 		}
 		// A declared trigger phrase quoted whole in the query is the caller
 		// using the skill's own words; it outranks a sibling that merely owns
-		// one of those words as a name token ("check this change" belongs to
-		// validate, not to reality-check).
+		// one of those words as a name token. Phrase ownership comes from the
+		// current catalog's declarations, not a hard-coded routing policy.
 		for _, phrase := range triggerPhrases(m) {
 			if len(phrase) >= 2 && containsPhrase(qStream, phrase) {
 				raw += weightName
