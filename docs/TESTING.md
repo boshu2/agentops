@@ -27,10 +27,10 @@ canonical skill (`prompts/<skill>.txt`). `run-all.sh` checks manifest validity,
 canonical and Codex artifact existence, and matching skill names. It is Tier S
 structural proof, with negative regression fixtures for broken resolution. It
 launches no runtime and does not establish live selection or first-tool ordering.
-See the [suite contract](../tests/explicit-skill-requests/README.md).
+See the [suite contract](https://github.com/boshu2/agentops/blob/main/tests/explicit-skill-requests/README.md).
 
 `tests/run-all.sh --all` includes these structural checks and the three live
-[Codex CLI primitive probes](../tests/codex/README.md). A successful aggregate
+[Codex CLI primitive probes](https://github.com/boshu2/agentops/blob/main/tests/codex/README.md). A successful aggregate
 is not release C1/C8 live workflow qualification. Each aggregate gets a unique
 retained log directory; set `RUN_ALL_LOG_DIR` to choose its artifact directory. Set `RUN_ALL_CODEX_MODEL` for an invocation-local
 model override scoped to the live Codex lane.

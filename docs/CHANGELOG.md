@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Curated skills.sh groups put Research, Test, and Refactor first, followed by
-  the rest of the current 34-skill catalog. Ungrouped historical entries remain
+  the rest of the current 36-skill catalog. Ungrouped historical entries remain
   below the current skills; this changes discovery, not installation behavior.
 
 ### Fixed
