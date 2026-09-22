@@ -309,8 +309,8 @@
     {
       "name": "domain",
       "source_skill": "skills/domain",
-      "source_hash": "3a40c3d2bb61fe1bc09060f695bff2291b8f3a530267073225d7b70288281d78",
-      "generated_hash": "3e6d2676aa3238ce9bbbca971f15daed09f74ad10cd9dec1a8398386429484df"
+      "source_hash": "de4b079f3552dca3979e1d86090f1ca8570ffb6bee5f8bc12d97068faa506b37",
+      "generated_hash": "43d42dee5cc665fa96466806d88fa61856627e28b15c81e3634a71b3675c23b0"
     },
     {
       "name": "idea-genie",
@@ -345,8 +345,8 @@
     {
       "name": "plan",
       "source_skill": "skills/plan",
-      "source_hash": "0a489ea32d18f7104ea12608b74d242fcd7e6ce85c22a73c5c19d3f7da787c9c",
-      "generated_hash": "04058340641faef641d15e9b0ec1c19ea7324c3c5421b50b0fb5b80995ae3877"
+      "source_hash": "d693776447115074a6a513297e1b185a21b0ed832fc95de485951325a3b6eca6",
+      "generated_hash": "8de77bf327b2de053a9e83b9f7561837205a5e9be9d4a74f2a0b35a388e13742"
     },
     {
       "name": "postmortem",
@@ -357,8 +357,8 @@
     {
       "name": "premortem",
       "source_skill": "skills/premortem",
-      "source_hash": "fd5b79400e6b84b76f92d4c3fc16307799b094539e9a401aab6bd51ef7e0156c",
-      "generated_hash": "f507ed17a1d8cd66325d8829320db1a47c384dff7d5f89cdfe5fb971ccbd9ad5"
+      "source_hash": "c82596d325fdf2c71c05533b0b7f78750e691cad4f6f51b94d13ee61a12c05cd",
+      "generated_hash": "6e33483c9520c8324da7ec46964bce4164796a88e129982eea098091052239d3"
     },
     {
       "name": "rch",
@@ -381,8 +381,8 @@
     {
       "name": "research",
       "source_skill": "skills/research",
-      "source_hash": "a70cf29fc9ea654ea22970ef5db94a2e4b2fe9c0d5f732100c89ea59771420d6",
-      "generated_hash": "74f709c816865d27f2579fe6364477f3bebbcbcdc57c79c46c3d2baa3b9bb8cd"
+      "source_hash": "edbdae3b33a5adfa80296929c4a97a653b41f2d85e6c2207d355bb5513fe3fcb",
+      "generated_hash": "2fb25ae0b9e498cdad99e816feb6910e85d51ed6bae2206ff99c15a50d3034ae"
     },
     {
       "name": "reverse-engineer",

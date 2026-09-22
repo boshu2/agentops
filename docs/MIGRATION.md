@@ -117,6 +117,27 @@ were retired; `memory` and `skill-eval` are new relative to that release. Use
 | `scaffold`, `workflow-builder` | Implement the requested repository change natively; use `skill-builder` only when the output is a skill. No generic workflow generator replaces these names. |
 | `anti-ceremony`, `automation-shape-routing`, `shared` | No standalone invocation. The operating contract retains the artifact-creation boundary, runtime choice stays with the caller, and surviving skills link their needed references. |
 
+### Unified discovery batch
+
+This batch keeps all current skill names and the 34-skill inventory. Use Plan
+for resumable discovery of the next complete slice; focused entrypoints remain
+available when their narrower method is the requested work.
+
+| Existing entrypoint or method | Current owner and disposition in this batch |
+|---|---|
+| `plan`, including former `scope`/`product` intent shaping | Plan owns uncertainty routing, compact native resumption and the next complete slice. Existing caller intent remains the output owner. |
+| `research` | Keep as the cited investigation, tracing and pattern-evidence specialist; Plan links it only for a source question. |
+| `domain` | Keep as the vocabulary, bounded-context and standards specialist; settled terms return to Plan without a new interview. |
+| Plan ground-truth routing and optional prototype | Plan's existing ground-truth reference owns a question-driven disposable probe. Mandatory stock controls and deviation ledgers are removed; useful integration comparisons remain. |
+| `premortem` and `council` | Keep as caller-selected strategies. Plan owns the common optional challenge exchange; Premortem retains its evidence-shape, reversibility and defeat methods, and Council retains its selected broader review. Neither supplies acceptance. |
+
+No new discovery root, mandatory stage, work ledger or automatic context
+admission is introduced. Other skill dispositions are unchanged by this batch.
+A compact plan or native handoff can carry assignment references and the next
+discriminator; status and ownership remain authoritative only in the native
+tracker/runtime. Existing Plan/Implement/Validate authority and fresh exact-content
+judgment are unchanged. This contract change makes no comparative benefit claim.
+
 For source-linked installations, inspect old links before removing them: a
 retired name may still be visible as a dangling link after updating the checkout.
 Use the install's owned unlink path and relink the selected surviving names;
