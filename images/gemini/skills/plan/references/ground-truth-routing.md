@@ -38,6 +38,23 @@ whole experiment transcript. Disposable work is not a production implementation;
 retain or remove it under the caller's ownership and storage policy. New proof
 uses the existing protected external storage boundary when applicable.
 
+## Reuse after source drift
+
+Before reusing inherited prototype evidence when discovery resumes, check the
+current referenced interface and relevant environment assumptions against the
+observation's recorded source/configuration. Check what could change the named
+result; a purely unrelated source change does not require repetition.
+
+If a changed assumption could affect the result, preserve the earlier
+observation with its original context and repeat only the smallest
+discriminating probe against the current subject before declaring that empirical
+question resolved. Record the new observation and its limitations in the
+existing intent or handoff; do not replay the broader research.
+
+If relevant assumptions cannot be checked or required execution is unavailable,
+leave that empirical question explicitly unresolved. Continue only independent
+ready work that does not rely on the result.
+
 A prototype cannot change intent, authorize implementation or establish
 acceptance. Even promising results require implementation checks and fresh
 exact-content judgment. No new tracker, control ledger or automatic context
