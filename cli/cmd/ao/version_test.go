@@ -64,8 +64,10 @@ func TestVersion_RootVersionFlagWired(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ao --version returned error: %v", err)
 	}
-	if !strings.Contains(out, version) {
-		t.Errorf("ao --version output should contain %q, got: %s", version, out)
+	// A release prefix also matches a stale prerelease or appended build suffix.
+	// The public flag must report the exact version wired into this build.
+	if want := "ao version " + version + "\n"; out != want {
+		t.Errorf("ao --version output = %q, want %q", out, want)
 	}
 }
 
