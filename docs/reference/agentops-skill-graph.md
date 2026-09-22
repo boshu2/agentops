@@ -30,6 +30,7 @@ graph LR
   refactor["refactor"]
   research["research"]
   reverse_engineer["reverse-engineer"]
+  review["review"]
   rpi["rpi"]
   sbh["sbh"]
   security["security"]

@@ -141,6 +141,12 @@
       "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
     },
     {
+      "name": "review",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Advisory Review uses the shared source contract; generate its full parity twin without runtime-specific divergence."
+    },
+    {
       "name": "reverse-engineer",
       "treatment": "parity_only",
       "wave": "catalog-parity",

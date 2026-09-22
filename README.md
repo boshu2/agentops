@@ -84,6 +84,7 @@ steps you must run in order.
 |---|---|---|
 | Clarify what a change should do | [plan](skills/plan/SKILL.md) | Concrete acceptance examples and an agreed scope |
 | Complete an accepted change or service operation | [implement](skills/implement/SKILL.md) | A complete change, meaningful checks and factual results |
+| Get advice on a plan, design or change | [review](skills/review/SKILL.md) | Supported findings, suggestions and gaps, without acceptance or delivery authority |
 | Independently judge a finished change | [validate](skills/validate/SKILL.md) | Fresh acceptance judgment of exact content; requires `ao` |
 | Coordinate authorized workers or recover assignments | [orchestrate](skills/orchestrate/SKILL.md) | Actual prerequisites, isolated scopes, review capacity and native handoffs |
 | Find relevant experience or maintain shared context | [memory](skills/memory/SKILL.md) | Selective recall or reviewed corrections when useful |
@@ -97,6 +98,10 @@ Use `/agentops:test` in Claude Code or `$agentops:test` in Codex to select Test,
 and substitute another skill name when needed. Ordinary language also works:
 "Use AgentOps Test to cover the missing edge case we just traced. Preserve the
 current API and run the owning package checks."
+
+For advisory feedback, use `/agentops:review` in Claude Code or
+`$agentops:review` in Codex. A request to prove completion or issue an acceptance
+verdict belongs to Validate; advice cannot stand in for that fresh judgment.
 
 The [Skill Router](docs/SKILL-ROUTER.md) lists every current skill, including
 implementation, documentation, security, and memory. Installing a skill makes

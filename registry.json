@@ -453,6 +453,33 @@
     },
     {
       "driven_by_skills": [
+        "review"
+      ],
+      "id": "skill:review:review_advisory",
+      "name": "review_advisory",
+      "path": "skills/review/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "review"
+      ],
+      "id": "skill:review:identify_supported_findings",
+      "name": "identify_supported_findings",
+      "path": "skills/review/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "review"
+      ],
+      "id": "skill:review:report_review_gaps",
+      "name": "report_review_gaps",
+      "path": "skills/review/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
         "rpi"
       ],
       "id": "skill:rpi:own_authorized_outcome",
@@ -663,19 +690,19 @@
     "cli_commands": 0,
     "gates": 0,
     "reference_impls": 0,
-    "skills": 73,
-    "total": 73
+    "skills": 76,
+    "total": 76
   },
   "cli_top_level_commands": [],
   "schema_version": 3,
   "summary": {
-    "capabilities": 73,
+    "capabilities": 76,
     "cli_commands": 0,
     "eval_files": 0,
     "hooks": 0,
     "job_types": 0,
     "knowledge_stores": 0,
-    "skills": 35,
+    "skills": 36,
     "workflows": 0
   },
   "surfaces": {
@@ -1121,6 +1148,21 @@
         "path": "skills/reverse-engineer/",
         "reference_count": 2,
         "tier": "execution"
+      },
+      {
+        "capabilities": [
+          "review_advisory",
+          "identify_supported_findings",
+          "report_review_gaps"
+        ],
+        "disposition": "keep",
+        "effects": [],
+        "has_references": false,
+        "has_skill_md": true,
+        "name": "review",
+        "path": "skills/review/",
+        "reference_count": 0,
+        "tier": "judgment"
       },
       {
         "capabilities": [

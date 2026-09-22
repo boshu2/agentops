@@ -11,7 +11,8 @@
   ],
   "critical_omitted_ids": [],
   "forbidden_leaks": [
-    "^scope$"
+    "^scope$",
+    "^review$"
   ],
   "min_provenance_density": 1.0,
   "max_tokens": 110,

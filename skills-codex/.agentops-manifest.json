@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "3b7872d2b054c23a8e0b91779cee4c1d10baf10c3f3ddf22fac9a38802ffa6c7",
+  "codex_override_catalog_hash": "eab91b163e5db8c036f365ccf4e7520bb0f0a98fb055d68b9fca686aac3613c9",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -166,6 +166,12 @@
         "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
       },
       {
+        "name": "review",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Advisory Review uses the shared source contract; generate its full parity twin without runtime-specific divergence."
+      },
+      {
         "name": "reverse-engineer",
         "treatment": "parity_only",
         "wave": "catalog-parity",
@@ -261,8 +267,8 @@
     {
       "name": "agent-native",
       "source_skill": "skills/agent-native",
-      "source_hash": "6e088eb61cbc3b2fa2d1a6f62bee1f8d72459cf1b6478c150cab47d08174a312",
-      "generated_hash": "d14cf847ce58d120a5cd471a574c58498f797ef6664fe463b9432b3764a61d0f"
+      "source_hash": "14b177aba6fa72e4ce8d3dc44b070da99ceb43e7c9133f98939e6b39f36b4784",
+      "generated_hash": "e811f31a5d266d3b191972418db3c387a6f50d277e955a6936dd65d54a0120e0"
     },
     {
       "name": "agy-native",
@@ -327,8 +333,8 @@
     {
       "name": "implement",
       "source_skill": "skills/implement",
-      "source_hash": "a0df20f668b27594d8e6056b63e026b7c72a91d06aa60267d0013c1ee6e8692f",
-      "generated_hash": "b91e5f3222585965759eba06f63405419355532733118bfa80ffa093f46df90a"
+      "source_hash": "48b0882d337b28e4b3ad975b62700a5d1bcc884ac4b77ce080f6822f0bd25ad0",
+      "generated_hash": "bd0cc7420e5b0db039f1d13c49eea32af3c440f7896ff6fc9fda7a869ed84e93"
     },
     {
       "name": "memory",
@@ -403,6 +409,12 @@
       "generated_hash": "9c7a338eba1036e2685a28133dbba1299da680823ecae5d9b2b8b81b16a8d0cf"
     },
     {
+      "name": "review",
+      "source_skill": "skills/review",
+      "source_hash": "639af90beee23f6f993dd6803cfe70d484548d560f2b6a9cf6a573379bd9cf23",
+      "generated_hash": "65cbf1149cf6ebdc1d44f3d0bc0e2877d6fe406d7c97b15131cab42674c7c872"
+    },
+    {
       "name": "rpi",
       "source_skill": "skills/rpi",
       "source_hash": "47ba75a0bba866ec0db1210e309ad40ede89f48c65ec90a00cb6d1e2e606505e",
@@ -453,9 +465,9 @@
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "8def3596efe18975392bc0ce3cac0402ffc0b9202e2d7dd988401e6f442905b2",
-      "generated_hash": "c88209fb2cca50df76edb8395b6b2ccaa038b6d6cc4c5bba81dd4c8ee917bd09"
+      "source_hash": "9a05d111f92cdc2b7c100444ef6676801a0fb001a5c613b1bccbe0a5b78fbcce",
+      "generated_hash": "a5e927187c7e2a2414888fd0fcd17783064455c8cc61d3ed2b830ac82f9ef95d"
     }
   ],
-  "package_count": 35
+  "package_count": 36
 }

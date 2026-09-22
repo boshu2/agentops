@@ -1,0 +1,1 @@
+Execute /agentops:review to give advisory feedback on this proposed API design. Cite supported concerns and suggestions, state checked scope and gaps, and do not issue an acceptance verdict or change files.

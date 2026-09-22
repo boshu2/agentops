@@ -37,6 +37,12 @@ Freshly judge the exact candidate against accepted intent, return
 [boundaries](../rpi/references/boundaries.md) before judgment; load helper flags
 and storage details from [mechanics](references/mechanics.md) when needed.
 
+For suggestions or a second look without an acceptance judgment, use
+[Review](../review/SKILL.md). A request to establish original acceptance still
+belongs here even when phrased as "review this". If the purpose is ambiguous,
+clarify advice versus acceptance before issuing a verdict. Advisory findings
+cannot substitute for the fresh exact-subject judgment below.
+
 ## Preconditions and freshness
 
 Final review starts after required checks and known repairs, with the candidate

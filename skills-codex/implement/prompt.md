@@ -1,6 +1,6 @@
 # implement
 
-Implement changes, repairs, waves or service operations. Use when: coding, reliability, delivery, incident recovery, resilience or toil work is authorized. Return check facts.
+Implement changes, repairs or waves; return per-lane evidence. Use when: coding, service operations, reliability, delivery, incident recovery, resilience or toil is authorized.
 
 ## Instructions
 
