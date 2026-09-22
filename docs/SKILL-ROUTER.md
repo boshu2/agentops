@@ -43,7 +43,7 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 | [idea-genie](../skills/idea-genie/SKILL.md) | Generate evidenced options or challenge an idea. Use when: deciding what to build or comparing alternatives; exploration does not authorize implementation. |
 | [postmortem](../skills/postmortem/SKILL.md) | Analyze outcomes or an interim cutoff. Use when: a postmortem is explicitly requested; consumes available judgment, never gates code acceptance or requires a lesson. |
 | [premortem](../skills/premortem/SKILL.md) | Challenge a rollout plan with one fresh judge before implementation; identify what could make it fail. Not for finished-code judgment. Triggers: "one judge", "challenge this plan". |
-| [reality-check](../skills/reality-check/SKILL.md) | Check whether a claimed shipped feature, repo state or goal status holds up in evidence. Use when: comparing a claim with what exists; a gap report is not a verdict. |
+| [reality-check](../skills/reality-check/SKILL.md) | Audit claimed state, goals or native status. Use when: a claim audit or snapshot is requested. Clarify advice versus acceptance for ambiguous checking or readiness requests. |
 | [rpi](../skills/rpi/SKILL.md) | Apply the outcome-to-judgment charter. Use when: the caller explicitly selects RPI; ordinary coding, delegation and native goals do not require this workflow. |
 
 ## Explicit tool and runtime adapters
