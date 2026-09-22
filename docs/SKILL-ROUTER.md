@@ -10,7 +10,7 @@ Names and descriptions below come from each source SKILL.md; explicit invocation
 
 | Skill | Use it for |
 |---|---|
-| [implement](../skills/implement/SKILL.md) | Implement accepted behavior, repair defects or execute a selected wave with per-lane evidence. Use when: coding is authorized and ready; return facts, not a binding verdict. |
+| [implement](../skills/implement/SKILL.md) | Implement changes, repairs, waves or service operations. Use when: coding, reliability, delivery, incident recovery, resilience or toil work is authorized. Return check facts. |
 | [plan](../skills/plan/SKILL.md) | Define intended behavior, review write scope and assess reversible decisions. Use when: discovery needs clarification or resumption before one complete slice; stop once actionable. |
 | [validate](../skills/validate/SKILL.md) | Freshly judge a finished change against original acceptance before merge. Use when: independent proof is needed; author tests cannot issue PASS. Triggers: "check this change". |
 
