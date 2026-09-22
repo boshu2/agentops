@@ -42,9 +42,10 @@ current source owners with ordinary filesystem tools such as `rg` and `cat`.
 Portable reading of cleared project pages needs neither BD nor AO. The map
 links topics and source owners; it does not mirror tracker status or inventory
 every source. No directory, index or private import is created automatically.
-Existing external bundles remain supported. The current `ao config context`
-route requires native BD and rejects a bundle overlapping the consumer checkout;
-it does not yet route project `.context/`.
+The optional `ao config context` route supports external bundles and an explicitly
+bound canonical direct `<consumer>/.context`. It requires native BD and preserves
+the policy and identity bindings; other consumer-overlapping roots remain refused.
+Draft staging and review evidence stay external to Git, consumer and bundle.
 
 A useful entry states **applicability, action, support, limits and invalidation**:
 when it applies, what to do, the evidence, where it may fail, and what would

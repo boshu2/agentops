@@ -26,8 +26,9 @@ source; memory cannot override either.
    Preserve indispensable acceptance when context is limited; drop optional
    context before it and disclose any unresolved required evidence.
 
-The current `ao config context` route is an optional external-bundle mechanism:
-it requires native BD and rejects bundles overlapping the consumer checkout.
+The optional `ao config context` route supports external bundles and an explicitly
+bound canonical direct `<consumer>/.context`, retaining policy and identity
+bindings. It requires native BD; other consumer-overlapping roots remain refused.
 It is not a prerequisite for portable `.context/` reading. A missing page or map
 does not authorize private source retrieval, an alternate store or scaffolding.
 

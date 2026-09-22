@@ -36,9 +36,10 @@ no native isolation for restricted sources.
    and withdrawal facts remain available. Do not commit/push unless authorized.
    If review, routing or permission is missing, return the supported gap with
    the protected draft; do not invent an alternate memory destination. Project
-   placement does not move drafts or review proof into the checkout. The current
-   `ao config context` route rejects bundles overlapping that checkout; do not
-   claim that command supports `.context/`.
+   placement does not move drafts or review proof into the checkout. The optional
+   `ao config context` route supports an explicitly bound canonical direct
+   `<consumer>/.context` or an external bundle; it requires native BD and retains
+   policy and identity bindings. A resolved route does not approve page admission.
 
 Ordinary Markdown is sufficient. If the caller selects the existing OKF profile,
 use [its profile](learn/okf-page-profile.md) and

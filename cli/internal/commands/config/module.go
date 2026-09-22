@@ -173,4 +173,4 @@ Environment variables:
 Examples:
   ao config --show           # Show resolved configuration
   ao config --show --json   # Output as JSON
-  ao config context --help  # Resolve explicit external context without writing`
+  ao config context --help  # Resolve explicit context without writing`

@@ -630,8 +630,8 @@ ao config context [flags]
 
 ```
       --access-policy-ref string      Existing caller-owned access policy JSON
-      --bundle-root string            Selected existing external bundle
-      --consumer-root string          Existing consumer checkout to exclude
+      --bundle-root string            Selected existing external bundle or direct consumer .context
+      --consumer-root string          Existing consumer checkout; only direct .context may hold the bundle
       --destination-ref string        Caller destination identity
       --evidence-root string          Selected existing protected non-Git evidence
       --field string                  Emit one checked root for its caller-owned consumer
