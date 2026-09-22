@@ -1,0 +1,20 @@
+{
+  "$schema": "../../../schemas/pack-quality-expectations.v1.schema.json",
+  "schema_version": 1,
+  "id": "rq-12-change-advice",
+  "retrieval_surface": "ao-skills-find",
+  "task": "The caller wants a second look at a code change, with supported advice and gaps.",
+  "query": "give me advisory feedback on this code change",
+  "top_k": 1,
+  "expected_selected_ids": [
+    "review"
+  ],
+  "critical_omitted_ids": [],
+  "forbidden_leaks": [
+    "^validate$"
+  ],
+  "min_provenance_density": 1.0,
+  "max_tokens": 45,
+  "rationale": "Advice and acceptance must remain distinct discovery routes; a top-one pack makes the expected owner explicit. Existing narrower specialist goldens remain unchanged.",
+  "notes": "Author-created deterministic catalog query only; not a live model prompt or efficacy result."
+}

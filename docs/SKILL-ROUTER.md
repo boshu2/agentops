@@ -2,7 +2,7 @@
 
 # Skill Router
 
-35 live skills. Choose guidance for a concrete task need; no skill is mandatory.
+36 live skills. Choose guidance for a concrete task need; no skill is mandatory.
 A clear task can proceed in the native agent. Read a skill only when its description fits.
 Names and descriptions below come from each source SKILL.md; explicit invocation remains available.
 
@@ -14,7 +14,8 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 | Skill | Use it for |
 |---|---|
 | [plan](../skills/plan/SKILL.md) | Define intended behavior, review write scope and assess reversible decisions. Use when: discovery needs clarification or resumption before one complete slice; stop once actionable. |
-| [implement](../skills/implement/SKILL.md) | Implement changes, repairs, waves or service operations. Use when: coding, reliability, delivery, incident recovery, resilience or toil work is authorized. Return check facts. |
+| [implement](../skills/implement/SKILL.md) | Implement changes, repairs or waves; return per-lane evidence. Use when: coding, service operations, reliability, delivery, incident recovery, resilience or toil is authorized. |
+| [review](../skills/review/SKILL.md) | Give advisory feedback on a plan, design or code. Use when: suggestions, tradeoffs or a second look are wanted. Not for acceptance or write scope; use Validate or Plan. |
 | [validate](../skills/validate/SKILL.md) | Freshly judge a finished change against original acceptance before merge. Use when: independent proof is needed; author tests cannot issue PASS. Triggers: "check this change". |
 | [orchestrate](../skills/orchestrate/SKILL.md) | Coordinate authorized workers, prerequisites, isolated scopes and review capacity. Use when: dispatching, recovering or routing feedback. Not for implementation or judgment. |
 | [memory](../skills/memory/SKILL.md) | Find reviewed context, capture evidence or curate maintained claims. Use when: prior evidence can change an action, or learning is requested; no mandatory recall or lesson. |
@@ -94,6 +95,7 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 | `refactor` | execution | `keep_specialist` | - | `refactor` | `modify_source_files` |
 | `research` | execution | `keep_specialist` | - | `research`, `codebase_recon`, `pattern_mining` | `write_research_report`, `write_recon_pack`, `write_pattern_evidence` |
 | `reverse-engineer` | execution | `keep_specialist` | - | `reverse_engineer` | `clone_upstream_repo`, `authorized_binary_execution`, `write_teardown_artifacts` |
+| `review` | judgment | `keep` | - | `review_advisory`, `identify_supported_findings`, `report_review_gaps` | - |
 | `rpi` | meta | `keep_strategy` | `plan`, `implement`, `validate` | `own_authorized_outcome`, `report` | `dispatch_core_phases` |
 | `sbh` | execution | `keep_optional_adapter` | - | `sbh` | `delete_reclaimable_files`, `release_disk_ballast`, `modify_host_storage_config` |
 | `security` | product | `keep_specialist` | - | `security` | `write_scan_artifacts` |

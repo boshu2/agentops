@@ -1,0 +1,20 @@
+{
+  "$schema": "../../../schemas/pack-quality-expectations.v1.schema.json",
+  "schema_version": 1,
+  "id": "rq-13-review-acceptance",
+  "retrieval_surface": "ao-skills-find",
+  "task": "The caller uses review to request original acceptance judgment, not general advice.",
+  "query": "review whether this finished change meets original acceptance",
+  "top_k": 1,
+  "expected_selected_ids": [
+    "validate"
+  ],
+  "critical_omitted_ids": [],
+  "forbidden_leaks": [
+    "^review$"
+  ],
+  "min_provenance_density": 1.0,
+  "max_tokens": 45,
+  "rationale": "Advice and acceptance must remain distinct discovery routes; a top-one pack makes the expected owner explicit. Existing narrower specialist goldens remain unchanged.",
+  "notes": "Author-created deterministic catalog query only; not a live model prompt or efficacy result."
+}

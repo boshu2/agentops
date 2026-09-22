@@ -83,8 +83,9 @@ codex plugin add agentops@agentops-marketplace
 
 For a local Codex marketplace, re-run `codex plugin add` after updating its
 source; `marketplace upgrade` refreshes Git snapshots. Start a new session after
-an update. Claude's component inventory should show the 34 skills and four
-agents; Codex exposes the 34 skills with `agentops:` names.
+an update. Claude's component inventory should show the
+[current skill catalog](SKILL-ROUTER.md) and four agents; Codex exposes the same
+skills with `agentops:` names.
 The inventory commands inspect package metadata; confirm the selected skill's
 actual loaded content in the fresh session before claiming host loading proof.
 

@@ -12,7 +12,7 @@
 
 ## judgment
 
-`council`, `craft-goal`, `postmortem`, `premortem`, `reality-check`, `validate`
+`council`, `craft-goal`, `postmortem`, `premortem`, `reality-check`, `review`, `validate`
 
 ## knowledge
 
@@ -60,6 +60,7 @@
 | `refactor` | execution | `keep_specialist` | - | `refactor` | `modify_source_files` |
 | `research` | execution | `keep_specialist` | - | `research`, `codebase_recon`, `pattern_mining` | `write_research_report`, `write_recon_pack`, `write_pattern_evidence` |
 | `reverse-engineer` | execution | `keep_specialist` | - | `reverse_engineer` | `clone_upstream_repo`, `authorized_binary_execution`, `write_teardown_artifacts` |
+| `review` | judgment | `keep` | - | `review_advisory`, `identify_supported_findings`, `report_review_gaps` | - |
 | `rpi` | meta | `keep_strategy` | `plan`, `implement`, `validate` | `own_authorized_outcome`, `report` | `dispatch_core_phases` |
 | `sbh` | execution | `keep_optional_adapter` | - | `sbh` | `delete_reclaimable_files`, `release_disk_ballast`, `modify_host_storage_config` |
 | `security` | product | `keep_specialist` | - | `security` | `write_scan_artifacts` |

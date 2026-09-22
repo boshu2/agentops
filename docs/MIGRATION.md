@@ -101,13 +101,13 @@ aliases. Ordinary native coding requires no replacement invocation.
 
 The 3.7 migration baseline has 34 skills, compared with 52 in 3.6.0. Twenty former roots
 were retired; `memory` and `skill-eval` are new relative to that release. The
-current menu additionally exposes Orchestrate; no baseline skill is retired or
+current menu additionally exposes Review and Orchestrate; no baseline skill is retired or
 renamed by that addition. Use
 [the current menu](SKILL-ROUTER.md) to choose guidance for the actual task.
 
 ### Maintained entrypoints and baseline dispositions
 
-The primary menu exposes Plan, Implement, Validate, Orchestrate and Memory as
+The primary menu exposes Plan, Implement, Review, Validate, Orchestrate and Memory as
 independent choices. Advisory review supplies findings; Validate alone owns
 skill acceptance semantics. The optional RPI workflow and every focused method
 remain explicitly invocable. Native work requires zero mandatory skills, and
@@ -209,6 +209,28 @@ A compact plan or native handoff can carry assignment references and the next
 discriminator; status and ownership remain authoritative only in the native
 tracker/runtime. Existing Plan/Implement/Validate authority and fresh exact-content
 judgment are unchanged. This contract change makes no comparative benefit claim.
+
+### Advisory Review batch
+
+This batch adds the `review` public entrypoint, bringing the intermediate source
+inventory from 34 to 35. That count is not a completed whole-library disposition
+or proof of installed-host qualification.
+
+| Existing request or consumer | Current owner and disposition in this batch |
+|---|---|
+| General feedback on a plan, design or change | New `review` gives supported advisory findings or an honest no-finding result with checked scope and gaps. It owns no acceptance, native work-state mutation or delivery. |
+| Acceptance request, including a near-match phrased as review | `validate` retains sole acceptance/verdict ownership and genuinely fresh exact-subject judgment. Review hands off original acceptance and the exact subject; ambiguity is clarified. |
+| Plan challenge, broader selected review or claim audit | Keep `premortem`, `council` and `reality-check`; Review selectively links their existing procedures and Plan's one shared optional challenge owner. |
+| Engineering advice and prior evidence | Keep the relevant engineering specialists and `memory`; references create no compulsory chain, editing authority or curation. |
+| README, skill menu, catalog, registry and runtime projections | Add Review discovery and regenerate from canonical metadata with a declared Codex parity twin. Existing explicit specialist routes remain available. |
+
+RPI's hard dependencies remain Plan, Implement and Validate. Review has no hard
+dependency; native clear work still needs zero mandatory skills. No old root is
+deleted in this batch. For source links, `ao skills link --skill review` uses
+the existing conflict-preserving installer: a real `review` directory or unowned
+link stays untouched. Resolve a reported conflict through its owner before
+linking; do not remove foreign content to match the inventory. Remaining library
+dispositions and final host upgrade/recovery qualification are separate work.
 
 For source-linked installations, inspect old links before removing them: a
 retired name may still be visible as a dangling link after updating the checkout.

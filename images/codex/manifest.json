@@ -1,7 +1,7 @@
 {
   "image": "codex",
   "schema_version": "skill-image.v1",
-  "skill_count": 35,
+  "skill_count": 36,
   "skills": [
     {
       "disposition": "keep_optional_adapter",
@@ -158,6 +158,12 @@
       "slug": "reverse-engineer",
       "source_path": "skills/reverse-engineer/",
       "twin_path": "skills-codex/reverse-engineer/"
+    },
+    {
+      "disposition": "keep",
+      "slug": "review",
+      "source_path": "skills/review/",
+      "twin_path": "skills-codex/review/"
     },
     {
       "disposition": "keep_strategy",

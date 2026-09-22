@@ -99,6 +99,41 @@ PY
     "Specialists, anti-ceremony audits, factories and outer-goal guidance are optional."
 }
 
+@test "advisory Review owns no acceptance effects or hard dependencies" {
+  run python3 - "$REPO_ROOT" <<'PYCODE'
+from pathlib import Path
+import sys
+import yaml
+
+root = Path(sys.argv[1])
+def metadata(name):
+    return yaml.safe_load((root / "skills" / name / "SKILL.md").read_text().split("---", 2)[1])
+review, validate = metadata("review"), metadata("validate")
+assert review["user-invocable"] and review["metadata"]["graph_root"]
+assert review["metadata"]["dependencies"] == []
+assert review["metadata"]["effects"] == []
+assert review["produces"] == []
+assert "judge_acceptance" not in review["metadata"]["capabilities"]
+assert "verdict.v2" in validate["produces"]
+assert "judge_acceptance" in validate["metadata"]["capabilities"]
+assert all("verdict.v2" not in metadata(p.parent.name).get("produces", [])
+           for p in (root / "skills").glob("*/SKILL.md") if p.parent.name != "validate")
+PYCODE
+  [ "$status" -eq 0 ]
+
+  require_text skills/review/SKILL.md 'ask whether'
+  require_text skills/review/SKILL.md 'the caller wants advice or an acceptance judgment.'
+  require_text skills/review/SKILL.md 'fresh Validate context with the original acceptance, exact subject, complete'
+  require_text skills/review/SKILL.md 'A new role in this'
+  require_text skills/review/SKILL.md 'conversation is not a fresh context.'
+  require_text skills/review/SKILL.md 'Refuse to present advice, agreement or a no-finding result'
+  require_text skills/review/SKILL.md 'as acceptance'
+  require_text skills/review/SKILL.md 'State checked scope and gaps'
+  require_text skills/review/SKILL.md 'Review changes no native work state'
+  require_text skills/review/SKILL.md "[Plan's optional challenge](../plan/references/challenge.md)"
+  require_text skills/validate/SKILL.md '[Review](../review/SKILL.md)'
+}
+
 @test "validation worksheet requires fresh judgment and makes persistence optional" {
   require_text docs/templates/slice-validation.md \
     '- Validation result: `<PASS | FAIL | NOT_PROVEN>`'

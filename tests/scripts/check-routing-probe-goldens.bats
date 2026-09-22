@@ -269,6 +269,8 @@ print(value)
     # rq-04 gap (validate absent for verdict phrasings) was closed the same
     # day by the pointer-wording-first repair — validate's description now
     # carries the caller's own words and ranks 1 for the query. This case
+    # Three advisory/acceptance near-match cases added with Review complement
+    # the ten existing specialist cases. This pin
     # asserts the CURRENT truth so the state cannot drift silently; a
     # description regression reopens rq-04 and this pin goes red with it.
     command -v go >/dev/null 2>&1 || skip "go toolchain unavailable; the nightly advisory job carries the real-corpus grade"
@@ -277,7 +279,7 @@ print(value)
     run --separate-stderr bash "$REPO_ROOT/scripts/check-routing-probe-goldens.sh" --json
 
     [ "$status" -eq 0 ]
-    [ "$(json_field "$output" total)" = "10" ]
+    [ "$(json_field "$output" total)" = "13" ]
     [ "$(json_field "$output" failed)" = "0" ]
-    [ "$(json_field "$output" passed)" = "10" ]
+    [ "$(json_field "$output" passed)" = "13" ]
 }
