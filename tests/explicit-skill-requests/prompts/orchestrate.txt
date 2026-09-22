@@ -1,0 +1,1 @@
+Use /agentops:orchestrate to recover the accepted task, actual prerequisite content, active worker and validator assignments, and occupied isolated scopes before coordinating the next authorized task. Preserve native ownership and report missing evidence.

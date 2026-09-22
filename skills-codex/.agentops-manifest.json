@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "cfde05a564c19e506c9bf62c8a54c676f802f9b2a63550a25b9590f15a9a65de",
+  "codex_override_catalog_hash": "3b7872d2b054c23a8e0b91779cee4c1d10baf10c3f3ddf22fac9a38802ffa6c7",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -236,6 +236,12 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Auto-generated parity twin (codex-sync): skills/memory is the source of truth; no durable Codex-specific divergence yet."
+      },
+      {
+        "name": "orchestrate",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Native coordination guidance remains canonical in skills/orchestrate; preserve its complete contract and selectively loaded owner references."
       }
     ]
   },
@@ -343,6 +349,12 @@
       "generated_hash": "75cea0aed20a93dbb5cf0fc58a79f2fd5774b25dd9284ebba18072a1c482a972"
     },
     {
+      "name": "orchestrate",
+      "source_skill": "skills/orchestrate",
+      "source_hash": "5a17afab2e2b197c18c1f58e89467a718e00bd33fe3e26fb97aeb18555570d68",
+      "generated_hash": "03b3843471a65413e6c7049fd10b2dc5d8735268f33f4f4e2045de630dc72841"
+    },
+    {
       "name": "plan",
       "source_skill": "skills/plan",
       "source_hash": "d73dbe67da983ddfd26ddb4e8d5908816dee281c7ad27a0b6c2892cce9db576d",
@@ -445,5 +457,5 @@
       "generated_hash": "c88209fb2cca50df76edb8395b6b2ccaa038b6d6cc4c5bba81dd4c8ee917bd09"
     }
   ],
-  "package_count": 34
+  "package_count": 35
 }

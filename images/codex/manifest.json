@@ -1,7 +1,7 @@
 {
   "image": "codex",
   "schema_version": "skill-image.v1",
-  "skill_count": 34,
+  "skill_count": 35,
   "skills": [
     {
       "disposition": "keep_optional_adapter",
@@ -104,6 +104,12 @@
       "slug": "ntm",
       "source_path": "skills/ntm/",
       "twin_path": "skills-codex/ntm/"
+    },
+    {
+      "disposition": "keep",
+      "slug": "orchestrate",
+      "source_path": "skills/orchestrate/",
+      "twin_path": "skills-codex/orchestrate/"
     },
     {
       "disposition": "keep",

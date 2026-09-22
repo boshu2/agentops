@@ -2,7 +2,7 @@
 
 AgentOps gives Claude Code and Codex reusable instructions, called skills, for
 investigating code, writing useful tests, and independently reviewing changes.
-Start with one task and the guidance it needs; the 34-skill library is available
+Start with one task and the guidance it needs; the full skill library is available
 without adopting a new workflow.
 
 When a coding agent says a change is done, AgentOps helps a fresh reviewer check
@@ -37,8 +37,9 @@ codex plugin add agentops@agentops-marketplace
 codex plugin list --json
 ```
 
-The plugin should appear as `agentops`. Claude's inventory includes 34 skills
-and four agents; Codex exposes 34 skills with `agentops:` names. Start a new
+The plugin should appear as `agentops`. Claude's inventory includes the
+[current skill catalog](docs/SKILL-ROUTER.md) and four agents; Codex exposes the
+same skills with `agentops:` names. Start a new
 session in a project you already work on to load the installed skills.
 
 Skills run inside your coding agent with its normal permissions. The Claude
@@ -81,18 +82,23 @@ steps you must run in order.
 
 | What you need | Skill | What to expect |
 |---|---|---|
-| Understand a behavior before changing it | [research](skills/research/SKILL.md) | An answer grounded in code and tests, with file references and gaps |
-| Add tests for a behavior or regression | [test](skills/test/SKILL.md) | Tests using your repository's framework, plus the commands and results |
-| Simplify code while preserving behavior | [refactor](skills/refactor/SKILL.md) | A focused change checked against the existing behavior |
 | Clarify what a change should do | [plan](skills/plan/SKILL.md) | Concrete acceptance examples and an agreed scope |
-| Independently review a finished change | [validate](skills/validate/SKILL.md) | A fresh review against the original request; requires `ao` |
+| Complete an accepted change or service operation | [implement](skills/implement/SKILL.md) | A complete change, meaningful checks and factual results |
+| Independently judge a finished change | [validate](skills/validate/SKILL.md) | Fresh acceptance judgment of exact content; requires `ao` |
+| Coordinate authorized workers or recover assignments | [orchestrate](skills/orchestrate/SKILL.md) | Actual prerequisites, isolated scopes, review capacity and native handoffs |
+| Find relevant experience or maintain shared context | [memory](skills/memory/SKILL.md) | Selective recall or reviewed corrections when useful |
+
+Focused methods remain directly available: [Research](skills/research/SKILL.md)
+traces a source question, [Test](skills/test/SKILL.md) develops behavioral tests,
+and [Refactor](skills/refactor/SKILL.md) preserves behavior while simplifying code.
+Advisory review and plan challenge do not replace Validate's acceptance judgment.
 
 Use `/agentops:test` in Claude Code or `$agentops:test` in Codex to select Test,
 and substitute another skill name when needed. Ordinary language also works:
 "Use AgentOps Test to cover the missing edge case we just traced. Preserve the
 current API and run the owning package checks."
 
-The [Skill Router](docs/SKILL-ROUTER.md) lists all 34 skills, including
+The [Skill Router](docs/SKILL-ROUTER.md) lists every current skill, including
 implementation, documentation, security, and memory. Installing a skill makes
 it available; a clear task can proceed directly in your coding agent.
 

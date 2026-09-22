@@ -21,6 +21,7 @@ campaign. It is not the product category and not the global architecture.
 |---|---|
 | Context source | A system that owns queryable evidence — the tracker (Beads), Git, CASS, CM, or another caller-selected store. AgentOps cites it with source identity and freshness; it never absorbs its authority. |
 | Execution orchestrator | A caller-selected system that schedules, runs, and retries work — a Goal, Mayor, factory, CI, or merge queue. It owns execution lifecycle and never semantic judgment. |
+| Orchestrate skill | Optional in-session guidance for coordinating native assignments, actual prerequisites, isolated write scopes, review capacity and feedback. It does not acquire the execution orchestrator's lifecycle authority. |
 | Software factory | An execution orchestrator with persistent internal sessions and roles (Gas City, NTM rigs, swarms). Operated only through its own doors. |
 | Projection | A rebuildable derived view with a named consumer, generator, inputs, exact source identities, and freshness. Deletable without changing semantic behavior; never authority. |
 | Fresh judgment | One `PASS | FAIL | NOT_PROVEN` issued over exact content by a context distinct from the candidate author. |

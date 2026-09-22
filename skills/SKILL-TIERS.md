@@ -8,7 +8,7 @@
 
 ## execution
 
-`account-rotation`, `agent-mail`, `cass`, `cc-hooks`, `dcg`, `idea-genie`, `implement`, `memory`, `ms`, `ntm`, `plan`, `rch`, `refactor`, `research`, `reverse-engineer`, `sbh`, `test`, `using-flywheel`, `using-gc`
+`account-rotation`, `agent-mail`, `cass`, `cc-hooks`, `dcg`, `idea-genie`, `implement`, `memory`, `ms`, `ntm`, `orchestrate`, `plan`, `rch`, `refactor`, `research`, `reverse-engineer`, `sbh`, `test`, `using-flywheel`, `using-gc`
 
 ## judgment
 
@@ -51,6 +51,7 @@
 | `memory` | execution | `keep_off_path` | - | `recall_applicable_context`, `mine_supported_observations`, `curate_topic_pages`, `toil_mining` | `write_protected_drafts`, `update_authorized_topic_pages`, `write_requested_toil_report` |
 | `ms` | execution | `keep_optional_adapter` | - | `ms` | `spawn_search_server`, `write_feedback_outcomes`, `rebuild_search_index` |
 | `ntm` | execution | `keep_optional_adapter` | - | `ntm` | `manage_ntm_panes`, `dispatch_pane_commands` |
+| `orchestrate` | execution | `keep` | - | `coordinate_native_work`, `recover_assignments`, `reconcile_feedback` | `dispatch_authorized_workers`, `update_native_handoffs` |
 | `plan` | execution | `keep` | - | `shape_intent`, `define_acceptance`, `bound_write_scope`, `resume_discovery` | `update_intent_source` |
 | `postmortem` | judgment | `keep_strategy` | - | `postmortem` | `write_postmortem_report` |
 | `premortem` | judgment | `keep_strategy` | - | `challenge_plan` | `write_advisory_plan_review` |
