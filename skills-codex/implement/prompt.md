@@ -1,6 +1,6 @@
 # implement
 
-Implement accepted behavior, repair defects or execute a selected wave with per-lane evidence. Use when: coding is authorized and ready; return facts, not a binding verdict.
+Implement changes, repairs, waves or service operations. Use when: coding, reliability, delivery, incident recovery, resilience or toil work is authorized. Return check facts.
 
 ## Instructions
 

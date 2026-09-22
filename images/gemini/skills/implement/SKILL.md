@@ -1,6 +1,6 @@
 ---
 name: implement
-description: 'Implement accepted behavior, repair defects or execute a selected wave with per-lane evidence. Use when: coding is authorized and ready; return facts, not a binding verdict.'
+description: 'Implement changes, repairs, waves or service operations. Use when: coding, reliability, delivery, incident recovery, resilience or toil work is authorized. Return check facts.'
 practices:
 - tdd
 - refactoring
@@ -30,6 +30,12 @@ metadata:
 Implement the accepted outcome. Repair ordinary known defects directly. Use the existing
 intent; no Plan, Recall or Learn worksheet is owed for a clear edit. Implement
 owns source changes and factual checks; the runtime derives identity and receipts.
+
+For authorized service operations, selectively load
+[operations methods](references/operations.md) for reliability, delivery,
+incident recovery, resilience or toil decisions. Use only the relevant procedure;
+ordinary edits owe no operations phase. That reference routes changed exposure
+to the existing Security owner and service test design to Test.
 
 ## Workflow
 
