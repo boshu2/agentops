@@ -11,13 +11,19 @@ A clear task can proceed directly with zero mandatory skills.
 
 ## Advice or acceptance
 
-Use the caller's intended outcome, not the word "review" alone, to choose the
-route. Suggestions, tradeoffs and a second look are advisory. A request to
+Use the caller's intended outcome and already settled context, not the word
+"review" alone, to choose the route. Suggestions, tradeoffs and a second look
+are advisory. Explicitly selecting [Validate](../validate/SKILL.md), asking to
 establish that original acceptance is met, independently prove completion, or
-issue an acceptance verdict belongs to [Validate](../validate/SKILL.md).
-"Check this before merging" without a stated purpose is ambiguous: ask whether
-the caller wants advice or an acceptance judgment. Do not silently authorize
-acceptance or treat an unqualified "looks good" as proof.
+issue an acceptance verdict selects acceptance.
+
+Generic checking or readiness questions do not by themselves select acceptance,
+even when the caller supplies acceptance criteria. If context has not settled
+the purpose, ask whether
+the caller wants advice or an acceptance judgment. Wait for the answer before
+choosing the route; do not issue an acceptance conclusion or readiness approval
+while intent is unresolved. Do not silently authorize acceptance or treat an
+unqualified "looks good" as proof.
 
 If acceptance is requested, stop the advisory route and hand off to a genuinely
 fresh Validate context with the original acceptance, exact subject, complete
