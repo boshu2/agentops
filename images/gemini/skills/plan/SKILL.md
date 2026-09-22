@@ -106,6 +106,8 @@ existing plan or native handoff. Reuse settled domain terms and caller choices
 with their source pointers; do not repeat an interview or load the full transcript.
 Read details on demand only if a missing fact or new contradiction can change
 the next decision.
+Before reusing inherited prototype evidence, follow
+[Reuse after source drift](references/ground-truth-routing.md#reuse-after-source-drift).
 
 Check active assignments, write scopes and integration/review ownership against
 the native tracker or runtime before suggesting more work. Handoff facts are
