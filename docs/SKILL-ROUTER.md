@@ -2,17 +2,22 @@
 
 # Skill Router
 
-34 live skills. Choose guidance for a concrete task need; no skill is mandatory.
+35 live skills. Choose guidance for a concrete task need; no skill is mandatory.
 A clear task can proceed in the native agent. Read a skill only when its description fits.
 Names and descriptions below come from each source SKILL.md; explicit invocation remains available.
 
-## Intent, implementation and final judgment
+## Primary entrypoints
+
+These are independent choices, not a required sequence.
+Advisory review does not replace Validate's fresh acceptance judgment.
 
 | Skill | Use it for |
 |---|---|
-| [implement](../skills/implement/SKILL.md) | Implement changes, repairs, waves or service operations. Use when: coding, reliability, delivery, incident recovery, resilience or toil work is authorized. Return check facts. |
 | [plan](../skills/plan/SKILL.md) | Define intended behavior, review write scope and assess reversible decisions. Use when: discovery needs clarification or resumption before one complete slice; stop once actionable. |
+| [implement](../skills/implement/SKILL.md) | Implement changes, repairs, waves or service operations. Use when: coding, reliability, delivery, incident recovery, resilience or toil work is authorized. Return check facts. |
 | [validate](../skills/validate/SKILL.md) | Freshly judge a finished change against original acceptance before merge. Use when: independent proof is needed; author tests cannot issue PASS. Triggers: "check this change". |
+| [orchestrate](../skills/orchestrate/SKILL.md) | Coordinate authorized workers, prerequisites, isolated scopes and review capacity. Use when: dispatching, recovering or routing feedback. Not for implementation or judgment. |
+| [memory](../skills/memory/SKILL.md) | Find reviewed context, capture evidence or curate maintained claims. Use when: prior evidence can change an action, or learning is requested; no mandatory recall or lesson. |
 
 ## Engineering specialists
 
@@ -27,12 +32,6 @@ Names and descriptions below come from each source SKILL.md; explicit invocation
 | [skill-builder](../skills/skill-builder/SKILL.md) | Create, adapt, consolidate or repair skill packages and projections. Use when: authoring guidance, descriptions or structure; Skill Eval measures behavioral benefit. |
 | [skill-eval](../skills/skill-eval/SKILL.md) | Measure whether a skill helps a named task or needs revision or removal. Use when: a bounded routing or coding evaluation is requested; conformance alone cannot show benefit. |
 | [test](../skills/test/SKILL.md) | Write behavioral tests, practice TDD or inspect important coverage gaps. Use when: test design or missing proof needs work; running an existing suite needs no skill. |
-
-## Memory on demand
-
-| Skill | Use it for |
-|---|---|
-| [memory](../skills/memory/SKILL.md) | Find reviewed context, capture evidence or curate maintained claims. Use when: prior evidence can change an action, or learning is requested; no mandatory recall or lesson. |
 
 ## Deliberate planning and review strategies
 
@@ -86,6 +85,7 @@ Names and descriptions below come from each source SKILL.md; explicit invocation
 | `memory` | execution | `keep_off_path` | - | `recall_applicable_context`, `mine_supported_observations`, `curate_topic_pages`, `toil_mining` | `write_protected_drafts`, `update_authorized_topic_pages`, `write_requested_toil_report` |
 | `ms` | execution | `keep_optional_adapter` | - | `ms` | `spawn_search_server`, `write_feedback_outcomes`, `rebuild_search_index` |
 | `ntm` | execution | `keep_optional_adapter` | - | `ntm` | `manage_ntm_panes`, `dispatch_pane_commands` |
+| `orchestrate` | execution | `keep` | - | `coordinate_native_work`, `recover_assignments`, `reconcile_feedback` | `dispatch_authorized_workers`, `update_native_handoffs` |
 | `plan` | execution | `keep` | - | `shape_intent`, `define_acceptance`, `bound_write_scope`, `resume_discovery` | `update_intent_source` |
 | `postmortem` | judgment | `keep_strategy` | - | `postmortem` | `write_postmortem_report` |
 | `premortem` | judgment | `keep_strategy` | - | `challenge_plan` | `write_advisory_plan_review` |

@@ -76,6 +76,11 @@
 | `ntm` | consumes | `pane-command-request` |
 | `ntm` | produces | `ntm-robot-state` |
 | `ntm` | produces | `agent-worker-transcript` |
+| `orchestrate` | consumes | `accepted-intent` |
+| `orchestrate` | consumes | `native-work-state` |
+| `orchestrate` | consumes | `candidate-evidence` |
+| `orchestrate` | produces | `native-handoffs` |
+| `orchestrate` | produces | `reconciled-feedback` |
 | `postmortem` | produces | `postmortem-report.md` |
 | `premortem` | produces | `premortem-plan-review.v1` |
 | `reality-check` | consumes | `caller-question` |

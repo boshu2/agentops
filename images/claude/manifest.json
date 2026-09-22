@@ -1,7 +1,7 @@
 {
   "image": "claude",
   "schema_version": "skill-image.v1",
-  "skill_count": 34,
+  "skill_count": 35,
   "skills": [
     {
       "disposition": "keep_optional_adapter",
@@ -87,6 +87,11 @@
       "disposition": "keep_optional_adapter",
       "path": "skills/ntm/",
       "slug": "ntm"
+    },
+    {
+      "disposition": "keep",
+      "path": "skills/orchestrate/",
+      "slug": "orchestrate"
     },
     {
       "disposition": "keep",

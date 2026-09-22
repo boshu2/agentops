@@ -99,9 +99,81 @@ aliases. Ordinary native coding requires no replacement invocation.
 
 ## Skills
 
-The release menu has 34 skills, compared with 52 in 3.6.0. Twenty former roots
-were retired; `memory` and `skill-eval` are new relative to that release. Use
+The 3.7 migration baseline has 34 skills, compared with 52 in 3.6.0. Twenty former roots
+were retired; `memory` and `skill-eval` are new relative to that release. The
+current menu additionally exposes Orchestrate; no baseline skill is retired or
+renamed by that addition. Use
 [the current menu](SKILL-ROUTER.md) to choose guidance for the actual task.
+
+### Maintained entrypoints and baseline dispositions
+
+The primary menu exposes Plan, Implement, Validate, Orchestrate and Memory as
+independent choices. Advisory review supplies findings; Validate alone owns
+skill acceptance semantics. The optional RPI workflow and every focused method
+remain explicitly invocable. Native work requires zero mandatory skills, and
+selecting Orchestrate does not require a skill chain.
+
+This is the literal disposition of all 34 canonical roots at migration baseline
+`3842ea0e0040ddc06ee4d45c98b9fc8c0eeffb6a`, derived from their
+`skills/<name>/SKILL.md` contracts. Each linked contract remains the method owner.
+The [generated catalog](../skills/catalog.json) and [router](SKILL-ROUTER.md)
+describe the current inventory; fewer roots or improved discovery is not claimed.
+For every **keep** row, its slug and explicit invocation remain compatible:
+`/agentops:<name>` in Claude's plugin, `$agentops:<name>` in Codex's plugin,
+and the unqualified catalog name for source-linked installs. Host loading is
+qualified separately from package presence.
+
+| Baseline entrypoint | Disposition | Maintained owner and outcome |
+|---|---|---|
+| `account-rotation` | keep | [Account Rotation](../skills/account-rotation/SKILL.md): caller-selected account changes and identity checks. |
+| `agent-mail` | keep | [Agent Mail](../skills/agent-mail/SKILL.md): selected messaging and advisory file reservations; native tracker retains status. |
+| `agent-native` | keep | [Agent Native](../skills/agent-native/SKILL.md): runtime dispatch, observation, context identity, isolation and native follow-up. Orchestrate links these mechanics. |
+| `agy-native` | keep | [AGY Native](../skills/agy-native/SKILL.md): explicitly selected Antigravity execution. |
+| `cass` | keep | [CASS](../skills/cass/SKILL.md): cited session retrieval; Memory owns admission of reusable claims. |
+| `cc-hooks` | keep | [CC Hooks](../skills/cc-hooks/SKILL.md): authorized Claude hook and guard configuration. |
+| `codex-exec` | keep | [Codex Exec](../skills/codex-exec/SKILL.md): one selected headless Codex process. |
+| `council` | keep | [Council](../skills/council/SKILL.md): selected independent perspectives; advice does not supply acceptance. |
+| `craft-goal` | keep | [Craft Goal](../skills/craft-goal/SKILL.md): explicitly selected persistent-goal guidance; native goals retain continuity. |
+| `dcg` | keep | [DCG](../skills/dcg/SKILL.md): diagnose guard refusal and authorized policy changes. |
+| `doc` | keep | [Doc](../skills/doc/SKILL.md): requested source-grounded documents and continuity handoffs. |
+| `domain` | keep | [Domain](../skills/domain/SKILL.md): domain vocabulary, rule boundaries and repository conventions. |
+| `idea-genie` | keep | [Idea Genie](../skills/idea-genie/SKILL.md): evidence-backed options and idea challenge. |
+| `implement` | keep | [Implement](../skills/implement/SKILL.md): complete accepted changes, direct repair and authorized operations. |
+| `memory` | keep | [Memory](../skills/memory/SKILL.md): selective find/recall, capture/mine and curate/qualify/retire with support and disclosure review. |
+| `ms` | keep | [MS](../skills/ms/SKILL.md): selected meta_skill search and loading. |
+| `ntm` | keep | [NTM](../skills/ntm/SKILL.md): selected persistent panes and native runtime facts. |
+| `plan` | keep | [Plan](../skills/plan/SKILL.md): resumable discovery, uncertainty routing, optional challenge and one ready complete slice. |
+| `postmortem` | keep | [Postmortem](../skills/postmortem/SKILL.md): requested outcome analysis, separate from code acceptance. |
+| `premortem` | keep | [Premortem](../skills/premortem/SKILL.md): selected fresh plan challenge; Plan owns the shared challenge exchange. |
+| `rch` | keep | [RCH](../skills/rch/SKILL.md): selected remote compilation and diagnostics. |
+| `reality-check` | keep | [Reality Check](../skills/reality-check/SKILL.md): compare shipped-feature, repository or goal claims with evidence. |
+| `refactor` | keep | [Refactor](../skills/refactor/SKILL.md): structural simplification while preserving behavior. |
+| `research` | keep | [Research](../skills/research/SKILL.md): cited source investigation and pattern evidence. |
+| `reverse-engineer` | keep | [Reverse Engineer](../skills/reverse-engineer/SKILL.md): authorized external-system teardown and adoption choices. |
+| `rpi` | keep | [RPI](../skills/rpi/SKILL.md): explicitly selected outcome-to-judgment charter; unchanged hard dependency graph. |
+| `sbh` | keep | [SBH](../skills/sbh/SKILL.md): disk-pressure diagnosis and authorized recovery. |
+| `security` | keep | [Security](../skills/security/SKILL.md): concrete exposure review and selected scans. |
+| `skill-builder` | keep | [Skill Builder](../skills/skill-builder/SKILL.md): skill authoring, repair, projections and exports. |
+| `skill-eval` | keep | [Skill Eval](../skills/skill-eval/SKILL.md): bounded behavioral evaluation; structural conformance is not efficacy. |
+| `test` | keep | [Test](../skills/test/SKILL.md): behavioral test design and consequential coverage gaps. |
+| `using-flywheel` | keep | [Using Flywheel](../skills/using-flywheel/SKILL.md): selected factory through its native workflow. |
+| `using-gc` | keep | [Using GC](../skills/using-gc/SKILL.md): selected Gas City through its Mayor and supported native doors. |
+| `validate` | keep | [Validate](../skills/validate/SKILL.md): sole skill owner of fresh exact-content acceptance judgment and explicit missing proof. |
+
+[Orchestrate](../skills/orchestrate/SKILL.md) is an additive coordination entrypoint
+for actual prerequisites, native assignments, isolated scopes, integration/review
+capacity and affected-work feedback. Agent Native remains its runtime-mechanics
+owner; Plan owns uncertainty and slicing; Memory owns shared-context procedures;
+Validate owns acceptance. This is instruction-level coordination, not a new
+scheduler, work account, queue, retry controller or delivery mechanism.
+
+The old `learn` name maps to current `memory`. The proposed return to `learn`
+is not selected: Memory keeps its public name and all three operation families.
+Do not create a Learn alias or rename installed copies. Inspect stale owned
+Learn links/copies and Memory collisions using the install recovery policy below;
+retaining the name does not establish collision-free upgrades. Final installed
+route, cold-resume and upgrade/recovery qualification remains required on the
+integrated candidate. Structural checks establish no efficacy or host-load claim.
 
 | Retired 3.6 skill | Current owner or migration |
 |---|---|
@@ -119,7 +191,7 @@ were retired; `memory` and `skill-eval` are new relative to that release. Use
 
 ### Unified discovery batch
 
-This batch keeps all current skill names and the 34-skill inventory. Use Plan
+The discovery batch retained all 34 baseline skill names. Use Plan
 for resumable discovery of the next complete slice; focused entrypoints remain
 available when their narrower method is the requested work.
 
@@ -132,7 +204,7 @@ available when their narrower method is the requested work.
 | `premortem` and `council` | Keep as caller-selected strategies. Plan owns the common optional challenge exchange; Premortem retains its evidence-shape, reversibility and defeat methods, and Council retains its selected broader review. Neither supplies acceptance. |
 
 No new discovery root, mandatory stage, work ledger or automatic context
-admission is introduced. Other skill dispositions are unchanged by this batch.
+admission is introduced. The complete dispositions above preserve those methods.
 A compact plan or native handoff can carry assignment references and the next
 discriminator; status and ownership remain authoritative only in the native
 tracker/runtime. Existing Plan/Implement/Validate authority and fresh exact-content
@@ -173,6 +245,38 @@ Historical Pawl, queue, claim, landing, and lifecycle artifacts remain inert
 evidence. They no longer influence phase sequencing, verdict validity, or CLI
 outcomes.
 
+## Registered CLI consumer dispositions
+
+Every currently registered public command is **kept**, with unchanged names,
+flags and authority. The rows below cover each public top-level command and
+**every descendant** under it. The generated [command reference](../cli/docs/COMMANDS.md)
+enumerates those descendants and flags; the executable registry in
+[`cli/cmd/ao`](../cli/cmd/ao/) remains the source, checked by
+[surface parity](../scripts/check-cmdao-surface-parity.sh) against
+[the complete leaf inventory](cli-surface.json). `ao help` is Cobra's retained
+framework helper, categorized `internal-hidden` by that inventory. Removed
+commands remain covered by the breaking-boundary table above, not aliases.
+
+| Registered consumer and all descendants | Disposition and source owner | Retained outcome / compatibility |
+|---|---|---|
+| [`ao capabilities`](../cli/docs/COMMANDS.md#ao-capabilities) | keep; [capabilities.go](../cli/cmd/ao/capabilities.go) | Machine-readable registered CLI contract. |
+| [`ao completion`](../cli/docs/COMMANDS.md#ao-completion) | keep; [completion.go](../cli/cmd/ao/completion.go) | Native shell completion generation. |
+| [`ao config`](../cli/docs/COMMANDS.md#ao-config) | keep; [config module](../cli/cmd/ao/config_module.go) | Explicit context-route bindings; no automatic context admission. |
+| [`ao demo`](../cli/docs/COMMANDS.md#ao-demo) | keep; [demo composition](../cli/cmd/ao/demo_composition.go) | Read-only native example and explicitly selected RPI example. |
+| [`ao doctor`](../cli/docs/COMMANDS.md#ao-doctor) | keep; [doctor module](../cli/cmd/ao/doctor_module.go) | Installation diagnosis, snapshots and explicitly authorized repair/undo. |
+| [`ao gate`](../cli/docs/COMMANDS.md#ao-gate) | keep; [gate composition](../cli/cmd/ao/gate_composition.go) | Deterministic repository checks; not semantic acceptance. |
+| [`ao gc`](../cli/docs/COMMANDS.md#ao-gc) | keep; [GC composition](../cli/cmd/ao/gc_composition.go) | Prepare/check selected upstream integration and authorized affinity recovery. |
+| [`ao goals`](../cli/docs/COMMANDS.md#ao-goals) | keep; [goals composition](../cli/cmd/ao/goals_composition.go) | Existing goal/scenario measurement and inspection; no work ownership or scheduler. |
+| [`ao init`](../cli/docs/COMMANDS.md#ao-init) | keep; [init composition](../cli/cmd/ao/init_composition.go) | Optional local evidence setup; native work needs no initialization. |
+| [`ao provenance`](../cli/docs/COMMANDS.md#ao-provenance) | keep; [provenance composition](../cli/cmd/ao/provenance_composition.go) | Exact identities, generic evidence and requested judgment persistence/verification. |
+| [`ao quick-start`](../cli/docs/COMMANDS.md#ao-quick-start) | keep; [quick-start composition](../cli/cmd/ao/quickstart_composition.go) | Read-only native execution brief. |
+| [`ao robot-docs`](../cli/docs/COMMANDS.md#ao-robot-docs) | keep; [robot-docs composition](../cli/cmd/ao/robotdocs_composition.go) | Agent-facing CLI documentation. |
+| [`ao session`](../cli/docs/COMMANDS.md#ao-session) | keep; [session composition](../cli/cmd/ao/session_composition.go) | Requested continuity and authorized source reads; no mandatory bootstrap. |
+| [`ao skills`](../cli/docs/COMMANDS.md#ao-skills) | keep; [skills composition](../cli/cmd/ao/skills_composition.go) | Catalog discovery/checks and selected or full owned source links. Orchestrate is another catalog entry, not a command. |
+| [`ao status`](../cli/docs/COMMANDS.md#ao-status) | keep; [status composition](../cli/cmd/ao/status_composition.go) | Evidence-store facts; tracker/runtime retain live work state. |
+| [`ao version`](../cli/docs/COMMANDS.md#ao-version) | keep; [version composition](../cli/cmd/ao/version_composition.go) | Installed CLI version identity. |
+| [`ao workflows`](../cli/docs/COMMANDS.md#ao-workflows) | keep; [workflows composition](../cli/cmd/ao/workflows_composition.go) | Owned project-local Claude workflow links/unlinks. |
+
 ## Install migration
 
 AgentOps supports three optional skill install paths: `npx skills@latest add
@@ -182,6 +286,34 @@ canonical checkout plus source symlinks for users who edit skills or
 contribute. The [host/install mapping](contracts/multi-runtime-tier-charter.md#host-and-install-surface-mapping)
 accounts for the retained runtime, export and package consumers; each host's
 live qualification remains separate from structural checks.
+
+### Retained package and installation consumers
+
+The [host/install contract](contracts/multi-runtime-tier-charter.md#host-and-install-surface-mapping)
+owns host scope and qualification. This migration table records the disposition
+of its consumers plus the repository's standalone installers and optional
+roles/hooks/workflows. **Keep** preserves the declared behavior and all upgrade,
+cold-resume, collision and recovery obligations; it does not silently retire an
+untested promise. Every live claim still needs evidence on the final installation.
+
+| Consumer | Disposition and owner | Compatibility treatment |
+|---|---|---|
+| Claude Code plugin and source links | keep; [.claude-plugin](../.claude-plugin/plugin.json), [marketplace](../.claude-plugin/marketplace.json), [Claude image](../images/claude/README.md) and canonical `skills/` | First-class host. Retain qualified plugin names, full bundle, agents and policy dispatcher; source linking keeps selected names. |
+| Codex plugin and source links | keep; [.codex-plugin](../.codex-plugin/plugin.json), [marketplace](../plugins/marketplace.json), [Codex image](../images/codex/README.md) and generated `skills-codex/` | First-class host. Preserve canonical/projection parity and qualified plugin names; source links retain catalog names. |
+| Cursor rules and source links | keep; [converter](../skills/skill-builder/scripts/converter/convert.sh) and [destination resolver](../cli/internal/skillsapp/roots.go) | Retain `.mdc` export and detected Cursor skills root; structural coverage remains distinct from live discovery/execution. |
+| OpenCode portable and explicit source roots | keep; [OpenCode guide](../.opencode/INSTALL.md) and [destination resolver](../cli/internal/skillsapp/roots.go) | Retain portable root and explicit `--dest` config-root installation, including selected optional hooks. |
+| Gemini / Antigravity package and export | keep; [Gemini package](../images/gemini/README.md), generated [manifest](../images/gemini/plugin.json), [bundle generator](../scripts/generate-skill-mesh.py) and detected Gemini root | Retain migration compatibility bundle, agents, rules, hooks and optional Agent Mail configuration. Each claimed host journey remains separately qualified. |
+| Skill Builder exports (`codex`, `cursor`, `test`) | keep; [converter](../skills/skill-builder/scripts/converter/convert.sh) | Preserve supported target selection and Codex modular/inline layouts. Exported files require separate host-load qualification. |
+| Pi, portable and explicit-destination source consumers | keep; [destination resolver](../cli/internal/skillsapp/roots.go) | Preserve detected Pi root, always-included portable root and explicit destination semantics; no new live-host claim. |
+| External `npx skills` installer | keep; canonical `skills/` and [install guide](install-day2-ops.md) | Preserve full and selected installs through the external installer's own contract; it does not install AO, runtime plugins, roles or hooks. |
+| AO source, Go, Homebrew and release-binary installs | keep; [CLI installation](install-day2-ops.md#maintainer--contributor-the-ao-binary), [release build](../.goreleaser.yml), [Windows AO installer](../scripts/install-ao.ps1) | Retain source builds and published-binary consumers, including the Windows CLI installer. Skill loading is separate from binary availability. |
+| Claude agent roles and optional Codex context roles | keep; [Claude agents](../agents/), [Codex role sources](../skills/agent-native/agents/) and [role installer](../scripts/install-codex-context-agents.sh) | Preserve role identity and explicit Codex activation, backups and unrelated configuration. Installing skills does not activate Codex roles. |
+| Claude policy dispatcher | keep; [plugin hooks](../hooks/hooks.json), [source wrapper](../scripts/install-policy-dispatch.sh) and [packaged owner](../skills/cc-hooks/scripts/install-hooks.sh) | Plugin activation remains bundled; source/copy installation uses the existing owner-selected installer. |
+| Read-budget and installed-skill edit guards | keep; [Claude read guard](../scripts/install-read-budget-guard.sh), [Codex read guard](../scripts/install-codex-read-budget-guard.sh), [edit guard](../scripts/install-installed-skill-edit-guard.sh) | Preserve separate opt-in installation, Codex trust review, backups and documented enforcement limits. |
+| Claude named workflows | keep; [canonical workflows](../workflows/), [`ao workflows`](../cli/docs/COMMANDS.md#ao-workflows), [user-level installer](../scripts/install-workflows.sh) | Keep project-local owned-link refusal semantics. The user-level installer retains its distinct backed-up replacement semantics; do not assume the two installers are interchangeable. |
+| Optional BD binary installer | keep; [install-bd.sh](../scripts/install-bd.sh) | Installs selected native BD; does not create or replace the repository's work store. |
+| Optional MS post-merge index hook | keep; [install-ms-reindex-hook.sh](../scripts/install-ms-reindex-hook.sh) | Retain explicit installation and its canonical-checkout/main/changed-skills guards; no mandatory background indexing. |
+| Legacy 3.x skill curl/PowerShell installers | retire, retained refusal tombstones; `install.sh`, `install-claude.sh`, `install-codex.sh`, `install-agy.sh`, `install-opencode.sh`, `install-codex.ps1` under [scripts](../scripts/) | Existing breaking boundary below remains unchanged. `install-ao.ps1` is a retained CLI installer, not this retired skill installer. |
 
 For a selected source installation, preserve the same selectors on upgrade:
 

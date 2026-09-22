@@ -3,6 +3,12 @@
 AgentOps defines portable packets and role boundaries. It does not run a
 software factory or own its queue.
 
+The optional [Orchestrate skill](../skills/orchestrate/SKILL.md) guides
+in-session coordination of accepted work, actual prerequisites, isolated write
+scopes, integration/review capacity and feedback. It reads and updates authorized
+native handoffs; it creates no scheduler or second work account. Runtime
+mechanics remain owned by [Agent Native](../skills/agent-native/SKILL.md).
+
 ## Roles
 
 | Role | Input | Output |

@@ -1,6 +1,6 @@
 {
   "schema_version": "3",
-  "skill_count": 34,
+  "skill_count": 35,
   "skills": [
     {
       "canonical_status": "canonical",
@@ -573,6 +573,42 @@
       "produces": [
         "ntm-robot-state",
         "agent-worker-transcript"
+      ],
+      "references_count": 0,
+      "tier": "execution",
+      "user_invocable": true
+    },
+    {
+      "canonical_status": "canonical",
+      "capabilities": [
+        "coordinate_native_work",
+        "recover_assignments",
+        "reconcile_feedback"
+      ],
+      "codex_override_present": true,
+      "consumes": [
+        "accepted-intent",
+        "native-work-state",
+        "candidate-evidence"
+      ],
+      "context_rel": [],
+      "dependencies": [],
+      "description": "Coordinate authorized workers, prerequisites, isolated scopes and review capacity. Use when: dispatching, recovering or routing feedback. Not for implementation or judgment.",
+      "disposition": "keep",
+      "effects": [
+        "dispatch_authorized_workers",
+        "update_native_handoffs"
+      ],
+      "graph_root": true,
+      "hexagonal_role": "supporting",
+      "name": "orchestrate",
+      "practices": [
+        "team-topologies",
+        "evidence-based-engineering"
+      ],
+      "produces": [
+        "native-handoffs",
+        "reconciled-feedback"
       ],
       "references_count": 0,
       "tier": "execution",

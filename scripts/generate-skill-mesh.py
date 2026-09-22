@@ -146,15 +146,28 @@ def md_table(entries: list[dict[str, Any]]) -> str:
 
 
 def router(entries: list[dict[str, Any]]) -> str:
+    primary_names = ("plan", "implement", "review", "validate", "orchestrate", "memory")
+    by_name = {entry["name"]: entry for entry in entries}
     groups: dict[str, list[dict[str, Any]]] = {}
     for entry in entries:
+        if entry["name"] in primary_names:
+            continue
         groups.setdefault(entry["disposition"], []).append(entry)
     lines = ["<!-- generated from skills/*/SKILL.md metadata -->", "", "# Skill Router", "",
              f"{len(entries)} live skills. Choose guidance for a concrete task need; no skill is mandatory.",
              "A clear task can proceed in the native agent. Read a skill only when its description fits.",
              "Names and descriptions below come from each source SKILL.md; explicit invocation remains available.", ""]
+    lines += ["## Primary entrypoints", "", "These are independent choices, not a required sequence.",
+              "Advisory review does not replace Validate's fresh acceptance judgment.", "",
+              "| Skill | Use it for |", "|---|---|"]
+    for name in primary_names:
+        if name not in by_name:
+            continue
+        description = by_name[name]["description"].replace("|", "\\|").replace("\n", " ")
+        lines.append(f"| [{name}](../skills/{name}/SKILL.md) | {description} |")
+    lines.append("")
     sections = (
-        ("keep", "Intent, implementation and final judgment"),
+        ("keep", "Optional workflow guidance"),
         ("keep_specialist", "Engineering specialists"),
         ("keep_off_path", "Memory on demand"),
         ("keep_strategy", "Deliberate planning and review strategies"),

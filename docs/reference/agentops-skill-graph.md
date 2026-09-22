@@ -21,6 +21,7 @@ graph LR
   memory["memory"]
   ms["ms"]
   ntm["ntm"]
+  orchestrate["orchestrate"]
   plan["plan"]
   postmortem["postmortem"]
   premortem["premortem"]
