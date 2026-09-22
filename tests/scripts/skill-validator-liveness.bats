@@ -42,6 +42,42 @@ seeded_validator_must_fail() {
   seeded_validator_must_fail plan 'plan-packet.v1'
 }
 
+@test "plan validator rejects the former mandatory control in its reference" {
+  local copy="$BATS_TEST_TMPDIR/plan"
+  mkdir -p "$copy"
+  cp -R "$REPO_ROOT/skills/plan/." "$copy/"
+  run bash "$copy/scripts/validate.sh"
+  [ "$status" -eq 0 ]
+  printf '\nEvery plan needs a ground truth, control experiment and deviation ledger.\n' >> "$copy/references/ground-truth-routing.md"
+  run bash "$copy/scripts/validate.sh"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"mandatory control or ledger"* ]]
+}
+
+@test "plan validator permits native recovery facts and rejects their blanket ban" {
+  local copy="$BATS_TEST_TMPDIR/plan"
+  mkdir -p "$copy"
+  cp -R "$REPO_ROOT/skills/plan/." "$copy/"
+  printf '\nNative handoff: owner and next action are references to the caller tracker.\n' >> "$copy/SKILL.md"
+  run bash "$copy/scripts/validate.sh"
+  [ "$status" -eq 0 ]
+  printf '\nThen it contains no owner, ready, claim, priority, attempt, wave, queue, lease, admission, next action\n' >> "$copy/references/plan.feature"
+  run bash "$copy/scripts/validate.sh"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"forbid factual native handoff recovery"* ]]
+}
+
+@test "plan validator refuses an unshipped selective method" {
+  local copy="$BATS_TEST_TMPDIR/plan"
+  mkdir -p "$copy"
+  cp -R "$REPO_ROOT/skills/plan/." "$copy/"
+  run bash "$copy/scripts/validate.sh"
+  [ "$status" -eq 0 ]
+  mv "$copy/references/challenge.md" "$copy/references/challenge.missing"
+  run bash "$copy/scripts/validate.sh"
+  [ "$status" -ne 0 ]
+}
+
 @test "implement validator fails on seeded forbidden token" {
   seeded_validator_must_fail implement 'candidate-packet.v1'
 }
