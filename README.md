@@ -40,8 +40,17 @@ Choose an entrypoint based on what is already known and how much coordination
 the work needs. A bug with clear expected behavior can go straight to a fix;
 an unclear feature needs its behavior settled first.
 
-```text
-Accepted intent → Implementation and checks → Fresh independent judgment → Finish
+```mermaid
+flowchart TD
+    intent["Clear, accepted intent"] --> implement["Implementation and checks"]
+    unclear["Unclear intent"] --> plan["Plan"]
+    plan -->|Intent settled| implement
+    existing["Existing change"] --> judge{"Fresh independent<br/>judgment"}
+    implement --> judge
+    judge -->|Acceptance established| finish["Finish"]
+    judge -->|Failed behavior| implement
+    judge -->|Missing evidence| evidence["Gather evidence"]
+    evidence --> judge
 ```
 
 | Your starting point | Where to enter |
