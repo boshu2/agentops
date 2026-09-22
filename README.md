@@ -251,9 +251,11 @@ configuration. See the [command reference](cli/docs/COMMANDS.md) and
 <a id="upgrading-to-38"></a>
 <a id="upgrading-to-37"></a>
 
-Version 3.8 retains existing 3.7 command and skill names. Follow the
-[update guide](docs/install-day2-ops.md#update) for your install method, then
-start a new session. New installs do not silently remove obsolete copies.
+Version 3.8 retains existing 3.7 command and skill names. Use the
+[plugin update instructions](docs/install-day2-ops.md#install-and-update-runtime-plugins)
+or the [source and Skills installer guide](docs/install-day2-ops.md#update).
+For Homebrew: `brew update && brew upgrade agentops`. Start a new session
+afterward; new installs do not silently remove obsolete copies.
 
 **Upgrading from 3.6 or earlier:** read the [migration guide](docs/MIGRATION.md).
 Version 3.7 removed commands and skill names, including `learn`, `codebase-recon`
