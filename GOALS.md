@@ -2,25 +2,33 @@
 
 ## Product outcome
 
-AgentOps is the operations layer for agentic engineering: it makes one
-coding-agent experiment independently inspectable without taking over the
-consumer's engineering system.
+AgentOps helps coding agents implement the behavior the caller requested,
+validate it independently, and leave reusable engineering improvements behind.
+As the operations layer for agentic engineering, it connects that work to the
+consumer's existing tools and delivery policy.
 
 The canonical outcome is:
 
 ```text
-explicit behavior
+accepted behavior in the caller's domain language
   -> bounded implementation experiment
   -> exact content identity
   -> fresh independent judgment
   -> PASS | FAIL | NOT_PROVEN, persisted when requested
 ```
 
+Accepted changes should leave code, tests, tools, or useful decisions that
+subsequent work can build on. Records preserve continuity and explain what was
+checked. Actual reuse and its effects establish benefit; accumulating records
+alone does not.
+
 ## Fitness properties
 
-1. **Behavior before activity.** The caller-owned intent states the active
+1. **Behavior before activity.** The caller-owned intent states observable
    behavior, acceptance examples where useful, non-goals, evidence, and bounded
-   write scope before implementation begins.
+   write scope before implementation begins. BDD examples identify the caller,
+   event, and observable result; implementation and validation use those same
+   examples. Later tests cannot redefine acceptance.
 2. **Bounded implementation.** The native agent makes and checks the change, repairing
    known defects directly within the accepted scope and allowance. Aggregate
    budgets and delivery authority remain with the caller or selected runtime.
@@ -43,6 +51,15 @@ explicit behavior
    caller keeps budgets, stops, queue and work authority.
 8. **Open ecosystem.** Callers keep their trackers, Git, PRs, CI, cloud agents,
    merge queues, rollback, and release systems.
+9. **Shared domain language.** Use the caller's established terms and rule owners
+   consistently across intent, examples, code, tests, and review. Resolve only
+   ambiguity that changes behavior or ownership; distinguish meanings across
+   bounded contexts rather than imposing one global vocabulary.
+10. **Reusable engineering improvements.** Where useful to the accepted task,
+    leave regression checks, reusable tools, or supported decisions with the
+    existing owner. Preserve useful work and evidence across sessions without
+    requiring a lesson or new artifact per task. Judge benefit through later
+    use, including maintenance burden and harmful or unnecessary reuse.
 
 ## Structural constraints
 
@@ -70,11 +87,11 @@ This table must never be empty. A goals file with zero rows measures 0/0 and
 reports green over an empty set; `ao goals validate` now rejects that state
 (`goals-denominator` below is its executable guard).
 
-Disclosed scope: properties 1 (behavior before activity) and 7 (stop
-boundary) carry no executable gate here. Both are judged per traversal rather
-than by a repository check, and no honest deterministic check for them exists
-in this repository today. A green score below is silent about them, not
-evidence for them.
+Disclosed scope: properties 1 (behavior before activity), 7 (stop boundary),
+9 (shared domain language), and 10 (reusable engineering improvements) carry no
+executable gate here. Behavior, language, and stopping are judged against the
+task; reusable improvements also require evidence from subsequent work to show
+benefit. A green score below is silent about these properties.
 
 | ID | Check | Weight | Description |
 |----|-------|--------|-------------|
@@ -85,7 +102,21 @@ evidence for them.
 | contracts-structural-floor | `bash scripts/check-contracts-structural-floor.sh` | 4 | Property 8. A consumer keeping their own tracker, CI, and release system integrates through `docs/contracts/**`; each contract must be titled, cataloged in the documentation index, non-trivial, and paired with valid JSON. |
 | goals-denominator | `d=$(mktemp -d "${TMPDIR:-/tmp}/ao-goals-den.XXXXXX"); (cd cli && go build -o "$d/ao" ./cmd/ao) && "$d/ao" goals validate --json > "$d/report.json" && jq -e '.goal_count >= 1' "$d/report.json" > /dev/null; rc=$?; rm -rf "$d"; exit $rc` | 6 | Property 5 turned on this file. Builds `ao` from source, requires `goals validate --json` to exit 0 (valid), and requires a nonzero denominator. Guards the exact regression that emptied this table: between 2026-07-14 and 2026-08-24 the Gates section was absent, the parser returned zero goals with no error, and the whole fitness surface reported green on 0/0. |
 
-## Measured learning hypothesis
+## Engineering reuse and the learning hypothesis
+
+The product goal is cumulative engineering value across disposable agents.
+Track concrete cases: a behavioral example becomes a regression check, a tool
+is reused, or a recorded decision changes the next action. For an effectiveness
+claim, report later outcomes and total observed cost, including review,
+rework, and maintenance; disclose missing comparisons. Guidance draws from the
+[Practice Registry](PRACTICE-REGISTRY.md), but a practice's lineage does not prove
+that its AgentOps implementation improves an agent's results.
+
+The [September pilot](https://github.com/boshu2/agentops/pull/1125) found no
+observed paired endpoint difference in eight comparable coding pairs and no
+demonstrated incremental benefit in its separate memory experiment. Keep those
+limits alongside any claim about compounding. Use existing task evidence;
+measurement does not require a new artifact for every task.
 
 The selected CDLC (Context Delivery Lifecycle) contract maintains external
 context/environment around disposable agents; it neither trains weights nor

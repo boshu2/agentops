@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/logo.svg" alt="AgentOps" width="72" height="72">
+</p>
+
 # AgentOps
 
 AgentOps is an operations layer for AI coding agents. It encodes software
@@ -10,8 +14,24 @@ Use one skill for a bug fix or combine them for a larger project. The instructio
 are plain Markdown you can inspect and adapt. Your coding agent does the work
 with your existing tests, issue tracker, and Git workflow.
 
+[![Validate](https://github.com/boshu2/agentops/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/boshu2/agentops/actions/workflows/validate.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Latest release](https://img.shields.io/github/v/release/boshu2/agentops)](https://github.com/boshu2/agentops/releases/latest)
+
 [Install](#quickstart) · [Why these skills exist](#why-these-skills-exist) ·
 [Skill library](#choose-skills-by-the-work) · [Documentation](docs/documentation-index.md)
+
+## Why use AgentOps?
+
+| When the agent… | Reach for… | What you can inspect |
+|---|---|---|
+| Builds something different from what you meant | Behavior-driven planning | A concrete acceptance example used by both implementation and review |
+| Uses three names for the same domain concept | Shared domain language | Consistent terms and rule ownership across the request, code, and tests |
+| Says “done” after a green test run | Fresh independent validation | Evidence for each requested behavior, with missing coverage called out |
+| Leaves the next session to repeat the investigation | Reusable checks and useful work records | Regression tests, tools, and decisions kept with their existing owners |
+
+The 36-skill library packages established engineering practices. Select what
+helps the current task; a clear change can proceed directly in your coding agent.
 
 <a id="install"></a>
 
@@ -182,6 +202,117 @@ Memory creates no context store or private import automatically. These procedure
 don't enforce access permissions or prove that saved notes improve later work.
 See [Memory's storage rules](skills/memory/SKILL.md#access-storage-and-honest-limits).
 
+## From behavior to verified change
+
+**Behavior-driven development (BDD)** means agreeing on concrete examples of
+what the software should do before coding, then checking the result against
+those same examples. **Given** describes the starting situation, **When** the
+action, and **Then** the observable result. For example, in a system that calls
+queued work a **Job**:
+
+```gherkin
+Given a Job has already completed
+When the worker receives that Job again
+Then it returns the completed result without repeating the side effect
+```
+
+Keep that example in the existing issue or conversation. The implementer fixes
+the relevant path and adds a regression test that checks both the returned
+result and the absence of a repeated side effect. A fresh reviewer examines the
+exact change and its evidence against the same example. Passing an unrelated
+test suite does not fulfill the promise.
+
+Domain-driven design (DDD) keeps the meaning of **Job** consistent across the
+request, code, tests, and review. Use the repository's established vocabulary
+and rule owners; clarify a term when ambiguity would change the behavior.
+Plain-text examples suffice. No `.feature` file or glossary is required.
+
+The resulting fix and regression test remain available for future changes.
+Record useful decisions and handoffs in the caller's existing tools. This is
+the engineering value AgentOps aims to preserve across sessions; a saved note
+alone does not establish that later work improved.
+
+<details>
+<summary>Try the example through planning, implementation, and review</summary>
+
+Use this in a repository with a Job worker, adapting the domain terms to the
+actual system. These are prompts for your coding agent, not shell commands.
+Here is the Codex form; in Claude Code, replace `$agentops:` with `/agentops:`.
+
+```text
+$agentops:plan Clarify this behavior and its scope: given a Job has completed,
+when the worker receives it again, return the completed result without
+repeating the side effect. Reuse our existing domain terms and identify the
+smallest check that distinguishes correct behavior from the current code.
+```
+
+After agreeing on the scope:
+
+```text
+$agentops:implement Implement the accepted Job behavior within the agreed scope.
+Add a regression check for the returned result and the absence of a repeated
+side effect. Run the owning checks and report their results.
+```
+
+Then use a **fresh reviewer context**, with access to the exact change, the
+accepted scope, and the check results. Validate requires the [optional `ao` CLI](#optional-ao-cli).
+
+```text
+$agentops:validate Review this change against the accepted scope and behavior:
+a completed Job received again returns its result without repeating its side
+effect. Inspect the implementation and check evidence; report PASS, FAIL, or
+NOT_PROVEN with checked scope and any missing evidence. Do not change the code.
+```
+
+These prompts illustrate a workflow; they are not a transcript or a claim that
+the example has run in your repository. Individual skills can also be used on
+their own.
+
+</details>
+
+## Design principles
+
+1. **Agree on behavior before implementation.** Keep accepted examples in the
+   existing conversation or issue. Tests added later can extend the evidence;
+   they cannot redefine what was promised.
+2. **Use the domain's own language.** Clarify consequential ambiguity and respect
+   boundaries where the same word has different meanings.
+3. **Separate authorship from acceptance.** A fresh reviewer checks the exact
+   change. The author cannot issue its own binding PASS.
+4. **Leave useful improvements behind.** Preserve regression checks, tools, and
+   supported decisions where later work can use them. Add guidance when it
+   resolves a real need; a new worksheet is not required for every task.
+
+These practices come from BDD, DDD, design by contract, testing, refactoring,
+and other established engineering work. The [Practice Registry](PRACTICE-REGISTRY.md)
+records their lineage and how skills apply them. See [how it works](docs/how-it-works.md)
+for the planning, implementation, and validation responsibilities.
+
+## Where AgentOps fits
+
+AgentOps grew independently from applying DevOps experience and established
+engineering practices to agents. Projects such as Compound Engineering and Matt Pocock's
+skills have converged on similar approaches. There is substantial overlap:
+AgentOps covers planning, implementation, testing, review, and deliberate reuse.
+Use it across that workflow, or combine selected practices with other libraries.
+
+| Project or tool | What it provides | How the pieces can work together |
+|---|---|---|
+| **AgentOps** | Skills for planning, implementation, testing, review, and reuse, plus CLI checks and evidence tools | Use the full workflow or selected skills, with BDD examples and fresh judgment tied to the accepted behavior |
+| [Compound Engineering](https://github.com/EveryInc/compound-engineering-plugin) | A connected brainstorm, plan, build, review, and learning-capture workflow | Can supply the development loop and reusable solution records; carry the accepted behavior and evidence into independent judgment |
+| [Matt Pocock's skills](https://github.com/mattpocock/skills) | Composable practices for clarifying intent, domain modeling, TDD, and review | Callers can select relevant practices alongside AgentOps skills |
+| [Beads](AGENTS.md#repository-work-tracker) or your existing tracker | Work status, dependencies, and handoffs | Keeps ownership of work while AgentOps reads the accepted intent and cites its source |
+| Software factories such as [Gas City](skills/using-gc/SKILL.md) | Coordinating and running agents | Own execution through their native control plane; AgentOps supplies guidance, checks, and independent review of results |
+
+For example, a factory can coordinate a Beads-tracked task, an implementer can
+use a TDD skill, and a fresh reviewer can check the result against the accepted
+BDD example. Choose which workflow leads the task and make those handoffs
+explicit. The Compound Engineering and Matt Pocock combinations are ways to
+compose practices; the linked factory skill documents its supported integration.
+
+Review and durable context are shared ideas across these projects.
+See the [validation contract](skills/validate/SKILL.md) for AgentOps' review requirements.
+
 ## Choose skills by the work
 
 These are independent entry points. Pick the one your task needs.
@@ -197,7 +328,8 @@ These are independent entry points. Pick the one your task needs.
 
 The library also includes focused skills for [research](skills/research/SKILL.md),
 [testing](skills/test/SKILL.md), [refactoring](skills/refactor/SKILL.md),
-[documentation](skills/doc/SKILL.md), and [security](skills/security/SKILL.md).
+[domain modeling](skills/domain/SKILL.md), [documentation](skills/doc/SKILL.md),
+and [security](skills/security/SKILL.md).
 Browse the [full skill catalog](docs/SKILL-ROUTER.md).
 
 For example, use `/agentops:test` in Claude Code or `$agentops:test` in Codex.
@@ -222,6 +354,33 @@ With Go installed, use `go install github.com/boshu2/agentops/cli/cmd/ao@latest`
 Neither writes project state. `ao init` is optional local evidence setup.
 See the [command reference](cli/docs/COMMANDS.md) and
 [installation guide](docs/install-day2-ops.md) for source builds and skill dependencies.
+
+| Command | Use it to |
+|---|---|
+| `ao quick-start` | Read the native execution brief, check requirements, and review responsibilities |
+| `ao capabilities` | Discover the CLI's available capabilities |
+| `ao gate check` | Run the selected repository checks; add `--full` for the whole registry |
+| `ao config --show` | Inspect resolved configuration and its sources |
+
+<details>
+<summary>Inspect CLI configuration and request JSON output</summary>
+
+Inspect the resolved configuration, or request the result as JSON:
+
+```bash
+ao config --show
+ao config --show --json
+```
+
+The resolver reads project configuration from `.agents/ao/config.yaml` and home
+configuration from `~/.agents/ao/config.yaml`. It reports flags ahead of
+`AGENTOPS_*` environment variables, then project configuration, home
+configuration, and defaults. Use `AGENTOPS_CONFIG` or `--config` to select a
+file explicitly. Use a command's output flags to request its format; see
+[configuration help](cli/docs/COMMANDS.md#ao-config) for the CLI surface.
+Requested validation proof uses its separately selected external evidence root.
+
+</details>
 
 ## Updating and advanced setup
 
@@ -307,6 +466,22 @@ and history, your tracker records work, and your coding agent or selected
 factory runs it. AgentOps supplies guidance, checks, and independent judgment.
 Your repository keeps its delivery rules.
 
+```text
+Accepted behavior and domain terms
+        |
+        v
+Coding agent or selected factory --> Code, tests, and check results
+                                               |
+                                               v
+Accepted behavior ----------------> Fresh independent reviewer
+                                               |
+                                               v
+                                    PASS / FAIL / NOT_PROVEN
+                                               |
+                                               v
+                                    Your repository's delivery policy
+```
+
 Native execution needs no mandatory AgentOps skills. The [RPI charter](skills/rpi/SKILL.md)
 packages a workflow when selected. [Gas City](skills/using-gc/SKILL.md) and
 [Agentic Coding Flywheel](skills/using-flywheel/SKILL.md) are optional integrations.
@@ -336,4 +511,55 @@ For a reproducible problem, [open an issue](https://github.com/boshu2/agentops/i
 with your runtime version, install method, command or prompt, and observed result.
 Include saved evidence only when it's safe to share.
 
-Contributing: [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md). License: Apache-2.0.
+## Limits
+
+Skills guide the coding agent; their installation alone does not enforce every
+instruction. Review quality depends on the accepted examples, evidence, and
+reviewer. A green test suite or an agreeing second model can still miss a defect.
+Missing proof stays `NOT_PROVEN`.
+
+Reusable code, checks, and decisions can improve later engineering work. Saving
+notes alone does not demonstrate that benefit, and AgentOps does not promise
+automatic knowledge compounding. See [product evidence and limits](PRODUCT.md).
+
+Your tracker, runtime or factory, and repository policy retain responsibility
+for work ownership, execution, and delivery.
+
+## FAQ
+
+**Do I need the CLI to get started?**
+
+No. Install the skills and try Research, Test, or Refactor in your coding agent.
+Install `ao` for deterministic gates or a skill that requires it, including Validate.
+
+**Do I need an orchestrator and three running agents?**
+
+No. Start with one implementer and obtain a fresh, author-distinct review when
+the change is ready. An orchestrator and parallel workers are optional.
+
+**Must the reviewer use a different model provider?**
+
+No. The default is a fresh context from the author's model family. Cross-model
+review is an explicit choice; the reviewer must still examine the accepted
+behavior and exact change independently.
+
+**Can I keep my existing workflow and skills?**
+
+Yes. Select guidance for the task and keep clear responsibility for planning,
+execution, and review. See [where AgentOps fits](#where-agentops-fits) for
+Compound Engineering, Matt Pocock's skills, trackers, and factories.
+
+**Does durable work have to live in Git?**
+
+No. Durability means the next session can recover the relevant work and its
+context. Git keeps source history; a tracker can keep decisions and handoffs;
+requested proof uses protected external storage. Follow the owning system's
+retention and access rules.
+
+## Contributing
+
+Contributions are welcome: documentation fixes, reproducible bug reports,
+tests, CLI improvements, and skills. Read the [contribution guide](docs/CONTRIBUTING.md)
+for scope, checks, and pull request guidance.
+
+Licensed under [Apache-2.0](LICENSE).

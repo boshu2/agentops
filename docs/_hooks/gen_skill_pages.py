@@ -121,9 +121,9 @@ def emit_detail(skill: dict[str, str]) -> None:
         lambda m: f"(https://github.com/boshu2/agentops/blob/main/skills/{skill['slug']}/references/{m.group(1)})",
         body,
     )
-    # Rewrite other same-skill relative paths (e.g., scripts/, templates/) the same way.
+    # Rewrite other same-skill relative paths (e.g., scripts/, schemas/) the same way.
     body = re.sub(
-        r"\((scripts|templates|fixtures|examples)/([^)]+)\)",
+        r"\((scripts|templates|fixtures|examples|schemas)/([^)]+)\)",
         lambda m: f"(https://github.com/boshu2/agentops/blob/main/skills/{skill['slug']}/{m.group(1)}/{m.group(2)})",
         body,
     )

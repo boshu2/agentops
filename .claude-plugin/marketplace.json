@@ -5,13 +5,13 @@
     "email": "fullerbt@users.noreply.github.com"
   },
   "metadata": {
-    "description": "The operations layer for agentic engineering: portable skills and evidence contracts connecting intent, coding agents, software factories, and independent judgment.",
+    "description": "Engineering guidance for coding agents: behavior-driven planning, shared domain language, independent validation, and reusable improvements.",
     "version": "3.7.0"
   },
   "plugins": [
     {
       "name": "agentops",
-      "description": "The operations layer for agentic engineering: portable skills and evidence contracts connecting intent, coding agents, software factories, and independent judgment.",
+      "description": "Engineering guidance for coding agents: behavior-driven planning, shared domain language, independent validation, and reusable improvements.",
       "version": "3.7.0",
       "source": "./",
       "author": {
