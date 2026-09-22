@@ -27,6 +27,8 @@ supported agent. Installing the same skill through both can leave duplicate copi
 <details>
 <summary><strong>Claude Code</strong></summary>
 
+<a id="claude-code"></a>
+
 Run in your terminal:
 
 ```bash
@@ -43,6 +45,8 @@ Check that `agentops` appears in the plugin inventory. The bundle includes the
 
 <details>
 <summary><strong>Codex</strong></summary>
+
+<a id="codex"></a>
 
 Run in your terminal:
 
