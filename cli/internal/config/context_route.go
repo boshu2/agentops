@@ -174,8 +174,10 @@ func validateRoute(r *ContextConfig, p ContextPolicy, req ContextRequest) error 
 		}
 		*pair.value = actual
 	}
-	if overlap(r.BundleRoot, consumer) {
-		return fmt.Errorf("context bundle overlaps consumer checkout")
+	// Only the explicitly bound, canonical direct project context is admitted
+	// inside the consumer; all other overlapping bundle roots remain excluded.
+	if r.BundleRoot != filepath.Join(consumer, ".context") && overlap(r.BundleRoot, consumer) {
+		return fmt.Errorf("context bundle overlaps consumer checkout outside direct .context")
 	}
 	for _, root := range []string{r.StagingRoot, r.EvidenceRoot} {
 		if _, err := evidencepath.Validate(root, r.BundleRoot, consumer); err != nil {

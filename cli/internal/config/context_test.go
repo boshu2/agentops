@@ -53,7 +53,7 @@ func writeContextYAML(t *testing.T, path string, value ContextConfig) {
 		t.Fatal(e)
 	}
 }
-func contextFixture(t *testing.T) (ContextConfig, ContextPolicy, ContextRequest, *contextFixtureGateway, string) {
+func contextFixture(t *testing.T, placement ...string) (ContextConfig, ContextPolicy, ContextRequest, *contextFixtureGateway, string) {
 	t.Helper()
 	t.Setenv("AGENTOPS_CONFIG", "")
 	base, canonicalErr := filepath.EvalSymlinks(t.TempDir())
@@ -78,6 +78,12 @@ func contextFixture(t *testing.T) (ContextConfig, ContextPolicy, ContextRequest,
 		}
 	}
 	c := ContextConfig{SourceID: filepath.Join(base, "source"), ProjectID: "project-native-id", OwnerScope: "personal", BundleID: "bundle-id", BundleRoot: filepath.Join(base, "bundle"), EvidenceRoot: filepath.Join(base, "evidence"), StagingRoot: filepath.Join(base, "staging"), AccessPolicyRef: filepath.Join(base, "policy.json"), OwnerPolicyRef: filepath.Join(base, "owner-policy"), TaskPolicyRef: filepath.Join(base, "task-policy"), ModelPolicyRef: filepath.Join(base, "model-policy"), DestinationPolicyRef: filepath.Join(base, "destination-policy"), MaintenanceWorkRef: "fixture-anchor"}
+	if len(placement) > 0 && placement[0] == "project" {
+		c.BundleRoot = filepath.Join(consumer, ".context")
+		if err := os.Mkdir(c.BundleRoot, 0700); err != nil {
+			t.Fatal(err)
+		}
+	}
 	for _, path := range []string{c.OwnerPolicyRef, c.TaskPolicyRef, c.ModelPolicyRef, c.DestinationPolicyRef} {
 		if e := os.WriteFile(path, []byte("synthetic policy locator"), 0600); e != nil {
 			t.Fatal(e)
@@ -93,12 +99,20 @@ func contextFixture(t *testing.T) (ContextConfig, ContextPolicy, ContextRequest,
 	return c, p, r, g, path
 }
 func TestContextPrecedenceAndSameAnchorRecovery(t *testing.T) {
-	c, _, req, g, path := contextFixture(t)
+	for _, placement := range []string{"external", "project"} {
+		t.Run(placement, func(t *testing.T) {
+			testContextPrecedenceAndSameAnchorRecovery(t, placement)
+		})
+	}
+}
+
+func testContextPrecedenceAndSameAnchorRecovery(t *testing.T, placement string) {
+	c, _, req, g, path := contextFixture(t, placement)
 	got, err := ResolveContext(context.Background(), g, req)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Route != c || got.Recovered || got.Sources["bundle_root"] != SourceHome {
+	if got.Route != c || got.Recovered || got.Sources["bundle_root"] != SourceHome || got.AccessEnforcement != "not_attested" {
 		t.Fatalf("route/source mismatch: %+v", got)
 	}
 	if err = os.Remove(path); err != nil {
@@ -121,6 +135,7 @@ func TestContextPrecedenceAndSameAnchorRecovery(t *testing.T) {
 		t.Fatal("missing route accepted without explicit recovery")
 	}
 }
+
 func TestContextEveryFieldUsesExistingPrecedence(t *testing.T) {
 	_, _, _, _, _ = contextFixture(t)
 	home := ContextConfig{}
@@ -175,9 +190,17 @@ func TestContextEveryFieldUsesExistingPrecedence(t *testing.T) {
 	}
 }
 func TestContextDeniedBeforeNativeRead(t *testing.T) {
+	for _, placement := range []string{"external", "project"} {
+		t.Run(placement, func(t *testing.T) {
+			testContextDeniedBeforeNativeRead(t, placement)
+		})
+	}
+}
+
+func testContextDeniedBeforeNativeRead(t *testing.T, placement string) {
 	for _, name := range []string{"missing-policy", "missing-task-policy", "owner", "project", "source", "task", "model", "destination", "anchor", "policy-version", "configured-owner", "configured-root", "missing-root", "invalid-config"} {
 		t.Run(name, func(t *testing.T) {
-			c, p, req, g, path := contextFixture(t)
+			c, p, req, g, path := contextFixture(t, placement)
 			switch name {
 			case "missing-policy":
 				os.Remove(c.AccessPolicyRef)
@@ -220,12 +243,21 @@ func TestContextDeniedBeforeNativeRead(t *testing.T) {
 		})
 	}
 }
+
 func TestContextNonGitRoots(t *testing.T) {
+	for _, placement := range []string{"external", "project"} {
+		t.Run(placement, func(t *testing.T) {
+			testContextNonGitRoots(t, placement)
+		})
+	}
+}
+
+func testContextNonGitRoots(t *testing.T, placement string) {
 	for _, kind := range []string{"bundle", "consumer", "unrelated-worktree", "bare-objects", "linked-worktree", "linked-admin", "symlink-bundle", "symlink-object", "active-objects", "overlap"} {
 		for _, which := range []string{"staging", "evidence"} {
 			t.Run(kind+"/"+which, func(t *testing.T) {
-				c, p, req, g, path := contextFixture(t)
-				base := filepath.Dir(c.BundleRoot)
+				c, p, req, g, path := contextFixture(t, placement)
+				base := filepath.Dir(req.ConsumerRoot)
 				bad := c.BundleRoot
 				git := func(args ...string) {
 					t.Helper()
@@ -294,8 +326,17 @@ func TestContextNonGitRoots(t *testing.T) {
 		}
 	}
 }
+
 func TestContextAnchorFailuresAndCompleteFacts(t *testing.T) {
-	c, _, req, g, _ := contextFixture(t)
+	for _, placement := range []string{"external", "project"} {
+		t.Run(placement, func(t *testing.T) {
+			testContextAnchorFailuresAndCompleteFacts(t, placement)
+		})
+	}
+}
+
+func testContextAnchorFailuresAndCompleteFacts(t *testing.T, placement string) {
+	c, _, req, g, _ := contextFixture(t, placement)
 	for i := 2; i <= 60; i++ {
 		g.comments = append(g.comments, AnchorComment{ID: strconv.Itoa(i), IssueID: c.MaintenanceWorkRef, Text: "unrelated ordinary comment"})
 	}
@@ -404,6 +445,60 @@ func TestContextRejectsAmbiguousPolicyAndAliasedPolicyRoot(t *testing.T) {
 			}
 			if _, err := ResolveContext(context.Background(), g, req); err == nil {
 				t.Fatal("ambiguous/unsupported policy accepted")
+			}
+		})
+	}
+}
+
+func TestContextProjectBundleBoundaries(t *testing.T) {
+	for _, name := range []string{"consumer", "ancestor", "other-child", "nested-context", "context-child", "alias-external", "alias-child", "missing-context", "unselected-context"} {
+		t.Run(name, func(t *testing.T) {
+			c, p, req, g, path := contextFixture(t)
+			selected := filepath.Join(req.ConsumerRoot, ".context")
+			switch name {
+			case "consumer":
+				selected = req.ConsumerRoot
+			case "ancestor":
+				selected = filepath.Dir(req.ConsumerRoot)
+			case "other-child":
+				selected = filepath.Join(req.ConsumerRoot, "knowledge")
+			case "nested-context":
+				selected = filepath.Join(req.ConsumerRoot, "nested", ".context")
+			case "context-child":
+				selected = filepath.Join(selected, "nested")
+			}
+			if name == "alias-external" || name == "alias-child" {
+				target := c.BundleRoot
+				if name == "alias-child" {
+					target = filepath.Join(req.ConsumerRoot, "knowledge")
+					if err := os.Mkdir(target, 0700); err != nil {
+						t.Fatal(err)
+					}
+				}
+				if err := os.Symlink(target, selected); err != nil {
+					t.Fatal(err)
+				}
+			} else if name != "missing-context" {
+				if err := os.MkdirAll(selected, 0700); err != nil {
+					t.Fatal(err)
+				}
+			}
+			c.BundleRoot, p.BundleRoot = selected, selected
+			if name == "unselected-context" {
+				c.BundleRoot, p.BundleRoot = "", ""
+			}
+			writeContextJSON(t, c.AccessPolicyRef, p)
+			writeContextYAML(t, path, c)
+			if _, err := ResolveContext(context.Background(), g, req); err == nil {
+				t.Fatal("invalid project bundle admitted")
+			}
+			if g.reads != 0 {
+				t.Fatal("native source read before project bundle denial")
+			}
+			if name == "missing-context" {
+				if _, err := os.Stat(selected); !os.IsNotExist(err) {
+					t.Fatalf("missing bundle created: %v", err)
+				}
 			}
 		})
 	}

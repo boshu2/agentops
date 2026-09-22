@@ -327,8 +327,8 @@
     {
       "name": "memory",
       "source_skill": "skills/memory",
-      "source_hash": "e1bd6e54cf3143feee4617a4bacc7bb3f844709d619335c60ec8f7da6bf85101",
-      "generated_hash": "523282d6db9d69b927ec1ad7d7a9c66b1e08f694389be0e05f97ac72b57be749"
+      "source_hash": "a828b4c5c344fa4a2f287073768e52077d7d973d7c279a8f0208463f2d28ba61",
+      "generated_hash": "2eb62ee67e78d27908b12c4202707530e22f6ab77a8cae8a065f37eab535874f"
     },
     {
       "name": "ms",

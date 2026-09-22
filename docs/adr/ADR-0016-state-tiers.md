@@ -20,9 +20,13 @@ creation or private import is authorized.
 curate/qualify/retire; other roles use its operation pointers. A worker may read
 selected cleared project pages just in time with ordinary filesystem tools.
 Portable reading does not require BD, AO, a private locator or a new configuration
-file. Existing external routes remain supported. The current `ao config context`
-command requires native BD and rejects a bundle overlapping the consumer
-checkout; this amendment does not claim CLI support for project `.context/`.
+file. Existing external routes remain supported. The `ao config context` command
+supports an explicitly bound canonical direct `<consumer>/.context` bundle and
+retains every source, project, owner, task, model, destination, policy and native
+maintenance-anchor binding. Other overlapping bundle roots remain refused.
+Staging and evidence remain external non-Git roots, disjoint from consumer and
+bundle. Resolution requires native BD and creates no directory, configuration or
+knowledge; selecting the route does not attest native access enforcement.
 
 Project pages use public or already-cleared inputs only. Exact content, intended
 paths and metadata receive fresh author-distinct factual-support and destination-

@@ -156,8 +156,10 @@ caller-selected reviewed Markdown topic pages in project `.context/` or external
 bundles reusable claims. Existing docs, ADRs and code retain authority. Read
 selected cleared project pages just in time through their small authored
 `README.md` map and ordinary filesystem tools; neither BD nor AO is required
-for those reads. The current `ao config context` external route requires native
-BD and rejects bundles overlapping the consumer checkout.
+for those reads. The optional `ao config context` route supports external bundles
+and an explicitly bound canonical direct `<consumer>/.context`, retaining native
+BD, policy and identity bindings. Other consumer-overlapping roots remain refused;
+draft staging and review evidence stay external to Git, consumer and bundle.
 Reuse/update an existing topic page. An entry gives applicability, action,
 support, limits and invalidation. Single incidents stay narrow; generalized
 rules need stronger evidence and later reapplication. Retain rare useful

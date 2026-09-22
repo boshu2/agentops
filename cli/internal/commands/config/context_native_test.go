@@ -26,6 +26,14 @@ import (
 // Every command has an explicit directory, isolated HOME and a timeout. It never
 // accesses the repository's native store or initializes a consumer project.
 func TestContextInstalledBDRecovery(t *testing.T) {
+	for _, placement := range []string{"external", "project"} {
+		t.Run(placement, func(t *testing.T) {
+			testContextInstalledBDRecovery(t, placement)
+		})
+	}
+}
+
+func testContextInstalledBDRecovery(t *testing.T, placement string) {
 	if os.Getenv("AO_TEST_BD_NATIVE") != "1" {
 		t.Skip("set AO_TEST_BD_NATIVE=1 to exercise installed BD with a synthetic store")
 	}
@@ -48,7 +56,11 @@ func TestContextInstalledBDRecovery(t *testing.T) {
 	home := filepath.Join(base, "home")
 	native := filepath.Join(base, "native")
 	consumer := filepath.Join(base, "consumer")
-	for _, path := range []string{home, native, consumer, filepath.Join(base, "bundle"), filepath.Join(base, "staging"), filepath.Join(base, "evidence")} {
+	bundle := filepath.Join(base, "bundle")
+	if placement == "project" {
+		bundle = filepath.Join(consumer, ".context")
+	}
+	for _, path := range []string{home, native, consumer, bundle, filepath.Join(base, "staging"), filepath.Join(base, "evidence")} {
 		if err = os.Mkdir(path, 0700); err != nil {
 			t.Fatal(err)
 		}
@@ -87,7 +99,7 @@ func TestContextInstalledBDRecovery(t *testing.T) {
 	if err = json.Unmarshal(bd("create", "Synthetic retained maintenance anchor", "--type", "epic", "--json"), &anchor); err != nil {
 		t.Fatal(err)
 	}
-	c := app.ContextConfig{SourceID: n.BeadsDir, ProjectID: n.ProjectID, OwnerScope: "synthetic-personal", BundleID: "synthetic-bundle", BundleRoot: filepath.Join(base, "bundle"), EvidenceRoot: filepath.Join(base, "evidence"), StagingRoot: filepath.Join(base, "staging"), AccessPolicyRef: filepath.Join(base, "policy.json"), OwnerPolicyRef: filepath.Join(base, "owner-policy"), TaskPolicyRef: filepath.Join(base, "task-policy"), ModelPolicyRef: filepath.Join(base, "model-policy"), DestinationPolicyRef: filepath.Join(base, "destination-policy"), MaintenanceWorkRef: anchor.ID}
+	c := app.ContextConfig{SourceID: n.BeadsDir, ProjectID: n.ProjectID, OwnerScope: "synthetic-personal", BundleID: "synthetic-bundle", BundleRoot: bundle, EvidenceRoot: filepath.Join(base, "evidence"), StagingRoot: filepath.Join(base, "staging"), AccessPolicyRef: filepath.Join(base, "policy.json"), OwnerPolicyRef: filepath.Join(base, "owner-policy"), TaskPolicyRef: filepath.Join(base, "task-policy"), ModelPolicyRef: filepath.Join(base, "model-policy"), DestinationPolicyRef: filepath.Join(base, "destination-policy"), MaintenanceWorkRef: anchor.ID}
 	p := app.ContextPolicy{SchemaVersion: 1, SourceID: c.SourceID, ProjectID: c.ProjectID, OwnerScope: c.OwnerScope, TaskRef: "synthetic-task", ModelRef: "synthetic-model", DestinationRef: "synthetic-destination", BundleID: c.BundleID, BundleRoot: c.BundleRoot, EvidenceRoot: c.EvidenceRoot, StagingRoot: c.StagingRoot, OwnerPolicyRef: c.OwnerPolicyRef, TaskPolicyRef: c.TaskPolicyRef, ModelPolicyRef: c.ModelPolicyRef, DestinationPolicyRef: c.DestinationPolicyRef, MaintenanceWorkRef: anchor.ID}
 	writeJSON := func(path string, value any) {
 		t.Helper()
@@ -144,7 +156,9 @@ func TestContextInstalledBDRecovery(t *testing.T) {
 	if err = os.WriteFile(filepath.Join(c.BundleRoot, "retained.md"), []byte("synthetic retained knowledge"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	run("git", c.BundleRoot, "init", "-q")
+	if placement == "external" {
+		run("git", c.BundleRoot, "init", "-q")
+	}
 	run("git", c.BundleRoot, "add", "retained.md")
 	run("git", c.BundleRoot, "-c", "user.name=Synthetic", "-c", "user.email=fixture@example.invalid", "commit", "-qm", "synthetic retained knowledge")
 	beforeConsumer := contextTreeDigest(t, consumer)
@@ -168,8 +182,15 @@ func TestContextInstalledBDRecovery(t *testing.T) {
 	if err = json.Unmarshal(result, &initial); err != nil {
 		t.Fatal(err)
 	}
-	if initial.CommentsRead != 57 || len(initial.Facts) != 2 || initial.Facts[1].FactID != "withdrawal-1" {
+	if initial.Route != c || initial.AccessEnforcement != "not_attested" || initial.CommentsRead != 57 || len(initial.Facts) != 2 || initial.Facts[1].FactID != "withdrawal-1" {
 		t.Fatalf("direct complete read lost fact after 50: %+v", initial)
+	}
+	if output, denied := invoke("--owner-scope", "synthetic-other-owner"); denied == nil {
+		t.Fatalf("CLI accepted denied owner: %s", output)
+	}
+	bundleOutput, err := invoke("--field", "bundle_root")
+	if err != nil || strings.TrimSpace(string(bundleOutput)) != c.BundleRoot {
+		t.Fatalf("bundle field: %v %s", err, bundleOutput)
 	}
 	if err = os.Remove(configPath); err != nil {
 		t.Fatal(err)
