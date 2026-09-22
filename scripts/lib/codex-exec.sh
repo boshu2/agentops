@@ -20,10 +20,10 @@
 #   -----              -----                ----------             --------------------
 #   bin                CODEX_EXEC_BIN|codex REVIEWER_BIN|agy       REVIEWER_BIN (required)
 #   argv template      `exec --sandbox …`   `--sandbox -p <ptr>`  `<prompt>` (single positional)
-#   genuine marker     "tokens used"        "VERDICT:"            "VERDICT:"  (override: REVIEWER_MARKER)
-#   echo-detector      out ≈ packet, no mk  sentinel + packet-     packet-containment +
-#                                           containment + wrapper  payload band
-#                                           band (marker CANNOT
+#   legacy marker      "tokens used"        "VERDICT:"            "VERDICT:"  (override: REVIEWER_MARKER)
+#   echo-detector      prompt-content      sentinel + packet-     packet-containment +
+#                      overlap             containment + prompt   prompt-content overlap
+#                                           overlap (marker CANNOT
 #                                           veto packet echo)
 #   sandbox mapping    --sandbox <value>    --sandbox (toggle)    n/a (local endpoint)
 #   sandbox mapping    --dangerously-bypass- n/a (ignores the     n/a (ignores the
@@ -34,7 +34,7 @@
 #                                           (sentinel-wrapped)
 #   local?             no                   no                    yes
 #
-#   Adapter 1 = codex — preserves the historical execution/classification behavior.
+#   Adapter 1 = codex — compares prompt content, including decoded JSON messages.
 #     Arg-mode prompt delivery inserts the standard `--` option terminator so a
 #     prompt beginning with `-` remains prompt data rather than CLI options. The
 #     codex-exec.sh Bats contract (tests/scripts/codex-exec-lib.bats) is the lock.
@@ -44,12 +44,11 @@
 #     pointer + `--add-dir`), NOT a giant inline paste — this DESIGNS OUT the big-content
 #     drop bug class (age-9rmh documents that class on the WARM path; the cold adapter is
 #     file-PATH-first so it cannot recur cold). agy `-p` emits no CLI runtime footer, so
-#     the genuine-run marker is the reviewer-emitted "VERDICT:" token. ASSUMPTION
-#     (documented, overridable via REVIEWER_MARKER): "VERDICT:" is a genuine-run signal
-#     for agy — but it is a WEAK one, because the PACKET itself contains "VERDICT:"
-#     strings (format instructions, diff context), so marker-presence must NEVER veto
-#     echo detection against the packet (the age-rk3r.1 refutation's fail-open). The
-#     packet is therefore SENTINEL-WRAPPED (random-nonce first/last boundary lines the
+#     its legacy marker is the reviewer-emitted "VERDICT:" token. Such strings do not
+#     prove execution and never veto echo detection: the PACKET itself contains
+#     "VERDICT:" strings (format instructions, diff context), which caused the
+#     age-rk3r.1 refutation's fail-open. The packet is therefore SENTINEL-WRAPPED
+#     (random-nonce first/last boundary lines the
 #     model is told never to repeat) and the output is additionally screened by a
 #     packet-line containment check (reviewer_packet_echoed): a cat/echo of the packet
 #     is classified ECHO regardless of any "VERDICT:" content it carries. The short
@@ -93,8 +92,8 @@
 #                                and was killed (124 = the value `timeout` itself
 #                                returns on kill; preserved so callers already
 #                                keyed on 124 keep working).
-#   125 CODEX_EXEC_ECHO          ECHO: output reflected the prompt back with no
-#                                genuine-run marker — no real review happened.
+#   125 CODEX_EXEC_ECHO          ECHO: output substantially repeats prompt content;
+#                                it cannot be consumed as a review result.
 #   123 CODEX_EXEC_OUTPUT_LIMIT  OUTPUT-LIMIT: capture or prompt preparation exceeded
 #                                its byte cap; partial evidence is retained.
 #   122 CODEX_EXEC_DESCENDANT_LEAK rep-survivor: the owned group retained members
@@ -352,27 +351,76 @@ codex_exec_timeout_cmd() {
   printf '%s --foreground %s' "$bin" "$budget"
 }
 
-# codex_exec_looks_echoed — return 0 (true) when the captured output looks like an
-# ECHO of the prompt (a WANDER/ECHO failure with no real review), 1 otherwise.
-# A real run prints a
-# genuine-run marker; an echo does not, AND its bytes closely match the prompt bytes.
-# Both conditions must hold to call it an echo, so a legitimately short answer that
-# merely lacks the marker is NOT mis-flagged.
-#   $1 = output file   $2 = prompt file   $3 = genuine-run marker (default 'tokens used')
+# codex_exec_looks_echoed — return 0 when matching runs of five whitespace-delimited
+# prompt words cover >= 80% of the prompt, 1 otherwise. Short prompts require all
+# words. Wrappers and whitespace reflow do not hide an echo; unrelated output size
+# does not establish one. Native JSON events contribute agent-message text only;
+# tool results are not assistant answers. Plain and malformed lines stay checked.
+# This is a content heuristic, never proof of model execution or semantic acceptance.
+#   $1 = output file   $2 = prompt file   $3 = legacy marker (accepted, not trusted)
 codex_exec_looks_echoed() {
-  local out_file="$1" prompt_file="$2" marker="${3:-tokens used}"
+  local out_file="$1" prompt_file="$2"
   [ -s "$out_file" ] || return 1                      # empty is a STALL, not an echo
-  # A real run emits the genuine-run marker; its presence means NOT an echo.
-  if grep -qiF -- "$marker" "$out_file" 2>/dev/null; then return 1; fi
-  [ -f "$prompt_file" ] || return 1
-  local out_bytes prompt_bytes
-  out_bytes="$(wc -c < "$out_file" | tr -d ' ')"
-  prompt_bytes="$(wc -c < "$prompt_file" | tr -d ' ')"
-  [ "$prompt_bytes" -gt 0 ] || return 1
-  # Echo heuristic: no marker AND the output is within a small band of the prompt
-  # size (>= 80% of the prompt bytes). A genuine short answer is far smaller than
-  # its prompt; an echo reflects (most of) the prompt back verbatim.
-  [ "$out_bytes" -ge $(( prompt_bytes * 80 / 100 )) ]
+  [ -s "$prompt_file" ] || return 1
+  /usr/bin/perl -MJSON::PP -MEncode=encode_utf8 - "$out_file" "$prompt_file" <<'PERL'
+use strict; use warnings;
+open my $prompt, "<", $ARGV[1] or exit 1;
+my $prompt_text = do { local $/; <$prompt> };
+my @words = $prompt_text =~ /\S+/g;
+exit 1 unless @words;
+my $width = @words < 5 ? scalar @words : 5;
+my %needed;
+for my $i (0 .. @words - $width) {
+    $needed{join "\0", @words[$i .. $i + $width - 1]}++;
+}
+sub looks_echoed {
+    my @out = $_[0] =~ /\S+/g;
+    my %matched;
+    for my $i (0 .. @out - $width) {
+        my $key = join "\0", @out[$i .. $i + $width - 1];
+        $matched{$key}++ if exists $needed{$key};
+    }
+    my ($covered, $end) = (0, 0);
+    for my $i (0 .. @words - $width) {
+        my $key = join "\0", @words[$i .. $i + $width - 1];
+        next unless $matched{$key};
+        $matched{$key}--;
+        $covered += $i + $width - ($i > $end ? $i : $end);
+        $end = $i + $width;
+    }
+    return $covered * 100 >= @words * 80;
+}
+open my $output, "<", $ARGV[0] or exit 1;
+my $raw = do { local $/; <$output> };
+# The prompt itself may contain native-shaped JSON events. Check complete raw
+# reflections before decoding can remove their envelopes. Normalize whitespace
+# within each nonempty line, ignoring whitespace-only lines but retaining the
+# remaining order and boundaries so JSON tool fields cannot match a block.
+my $prompt_key = join "\0", @words;
+exit 0 if join("\0", $raw =~ /\S+/g) eq $prompt_key;
+sub line_block {
+    return "\n" . join("\n", map { join "\0", /\S+/g } grep { /\S/ } split /\n/, $_[0]) . "\n";
+}
+exit 0 if index(line_block($raw), line_block($prompt_text)) >= 0;
+my @answer;
+for my $line (split /\n/, $raw) {
+    my $event = eval { JSON::PP::decode_json($line) };
+    # Only recognize native event envelopes. Unknown or malformed output stays
+    # in the plain-text comparison instead of being hidden by a JSON marker.
+    if (ref($event) ne "HASH" || ref($event->{type}) ||
+        ($event->{type} // "") !~ /\A(?:thread\.started|turn\.(?:started|completed|failed)|item\.(?:started|updated|completed)|error)\z/) {
+        push @answer, $line;
+        next;
+    }
+    next unless ref($event->{item}) eq "HASH";
+    my $item = $event->{item};
+    next unless ($item->{type} // "") eq "agent_message";
+    push @answer, encode_utf8($item->{text}) if defined($item->{text}) && !ref($item->{text});
+}
+# Compare one ordered answer so splitting an echo across plain and structured
+# assistant text cannot drop coverage. Tool output remains excluded.
+exit(looks_echoed(join "\n", @answer) ? 0 : 1);
+PERL
 }
 
 # reviewer_packet_echoed — PACKET-content echo detector (age-rk3r.1 refutation fix).
@@ -441,7 +489,7 @@ reviewer_adapter_bin() {
   esac
 }
 
-# reviewer_adapter_marker <reviewer> — the genuine-run marker substring (grep -iF).
+# reviewer_adapter_marker <reviewer> — legacy marker metadata for existing callers.
 # codex = the CLI runtime footer "tokens used"; agy/local-mlx have no CLI footer, so
 # the marker is the model-emitted "VERDICT:" token (documented assumption; override
 # via REVIEWER_MARKER).
@@ -460,7 +508,7 @@ reviewer_adapter_marker() {
 #   REVIEWER                 which adapter to use (codex|agy|local-mlx; default codex).
 #   REVIEWER_BIN             override the non-codex adapter binary (a stub in tests).
 #   REVIEWER_MODEL           override the non-codex adapter model (empty = adapter default).
-#   REVIEWER_MARKER          override the adapter's genuine-run marker.
+#   REVIEWER_MARKER          legacy marker metadata; never bypasses echo detection.
 #   CODEX_EXEC_PROMPT_FILE   file whose contents are the prompt (mutually exclusive
 #                            with CODEX_EXEC_PROMPT_ARG; a file wins if both set).
 #   CODEX_EXEC_PROMPT_ARG    the prompt as a single positional argument.
@@ -768,7 +816,8 @@ codex_exec_guarded() {
   # The STALL(empty)/ECHO reclassification is only meaningful for callers that
   # CONSUME output. A fire-and-score caller (CODEX_EXEC_EXPECT_OUTPUT=0) discards
   # output, so a clean exit-0 with empty output is a real SUCCESS there.
-  if [ "$expect_output" = "1" ]; then
+  # Native nonzero status remains authoritative even for empty or echoing output.
+  if [ "$expect_output" = "1" ] && [ "$rc" -eq 0 ]; then
     # 2) Empty output is reported after the single invocation.
     if [ ! -s "$out_file" ]; then
       echo "codex-exec: STALL — reviewer produced no output." >&2
@@ -784,16 +833,16 @@ codex_exec_guarded() {
     # itself contains "VERDICT:" strings, so an echoed packet WOULD carry the marker
     # and a downstream verdict parser could extract a false CONFIRMED from it.
     if [ -n "$packet_echo_file" ] && reviewer_packet_echoed "$out_file" "$packet_echo_file" "$packet_nonce"; then
-      echo "codex-exec: ECHO — the output reflected the review PACKET content back (sentinel or verbatim packet lines present); no real review happened." >&2
+      echo "codex-exec: ECHO — the output reflected the review PACKET content back (sentinel or verbatim packet lines present); output is not a review result." >&2
       echo "  (exit $CODEX_EXEC_ECHO = echo, NOT a review result)" >&2
       [ -n "$cleanup_out" ] && rm -f "$cleanup_out"
       _codex_exec_cleanup
       return "$CODEX_EXEC_ECHO"
     fi
 
-    # 3b) ECHO: output reflected the prompt back with no genuine-run marker.
+    # 3b) ECHO: substantial prompt-content overlap, independent of marker strings.
     if [ "$run_echo_check" = "1" ] && codex_exec_looks_echoed "$out_file" "$echo_cmp_file" "$marker"; then
-      echo "codex-exec: ECHO — the output reflected the prompt back with no '$marker' marker; no real run happened." >&2
+      echo "codex-exec: ECHO — the output substantially repeated the prompt; output is not a review result." >&2
       echo "  (exit $CODEX_EXEC_ECHO = echo, NOT a review result)" >&2
       [ -n "$cleanup_out" ] && rm -f "$cleanup_out"
       _codex_exec_cleanup

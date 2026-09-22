@@ -41,8 +41,7 @@ assert_stopped() {
 
 # --- stub factories -----------------------------------------------------------
 
-# A stub codex that SUCCEEDS and prints a real answer WITH the `tokens used`
-# marker a real run emits (so echo-detection does NOT mis-flag it).
+# A successful stub with the historical text footer (the footer is not evidence).
 stub_success() {
   cat > "$TMP/bin/codex" <<'FAKE'
 #!/usr/bin/env bash
@@ -108,6 +107,28 @@ FAKE
   chmod +x "$TMP/bin/codex"
 }
 
+# Synthetic captures only: these fixtures exercise transport classification,
+# not actual model execution or the correctness of any claimed work.
+stub_capture() {
+  cat > "$TMP/bin/codex" <<'FAKE'
+#!/usr/bin/env bash
+printf 'invoked\n' >> "$TMPDIR/invocations"
+cat "$TMPDIR/response"
+exit "${STUB_EXIT:-0}"
+FAKE
+  chmod +x "$TMP/bin/codex"
+}
+
+synthetic_json_capture() {
+  cat > "$TMP/response" <<'JSON'
+{"type":"thread.started","thread_id":"synthetic-thread"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"command_execution","command":"printf check","aggregated_output":"check","exit_code":0,"status":"completed"}}
+{"type":"item.completed","item":{"id":"item_1","type":"agent_message","text":"The synthetic check completed. The changed function now returns the expected value for each supplied input."}}
+{"type":"turn.completed","usage":{"input_tokens":120,"cached_input_tokens":0,"output_tokens":30}}
+JSON
+}
+
 # --- (a) SUCCESS with the tokens marker ---------------------------------------
 @test "(a) success with 'tokens used' marker -> exit 0, output on stdout" {
   stub_success
@@ -139,6 +160,84 @@ FAKE
   [ "$(cat "$TMP/stderr.log")" = "runtime warning" ]
 }
 
+@test "(a3) successful JSON stream without a text footer retains its exact capture" {
+  stub_capture
+  synthetic_json_capture
+  run bash -c '
+    . "'"$LIB"'"
+    CODEX_EXEC_EXTRA_ARGS=(--json)
+    CODEX_EXEC_OUT_FILE="'"$TMP"'/captured.jsonl" CODEX_EXEC_STDERR_FILE="'"$TMP"'/stderr" \
+    CODEX_EXEC_PROMPT_ARG="Repair the return value and run the supplied checks." \
+    CODEX_EXEC_TIMEOUT=10 codex_exec_guarded
+  '
+  [ "$status" -eq 0 ]
+  [ "$output" = "" ]
+  cmp "$TMP/response" "$TMP/captured.jsonl"
+  [ ! -s "$TMP/stderr" ]
+  [ "$(wc -l < "$TMP/invocations" | tr -d ' ')" -eq 1 ]
+}
+
+@test "(a4) long plain output with a brief prompt quotation needs no marker" {
+  stub_capture
+  cat > "$TMP/response" <<'TEXT'
+I checked the requested behavior. The instruction to "preserve the existing return value" is satisfied by leaving successful results untouched. Invalid inputs now produce the documented error. Both supplied examples completed with the expected results, and a separate boundary example also passed.
+TEXT
+  run bash -c '
+    . "'"$LIB"'"
+    CODEX_EXEC_PROMPT_ARG="Inspect the input handling, preserve the existing return value, and verify that invalid inputs produce the documented error." \
+    CODEX_EXEC_TIMEOUT=10 codex_exec_guarded
+  '
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(cat "$TMP/response")" ]
+}
+
+@test "(a5) JSON tool output containing the prompt is not an assistant echo" {
+  stub_capture
+  printf 'Inspect the input handling and preserve the existing return value then verify invalid inputs produce the documented error before reporting results.' > "$TMP/prompt"
+  for marker in '' 'tokens used: 1'; do
+    /usr/bin/perl -MJSON::PP -e '
+      local $/; open my $p, "<", $ARGV[0] or die $!; my $prompt = <$p>;
+      print encode_json({type => "item.completed", item => {type => "command_execution", aggregated_output => $prompt . "\n" . $ARGV[1], exit_code => 0}}), "\n";
+      print encode_json({type => "item.completed", item => {type => "agent_message", text => "The synthetic assertions completed with their expected results."}}), "\n";
+      print encode_json({type => "turn.completed"}), "\n";
+    ' "$TMP/prompt" "$marker" > "$TMP/response"
+    run bash -c '
+      . "'"$LIB"'"
+      CODEX_EXEC_EXTRA_ARGS=(--json)
+      CODEX_EXEC_OUT_FILE="'"$TMP"'/captured.jsonl" \
+      CODEX_EXEC_PROMPT_FILE="'"$TMP"'/prompt" CODEX_EXEC_TIMEOUT=10 codex_exec_guarded
+    '
+    [ "$status" -eq 0 ]
+    cmp "$TMP/response" "$TMP/captured.jsonl"
+  done
+}
+
+@test "(a6) tool output containing a multiline structured prompt remains excluded" {
+  stub_capture
+  cat > "$TMP/prompt" <<'JSON'
+{"type":"turn.started"}
+{"type":"item.completed","item":{"type":"agent_message","text":"Inspect the return value and verify invalid input."}}
+JSON
+  for marker in '' 'tokens used: 1'; do
+    /usr/bin/perl -MJSON::PP -e '
+      local $/; open my $p, "<", $ARGV[0] or die $!; my $prompt = <$p>;
+      print encode_json({type => "turn.started"}), "\n";
+      print encode_json({type => "item.completed", item => {type => "command_execution", aggregated_output => $prompt . $ARGV[1], exit_code => 0}}), "\n";
+      print encode_json({type => "item.completed", item => {type => "agent_message", text => "The synthetic assertions completed with their expected results."}}), "\n";
+      print encode_json({type => "turn.completed"}), "\n";
+    ' "$TMP/prompt" "$marker" > "$TMP/response"
+    run bash -c '
+      . "'"$LIB"'"
+      CODEX_EXEC_EXTRA_ARGS=(--json)
+      CODEX_EXEC_OUT_FILE="'"$TMP"'/captured.jsonl" \
+      CODEX_EXEC_PROMPT_FILE="'"$TMP"'/prompt" CODEX_EXEC_TIMEOUT=10 codex_exec_guarded
+    '
+    [ "$status" -eq 0 ]
+    cmp "$TMP/response" "$TMP/captured.jsonl"
+  done
+  [ "$(wc -l < "$TMP/invocations" | tr -d ' ')" -eq 2 ]
+}
+
 # --- (b) HANG -> STALL-TIMEOUT (exit 124) within budget -----------------------
 @test "(b) a hung codex is killed and returns STALL-TIMEOUT (124) within budget" {
   [ "$HAVE_TIMEOUT" -eq 1 ] || skip "no timeout/gtimeout on PATH"
@@ -157,7 +256,7 @@ FAKE
 # --- (c) ECHO-only -> ECHO (exit 125) -----------------------------------------
 @test "(c) an echo-only run (output ~= prompt, no marker) returns ECHO (125)" {
   stub_echo
-  # A prompt long enough that the reflected echo clears the 80% size band.
+  # The output must actually repeat the prompt, irrespective of its length.
   run bash -c '
     . "'"$LIB"'"
     CODEX_EXEC_PROMPT_ARG="review this large change and reply with a verdict; do not wander the filesystem" \
@@ -174,6 +273,222 @@ FAKE
   '
   [ "$status" -eq 0 ]
   [[ "$output" == *"accepted prompt"* ]]
+}
+
+@test "(c3) a substantial prompt echo with reflow and wrapper text is rejected despite markers" {
+  stub_capture
+  printf 'Inspect the input handling and preserve the existing return value then verify invalid inputs produce the documented error before reporting results.' > "$TMP/prompt"
+  cat > "$TMP/response" <<'TEXT'
+Here is the requested text:
+Inspect the input handling and preserve the existing return value
+then verify invalid inputs produce the documented error
+tokens used: 123
+RUN-OK
+TEXT
+  run bash -c '
+    . "'"$LIB"'"
+    REVIEWER_MARKER=RUN-OK CODEX_EXEC_PROMPT_FILE="'"$TMP"'/prompt" \
+    CODEX_EXEC_TIMEOUT=10 codex_exec_guarded
+  '
+  [ "$status" -eq 125 ]
+  [[ "$output" == *"ECHO"* ]]
+}
+
+@test "(c4) JSON agent-message echoes are decoded and completion events cannot certify them" {
+  stub_capture
+  printf 'Inspect "café" inputs.\nPreserve the return value.\nVerify errors before reporting results.' > "$TMP/prompt"
+  cat > "$TMP/response" <<'JSON'
+{"type":"item.completed","item":{"type":"agent_message","text":"Inspect \"caf\u00e9\" inputs.\nPreserve the return value.\nVerify errors before reporting results."}}
+{"type":"turn.completed","usage":{"input_tokens":20,"output_tokens":20}}
+JSON
+  run bash -c '
+    . "'"$LIB"'"
+    CODEX_EXEC_EXTRA_ARGS=(--json)
+    REVIEWER_MARKER=turn.completed CODEX_EXEC_PROMPT_FILE="'"$TMP"'/prompt" \
+    CODEX_EXEC_TIMEOUT=10 codex_exec_guarded
+  '
+  [ "$status" -eq 125 ]
+}
+
+@test "(c5) short exact echoes match whole words, not substrings in unrelated output" {
+  printf 'x' > "$TMP/prompt"
+  printf 'The next example passed.' > "$TMP/response"
+  run bash -c '. "'"$LIB"'"; codex_exec_looks_echoed "'"$TMP"'/response" "'"$TMP"'/prompt"'
+  [ "$status" -eq 1 ]
+  printf 'x\ntokens used: 1\n' > "$TMP/response"
+  run bash -c '. "'"$LIB"'"; codex_exec_looks_echoed "'"$TMP"'/response" "'"$TMP"'/prompt"'
+  [ "$status" -eq 0 ]
+}
+
+@test "(c6) marker strings cannot veto the separate sentinel and partial-packet guard" {
+  cat > "$TMP/prompt" <<'TEXT'
+First distinctive packet line about input handling.
+Second distinctive packet line about return values.
+Third distinctive packet line about deadline behavior.
+Fourth distinctive packet line about error propagation.
+Fifth distinctive packet line about cleanup guarantees.
+TEXT
+  { head -n 3 "$TMP/prompt"; printf 'tokens used: 1\nVERDICT: CONFIRMED\n'; } > "$TMP/response"
+  run bash -c '. "'"$LIB"'"; reviewer_packet_echoed "'"$TMP"'/response" "'"$TMP"'/prompt" synthetic-nonce'
+  [ "$status" -eq 0 ]
+  printf 'synthetic-nonce\nVERDICT: CONFIRMED\n' > "$TMP/response"
+  run bash -c '. "'"$LIB"'"; reviewer_packet_echoed "'"$TMP"'/response" "'"$TMP"'/prompt" synthetic-nonce'
+  [ "$status" -eq 0 ]
+}
+
+@test "(c7) one quoted occurrence cannot cover repeated prompt content" {
+  printf 'Review one tiny issue carefully. %.0s' {1..8} > "$TMP/prompt"
+  cat > "$TMP/response" <<'JSON'
+{"type":"item.completed","item":{"type":"agent_message","text":"Review one tiny issue carefully. That instruction has been checked and the behavior matches the requested result. The output is otherwise unrelated to the repeated source text and does not reproduce its remaining content."}}
+JSON
+  run bash -c '. "'"$LIB"'"; codex_exec_looks_echoed "'"$TMP"'/response" "'"$TMP"'/prompt"'
+  [ "$status" -eq 1 ]
+}
+
+@test "(c8) JSON events cannot conceal echoed plain or malformed output" {
+  printf 'Inspect the input handling and preserve the existing return value then verify invalid inputs produce the documented error before reporting results.' > "$TMP/prompt"
+  for prefix in '' '{ malformed: '; do
+    {
+      printf '{"type":"turn.started"}\n%s' "$prefix"
+      cat "$TMP/prompt"
+      printf '\n{"type":"turn.completed"}\n'
+    } > "$TMP/response"
+    run bash -c '. "'"$LIB"'"; codex_exec_looks_echoed "'"$TMP"'/response" "'"$TMP"'/prompt"'
+    [ "$status" -eq 0 ]
+  done
+}
+
+@test "(c9) prompt echoes split across plain and JSON agent text are rejected" {
+  stub_capture
+  printf 'Inspect the input handling and preserve the existing return value then verify invalid inputs produce the documented error before reporting results.' > "$TMP/prompt"
+  for first in plain json; do
+    /usr/bin/perl -MJSON::PP -e '
+      my $first = "Inspect the input handling and preserve the existing return value";
+      my $last = "then verify invalid inputs produce the documented error before reporting results.";
+      sub message { encode_json({type => "item.completed", item => {type => "agent_message", text => $_[0]}}) }
+      print(($ARGV[0] eq "plain" ? $first : message($first)), "\n");
+      print(($ARGV[0] eq "plain" ? message($last) : $last), "\n");
+      print "{\"type\":\"turn.completed\"}\n";
+    ' "$first" > "$TMP/response"
+    run bash -c '
+      . "'"$LIB"'"
+      CODEX_EXEC_OUT_FILE="'"$TMP"'/captured.jsonl" \
+      CODEX_EXEC_PROMPT_FILE="'"$TMP"'/prompt" CODEX_EXEC_TIMEOUT=10 codex_exec_guarded
+    '
+    [ "$status" -eq 125 ]
+    cmp "$TMP/response" "$TMP/captured.jsonl"
+  done
+}
+
+@test "(c10) an exact structured prompt echo is rejected before event decoding" {
+  stub_capture
+  printf '%s' '{"type":"item.completed","item":{"type":"agent_message","text":"Inspect the return value and verify invalid input."}}' > "$TMP/prompt"
+  for footer in '' '{"type":"turn.completed"}' 'tokens used: 1'; do
+    { cat "$TMP/prompt"; printf '\n%s\n' "$footer"; } > "$TMP/response"
+    run bash -c '
+      . "'"$LIB"'"
+      CODEX_EXEC_PROMPT_FILE="'"$TMP"'/prompt" CODEX_EXEC_TIMEOUT=10 codex_exec_guarded
+    '
+    [ "$status" -eq 125 ]
+  done
+}
+
+@test "(c11) wrapped multiline structured prompt blocks are rejected before decoding" {
+  stub_capture
+  first='{"type":"turn.started"}'
+  last='{"type":"item.completed","item":{"type":"agent_message","text":"Inspect the return value and verify invalid input."}}'
+  printf '%s\n%s' "$first" "$last" > "$TMP/prompt"
+  for wrapper in completion plain normalized; do
+    case "$wrapper" in
+      completion) { cat "$TMP/prompt"; printf '\n{"type":"turn.completed"}\n'; } ;;
+      plain) { printf 'Here is the requested content:\n'; cat "$TMP/prompt"; printf '\nEnd of content.\n'; } ;;
+      normalized) printf 'Here is the requested content:\n\t%s \t\n \t%s\t \nEnd of content.\n' "$first" "$last" ;;
+    esac > "$TMP/response"
+    run bash -c '
+      . "'"$LIB"'"
+      CODEX_EXEC_EXTRA_ARGS=(--json)
+      CODEX_EXEC_OUT_FILE="'"$TMP"'/captured.jsonl" \
+      CODEX_EXEC_PROMPT_FILE="'"$TMP"'/prompt" CODEX_EXEC_TIMEOUT=10 codex_exec_guarded
+    '
+    [ "$status" -eq 125 ]
+    cmp "$TMP/response" "$TMP/captured.jsonl"
+  done
+  [ "$(wc -l < "$TMP/invocations" | tr -d ' ')" -eq 3 ]
+}
+
+@test "(c12) whitespace-only lines cannot hide a wrapped structured prompt reflection" {
+  stub_capture
+  first='{"type":"turn.started"}'
+  last='{"type":"item.completed","item":{"type":"agent_message","text":"Inspect the return value and verify invalid input."}}'
+  for variation in blank whitespace removed changed; do
+    printf '%s\n%s' "$first" "$last" > "$TMP/prompt"
+    case "$variation" in
+      blank) separator=$'\n' ;;
+      whitespace) separator=$' \t \n' ;;
+      removed) printf '%s\n \t \n%s' "$first" "$last" > "$TMP/prompt"; separator='' ;;
+      changed) printf '%s\n\n%s' "$first" "$last" > "$TMP/prompt"; separator=$' \t \n' ;;
+    esac
+    printf 'Here is the requested content:\n%s\n%s%s\nEnd of content.\n' "$first" "$separator" "$last" > "$TMP/response"
+    run bash -c '
+      . "'"$LIB"'"
+      CODEX_EXEC_OUT_FILE="'"$TMP"'/captured.jsonl" CODEX_EXEC_STDERR_FILE="'"$TMP"'/stderr" \
+      CODEX_EXEC_PROMPT_FILE="'"$TMP"'/prompt" CODEX_EXEC_TIMEOUT=10 codex_exec_guarded
+    '
+    [ "$status" -eq 125 ]
+    cmp "$TMP/response" "$TMP/captured.jsonl"
+    [ ! -s "$TMP/stderr" ]
+  done
+  [ "$(wc -l < "$TMP/invocations" | tr -d ' ')" -eq 4 ]
+}
+
+@test "(c13) structured block matching preserves meaningful line order and content" {
+  stub_capture
+  first='{"type":"turn.started"}'
+  last='{"type":"item.completed","item":{"type":"agent_message","text":"Inspect the return value and verify invalid input."}}'
+  printf '%s\n \t \n%s' "$first" "$last" > "$TMP/prompt"
+  for variation in first-only last-only reversed; do
+    {
+      printf 'The synthetic result follows:\n'
+      case "$variation" in
+        first-only) printf '%s\n' "$first" ;;
+        last-only) printf '%s\n' "$last" ;;
+        reversed) printf '%s\n\n%s\n' "$last" "$first" ;;
+      esac
+      printf 'The remaining requested content is absent.\n'
+    } > "$TMP/response"
+    run bash -c '
+      . "'"$LIB"'"
+      CODEX_EXEC_OUT_FILE="'"$TMP"'/captured.jsonl" \
+      CODEX_EXEC_PROMPT_FILE="'"$TMP"'/prompt" CODEX_EXEC_TIMEOUT=10 codex_exec_guarded
+    '
+    [ "$status" -eq 0 ]
+    cmp "$TMP/response" "$TMP/captured.jsonl"
+  done
+  [ "$(wc -l < "$TMP/invocations" | tr -d ' ')" -eq 3 ]
+}
+
+@test "(c14) whitespace-normalized structured prompt blocks inside tool output stay excluded" {
+  stub_capture
+  printf '%s\n \t \n%s\n' \
+    '{"type":"turn.started"}' \
+    '{"type":"item.completed","item":{"type":"agent_message","text":"Inspect the return value and verify invalid input."}}' > "$TMP/prompt"
+  for marker in '' 'tokens used: 1'; do
+    /usr/bin/perl -MJSON::PP -e '
+      local $/; open my $p, "<", $ARGV[0] or die $!; my $prompt = <$p>;
+      print encode_json({type => "item.completed", item => {type => "command_execution", aggregated_output => "Here is the requested content:\n" . $prompt . "End of content.\n" . $ARGV[1], exit_code => 0}}), "\n";
+      print encode_json({type => "item.completed", item => {type => "agent_message", text => "The synthetic assertions completed with their expected results."}}), "\n";
+      print encode_json({type => "turn.completed"}), "\n";
+    ' "$TMP/prompt" "$marker" > "$TMP/response"
+    run bash -c '
+      . "'"$LIB"'"
+      CODEX_EXEC_EXTRA_ARGS=(--json)
+      CODEX_EXEC_OUT_FILE="'"$TMP"'/captured.jsonl" \
+      CODEX_EXEC_PROMPT_FILE="'"$TMP"'/prompt" CODEX_EXEC_TIMEOUT=10 codex_exec_guarded
+    '
+    [ "$status" -eq 0 ]
+    cmp "$TMP/response" "$TMP/captured.jsonl"
+  done
+  [ "$(wc -l < "$TMP/invocations" | tr -d ' ')" -eq 2 ]
 }
 
 # --- (d) MISSING codex -> MISSING (exit 2) ------------------------------------
@@ -231,6 +546,27 @@ FAKE
   [ "$status" -eq 1 ]
   [[ "$output" == *"runtime evidence, not a review verdict"* ]]
   [[ "$output" != *"genuine reviewer failure"* ]]
+}
+
+@test "(g2) native nonzero status wins over JSON, empty output, and echo classification" {
+  stub_capture
+  for shape in json empty echo; do
+    case "$shape" in
+      json) synthetic_json_capture ;;
+      empty) : > "$TMP/response" ;;
+      echo) printf 'Inspect the input handling and verify the result.' > "$TMP/response" ;;
+    esac
+    run env STUB_EXIT=7 bash -c '
+      . "'"$LIB"'"
+      CODEX_EXEC_OUT_FILE="'"$TMP"'/captured" \
+      CODEX_EXEC_PROMPT_ARG="Inspect the input handling and verify the result." \
+      CODEX_EXEC_TIMEOUT=10 codex_exec_guarded
+    '
+    [ "$status" -eq 7 ]
+    cmp "$TMP/response" "$TMP/captured"
+    [[ "$output" == *"runtime evidence, not a review verdict"* ]]
+  done
+  [ "$(wc -l < "$TMP/invocations" | tr -d ' ')" -eq 3 ]
 }
 
 # --- the distinct exit-code constants are defined and unique -------------------
