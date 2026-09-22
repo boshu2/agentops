@@ -16,13 +16,13 @@ SKIP_ENV="${AGENTOPS_SKIP_HEADLESS_RUNTIME_SKILLS:-0}"
 CODEX_STRICT="${HEADLESS_RUNTIME_SKILL_CODEX_STRICT:-0}"
 CODEX_USED_FALLBACK=0
 
-print_runtime_proof_matrix() {
+print_diagnostic_scope() {
     cat <<'EOF'
-Runtime proof tiers:
-  Claude Code: Tier S via tests/skills/test-runtime-claude-code-smoke.sh; Tier I here is non-print load-check only.
-  Codex: Tier S via tests/skills/test-runtime-codex-smoke.sh; Tier I here when codex/auth are available; Tier E opt-in only.
-  Cursor: Tier S via tests/skills/test-runtime-cursor-smoke.sh; Tier I not implemented; Tier E not implemented.
-  OpenCode: Tier S via tests/skills/test-runtime-opencode-smoke.sh; Tier I not implemented; Tier E not implemented.
+Runtime diagnostic scope:
+  Claude Code: non-print CLI availability/argument smoke only (--help).
+  Codex: model-reported inventory comparison; fallback is CLI smoke only.
+  Actual selected-content loading and live execution remain unproven here.
+  Host/install owners and proof tiers: docs/contracts/multi-runtime-tier-charter.md
 EOF
 }
 
@@ -30,9 +30,10 @@ usage() {
     cat <<'EOF'
 validate-headless-runtime-skills.sh
 
-Validate Claude Code and/or Codex runtime skill loading. Claude Code is checked
-with non-print plugin-load smoke only; Codex performs the headless inventory
-comparison against the repo skill definitions.
+Inspect Claude Code CLI availability and/or compare Codex model-reported skill
+names against repository definitions. Claude uses --help only. Codex may reuse
+authentication and make live model requests; explicit authorization is required.
+Neither path proves actual selected-content loading or execution of a journey.
 
 Options:
   --runtime <all|claude|codex>  Which runtime(s) to validate (default: all)
@@ -116,7 +117,7 @@ if [[ "$SKIP_ENV" == "1" ]]; then
     exit 0
 fi
 
-print_runtime_proof_matrix
+print_diagnostic_scope
 
 TMP_DIR=""
 cleanup() {
@@ -325,7 +326,7 @@ if extras:
 if missing or mismatched:
     sys.exit(1)
 
-print(f"{runtime}: validated {len(expected_map)} skills")
+print(f"{runtime}: matched {len(expected_map)} reported skill names")
 PY
 }
 
@@ -333,7 +334,7 @@ CODEX_PROMPT="List the available AgentOps skills in this session. Return ONLY a 
 
 build_expected_inventory "$REPO_ROOT/skills-codex" "$EXPECTED_CODEX_JSON"
 
-run_claude_load_check() {
+run_claude_cli_smoke() {
     if timeout 20 "$CLAUDE_BIN" --plugin-dir "$REPO_ROOT" --help >/dev/null 2>&1; then
         return 0
     fi
@@ -346,7 +347,7 @@ run_claude_load_check() {
     return 1
 }
 
-run_codex_load_check() {
+run_codex_cli_smoke() {
     [[ -f "$CODEX_VALIDATION_HOME/.agentops-codex-install.json" ]] || return 1
     env HOME="$CODEX_USER_HOME" CODEX_HOME="$CODEX_VALIDATION_HOME" AGENTOPS_HOOKS_DISABLED=1 \
         timeout 20 "$CODEX_BIN" exec --help >/dev/null 2>&1
@@ -361,18 +362,18 @@ codex_inventory_failed() {
         sed -n '1,20p' "$raw_output" >&2 || true
     fi
 
-    if run_codex_load_check; then
-        echo "WARN: Codex load check passed in isolated CODEX_HOME; using load-check fallback instead of verified inventory." >&2
+    if run_codex_cli_smoke; then
+        echo "WARN: Codex CLI smoke succeeded in isolated CODEX_HOME; inventory remains unverified." >&2
         if [[ "$CODEX_STRICT" == "1" ]]; then
             echo "FAIL: HEADLESS_RUNTIME_SKILL_CODEX_STRICT=1 requires verified Codex inventory." >&2
             return 1
         fi
         CODEX_USED_FALLBACK=1
-        echo "codex: load-check fallback passed"
+        echo "codex: CLI smoke fallback only; actual content loading and execution unproven"
         return 0
     fi
 
-    echo "Codex load check failed" >&2
+    echo "Codex CLI smoke fallback unavailable or failed" >&2
     return 1
 }
 
@@ -382,12 +383,12 @@ run_claude_validation() {
         return 0
     fi
 
-    if run_claude_load_check; then
-        echo "claude: non-print load check passed"
+    if run_claude_cli_smoke; then
+        echo "claude: CLI smoke succeeded (--help only); actual inventory and content loading unproven"
         return 0
     fi
 
-    echo "Claude non-print load check failed" >&2
+    echo "Claude CLI smoke failed" >&2
     return 1
 }
 
@@ -499,7 +500,7 @@ PY
         fi
 
         if compare_output="$(compare_inventory "$EXPECTED_CODEX_JSON" "$ACTUAL_CODEX_JSON" "codex" "names-only" 2>&1)"; then
-            echo "codex: inventory verified"
+            echo "codex: model-reported inventory matched expected names; content loading unverified"
             printf '%s\n' "$compare_output"
             return 0
         fi
@@ -528,4 +529,4 @@ case "$RUNTIME" in
         ;;
 esac
 
-echo "Headless runtime skill validation passed."
+echo "Runtime diagnostics completed; actual content loading and execution remain unproven."

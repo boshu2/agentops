@@ -166,16 +166,16 @@ else
 fi
 
 # =============================================================================
-# Test 7: Optional Claude CLI load test
+# Test 7: Optional Claude CLI help-output diagnostic (not loading proof)
 # =============================================================================
 if [[ "${AGENTOPS_EXERCISE_CLAUDE_RUNTIME:-0}" == "1" ]] && command -v claude &>/dev/null; then
-    log "Testing explicitly requested Claude CLI plugin load..."
+    log "Inspecting explicitly requested Claude CLI help output..."
     load_output=$(timeout 10 claude --plugin-dir . --help 2>&1) || true
     if echo "$load_output" | grep -qiE "invalid manifest|validation error|failed to load"; then
-        fail "Claude CLI load failed"
+        fail "Claude CLI help reported a plugin/manifest error"
         echo "$load_output" | grep -iE "invalid|failed|error" | head -3 | sed 's/^/    /'
     else
-        pass "Claude CLI loads plugin"
+        pass "No plugin/manifest error detected in CLI help output; actual loading unproven"
     fi
 fi
 

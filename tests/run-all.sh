@@ -184,11 +184,11 @@ if [[ "$TIER" == "--tier=2" ]] || [[ "$TIER" == "--tier=3" ]] || [[ "$TIER" == "
     log "Tier 2: Smoke Tests"
 
     if ! command -v claude &>/dev/null; then
-        skip "Claude CLI not available - skipping Claude load smoke"
+        skip "Claude CLI not available - skipping Claude CLI availability smoke"
     else
-        # Test plugin loads
+        # CLI help checks availability/argument acceptance, not plugin loading.
         claude_load_log="$(lane_log_file claude-load)"
-        if run_with_timeout "$RUN_ALL_CLAUDE_HELP_TIMEOUT_SECONDS" "Claude CLI loads plugin" "$claude_load_log" \
+        if run_with_timeout "$RUN_ALL_CLAUDE_HELP_TIMEOUT_SECONDS" "Claude CLI availability smoke (--help only; plugin loading unproven)" "$claude_load_log" \
             claude --plugin-dir "$REPO_ROOT" --help; then
             claude_load_status=0
         else
@@ -196,14 +196,14 @@ if [[ "$TIER" == "--tier=2" ]] || [[ "$TIER" == "--tier=3" ]] || [[ "$TIER" == "
         fi
 
         if [[ "$claude_load_status" -eq 124 ]]; then
-            report_lane_status "Claude CLI load smoke" "$claude_load_status" "$claude_load_log" "$RUN_ALL_CLAUDE_HELP_TIMEOUT_SECONDS"
+            report_lane_status "Claude CLI availability smoke" "$claude_load_status" "$claude_load_log" "$RUN_ALL_CLAUDE_HELP_TIMEOUT_SECONDS"
         elif grep -qiE "invalid manifest|validation error|failed to load" "$claude_load_log"; then
-            fail "Claude CLI failed to load plugin"
+            fail "Claude CLI help reported a plugin/manifest error"
             grep -iE "invalid|failed|error" "$claude_load_log" | head -3 | sed 's/^/    /'
         elif [[ "$claude_load_status" -ne 0 ]]; then
-            report_lane_status "Claude CLI load smoke failed" "$claude_load_status" "$claude_load_log" "$RUN_ALL_CLAUDE_HELP_TIMEOUT_SECONDS"
+            report_lane_status "Claude CLI availability smoke failed" "$claude_load_status" "$claude_load_log" "$RUN_ALL_CLAUDE_HELP_TIMEOUT_SECONDS"
         else
-            pass "Claude CLI loads plugin"
+            pass "Claude CLI availability smoke (--help only; plugin loading unproven)"
         fi
     fi
 

@@ -13,10 +13,13 @@ These guidance commands do not write skills, hooks, or project state. `ao init`
 is optional local evidence setup, not a prerequisite. Development features can
 be built from this checkout with `cd cli && go install ./cmd/ao`.
 
-Three optional skill installation paths remain supported:
+Three optional skill installation paths remain supported. The
+[host/install mapping](contracts/multi-runtime-tier-charter.md#host-and-install-surface-mapping)
+defines each consumer and separates structural checks from actual host loading
+and execution evidence.
 
-- `npx skills@latest add boshu2/agentops --all -g` — universal; one command
-  installs the skills into all your coding agents.
+- `npx skills@latest add boshu2/agentops --all -g` — requests the full skill
+  library for all agents supported by the external Skills installer.
 - Runtime plugins for Claude Code and Codex — managed bundles that update with
   the release.
 - One canonical checkout plus `ao skills link` — source-tracked symlinks for
@@ -24,6 +27,11 @@ Three optional skill installation paths remain supported:
 
 With npx or a plugin, install and updates are handled by that tool. The plugin
 commands below install the managed bundle; the checkout path follows afterward.
+The npx path installs skills, not runtime plugins, AO, hooks or native roles.
+Its default link/copy behavior belongs to that installer; use
+`npx skills@latest --help` for the current contract. For a selected subset, use
+`npx skills@latest add boshu2/agentops --skill test refactor -g` and select the
+intended agents. `--all` explicitly selects every supported agent and skill.
 
 Whichever path you install through, the skills themselves have runtime
 requirements. Most need nothing beyond the coding agent; these need more:
@@ -43,7 +51,7 @@ requirements. Most need nothing beyond the coding agent; these need more:
 | `security` | `python3`, conditional | the composable suite and offline redteam surfaces run `security_suite.py` when that scan type is selected |
 | `cass` | `python3`, optional | `scripts/prompt_miner.py` mines repeated prompts; one of several selectable Scripts-table entries |
 
-The plugin and `npx skills@latest add boshu2/agentops --all -g` install the generated skill catalog, regardless of whether you have `python3` or `ao`.
+The plugin and `npx skills@latest add boshu2/agentops --all -g` install the skill library, regardless of whether you have `python3` or `ao`.
 
 ## Install and update runtime plugins
 
@@ -77,6 +85,8 @@ For a local Codex marketplace, re-run `codex plugin add` after updating its
 source; `marketplace upgrade` refreshes Git snapshots. Start a new session after
 an update. Claude's component inventory should show the 34 skills and four
 agents; Codex exposes the 34 skills with `agentops:` names.
+The inventory commands inspect package metadata; confirm the selected skill's
+actual loaded content in the fresh session before claiming host loading proof.
 
 The Claude plugin also installs its policy dispatcher. The read-budget guard
 remains separately opt-in in both runtimes. Codex plugin installation does not
@@ -143,8 +153,15 @@ behavior; choosing a subset does not remove previously installed skills.
 Use `--dry-run` to preview and `--dest /path/to/skills` for one discovery root.
 
 The command links selected canonical `skills/<slug>/` directories into
-`~/.agents/skills` and every detected runtime skills root. It refuses to replace
-real directories, foreign links, or user-owned skills.
+`~/.agents/skills` and detected runtime roots: `~/.claude/skills`,
+`~/.codex/skills`, `~/.gemini/skills`, `~/.cursor/skills` and `~/.pi/skills` when
+their parent config directories exist. This path uses canonical skill names,
+such as `$test` in Codex, rather than the plugin's `$agentops:test`.
+It refuses to replace real directories, foreign links, or user-owned skills.
+For OpenCode's dedicated discovery root, use an explicit destination; its
+portable `~/.agents/skills` root is already included. Follow the
+[install guide](../.opencode/INSTALL.md). A `--dest` installation must use the
+same destination for later audit, update and unlink commands.
 
 ## Update
 
@@ -155,9 +172,18 @@ ao skills link --skill test --skill refactor
 ```
 
 Existing links immediately see edits to their targets. Rerunning `ao skills
-link` with the same selection restores selected links and reports conflicts;
+link` with the same selection creates missing selected links and reports conflicts;
 without selectors it also adds newly introduced skills. It does not copy the
 corpus or refresh a plugin cache.
+It does not repair wrong/broken links, remove obsolete names or roll back a
+partially completed fan-out. Inspect every destination's `error` and `conflicts`
+fields; a successful exit alone does not mean there are no conflicts.
+
+For npx installations, use that installer's selected-skill update and removal
+operations, preserving its install scope and recorded source. Do not use
+`ao skills link` to update an npx-managed copy. Before any update, record the
+installed revision/version and selected destinations, and preserve local edits
+or user-owned collisions. See [failed-upgrade recovery](#recover).
 
 ## Audit
 
@@ -168,8 +194,9 @@ cd ~/.local/share/agentops
 ao skills link --dry-run --json
 ```
 
-For every destination, `present` means the symlink resolves to the expected
-canonical source. `conflicts` are deliberately untouched and require operator
+For every destination, `present` means the link target matches the expected
+canonical source path. This is filesystem evidence, not host loading proof.
+`conflicts` are deliberately untouched and require operator
 judgment. A conflict is not evidence that the user-owned entry should be
 deleted.
 
@@ -193,14 +220,12 @@ codex plugin remove agentops@agentops-marketplace
 codex plugin marketplace remove agentops-marketplace
 ```
 
-If the `codex plugin` verb is unavailable (older Codex), remove the cache and
-install manifest by hand, then delete the AgentOps plugin enable entry from
-`~/.codex/config.toml`:
-
-```bash
-rm -rf ~/.codex/plugins/cache/agentops-marketplace
-rm -f ~/.codex/.agentops-codex-install.json
-```
+If the `codex plugin` verb is unavailable, use a Codex version with the native
+plugin manager. For legacy manual removal, first preserve the relevant config,
+cache and install manifest; identify the exact AgentOps-owned entries and remove
+only those after review. Never delete an entire shared cache or config file to
+resolve one collision. The legacy marker is `~/.codex/.agentops-codex-install.json`;
+its presence alone does not establish ownership of every adjacent directory.
 
 ### Gemini / Antigravity
 
@@ -225,6 +250,9 @@ ao skills unlink
 This does not remove foreign skills, real directories, the checkout, or data in
 project-local `.agents/` directories. Remove the checkout separately when it is
 no longer needed. If Homebrew installed the CLI, use `brew uninstall agentops`.
+`unlink` sweeps all links owned by this checkout at the chosen destinations;
+it has no `--skill` selector. Preview its complete removal set first, and retain
+your selected-skill list for any subsequent relink.
 
 ## Workflows (Claude Code only)
 
@@ -259,17 +287,42 @@ checkout.
 Claude Code snapshots its named-workflow registry at session start, so newly
 linked workflows appear in the next session, not a session already running.
 
+## Cold resume
+
+Start a new host session after installation or update. Confirm the intended
+corpus and selected names, then load only the skill and references needed by the
+task. Resume from the caller's existing task/handoff and current source state.
+For project knowledge, follow the consumer checkout's `.context/README.md` when
+present and read relevant pages and their authoritative owners. A skill install
+does not create project knowledge or restore runtime/tracker state.
+
 ## Recover
 
-If a runtime cannot see a skill:
+A failed upgrade can leave some destinations updated and others unchanged.
+Keep the previous source/version and user-owned files until the new installation
+has been checked in a cold session; there is no cross-host atomic rollback.
 
-1. Run `ao skills link --dry-run --json` from the canonical checkout.
-2. Resolve broken links or reported conflicts deliberately.
-3. Run `ao skills link` again.
-4. Restart the runtime if it snapshots its skill inventory at startup.
+1. Identify the install path, intended source revision, selected skills and
+   destinations. Preserve local changes and any installer backups before repair.
+2. For source links, run `ao skills link --skill test --skill refactor --dry-run
+   --json` from the canonical checkout, substituting the original selection and
+   adding the original `--dest` if used. Inspect every error, conflict and stale
+   old-name entry against [migration](MIGRATION.md).
+3. Resolve ownership before touching a conflicting path. Keep real directories
+   and foreign links intact. After fixing the cause, rerun the same selected
+   link command without `--dry-run`; do not accidentally expand to a full install.
+4. For plugin/npx failures, use that manager to inspect and retry the same
+   installation; preserve edits before replacing owned copies. Recheck optional
+   copied roles/hooks separately. If returning to an earlier source revision,
+   preserve current changes and use the repository/manager's recovery policy;
+   source links immediately follow the checkout and need no cache reinstall.
+5. Start a fresh session, verify actual selected loading and resume the bounded
+   task. Re-run the affected journey; successful repair commands do not prove
+   recovery or validate work produced under the failed installation.
 
-`ao doctor` and `ao version` provide additional read-only CLI diagnostics. Do
-not reinstall a plugin cache to repair a source-link problem.
+`ao doctor` and `ao version` provide additional read-only CLI diagnostics.
+Final host qualification must execute a failed/partial-upgrade recovery and
+verify user-owned entries survive; these instructions alone do not prove it.
 
 ## Escalate
 

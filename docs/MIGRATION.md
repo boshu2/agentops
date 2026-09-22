@@ -176,17 +176,27 @@ outcomes.
 ## Install migration
 
 AgentOps supports three optional skill install paths: `npx skills@latest add
-boshu2/agentops --all -g` (universal across coding agents), runtime plugins for
+boshu2/agentops --all -g` (all agents supported by the external Skills installer), runtime plugins for
 Claude Code and Codex (managed bundles that update with the release), and one
 canonical checkout plus source symlinks for users who edit skills or
-contribute:
+contribute. The [host/install mapping](contracts/multi-runtime-tier-charter.md#host-and-install-surface-mapping)
+accounts for the retained runtime, export and package consumers; each host's
+live qualification remains separate from structural checks.
+
+For a selected source installation, preserve the same selectors on upgrade:
 
 ```bash
 git clone https://github.com/boshu2/agentops.git ~/.local/share/agentops
 cd ~/.local/share/agentops
-ao skills link --dry-run
-ao skills link
+ao skills link --skill test --skill refactor --dry-run
+ao skills link --skill test --skill refactor
 ```
+
+Omit selectors for an explicit full installation. Keep the original `--dest`
+for an explicit destination. OpenCode's dedicated config root needs `--dest`;
+its portable `~/.agents/skills` discovery root is already included in fan-out.
+Selection does not remove previously installed
+skills, stale copied names or user-owned collisions.
 
 The 3.x curl installers (`scripts/install.sh`, `install-claude.sh`,
 `install-codex.sh`, `install-agy.sh`, `install-opencode.sh`, and
@@ -200,10 +210,9 @@ that runtime before linking the checkout so only one corpus is visible:
 - Claude Code: `claude plugin uninstall agentops@agentops-marketplace`, then
   `claude plugin marketplace remove agentops-marketplace`.
 - Codex: `codex plugin remove agentops@agentops-marketplace`, then
-  `codex plugin marketplace remove agentops-marketplace`. (Older Codex without
-  the plugin verb: remove `~/.codex/plugins/cache/agentops-marketplace` and
-  `~/.codex/.agentops-codex-install.json`, then remove the AgentOps plugin
-  enable entry from `~/.codex/config.toml`.)
+  `codex plugin marketplace remove agentops-marketplace`. For older/manual
+  installations, preserve the relevant configuration and cache first and
+  identify exact owned entries using the [day-2 guide](install-day2-ops.md#switch-from-plugins-to-source-links).
 - Gemini/Antigravity: `agy plugin disable agentops-core-gemini`, then
   `agy plugin uninstall agentops-core-gemini`.
 
@@ -211,6 +220,11 @@ that runtime before linking the checkout so only one corpus is visible:
 each reported conflict deliberately; never delete a user-owned skill merely to
 make the counts match. Use `ao skills unlink` to remove only links that point
 into the current checkout.
+That unlink operation removes all owned links at the selected destinations;
+preview its removal set before using it. Follow [cold resume](install-day2-ops.md#cold-resume)
+and [failed/partial-upgrade recovery](install-day2-ops.md#recover), retaining
+the original selection, prior revision and user-owned entries. Upgrade and
+recovery are required host journeys, not established by a clean package check.
 
 ## Optional runtimes
 

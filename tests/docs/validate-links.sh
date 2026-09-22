@@ -43,7 +43,8 @@ fi
 # package. Historical and off-nav research remains readable evidence but is not
 # a maintained public link surface.
 md_files=()
-for name in README.md PRODUCT.md GOALS.md PROGRAM.md AGENTS.md; do
+for name in README.md PRODUCT.md GOALS.md PROGRAM.md AGENTS.md \
+  docs/contracts/multi-runtime-tier-charter.md docs/install-day2-ops.md .opencode/INSTALL.md; do
   [[ -f "$REPO_ROOT/$name" ]] && md_files+=("$REPO_ROOT/$name")
 done
 

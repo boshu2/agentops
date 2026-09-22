@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Test: OpenCode runtime smoke — validates AgentOps skill files are loadable in OpenCode
-# Checks skill structure, opencode install script, and config compatibility.
+# Test: OpenCode structural smoke: skill shape and explicit-destination links.
+# These checks do not establish that a real OpenCode session loads the files.
 # Standalone: does NOT require a live OpenCode runtime.
 # Promoted from: tests/_quarantine/opencode/ (structural checks only)
 set -euo pipefail
@@ -118,8 +118,57 @@ fi
 
 echo ""
 
-# ── Summary ───────────────────────────────────────────────────────────────────
-echo "================================="
+echo "Stage 5: Isolated OpenCode source-link installation"
+
+TMP_ROOT="$(mktemp -d)"
+trap 'rm -rf "$TMP_ROOT"' EXIT
+AO_BIN="$TMP_ROOT/ao"
+DEST="$TMP_ROOT/home/.config/opencode/skills"
+mkdir -p "$DEST/test" "$TMP_ROOT/foreign"
+printf 'user-owned\n' > "$DEST/test/keep.txt"
+ln -s "$TMP_ROOT/foreign" "$DEST/foreign"
+
+if (cd "$REPO_ROOT/cli" && go build -o "$AO_BIN" ./cmd/ao); then
+    pass "source-matched ao built for isolated install"
+else
+    fail "could not build source-matched ao"
+    exit 1
+fi
+
+if (cd "$REPO_ROOT" && env HOME="$TMP_ROOT/home" "$AO_BIN" skills link \
+    --dest "$DEST" --skill test --skill refactor --dry-run --json > "$TMP_ROOT/preview.json") &&
+    [[ ! -e "$DEST/refactor" ]] &&
+    jq -e 'length == 1 and .[0].dry_run and .[0].linked == ["refactor"] and .[0].conflicts == ["test"]' "$TMP_ROOT/preview.json" >/dev/null; then
+    pass "explicit-destination preview preserves selection and reports user-owned conflict"
+else
+    fail "explicit-destination preview changed files or missed selection/conflict"
+fi
+
+if (cd "$REPO_ROOT" && env HOME="$TMP_ROOT/home" "$AO_BIN" skills link \
+    --dest "$DEST" --skill test --skill refactor --json > "$TMP_ROOT/install.json") &&
+    [[ -L "$DEST/refactor" ]] &&
+    [[ "$(readlink "$DEST/refactor")" == "$REPO_ROOT/skills/refactor" ]] &&
+    [[ -f "$DEST/refactor/SKILL.md" ]] &&
+    [[ ! -e "$DEST/security" && ! -e "$TMP_ROOT/home/.agents" ]] &&
+    [[ ! -L "$DEST/test" ]] &&
+    [[ "$(cat "$DEST/test/keep.txt")" == user-owned ]] &&
+    [[ "$(readlink "$DEST/foreign")" == "$TMP_ROOT/foreign" ]] &&
+    jq -e 'length == 1 and .[0].linked == ["refactor"] and .[0].conflicts == ["test"]' "$TMP_ROOT/install.json" >/dev/null; then
+    pass "selected install reaches only explicit OpenCode destination and preserves user entries"
+else
+    fail "selected install destination, source identity or ownership contract failed"
+fi
+
+if (cd "$REPO_ROOT" && env HOME="$TMP_ROOT/home" "$AO_BIN" skills link \
+    --dest "$DEST" --skill test --skill refactor --json > "$TMP_ROOT/repeat.json") &&
+    jq -e '.[0].present == ["refactor"] and .[0].conflicts == ["test"] and ((.[0].linked // []) | length) == 0' "$TMP_ROOT/repeat.json" >/dev/null &&
+    [[ "$(cat "$DEST/test/keep.txt")" == user-owned ]]; then
+    pass "repeating the selected install is idempotent and keeps conflicts intact"
+else
+    fail "repeating the selected install changed ownership or selection"
+fi
+
+echo ""
 echo "Results: $PASS passed, $FAIL failed, $SKIP skipped"
 echo "================================="
 
