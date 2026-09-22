@@ -26,13 +26,17 @@ done
 git add AGENTS.md docs/guide.md tracker.json evidence
 
 # Retired calls refuse before creating either legacy state or a ledger.
-for verb in catch digest status; do
-    status=0
-    "$AO_BIN" membrane "$verb" > "$ARTIFACTS/membrane-$verb.log" 2>&1 || status=$?
-    [[ "$status" -eq 1 ]]
-    grep -Fq 'record observations as verdict findings or generic provenance' "$ARTIFACTS/membrane-$verb.log"
-    grep -Fq 'docs/MIGRATION.md' "$ARTIFACTS/membrane-$verb.log"
+assert_retired_command_refuses() {
+    local log_file="$ARTIFACTS/$1-$2.log" status=0
+    # The retired command is test data, not a supported live CLI dependency.
+    "$AO_BIN" "$@" > "$log_file" 2>&1 || status=$?
+    [[ "$status" -eq 1 ]] &&
+    grep -Fq 'record observations as verdict findings or generic provenance' "$log_file" &&
+    grep -Fq 'docs/MIGRATION.md' "$log_file" &&
     [[ ! -e .agents && ! -e docs/provenance ]]
+}
+for verb in catch digest status; do
+    assert_retired_command_refuses membrane "$verb"
 done
 echo "PASS: removed membrane commands refuse with guidance and create no state"
 
