@@ -15,18 +15,18 @@ GOALS.yaml / GOALS.md fitness specification subsystem: load, validate, measure, 
 - **Operator-facing artifact:** `GOALS.md` at repo root (with `GOALS.yaml` as the legacy format). Either is valid input; `goals.go` parses both into a unified `GoalFile`.
 - **Skill surface:** consumed by `skills/reality-check/SKILL.md` as optional measurement context.
 
-## Interfaces
+## Read the owner for the change
 
-- **Core types:** `Goal`, `GoalFile`, `Directive`, `ContinuousMetric`, `GoalType` (in `goals.go`). `GoalType` is one of `health`, `architecture`, `quality`, `meta`.
-- **Top-level ops:**
-  - `goals.go` — load + validate.
-  - `measure.go` — fitness measurement (per-platform: `measure_unix.go`, `measure_windows.go`).
-  - `markdown.go` — render/parse GOALS.md.
-  - `commands.go` — read-only CLI measurement and analysis handlers.
-  - `drift.go` — detect when measured fitness drifts from the spec.
-  - `history.go` — append/query the historical snapshot store.
-  - `snapshot.go` — persist a measurement snapshot.
-- **Subcommands the CLI exposes through this package:** `ao goals measure`, `validate`, `drift`, `history`, `export`, `meta`, `trace`, `render`, and read-only scenario inspection.
+- **Formats and validation:** [goals.go](goals.go) owns `GoalFile` and accepted
+  goal types; [markdown.go](markdown.go) parses Markdown and
+  [render.go](render.go) renders it. Read [patcher.go](patcher.go) when inspecting
+  directive attributes: despite its name, it is a read-only parsed view.
+- **Measurement or drift:** start at [measure.go](measure.go) and
+  [drift.go](drift.go); inspect both platform implementations for a new signal.
+- **Stored observations:** [snapshot.go](snapshot.go) and [history.go](history.go)
+  own snapshots and history.
+- **CLI behavior:** [commands.go](commands.go) owns measurement and analysis
+  handlers. Use `ao goals --help` for the current command inventory.
 
 ## Non-obvious rules
 
@@ -35,12 +35,15 @@ GOALS.yaml / GOALS.md fitness specification subsystem: load, validate, measure, 
 - **Continuous metrics need a threshold.** `ContinuousMetric` requires both `metric` and `threshold` — drift detection compares against the threshold, not against an absolute baseline.
 - **Platform-gated measurement.** `measure_unix.go` and `measure_windows.go` are build-tagged. Adding a new measurement signal requires both implementations or a clean fallback.
 - **Snapshots are observations.** Measurement may append snapshots, but never rewrites `GOALS.md` or routes subsequent work.
-- **`measure --json` is part of the public CLI contract.** All `--json` flags must produce valid JSON (CI's `json-flag-consistency` job enforces this).
+- **`measure --json` is part of the public CLI contract.** All `--json` flags
+  must produce valid JSON; [the CLI JSON check](../../../tests/cli/test-json-flag-consistency.sh)
+  is the executable contract.
 
-## Cross-references
+## Completion
 
-- Parent epic: `agentops-tqc` (Olympus → agentopsd extraction).
-- Skill: `skills/reality-check/SKILL.md`.
-- Operator docs: `GOALS.md` at repo root.
-- Pattern source: olympus per-folder `AGENTS.md` ownership convention.
-- Sibling packages: `cli/internal/overnight` (Dream consumes goal fitness), `cli/internal/quality` (metrics health overlap).
+For format changes, exercise both Markdown and legacy YAML cases in the
+package tests. For measurement changes, cover the affected signal and platform
+fallback, and confirm measurement leaves strategic-intent files unchanged.
+Run the relevant package tests from `cli/` with `go test ./internal/goals`, then
+the checks required by the root contract. Passing measurements establish
+observations, not authorization to change intent or route work.

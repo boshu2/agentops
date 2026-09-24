@@ -1,37 +1,18 @@
-# CLI subtree — operator pointer
+# CLI subtree
 
-This file is **not** the issue-tracker or workflow source of truth. Read the repo root contracts first:
+Inherit [the root operating contract](../AGENTS.md), including its BD identity,
+private-history preservation, fresh-judgment, and delivery-authority rules.
 
-- [`../AGENTS.md`](../AGENTS.md) — canonical operator contract
-- [`../docs/architecture/go-cli.md`](../docs/architecture/go-cli.md) — CLI composition, gate system, evidence boundary
+- **CLI architecture:** before changing command composition, gates, or evidence
+  boundaries, read [the Go CLI architecture](../docs/architecture/go-cli.md).
+- **Tracker work:** follow the root's repository-tracker section. The root
+  `.beads/redirect` also applies here. Git and Dolt synchronization follow that
+  store's configured policy; discover the actual remote before any authorized
+  push. Preserve the pre-migration `.beads` estate as well as `_beads` history.
+  A BV recommendation authorizes neither a claim, parallel write, nor closure.
+- **Go changes:** follow the root's focused-check, build, vet, test, and lint
+  requirements. Commands in [Makefile](Makefile) run from `cli/`; from any
+  directory, use `make -C /absolute/path/to/agentops/cli <target>`.
 
-## Issue tracker (BD)
-
-Use the latest stable `bd`, the same native repository tracker used from the
-repo root. The root `.beads/redirect` resolves its private BD/Dolt store from
-this subtree too. Check the resolved identity before work:
-
-```bash
-bd context --json
-bd ready --json
-bd show <id> --json
-bd update <id> --claim
-bd close <id> --reason "Acceptance and validation evidence"
-```
-
-`br` is a separate implementation and is not used for this repository. Never
-substitute it, run the removed `ao beads dir`, or initialize an empty store to
-bypass missing routing. Preserve `_beads` and the pre-migration `.beads` estate
-as history. Git and Dolt synchronization follow the configured native store's
-policy; do not infer a remote or push private data from these examples.
-
-BV may rank a fresh explicit BD export. Recheck selected IDs in live BD; a
-viewer recommendation cannot authorize a claim, parallel write or closure.
-
-## CLI development
-
-```bash
-cd cli && make build   # Build ao binary
-cd cli && make test    # Run tests
-cd cli && make lint    # Run linter
-```
+Finish only with evidence for the changed behavior and all required checks;
+report unchecked acceptance through the root's `NOT_PROVEN` rule.

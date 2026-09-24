@@ -6,54 +6,44 @@ owner: agentopsd
 
 # cli/internal/quality
 
-Quality / health surfaces for an AgentOps repo: doctor checks, knowledge
-metrics, golden snapshots, stale-reference scanning, and Codex plugin
-parity. Powers `ao doctor`, `ao metrics`, and several CI gates.
+Doctor reporting, stale-command reference scanning, and installed Codex plugin
+inspection. Read current package files before extending an old metrics or
+knowledge interface; those implementations are no longer in this package.
 
 ## Ownership
 
-- Owned by the agentopsd extraction track. Per-folder ownership pattern
-  ported from olympus's per-service AGENTS.md files.
-- Read-only against the repo and `~/.codex/`. Writes only to the dirs
-  callers pass in (golden snapshots, metric outputs).
+- Owned by the agentopsd extraction track.
+- Read-only against the repo and `~/.codex/`; any output writes stay in
+  directories explicitly supplied by the caller.
 
-## Public interfaces
+## Read for the change
 
-| Symbol | Purpose |
-|---|---|
-| `RunDoctor(opts DoctorOptions) error` | Run all checks, render table or JSON, fail if any required check fails |
-| `ComputeResult([]Check) DoctorOutput` | Aggregate checks into HEALTHY/DEGRADED/UNHEALTHY |
-| `ScanStaleRefs(...)`, `DeprecatedCommands` map | Find docs referencing renamed/retired commands |
-| `CodexInstallMeta`, `CodexNativePluginSkillsPath`, parity helpers | Inspect installed Codex plugin state |
-| `ParseUtilityFromMarkdown / ParseUtilityFromJSONL` | Extract `utility:` front-matter for ranking |
+- **Doctor results:** [doctor.go](doctor.go) owns status aggregation and rendering;
+  [the doctor command](../commands/doctor/module.go) owns presentation wiring.
+- **Command renames:** [stale_refs.go](stale_refs.go) owns `DeprecatedCommands`
+  and reference scanning. Update the rename map with the command and its docs.
+- **Codex installation:** [skills_codex.go](skills_codex.go) inspects installed
+  content. Read [the projection contract](../../../docs/contracts/codex-skill-api.md)
+  before changing comparisons with the generated `skills-codex/` tree.
 
 ## Non-obvious rules
 
-- **`DeprecatedCommands` is the canonical rename map.** When a command is
-  renamed (e.g. the `ao know <verb>` → `ao <verb>` flatten), add the old
-  form here. Stale-ref scanners and CI gates read this map; updating only
-  one of (`Cmd*.go`, this map, docs) leaves drift CI will catch.
-- **Three doctor statuses, three result levels.** Check status is
-  `pass` / `warn` / `fail`; aggregate result is `HEALTHY` / `DEGRADED` /
-  `UNHEALTHY`. A required `fail` forces `UNHEALTHY` and `RunDoctor` returns
-  an error (non-zero exit). A non-required `fail` only degrades.
-- **Golden tests live with metrics, not with `_test.go`.** Snapshots are
-  authored artifacts; `metrics_golden.go` is production code that reads
-  them. Don't move into `testdata/` or rename to `*_test.go`.
-- **Codex plugin parity is split-brain.** The repo carries `skills/`
-  (canonical) and `skills-codex/` (manually maintained), and this package
-  inspects what was actually **installed** under `~/.codex/plugins/`.
-  Three-way drift is real; surface it, don't auto-fix.
-- **Front-matter parsers are deliberately tolerant.** `ParseUtilityFrom*`
-  return 0 on any failure (missing file, no front matter, malformed). Treat
-  0 as "unknown", not "low utility".
-- **Imports `cli/internal/types`** for shared learning/memory DTOs — keep
-  that direction; do not import `quality` from `types`.
+- **Status and exit code differ.** `pass`, `warn`, `fail`, and `info` are check
+  statuses. Any `fail` makes the aggregate `UNHEALTHY`; warnings alone make it
+  `DEGRADED`. `info` does not affect totals or health. `RunDoctor` returns an
+  error for required failures in table mode; JSON mode emits a document and
+  returns successfully, so inspect its checks rather than treating exit zero
+  as healthy.
+- **Source, projection, installation:** `skills/` is canonical,
+  `skills-codex/` is generated, and `~/.codex/plugins/` is installed state.
+  Report drift among all three; inspection must not repair it automatically.
+- **Dependency direction:** shared evidence types may be consumed from
+  `cli/internal/types`; keep `quality` out of that package's imports.
 
-## Cross-references
+## Completion
 
-- `cli/cmd/ao/doctor_module.go`, `metrics_*.go` — CLI wiring.
-- `cli/internal/commands/doctor/module.go` — doctor presentation owner.
-- `cli/internal/types/` — shared learning/memory types this package reads.
-- `scripts/generate-skill-mesh.py`, `scripts/audit-codex-parity.sh` — sibling
-  shell tools that overlap with this package's responsibilities.
+Run the affected cases with `go test ./internal/quality` from `cli/`, then the
+root contract's required checks. For doctor changes, cover required and optional
+failures, `info`, and JSON output separately. For installation checks, retain
+the distinction between source/projection agreement and observed installed
+content; none establishes successful model behavior.
