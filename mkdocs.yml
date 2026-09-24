@@ -13,8 +13,12 @@ site_dir: _site
 # Internal working artifacts (audits, plans, handoffs, research, council logs,
 # operationalized corpora, temp scratch docs) are repo artifacts, not website
 # content — kept tracked in the repo but excluded from the published site so
-# they never enter nav, search, or public URLs.
+# they never enter nav, search, or public URLs. Build machinery under docs/
+# (gen-files scripts in _hooks/, the theme custom_dir overrides/) is excluded
+# too, so it is not copied into the site as raw static files.
 exclude_docs: |
+  _hooks/
+  overrides/
   audits/
   brainstorms/
   code-map/
