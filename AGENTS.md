@@ -1,6 +1,7 @@
 # AgentOps Operating Contract
 
-Detailed workflow mechanics: [docs/agent-workflow-reference.md](docs/agent-workflow-reference.md).
+For execution steps, final judgment, or evidence storage, read
+[the workflow reference](docs/agent-workflow-reference.md).
 
 AgentOps is the operations layer for agentic engineering: tools, optional skills
 and evidence for independently judgeable changes. Its federated integration graph
@@ -16,11 +17,6 @@ Native goals supply continuity; BD keeps work and handoffs. Neither needs RPI.
 Creating a goal does not reset the conversation or enforce a resource limit.
 Delegate focused intent, scope and evidence; retrieve history only when it can change a decision. Assign final review once, preserving required review legs.
 See [the skill menu](docs/SKILL-ROUTER.md) for optional guidance. Plan states observable behavior in existing domain terms; Validate checks those same accepted examples. Conversation or bead examples suffice.
-
-When prior context could change the task, optionally start at
-[the project context map](.context/README.md), then read only relevant pages and
-their current source owners. Cleared project pages use ordinary filesystem
-tools without BD or AO; [Memory](skills/memory/SKILL.md) owns find, capture and curate procedures. Docs/ADRs/code retain authority and BD retains work status.
 
 ## Repository map and mechanics
 
@@ -187,6 +183,10 @@ Persist machine evidence only for a caller request or declared consumer.
 
 [Memory](skills/memory/SKILL.md) owns optional find/recall, capture/mining and curation:
 support, applicability, invalidation and preservation; no blind TTL/deletion.
+For relevant prior context, start at [the project context map](.context/README.md)
+and follow relevant pages to current source owners. Read cleared project pages
+with ordinary filesystem tools, without BD or AO. Docs, ADRs and code retain
+authority; BD retains work status.
 Benefit needs later work evidence. Use public or already-cleared inputs; this
 path supplies no native restricted-source enforcement. Protected external drafts and
 independent support/disclosure review precede Git import (ADR-0016).
@@ -236,13 +236,13 @@ AgentOps work ownership.
 | Trigger | Canonical owner |
 |---|---|
 | RPI traversal or evidence-contract change | `docs/architecture/rpi-traversal.md`, `schemas/*.schema.json` |
-| CLI command or flag | `cli/cmd/ao/`, then generated `cli/docs/COMMANDS.md` |
+| CLI command or flag | `cli/cmd/ao/` composition, `cli/internal/commands/<family>/` implementation, then generated `cli/docs/COMMANDS.md` |
 | Skill behavior or inventory | `skills/<slug>/SKILL.md`, generated `docs/SKILL-ROUTER.md` |
 | Codex projection | `docs/contracts/codex-skill-api.md`, `skills-codex-overrides/catalog.json` |
 | Deterministic checks | `docs/CI-CD.md`, `cli/internal/gates/` |
 
 ## Closeout
 
-Map final acceptance to evidence and obtain fresh exact-content judgment.
-Disclose `checked` and `not_checked`; any unchecked acceptance means `NOT_PROVEN`.
-Git, push, merge, release and rollback follow the caller's repository policy.
+Map each acceptance criterion to evidence and disclose `checked` and
+`not_checked`; any unchecked acceptance means `NOT_PROVEN`. Apply the fresh
+judgment and delivery-authority rules above.
