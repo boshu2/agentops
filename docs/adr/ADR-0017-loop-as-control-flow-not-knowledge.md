@@ -92,7 +92,8 @@ initial inputs and actual model/context receipts. Caller-required
 unavailable diversity stays `diversity_unsatisfied` / `NOT_PROVEN`; no preferred
 judge, majority vote or author can supply binding PASS. Native runtimes own
 finite input/output, timeout and verified cleanup. Exit/process facts are not
-semantic verdicts. Executable Door9 and specialist provider guards stay intact.
+semantic verdicts. Specialist provider guards stay intact; the executable Door9
+guard was retired on 2026-09-25 when the owner rescinded LAW 0.
 
 The selected new roots are Recall first and a small evolve only after native
 stop/continuation proof. Recall and broader Learn source/curation behavior have

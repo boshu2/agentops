@@ -149,9 +149,8 @@ unbounded shell recipe. Before starting it, the native runtime must:
 
 The selected native runtime retains process, timeout and output control. AO
 does not become a scheduler or semantic workflow engine. This non-executable
-reference does not change
-Door9's policy for tracked executable code or production Go, introduce a
-shipped runner, or relax specialist provider-name guards.
+reference does not introduce a shipped runner or relax specialist
+provider-name guards.
 
 ## Receipts and judgment
 

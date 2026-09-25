@@ -279,8 +279,8 @@
     {
       "name": "agent-native",
       "source_skill": "skills/agent-native",
-      "source_hash": "14b177aba6fa72e4ce8d3dc44b070da99ceb43e7c9133f98939e6b39f36b4784",
-      "generated_hash": "e811f31a5d266d3b191972418db3c387a6f50d277e955a6936dd65d54a0120e0"
+      "source_hash": "a20665288f0fdf8774f4e2a3c3e5dd581ab15ed528c4160a6b701fc5caf60d95",
+      "generated_hash": "8c71495695505f083182d430038c9dbe78a796a671a224a029b2d88e7e7defc8"
     },
     {
       "name": "agy-native",
@@ -375,8 +375,8 @@
     {
       "name": "ntm",
       "source_skill": "skills/ntm",
-      "source_hash": "34a1762405cc054d1600feede85c040950a8a815983b87bd12a45338f912729c",
-      "generated_hash": "75cea0aed20a93dbb5cf0fc58a79f2fd5774b25dd9284ebba18072a1c482a972"
+      "source_hash": "bf80aa90a32be426f01e8f17e24739bd49b49e60389604a808d2b8c3acc9175f",
+      "generated_hash": "74ed8d5dad83dad72f3b62a77aa9b95377f172ae709afdef60be20279d360409"
     },
     {
       "name": "orchestrate",

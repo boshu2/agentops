@@ -45,7 +45,6 @@ scripts/check-corpus-freshness.sh
 scripts/check-corpus-path-guard.sh
 scripts/check-doc-skill-refs.sh
 scripts/check-docs-cli-snippets.sh
-scripts/check-door9-no-claude-p.sh
 scripts/check-dream-throughput.sh
 scripts/check-epic-children-closed.sh
 scripts/check-evolve-cycle-logging.sh

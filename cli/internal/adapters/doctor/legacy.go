@@ -21,7 +21,6 @@ type LegacyChecks struct {
 	LedgerPath  func() string
 	WorkingDir  func() (string, error)
 	HomeDir     func() (string, error)
-	Environment func() []string
 	Now         func() time.Time
 }
 
@@ -59,14 +58,13 @@ func (adapter LegacyChecks) Checks(_ context.Context) []quality.Check {
 		ledgerPath = adapter.LedgerPath()
 	}
 	add(CheckLedgerHealth(ledgerPath, adapter.Now), quality.AudienceInstalledUser)
-	add(CheckLaw0Guard(adapter.Environment()), quality.AudienceInstalledUser)
 	return checks
 }
 
 func SystemLegacyChecks(toolVersion string, ledgerPath func() string) LegacyChecks {
 	return LegacyChecks{
 		ToolVersion: toolVersion, LedgerPath: ledgerPath,
-		WorkingDir: os.Getwd, HomeDir: os.UserHomeDir, Environment: os.Environ, Now: time.Now,
+		WorkingDir: os.Getwd, HomeDir: os.UserHomeDir, Now: time.Now,
 	}
 }
 
@@ -354,25 +352,4 @@ func CheckLedgerHealth(path string, now func() time.Time) quality.Check {
 		}
 	}
 	return quality.Check{Name: name, Status: "pass", Detail: detail + ")"}
-}
-
-var law0Needles = []string{"claude" + " -p", "claude" + " --print"}
-
-func CheckLaw0Guard(environment []string) quality.Check {
-	for _, item := range environment {
-		key, value, ok := strings.Cut(item, "=")
-		if !ok || !law0RelevantEnv(key) {
-			continue
-		}
-		for _, needle := range law0Needles {
-			if strings.Contains(value, needle) {
-				return quality.Check{Name: "LAW-0 Guard", Status: "fail", Detail: fmt.Sprintf("LAW-0 violation: $%s routes a reviewer through %q — remove it: unset %s", key, needle, key), Required: true}
-			}
-		}
-	}
-	return quality.Check{Name: "LAW-0 Guard", Status: "pass", Detail: "no reviewer path configured through claude print-mode (scanned AGENTOPS_*/AO_*/*REVIEWER* env)", Required: true}
-}
-
-func law0RelevantEnv(name string) bool {
-	return strings.HasPrefix(name, "AGENTOPS_") || strings.HasPrefix(name, "AO_") || strings.Contains(name, "REVIEWER")
 }

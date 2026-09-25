@@ -29,8 +29,8 @@ NC='\033[0m'
 # Create log directory
 mkdir -p "$LOG_DIR"
 
-# Archived live Claude Code functional helpers. LAW 0 forbids AgentOps tests
-# from spawning Claude print workers; use tests/skills/test-runtime-claude-code-smoke.sh
+# Archived live Claude Code functional helpers; these stubs no longer spawn
+# Claude print workers. Use tests/skills/test-runtime-claude-code-smoke.sh
 # for maintained Claude Code proof.
 run_claude() {
     : "${1:-}" "${2:-$DEFAULT_TIMEOUT}"

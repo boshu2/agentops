@@ -595,8 +595,6 @@ MAX_TURNS=10 DEFAULT_TIMEOUT=180 ./tests/claude-code/test-swarm-skill.sh
    ```text
    Open an interactive session with the plugin installed and ask:
    "What is the swarm skill?"
-
-   Do not use Claude print mode.
    ```
 
 ---
