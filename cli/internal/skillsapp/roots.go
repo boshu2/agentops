@@ -72,9 +72,8 @@ func ResolveRepoSkillsDir() (string, error) {
 }
 
 // runtimeSkillTarget pairs a runtime's install-detection dir with its
-// user-level skills dir, both relative to $HOME. For most runtimes the two
-// are the same directory (the config dir doubles as the skills parent); Pi is
-// the exception (see runtimeSkillTargets).
+// user-level skills dir, both relative to $HOME. For most runtimes skills is
+// <detect>/skills; Pi is the exception.
 type runtimeSkillTarget struct {
 	// detect is the dir under $HOME whose existence signals the runtime is
 	// installed.
@@ -91,10 +90,9 @@ type runtimeSkillTarget struct {
 // Most runtimes are detected by their config dir existing under $HOME, with
 // that same dir holding skills/. Pi is the exception: its USER-level skills
 // dir is ~/.pi/agent/skills, detected by ~/.pi/agent existing — ~/.pi/skills
-// is Pi's separate PROJECT-level dir (see the .pi/skills/ prefix in
-// cli/internal/gates/routing.go, which is unrelated and stays as-is). Ground
-// truth: the npx `skills` installer's agent table (skills v1.7.0,
-// dist/cli.mjs) and docs/contracts/multi-runtime-tier-charter.md.
+// is Pi's separate PROJECT-level dir. Ground truth: the npx `skills`
+// installer's agent table (skills v1.7.0, dist/cli.mjs). The doctor adapter's
+// runtimeSkillRoots mirrors this list.
 var runtimeSkillTargets = []runtimeSkillTarget{
 	{detect: ".claude", skills: filepath.Join(".claude", "skills")},
 	{detect: ".codex", skills: filepath.Join(".codex", "skills")},
