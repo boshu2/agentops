@@ -78,7 +78,6 @@ def validate_graph(entries: list[dict[str, Any]]) -> None:
     # (gate contract.skill-mesh); the generator only refuses unbuildable input.
 
 
-
 def catalog(entries: list[dict[str, Any]]) -> dict[str, Any]:
     return {"schema_version": "3", "skill_count": len(entries), "skills": entries}
 

@@ -137,6 +137,13 @@ var (
 		"scripts/lib/ratchet.sh",
 		"tests/scripts/check-doc-skill-refs.bats",
 	}
+	// contract.skill-mesh reads every SKILL.md plus the projections it compares
+	// (catalog, registry, Codex override catalog) and runs the generator's check.
+	skillMeshPaths = []string{
+		"skills/**", "skills-codex/**", "tests/skills/**",
+		"scripts/check-skill-mesh.py", "scripts/generate-skill-mesh.py",
+		"registry.json", "skills-codex-overrides/catalog.json",
+	}
 	cathedralCutPaths = []string{
 		"skills/**", "skills-codex/**", "schemas/**", "docs/SCHEMAS.md", "docs/contracts/index.md",
 		"scripts/swarm/**",
@@ -355,7 +362,7 @@ func init() {
 		{ID: "skill.triggers", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-triggers.sh"},
 		{ID: "contract.cathedral-cut", Tiers: gates.Fast | gates.Full, Match: cathedralCutPaths, Blocking: true, Backing: "check-cathedral-cut-conformance.py"},
 		{ID: "adapter.gc-maintainer", Tiers: gates.Fast | gates.Full, Match: gcMaintainerPaths, Blocking: true, Backing: "check-gc-maintainer-ops.sh", RepairHint: "bash -n scripts/gc-maintainer-ops.sh; python3 -m unittest tests.python.test_gc_maintainer_ops"},
-		{ID: "contract.skill-mesh", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "check-skill-mesh.py"},
+		{ID: "contract.skill-mesh", Tiers: gates.Fast | gates.Full, Match: skillMeshPaths, Blocking: true, Backing: "check-skill-mesh.py"},
 		{ID: "contract.finding-registry", Tiers: gates.Fast | gates.Full, Match: contractPaths, Blocking: true, Backing: "check-finding-registry.sh"},
 		{ID: "ci.policy-parity", Tiers: gates.Fast | gates.Full, Match: ciPolicyPaths, Blocking: true, Backing: "validate-ci-policy-parity.sh"},
 		// skill class (PB1 parity batch — all shell-backed via ScriptRunner)

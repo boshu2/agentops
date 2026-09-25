@@ -131,6 +131,20 @@ EOF
   [[ "$output" == *"non-canonical product-area heading"* ]]
 }
 
+@test "fails a bullet placed under Product Areas before any area heading" {
+  write_patch_notes "9.9.9"
+  python3 - "$SANDBOX/docs/releases/2026-05-25-v9.9.9-notes.md" <<'EOF'
+import sys
+from pathlib import Path
+path = Path(sys.argv[1])
+text = path.read_text()
+path.write_text(text.replace("## Product Areas\n\n", "## Product Areas\n\n- Fixed: an orphan bullet.\n\n", 1))
+EOF
+  run "$SANDBOX/scripts/validate-release-notes.sh" v9.9.9
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"bullet outside any"* ]]
+}
+
 @test "minor (X.Y.0) does NOT require a Breaking Changes section" {
   write_patch_notes "9.9.0"
   run "$SANDBOX/scripts/validate-release-notes.sh" v9.9.0

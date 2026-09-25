@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -231,7 +232,24 @@ func TestRemovedCommandHintsNameLiveSkills(t *testing.T) {
 			t.Errorf("%q hint names skill %q, which does not ship: %v", verb, skill, err)
 		}
 	}
+	// Any other hint that points at a skill ("the X skill", "invoke x") must
+	// point at one that ships. A possessive ("the compile skill's") describes
+	// history, not a destination, and is skipped.
+	for verb, tomb := range removedCommands {
+		for _, m := range skillMention.FindAllStringSubmatch(tomb.use, -1) {
+			name := strings.ToLower(m[1] + m[2])
+			if name == "the" { // "invoke the X skill": the first alternative catches X
+				continue
+			}
+			if _, err := os.Stat(filepath.Join(repo, "skills", name, "SKILL.md")); err != nil {
+				t.Errorf("%q hint points at skill %q, which does not ship", verb, name)
+			}
+		}
+	}
 }
+
+// skillMention matches "the <Name> skill" (not possessive) or "invoke <name>".
+var skillMention = regexp.MustCompile(`\bthe ([A-Za-z-]+) skill\b(?:[^'\w]|$)|\binvoke ([a-z][a-z-]+)\b`)
 
 // findMigrationDoc walks up from the test's working directory to the repo
 // root and returns the path to docs/MIGRATION.md.

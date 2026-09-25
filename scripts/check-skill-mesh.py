@@ -47,22 +47,9 @@ def fail(message: str, failures: list[str]) -> None:
     failures.append(message)
 
 
-def main() -> int:
+def check_graph_and_authority(skills: dict[str, dict]) -> list[str]:
+    """Dependency-graph and acceptance-authority rules over parsed SKILL.md frontmatter."""
     failures: list[str] = []
-    skills: dict[str, dict] = {}
-    for path in sorted((ROOT / "skills").glob("*/SKILL.md")):
-        name = path.parent.name
-        data = frontmatter(path)
-        metadata = data.get("metadata") or {}
-        if data.get("name") != name:
-            fail(f"name/path mismatch: {path}", failures)
-        if metadata.get("disposition") not in DISPOSITIONS:
-            fail(f"missing or invalid disposition: {name}", failures)
-        for field in ("tier", "dependencies", "capabilities", "effects", "canonical_status"):
-            if field not in metadata:
-                fail(f"missing metadata.{field}: {name}", failures)
-        skills[name] = data
-
     names = set(skills)
     for name, data in skills.items():
         metadata = data.get("metadata") or {}
@@ -94,6 +81,27 @@ def main() -> int:
             fail(f"verdict.v2 producer does not declare judge_acceptance: {name}", failures)
         if judges and not (data.get("produces") or []) and not (metadata.get("effects") or []):
             fail(f"advisory skill (no produces, no effects) declares judge_acceptance: {name}", failures)
+    return failures
+
+
+def main() -> int:
+    failures: list[str] = []
+    skills: dict[str, dict] = {}
+    for path in sorted((ROOT / "skills").glob("*/SKILL.md")):
+        name = path.parent.name
+        data = frontmatter(path)
+        metadata = data.get("metadata") or {}
+        if data.get("name") != name:
+            fail(f"name/path mismatch: {path}", failures)
+        if metadata.get("disposition") not in DISPOSITIONS:
+            fail(f"missing or invalid disposition: {name}", failures)
+        for field in ("tier", "dependencies", "capabilities", "effects", "canonical_status"):
+            if field not in metadata:
+                fail(f"missing metadata.{field}: {name}", failures)
+        skills[name] = data
+
+    names = set(skills)
+    failures.extend(check_graph_and_authority(skills))
 
     catalog = json.loads((ROOT / "skills/catalog.json").read_text(encoding="utf-8"))
     catalog_names = [entry.get("name") for entry in catalog.get("skills", [])]

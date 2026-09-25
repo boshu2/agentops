@@ -110,8 +110,25 @@ def check_core_schemas() -> None:
         assert schema.get("deprecated") is True, f"{filename}: compatibility schema is not deprecated"
     verdict = json.loads((ROOT / "schemas" / "verdict.v2.schema.json").read_text(encoding="utf-8"))
     assert set(verdict["properties"]["verdict"]["enum"]) == {"PASS", "FAIL", "NOT_PROVEN"}
+    for enum in verdict_enums(verdict):
+        if "PASS" in enum:
+            assert set(enum) == {"PASS", "FAIL", "NOT_PROVEN"}, f"verdict.v2 enum {enum} is not the tri-state"
     bad = property_names(verdict).intersection(FORBIDDEN_VERDICT_PROPERTIES)
     assert not bad, f"verdict.v2 retains {sorted(bad)}"
+
+
+def verdict_enums(value: object) -> list[list]:
+    """Every `enum` list anywhere in a schema (verdict and criteria[].result alike)."""
+    found: list[list] = []
+    if isinstance(value, dict):
+        if isinstance(value.get("enum"), list):
+            found.append(value["enum"])
+        for child in value.values():
+            found.extend(verdict_enums(child))
+    elif isinstance(value, list):
+        for child in value:
+            found.extend(verdict_enums(child))
+    return found
 
 
 def schema_link_targets(text: str) -> list[str]:
@@ -133,7 +150,9 @@ def check_schema_index_docs() -> None:
     """Schema docs never present a deprecated schema as current.
 
     The deprecated set is the schemas' own top-level `deprecated: true`; every
-    linked schema must exist, and no current schema may follow a deprecated one.
+    linked schema must exist. A Markdown block (a table, list or paragraph:
+    consecutive non-blank lines) may not mix deprecated and current schemas,
+    and no current block may follow a deprecated one.
     """
     deprecated = {
         path.name
@@ -145,13 +164,18 @@ def check_schema_index_docs() -> None:
         assert targets, f"{relative}: links no schemas/*.schema.json file"
         missing = [name for name in targets if not (ROOT / "schemas" / name).is_file()]
         assert not missing, f"{relative}: links missing schemas {missing}"
+        text = (ROOT / relative).read_text(encoding="utf-8")
         first_deprecated = None
-        for name in targets:
-            if name in deprecated:
-                first_deprecated = first_deprecated or name
-            elif first_deprecated is not None:
+        for block in re.split(r"\n\s*\n", text):
+            names = schema_link_targets(block)
+            old = [name for name in names if name in deprecated]
+            new = [name for name in names if name not in deprecated]
+            assert not (old and new), f"{relative}: one block mixes deprecated {old} with current {new}"
+            if old:
+                first_deprecated = first_deprecated or old[0]
+            elif new and first_deprecated is not None:
                 raise AssertionError(
-                    f"{relative}: current schema {name} is listed after deprecated {first_deprecated}"
+                    f"{relative}: current schema {new[0]} is listed after deprecated {first_deprecated}"
                 )
 
 

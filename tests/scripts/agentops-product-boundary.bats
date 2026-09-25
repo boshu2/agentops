@@ -74,3 +74,84 @@ PY
   run grep -F "agent(" "$wf"
   [ "$status" -eq 1 ]
 }
+
+@test "skill-mesh rejects a second verdict producer, an advisory judge and a non-rpi dependency" {
+  run python3 - "$REPO_ROOT/scripts/check-skill-mesh.py" <<'EOF'
+import importlib.util
+import sys
+
+spec = importlib.util.spec_from_file_location("skill_mesh", sys.argv[1])
+mesh = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mesh)
+
+def skill(deps=(), produces=(), effects=("x",), caps=()):
+    return {"produces": list(produces), "metadata": {"dependencies": list(deps), "effects": list(effects), "capabilities": list(caps)}}
+
+base = {
+    "rpi": skill(deps=("plan", "implement", "validate")),
+    "plan": skill(), "implement": skill(),
+    "validate": skill(produces=("verdict.v2",), caps=("judge_acceptance",)),
+}
+assert mesh.check_graph_and_authority(base) == [], mesh.check_graph_and_authority(base)
+cases = {
+    "exactly one skill must produce verdict.v2": dict(base, review=skill(produces=("verdict.v2",), caps=("judge_acceptance",))),
+    "advisory skill (no produces, no effects) declares judge_acceptance": dict(base, review=skill(effects=(), caps=("judge_acceptance",))),
+    "only rpi may declare hard dependencies": dict(base, review=skill(deps=("plan",))),
+}
+for want, skills in cases.items():
+    got = mesh.check_graph_and_authority(skills)
+    assert any(want in message for message in got), (want, got)
+print("ok")
+EOF
+  [ "$status" -eq 0 ]
+  [ "$output" = "ok" ]
+}
+
+@test "schema docs reject a deprecated schema inside a current block, and verdict enums stay tri-state" {
+  fixture="$BATS_TEST_TMPDIR/repo"
+  mkdir -p "$fixture/docs/contracts"
+  cp -R "$REPO_ROOT/schemas" "$fixture/schemas"
+  cp "$REPO_ROOT/docs/SCHEMAS.md" "$fixture/docs/SCHEMAS.md"
+  cp "$REPO_ROOT/docs/contracts/index.md" "$fixture/docs/contracts/index.md"
+  run python3 - "$REPO_ROOT/scripts/check-cathedral-cut-conformance.py" "$fixture" <<'EOF'
+import importlib.util
+import json
+import sys
+from pathlib import Path
+
+spec = importlib.util.spec_from_file_location("cathedral_cut", sys.argv[1])
+cut = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(cut)
+root = Path(sys.argv[2])
+cut.ROOT = root
+cut.check_schema_index_docs()
+cut.check_core_schemas()
+
+doc = root / "docs" / "SCHEMAS.md"
+text = doc.read_text()
+row = "rpi-report.v1.schema.json"
+assert row in text
+lines = text.split("\n")
+at = next(i for i, line in enumerate(lines) if row in line)
+lines.insert(at + 1, lines[at].replace("rpi-report.v1", "plan-packet.v1"))
+doc.write_text("\n".join(lines))
+try:
+    cut.check_schema_index_docs()
+    raise SystemExit("planted deprecated row in the current block passed")
+except AssertionError as exc:
+    assert "mixes deprecated" in str(exc), exc
+
+verdict = root / "schemas" / "verdict.v2.schema.json"
+schema = json.loads(verdict.read_text())
+schema["properties"]["criteria"]["items"]["properties"]["result"]["enum"].append("WARN")
+verdict.write_text(json.dumps(schema))
+try:
+    cut.check_core_schemas()
+    raise SystemExit("WARN in criteria[].result passed")
+except AssertionError as exc:
+    assert "not the tri-state" in str(exc), exc
+print("ok")
+EOF
+  [ "$status" -eq 0 ]
+  [ "$output" = "ok" ]
+}

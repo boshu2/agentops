@@ -191,7 +191,7 @@ If a lock is used, the canonical lock path is `.agents/findings/registry.lock`, 
 
 The old v1 slice described several follow-ons as deferred. Those deferrals are now split into two groups:
 
-- **Superseded by the v2 compiler contract:** promoted finding artifacts, `ao findings`, citation updates, and active declarative constraints now belong to [finding-compiler.md](finding-compiler.md) and the downstream CLI/runtime contracts that implement it. <!-- ao-resolve: ignore -->
+- **Superseded by the v2 compiler contract:** promoted finding artifacts, the removed `ao findings` command, citation updates, and active declarative constraints now belong to [finding-compiler.md](finding-compiler.md) and the downstream CLI/runtime contracts that implement it. <!-- ao-resolve: ignore -->
 - **Still deferred beyond issue ag-8ki.1:** automatic TTL retirement and broader cross-repo transport policy remain follow-on implementation work even though the contract now leaves room for them.
 
 The important compatibility rule is simple: the JSONL registry remains the canonical intake ledger, even as later v2 layers compile and consume richer prevention artifacts.

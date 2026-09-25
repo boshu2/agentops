@@ -60,8 +60,8 @@ PYCHECK
     [ "$status" -eq 0 ]
 }
 
-# C ── a CROSS-RUNTIME skill (it names Claude Code AND Codex CLI, or both
-# ~/.claude/skills and ~/.codex/skills) must be listed in
+# C ── a skill with a source line whose Claude->Codex rewrite would duplicate
+# a Codex-side token must be listed in
 # scripts/lint/codex-cross-runtime-skills.txt, and a listed skill's twin must not
 # receive the Claude->Codex runtime rewrites. The blanket rewrite collapsed
 # using-flywheel's runtime trio to two names and printed one install path twice,
