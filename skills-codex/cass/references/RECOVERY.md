@@ -113,13 +113,20 @@ timeout 600 cass doctor --fix --force-rebuild --json
 
 ### Incremental index hangs at current:0 (OPEN issue #196)
 
-```bash
-# Workaround until fixed upstream
-pkill -f "cass index"
-timeout 600 cass index --full --force-rebuild --json
-```
+First distinguish a quiet or contended writer from an abandoned one using
+bounded observations in [OBSERVABILITY.md](OBSERVABILITY.md#authoritative-fallback-and-concurrent-read-latency).
+A 30-second pause, timed-out status, or large rebuild total is insufficient.
+Check the installed version and inspect the exact writer PID and owner. If
+liveness or ownership remains unknown, report incomplete recovery and stop.
 
-`cass status` keeps showing `rebuilding` after the kill? `cass doctor --fix` clears the run lock.
+Terminating a confirmed stuck writer requires caller authority for that exact
+process; recovery permission alone is not permission to kill unrelated writers.
+With that authority, stop the identified writer through its native owner and
+verify it has exited. Never use a broad `pkill -f` or launch a competing indexer.
+Only after exit and within the selected derived-state recovery scope, run one
+bounded repair such as `timeout 600 cass doctor --fix --force-rebuild --json`.
+Preserve its exit status and report any incomplete repair. A later attempt is
+a caller-owned decision within the original bounds, not an automatic retry loop.
 
 ### Full rebuild "succeeds" then fails on `last_indexed_at` write (FIXED at HEAD as of 2026-04-22)
 

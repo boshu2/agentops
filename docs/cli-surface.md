@@ -57,7 +57,10 @@
 | `ao session prune-agents` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao session read-source` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao session rehydrate` | `public-tested` | `allowlisted` | Covered by rehydrate artifact tests. |
+| `ao skills audit` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao skills build` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao skills check` | `public-tested` | `allowlisted` | Covered by internal/commands/skills module tests after the skills carve-out. |
+| `ao skills check-source` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao skills consumers` | `public-tested` | `allowlisted` | Covered by internal/commands/skills module tests after the skills carve-out. |
 | `ao skills find` | `public-tested` | `allowlisted` | Covered by internal/commands/skills module tests after the skills carve-out. |
 | `ao skills graph` | `public-tested` | `allowlisted` | Covered by internal/commands/skills module tests after the skills carve-out. |

@@ -1,27 +1,31 @@
-# Executable spec for skill-builder's deep audit mode (absorbed from the retired /skill-auditor) —
-# skill template audit (BC1 Corpus / Skill Catalog).
-# The audit checks an existing SKILL.md against the unified template: Pass 1 gates
-# through heal.sh --strict, Pass 2 runs additional structural checks, then it emits a
-# density report and a static package-readiness score. Hexagon: supporting; consumes: a
-# SKILL.md + the template; produces: audit-report.json. (soc-qk4b)
+# Executable contract for Skill Builder audit; coverage in test_skill_audit.bats
+# and skillshealth evidence tests. No skill/provider trial runs during this audit.
+Feature: Skill audit separates evidence without an optimization rank
+  Scenario: Untested conformant package
+    Given a valid package for the selected static profile
+    When the default audit runs
+    Then static conformance passes
+    And effects and behavioral evidence remain NOT_PROVEN
+    And no aggregate score or quality verdict is emitted
 
-Feature: Skill-auditor scores a skill against the unified template
-  As a catalog maintainer
-  I want each skill audited for hygiene and structure
-  So that drift from the template is caught before it ships
+  Scenario: Layout and irrelevant additions do not improve substantive evidence
+    Given equivalent concise layouts and optional unreferenced files
+    When the default audit runs
+    Then substantive conformance and behavioral results are unchanged
+    And necessary prohibitions never become blocking authoring defects
 
-  Background:
-    Given an existing SKILL.md and the unified template
+  Scenario: Concrete defects survive decoration
+    Given a missing required resource or unsupported portable field
+    When labels and irrelevant helpers are added
+    Then the concrete conformance defect still fails
 
-  Scenario: Pass 1 delegates hygiene to heal.sh
-    When /skill-auditor runs
-    Then Pass 1 delegates the hygiene checks to heal.sh --strict by exit code
+  Scenario: Located reachable effects
+    Given SKILL.md links a script piping a remote response into a shell
+    When the default audit runs
+    Then the report locates that conditional execution path
+    And safety remains NOT_PROVEN after adding reassuring labels
 
-  Scenario: Pass 2 runs the additional structural checks
-    When Pass 1 completes
-    Then Pass 2 runs the additional template-conformance checks
-
-  Scenario: A density report and static package-readiness score are emitted
-    When both passes complete
-    Then it emits an advisory density report and a static package-readiness score in audit-report.json
-    And the score says that safety and effectiveness were not evaluated
+  Scenario: Explicit legacy field and exit compatibility
+    When the audit runs with --legacy
+    Then audit-report-legacy.json describes the complete old report
+    And the accepted S1 field and exit behavior is preserved

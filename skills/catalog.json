@@ -255,7 +255,7 @@
       ],
       "context_rel": [],
       "dependencies": [],
-      "description": "Compare model perspectives to brainstorm, plan, validate, duel on scored ideas, or answer an interview. Use when: the caller selects independent proposals or judgments, with optional bounded debate.",
+      "description": "Compare model perspectives for brainstorming, planning, validation, idea duels or interviews. Use when: independent proposals or judgments need optional bounded debate.",
       "disposition": "keep_strategy",
       "effects": [
         "write_advisory_council_report"

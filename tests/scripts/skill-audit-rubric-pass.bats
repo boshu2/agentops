@@ -12,7 +12,7 @@ setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     AUDIT="$REPO_ROOT/skills/skill-builder/scripts/audit.sh"
     SCORE="$REPO_ROOT/skills/skill-builder/scripts/score_agentops_skill.py"
-    SCHEMA="$REPO_ROOT/skills/skill-builder/schemas/audit-report.json"
+    SCHEMA="$REPO_ROOT/skills/skill-builder/schemas/audit-report-legacy.json"
 
     # The 10 scored categories, verbatim from the rubric.
     EXPECTED_CATEGORIES=(
@@ -67,7 +67,7 @@ teardown() {
 }
 
 @test "audit.sh folds a rubric block with all 10 scored categories into the report" {
-    run bash "$AUDIT" "$FIXTURE" --json "$TMP_DIR/report.json"
+    run bash "$AUDIT" --legacy "$FIXTURE" --json "$TMP_DIR/report.json"
     [ "$status" -eq 0 ]
     [[ "$output" == *"/30"* ]]
 
@@ -112,7 +112,7 @@ PY
     # Fixture has a single-line description without Triggers markers -> Pass 2
     # description/trigger checks WARN. Verdict should be WARN regardless of the
     # rubric score.
-    run bash "$AUDIT" "$FIXTURE" --json "$TMP_DIR/report.json"
+    run bash "$AUDIT" --legacy "$FIXTURE" --json "$TMP_DIR/report.json"
     [ "$status" -eq 0 ]
     verdict="$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['verdict'])" "$TMP_DIR/report.json")"
     [ "$verdict" = "WARN" ]
@@ -176,7 +176,7 @@ PY
 @test "canonical plan and execution skills keep explicit output contracts" {
     for skill in plan implement using-flywheel; do
         local report="$TMP_DIR/$skill.json"
-        run bash "$AUDIT" "$REPO_ROOT/skills/$skill" --json "$report"
+        run bash "$AUDIT" --legacy "$REPO_ROOT/skills/$skill" --json "$report"
         [ "$status" -eq 0 ]
         run jq -e '
             [.pass2.checks[]
@@ -188,7 +188,7 @@ PY
 }
 
 @test "report stays valid against the audit schema when rubric is emitted" {
-    run bash "$AUDIT" "$FIXTURE" --json "$TMP_DIR/report.json"
+    run bash "$AUDIT" --legacy "$FIXTURE" --json "$TMP_DIR/report.json"
     [ "$status" -eq 0 ]
     run python3 - "$TMP_DIR/report.json" "$SCHEMA" <<'PY'
 import json

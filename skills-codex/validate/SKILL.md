@@ -24,7 +24,13 @@ against accepted intent, return `PASS`, `FAIL`, or `NOT_PROVEN`, and stop. The
 author cannot provide binding PASS. Advisory findings cannot substitute for
 this fresh exact-subject judgment. Read RPI [boundaries](../rpi/references/boundaries.md)
 before judgment; load helper flags and storage details from
-[mechanics](references/mechanics.md) when needed.
+[mechanics](references/mechanics.md) when needed. If the required boundary
+resource is missing or unreadable, name the path and report that judgment is
+blocked; do not issue a verdict from remembered or inferred boundary rules.
+Unrelated authorized inspection may continue. Restore access to that resource
+before resuming judgment. Optional mechanics need loading only for the selected
+helper or persistence operation; a missing optional resource blocks that
+operation, not every inspection.
 
 ## Preconditions and freshness
 

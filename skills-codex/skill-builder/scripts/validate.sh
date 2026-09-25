@@ -10,9 +10,11 @@ for path in \
   scripts/init.sh \
   scripts/heal.sh \
   scripts/audit.sh \
+  scripts/audit-legacy.sh \
   scripts/score_agentops_skill.py \
   schemas/build-report.json \
   schemas/audit-report.json \
+  schemas/audit-report-legacy.json \
   references/audit-checks.md \
   references/codex-parity.md; do
   [[ -f "$SKILL_DIR/$path" ]] || {
