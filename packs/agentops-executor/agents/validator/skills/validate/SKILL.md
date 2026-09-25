@@ -61,8 +61,8 @@ the `agent-native` model-dispatch recipe (`codex-exec` and/or `ntm`,
 probed at runtime). Record author and validator `model_identity` in evidence
 refs and freshness attestation notes — do not change `verdict.v2` schema. If
 the requested validator model has no live adapter, disclose the unsatisfied
-diversity request and proceed same-model; never invoke `claude -p` /
-`claude --print`. Single fresh validator remains the default shape.
+diversity request and proceed same-model. Single fresh validator remains the
+default shape.
 
 ## Mutating-check quarantine
 

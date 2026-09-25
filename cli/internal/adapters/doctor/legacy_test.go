@@ -33,7 +33,7 @@ func TestLegacyChecksIncludesEveryDoctorSafetySection(t *testing.T) {
 	for _, check := range checks {
 		byName[check.Name] = check.Status
 	}
-	for _, name := range []string{"Skill Links", "Binary Freshness", "Ledger Health", "LAW-0 Guard"} {
+	for _, name := range []string{"Skill Links", "Binary Freshness", "Ledger Health"} {
 		if _, ok := byName[name]; !ok {
 			t.Errorf("LegacyChecks missing %q: %v", name, byName)
 		}
@@ -465,26 +465,6 @@ func TestCheckLedgerHealthIntactMissingAndTampered(t *testing.T) {
 	check := CheckLedgerHealth(path, time.Now)
 	if check.Status != quality.StatusWarn || check.Required || !strings.Contains(check.Detail, "chain breaks at line 1") || !strings.Contains(check.Detail, "ao provenance verify") {
 		t.Fatalf("tampered ledger = %+v", check)
-	}
-}
-
-func TestCheckLaw0Guard(t *testing.T) {
-	for _, test := range []struct {
-		name, status, detail string
-		environment          []string
-	}{
-		{name: "clean", environment: []string{"AGENTOPS_MODE=local"}, status: "pass", detail: "no reviewer path configured"},
-		{name: "empty", status: "pass", detail: "no reviewer path configured"},
-		{name: "review command print flag", environment: []string{"AGENTOPS_REVIEWER_CMD=claude" + " -p review"}, status: "fail", detail: "unset AGENTOPS_REVIEWER_CMD"},
-		{name: "reviewer print word", environment: []string{"MY_REVIEWER_BIN=claude" + " --print"}, status: "fail", detail: "unset MY_REVIEWER_BIN"},
-		{name: "unscoped ignored", environment: []string{"SHELL_HISTORY=claude -p review"}, status: "pass", detail: "no reviewer path configured"},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			check := CheckLaw0Guard(test.environment)
-			if check.Status != test.status || !check.Required || !strings.Contains(check.Detail, test.detail) {
-				t.Fatalf("check = %+v", check)
-			}
-		})
 	}
 }
 

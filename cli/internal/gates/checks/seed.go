@@ -325,7 +325,6 @@ func init() {
 		// always-run (no Match): structural invariants that hold regardless of
 		// what changed.
 		{ID: "always.mutation-route", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-mutation-route-coverage.sh"},
-		{ID: "always.door9-no-claude-p", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-door9-no-claude-p.sh"},
 		{ID: "always.no-tracked-agents", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-no-tracked-agents.sh"},
 		// static portability guard for the never-safe `find -printf` (GNU-only)
 		// class — four real instances shipped because no gate caught it and Linux

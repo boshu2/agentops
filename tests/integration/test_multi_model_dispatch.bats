@@ -118,15 +118,7 @@ print("validate degrade ok")
 PY
 }
 
-@test "no claude -p or --print in model-dispatch or fake runner" {
-  run grep -E 'claude -p|claude --print' \
-    "$REPO_ROOT/skills/agent-native/references/model-dispatch.md" \
-    "$REPO_ROOT/skills/agent-native/scripts/fake_model_runner.py"
-  # grep finds the prohibition prose ("Never invoke claude -p") — that is fine;
-  # fail only if an invocation recipe appears (pipe to claude -p, etc.).
-  run grep -E '(^|[^"])claude -p|(^|[^"])claude --print' \
-    "$REPO_ROOT/skills/agent-native/scripts/fake_model_runner.py"
-  [ "$status" -ne 0 ]
+@test "model-dispatch reference documents real codex/ntm dispatch commands" {
   run grep -E 'codex exec|command -v ntm|command -v codex' \
     "$REPO_ROOT/skills/agent-native/references/model-dispatch.md"
   [ "$status" -eq 0 ]

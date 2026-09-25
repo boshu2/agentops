@@ -73,8 +73,7 @@ preflight() {
             fi
             ;;
         claude)
-            echo "ERROR: runtime \"claude\" is disabled by LAW 0; team-runner must not spawn Claude print-mode workers." >&2
-            echo "Use runtime \"codex\" here, or dispatch Claude through NTM panes / in-harness subagents." >&2
+            echo "ERROR: runtime \"claude\" is not supported by team-runner; use runtime \"codex\", NTM panes or in-harness subagents." >&2
             fail=1
             ;;
         *)

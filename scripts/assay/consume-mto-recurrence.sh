@@ -25,7 +25,7 @@
 # A shape-valid-but-bogus date ("UNDATED"/"?"/absent, but also 2026-99-99 / a
 # non-leap 2026-02-29) is rejected by the runtime schema (finding-artifact.schema.json:
 # date has format "date", enforced via FormatChecker), so we refuse to emit one.
-# Door 9: never `claude -p`/`--print`; only jq/mkdir/printf.
+# Deterministic only: no live model invocation; only jq/mkdir/printf.
 
 set -euo pipefail
 
