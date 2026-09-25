@@ -1,28 +1,15 @@
-# Executable spec for skill-builder's heal mode — skill hygiene repair (BC1 Corpus / Skill Catalog).
-# The heal mode detects and auto-fixes common SKILL.md hygiene issues across skills/ (including
-# unlinked references and Codex-parity drift), then reports what it changed. Hexagon:
-# supporting; consumes: the skills/ tree; produces: a heal report + auto-fixed skill files. (soc-qk4b)
+Feature: Source checks are read-only and repair touches owned projections
+  Scenario: Explicit targets are checked
+    When heal.sh --check --strict receives a real direct source package
+    Then it checks identity, required source fields, linked resources and scaffold state
+    And it does not claim semantic completeness
+    And it changes no file
 
-Feature: The heal mode repairs skill hygiene across the catalog
-  As a catalog maintainer
-  I want common hygiene issues detected and auto-fixed
-  So that skills stay well-formed without manual sweeps
+  Scenario: Unsafe target spellings are rejected
+    When a target uses traversal or symlinks
+    Then the operation fails before projecting any target
 
-  Background:
-    Given the skills/ directory with one or more skills
-
-  Scenario: The heal script detects hygiene issues
-    When the heal mode runs
-    Then it scans skills for hygiene issues including unlinked references
-
-  Scenario: Codex parity drift is flagged
-    When the Codex bundle looks wrong
-    Then it audits and reports Codex-parity drift
-
-  Scenario: Fixable issues are auto-fixed and reported
-    When issues are found
-    Then it auto-fixes the fixable ones and reports what changed
-
-  Scenario: Strict mode fails on remaining findings
-    When run with --strict
-    Then it reports a non-clean result when unresolved findings remain
+  Scenario: Projection repair does not author behavior
+    When heal.sh --fix receives valid completed source targets
+    Then it regenerates only their owned projection bundles and shared catalog
+    And invalid source targets remain failing without projection mutation

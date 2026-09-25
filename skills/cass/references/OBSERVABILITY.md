@@ -168,7 +168,11 @@ When you run `cass index --json`, **stderr** streams progress events:
 
 Tune the cadence: `--progress-interval-ms 1000` (clamped 250–60000). Disable: `--no-progress-events` or `CASS_INDEX_NO_PROGRESS_EVENTS=1`.
 
-**This is how you detect issue #196 (stuck indexing):** if `current` doesn't advance for >30s of progress events, kill and retry with `--full --force-rebuild`.
+A stationary `current` value for 30 seconds is a diagnostic signal, not proof
+of a dead writer. Compare bounded status observations and the actual process
+identity before considering the selected [recovery procedure](RECOVERY.md).
+A timeout or missing status leaves liveness unknown; do not kill or retry from
+that observation alone.
 
 ## Authoritative Fallback and Concurrent Read Latency
 
@@ -206,7 +210,8 @@ esac
 When status succeeds, compare `.rebuild.updated_at` and
 `.rebuild.processed_conversations` across bounded observations. Movement means
 the authoritative run is progressing; let that single writer converge. If the
-values do not move, follow the existing issue #196 recovery guidance. Never use
+values do not move, report that observation and inspect the existing issue #196
+recovery prerequisites; it does not grant termination authority. Never use
 a timed-out read, a large rebuild total, or a temporary `rebuilding` state as a
 claim that data was lost.
 

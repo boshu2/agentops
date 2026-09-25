@@ -1,6 +1,6 @@
 ---
 name: council
-description: 'Compare model perspectives to brainstorm, plan, validate, duel on scored ideas, or answer an interview. Use when: the caller selects independent proposals or judgments, with optional bounded debate.'
+description: 'Compare model perspectives for brainstorming, planning, validation, idea duels or interviews. Use when: independent proposals or judgments need optional bounded debate.'
 practices: [llm-eval-harness, design-by-contract]
 hexagonal_role: domain
 consumes: [explicit-question, evidence]

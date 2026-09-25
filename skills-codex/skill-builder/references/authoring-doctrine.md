@@ -1,106 +1,74 @@
 # Skill Authoring Doctrine
 
-Principles for writing `SKILL.md` bodies so an agent follows the same
-*process* on every run. Structure (frontmatter, sections, output contracts)
-lives in [skill-template.md](skill-template.md) and
-[audit-checks.md](audit-checks.md). This reference governs the sentences
-inside that structure. The deep audit's advisory `authoring` block
-(see [audit-checks.md](audit-checks.md)) mechanically flags three detectable
-failure modes; everything else is author judgment.
+Use this reference when a sentence, description or reference split creates a
+concrete authoring uncertainty. The [source template](skill-template.md) and
+[audit checks](audit-checks.md) own structural requirements. Layout is a choice;
+applicability, necessary inputs, authority/effects, result, completion and failure
+must be clear in whichever form fits the operation.
 
-Idea provenance: distilled clean-room from the skill-authoring ideas at
-<https://github.com/mattpocock/skills> (MIT). Concepts only — no upstream
-prose, names, prompts, scripts, or examples are reproduced here.
+Idea provenance: clean-room consideration of authoring ideas at
+<https://github.com/mattpocock/skills> (MIT), reconciled with this repository's
+accepted contract. No upstream prose, names, prompts, scripts or examples are
+copied. Wording theories below are hypotheses, not established improvements.
 
-## 1. The no-op test
+## Make the instruction change a decision
 
-A sentence belongs in the skill only when it alters what the agent would
-otherwise do. Vague intensifiers such as "be thorough" fail: they spend
-tokens without changing the default. Prefer a concrete, observable
-instruction ("read every `references/*.md` before editing") or a single
-strong pretrained cue the model already knows how to obey.
+Prefer an observable action over an intensifier: when a selected operation
+requires a boundary reference, read that reference before the dependent action.
+Do not require every reference on every invocation. If necessary material is
+missing, name it and stop the dependent action; unrelated authorized work can
+continue. Re-read when contents changed, context was lost or the next decision
+requires it, rather than once per invented phase.
 
-Whether a line is load-bearing depends on the model. Authors who disagree
-should settle it by executing the skill, not by debating intent. Because of
-that relativity, the audit's `noop-phrase` finding is advisory: it names
-suspects from a fixed phrase list; the author decides.
+A phrase's benefit depends on the task, model and host. Preserve a necessary
+obligation even when a detector dislikes its wording. A comparison with the
+unchanged task and a plausible wrong outcome is evidence; author preference or
+word count is not.
 
-## 2. Negation
+## State authority and a usable failure path
 
-Telling the agent what to avoid tends to surface the forbidden pattern in
-context and raise its salience. Prefer naming the desired behavior
-("write one-line comments") so the unwanted pattern is never primed.
+Use direct positive instructions where they are clearer. Keep explicit
+prohibitions when they define an authority, disclosure or mutation boundary, and
+name a safe alternative or incomplete response when useful. The theory that
+negation primes forbidden behavior needs task-specific evidence; it is not a
+reason to remove a necessary ban or to require paired wording everywhere.
 
-Hard bans remain valid when nothing positive can replace them (this
-repository's ban on `claude -p` is one). Even then, put the recovery path
-in the same paragraph — ban plus what to do instead — which matches this
-repo's "Anti-pattern: X. Corrective: Y" habit. The audit's
-`negation-without-positive` finding flags a paragraph where every clause
-forbids and none directs.
+Completion must cover the promised result. Add intermediate checkpoints only
+when final completion cannot protect a consequential action or handoff. A
+reference supplying judgment criteria need not invent workflow phases, and a
+concise adapter can express success and failure in one paragraph.
 
-## 3. Completion criteria
+## Use concrete language before compressed cues
 
-End each workflow step on a condition the agent can evaluate, and make that
-condition cover the whole obligation. Two properties matter:
+Familiar domain terms can save repetition when their meaning is shared. A
+leading word's effect on behavior remains a hypothesis; words are not free
+context and a vague cue must not replace an input, stop condition or authority
+boundary. Define unfamiliar terms only when the operation needs them. Test
+actual outcomes before claiming a wording change improves execution.
 
-- **Checkable** — done vs not-done is decidable. "Understanding reached" is
-  not; "every changed path appears in the manifest" is.
-- **Exhaustive** — the bar covers the full duty. "Produce a change list"
-  allows a partial list; "every modified file accounted for" does not.
+## Separate description, invocation policy and content
 
-A fuzzy exit invites *premature completion*: attention drifts from the work
-to finishing, and the step ends early. Tighten the exit criterion before
-restructuring the skill — that is the cheap local fix. The audit's
-`step-missing-done-condition` finding flags workflow subphases that lack any
-done phrasing ("Done when", "Checkpoint:", "Stop after", "until … exit 0").
+A description says what the skill does and when it applies. For implicit
+selection, test distinctive task states, neighboring jobs and false activation;
+for explicit selection, describe scope without synonym padding. Neither a tier
+nor `user-invocable` proves what a particular host discovers or loads.
 
-## 4. Leading words
+Use the existing source/host invocation fields, including Codex
+`agents/openai.yaml` policy where needed; see [Codex parity](codex-parity.md).
+Explicit-only policy does not prove zero catalog context cost or prohibit
+composition. Verify loaded bytes and policy on each claimed host. Canonical
+source and generated portable packages have separate profiles.
 
-A leading word is one pretrained concept token that holds a behavioral
-region: *tight* (loop), *red* (failing check), *fresh* (context),
-*frontier*, *quarantine*. Used as a token — not re-explained each time —
-it builds a shared meaning across the skill and leans on priors the model
-already has, buying behavior for almost no context cost.
+Measure actual descriptions, bodies, references, repeated reads and tool output
+on the task path. A shorter root can cost more overall. Split only when a
+conditional operation or independently useful route makes navigation clearer;
+optional folders and assets earn no quality credit.
 
-Look for restated qualities that want collapsing: three near-synonyms for
-"fast and deterministic" are one idea; *tight* says it once. Invented terms
-need a single clear definition; pretrained words are free. A leading word
-that does not beat the model's default is itself a no-op — strengthen the
-word rather than adding more prose.
+## Interpret audit advice as evidence to inspect
 
-## 5. Description discipline
-
-The frontmatter description loads every turn, so prune it hardest. It has
-two jobs: name what the skill does, and list genuinely distinct trigger
-branches. One trigger per branch — synonym padding for the same branch is
-duplication that burns context and dulls matching. Prefer trigger wording
-callers actually use, especially shared leading words, so the description
-aligns with real prompts. This sharpens, rather than replaces, the
-structural `description-has-triggers` and `trigger-clarity` checks.
-
-## 6. Context load vs cognitive load
-
-Every skill bills one of two accounts. A model-discoverable skill keeps its
-description in the window every turn — a standing **context load** whether
-or not it fires. A human-only skill costs nothing per turn but spends
-**cognitive load**: the human indexes which skills exist and when to call
-them.
-
-Choosing the account is a required authoring decision. This repository
-already exposes the levers: `user-invocable` frontmatter, `tier` and
-`disposition` metadata, and the generated router (`docs/SKILL-ROUTER.md`)
-that reduces cognitive load once human-reached skills multiply. Prefer
-model discovery only when autonomous reach or cross-skill invocation is
-required; otherwise keep the window clean. Splitting one skill into several
-also spends one of those loads — split only when a distinct trigger
-vocabulary or independently reachable behavior pays for the new entry.
-
-## Applying the doctrine
-
-When creating or healing a skill, walk the body once per principle: remove
-no-op lines, convert bare bans into positive targets (keeping paired
-guardrails), give each workflow step a checkable exhaustive exit, collapse
-restatements into leading words, prune the description to one trigger per
-branch, and confirm the intended load account. The advisory `authoring`
-audit block names the mechanical suspects; the author owns the judgment
-calls.
+The default v2 audit reports located authoring suspicions separately from
+conformance and unmeasured behavioral evidence. Historical `noop-phrase`,
+`negation-without-positive` and `step-missing-done-condition` detectors remain
+available through `audit.sh --legacy` for compatibility. Their tokens, headings
+and phrase counts neither prove quality nor mandate prose repairs. Keep legacy
+consumer compatibility separate from the decision to retain or revise a skill.

@@ -1,0 +1,8 @@
+{
+  "correct": "pass",
+  "noop": "fail",
+  "false-completion": "fail",
+  "rewrite-failed-report": "fail",
+  "paraphrased-correct": "pass",
+  "equivalent-command-correct": "pass"
+}

@@ -2,9 +2,9 @@
 package skills
 
 import (
-	"github.com/boshu2/agentops/cli/internal/clicontract"
 	"bytes"
 	"encoding/json"
+	"github.com/boshu2/agentops/cli/internal/clicontract"
 	"os"
 	"path/filepath"
 	"testing"
@@ -46,7 +46,7 @@ func TestSkillsCommandTreeRegistered(t *testing.T) {
 		t.Fatalf("root command = %q, want skills", root.Name())
 	}
 	want := map[string]bool{
-		"check": true, "resolve": true, "find": true, "list": true,
+		"check": true, "audit": true, "build": true, "check-source": true, "resolve": true, "find": true, "list": true,
 		"consumers": true, "producers": true, "graph": true, "link": true, "unlink": true,
 	}
 	got := map[string]bool{}

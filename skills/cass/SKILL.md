@@ -55,7 +55,13 @@ read permission does not permit forwarding to another model or versioning in
 Git. The recovery defaults below apply only inside this authorized envelope;
 source sync and model downloads also require the selected egress authority.
 Unavailable controls leave restricted-source operations unavailable, without
-retrieving first and redacting later. Missing, restricted, unavailable,
+retrieving first and redacting later. Before an operation that depends on a
+linked reference, read that reference: native episode association requires
+SESSION_FORMATS, exact raw reads require RAW_SOURCE_READS, and recovery requires
+RECOVERY plus the relevant observation procedure. If required material is
+missing or unreadable, report its path and stop only the dependent action;
+use an available authorized route or continue unrelated work. Do not reconstruct
+access or recovery instructions from a title or search hit. Missing, restricted, unavailable,
 no-match and insufficient evidence are different outcomes.
 
 Capture work identity at dispatch/start and observed native IDs at startup
@@ -197,36 +203,14 @@ mutate derived index state and has timeouts. A timed-out or malformed status is
 unknown, not proof of corruption. Detailed symptom→fix tables:
 [RECOVERY.md](references/RECOVERY.md), [OBSERVABILITY.md](references/OBSERVABILITY.md), [PITFALLS.md](references/PITFALLS.md).
 
-### Incremental refresh can become authoritative
-
-An invocation requested as `cass index --json` may discover that incremental
-state cannot be reconciled and expand into an authoritative rebuild over the
-full conversation corpus. A large total or a longer run is evidence of recovery
-mode, **not evidence that source sessions were lost**. Do not start a second
-indexer or report a zero-result search while the first call is still converging.
-
-Concurrent status and search reads can exceed their normal latency during that
-rebuild. Bound observations with a wall-clock timeout, retain the exit status,
-and distinguish timeout from an empty result:
-
-```bash
-status_rc=0
-timeout 15 cass status --json > /tmp/cass-status.json || status_rc=$?
-# Exit 124 means status was not observed within the cap.
-
-search_rc=0
-timeout 30 cass search "QUERY" --json --fields minimal --limit 20 \
-  > /tmp/cass-search.json || search_rc=$?
-# Exit 124 is NOT zero hits; retry after the rebuild settles.
-```
-
-If status returns, inspect `.rebuild.active`, `.rebuild.phase`,
-`.rebuild.processed_conversations`, `.rebuild.total_conversations`, and
-`.rebuild.updated_at`. When `updated_at` or processed count advances, wait for
-that bounded run rather than stacking recovery. If a bounded read times out,
-report only that the read was not observed within the cap and keep the last
-known freshness; do not infer corruption or data loss. See
-[OBSERVABILITY.md](references/OBSERVABILITY.md#authoritative-fallback-and-concurrent-read-latency).
+An incremental request can expand into an authoritative rebuild. Keep one
+indexer, preserve the last observed freshness, and treat bounded status/search
+timeouts as unknown, never zero hits or proof of lost sessions. When a rebuild
+or slow concurrent read needs diagnosis, read
+[the observation procedure](references/OBSERVABILITY.md#authoritative-fallback-and-concurrent-read-latency)
+before deciding whether it has stalled; read [recovery](references/RECOVERY.md)
+before a selected repair. Lack of visible progress alone authorizes neither
+termination nor a second indexer.
 
 ## Version Pinning
 

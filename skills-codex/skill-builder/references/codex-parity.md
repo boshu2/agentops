@@ -6,7 +6,7 @@ Use this workflow when `skills/<name>/SKILL.md` is canonically correct but
 ## Principles
 
 1. `skills/<name>/SKILL.md` remains the canonical workflow contract.
-2. `skills-codex/<name>/` is the checked-in Codex runtime artifact and may need direct maintenance.
+2. `skills-codex/<name>/` is the generated checked-in Codex runtime artifact; repair its owner and regenerate.
 3. Durable Codex-only body edits that should survive broader refactors belong in `skills-codex-overrides/<name>/SKILL.md`.
 4. Codex operator-layer prompt edits belong in `skills-codex-overrides/<name>/prompt.md`.
 
@@ -38,7 +38,7 @@ For each flagged skill:
 2. Read `skills-codex/<name>/SKILL.md` to see the broken checked-in Codex body.
 3. Read `skills-codex-overrides/<name>/prompt.md` and `skills-codex-overrides/catalog.json`.
 4. If the source contract is wrong, fix `skills/<name>/SKILL.md` first.
-5. If the shipped Codex artifact is wrong, update `skills-codex/<name>/SKILL.md`.
+5. If the shipped Codex artifact is wrong, repair canonical source or the owning generator, then run `scripts/regen-all.sh`. Do not hand-edit the projection.
 6. If the source is correct but Codex needs a durable tailoring layer, create or update `skills-codex-overrides/<name>/SKILL.md`.
 7. Re-run validation:
    - `bash scripts/audit-codex-parity.sh`

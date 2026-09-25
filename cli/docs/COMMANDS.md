@@ -1013,6 +1013,42 @@ ao skills [command]
 
 **Subcommands:**
 
+#### `ao skills audit`
+
+Separate static conformance, effect observations and unmeasured behavior
+
+```
+ao skills audit <package> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help             help for audit
+      --json string      Write a new report in an existing external non-Git directory instead of stdout
+      --profile string   Static profile: canonical, portable or external-observation; inferred from target location
+      --repo string      Repository used to select canonical or portable applicability (default ".")
+      --strict           Compatibility flag; only concrete conformance failures gate, never authoring suspicions
+```
+
+#### `ao skills build`
+
+Create an incomplete skill scaffold and its owned projections
+
+```
+ao skills build <from-scratch|from-template|absorb-external> <slug> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help            help for build
+      --init-only       Create the scaffold without projections
+      --repo string     Repository containing canonical skills (default ".")
+      --report string   Optional new report in an existing external non-Git directory; default stdout only
+      --source string   Template slug or external input path (structure only)
+```
+
 #### `ao skills check`
 
 Walk skills/ and skills-codex/, validating each skill's YAML
@@ -1028,6 +1064,22 @@ ao skills check [flags]
       --json           Emit machine-readable JSON
       --skill string   Restrict the audit to a single skill name
       --strict         Exit non-zero on any finding (CI mode)
+```
+
+#### `ao skills check-source`
+
+Check explicit source packages without claiming semantic completeness
+
+```
+ao skills check-source <skills/slug>... [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help          help for check-source
+      --repo string   Repository containing canonical skills (default ".")
+      --strict        Return nonzero for structural or explicit scaffold findings
 ```
 
 #### `ao skills consumers`

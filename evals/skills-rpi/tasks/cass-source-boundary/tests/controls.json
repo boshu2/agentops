@@ -1,0 +1,7 @@
+{
+  "correct": "pass",
+  "noop": "fail",
+  "false-completion": "fail",
+  "denied-as-no-match": "fail",
+  "detailed-correct": "pass"
+}

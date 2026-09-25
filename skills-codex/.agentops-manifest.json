@@ -291,8 +291,8 @@
     {
       "name": "cass",
       "source_skill": "skills/cass",
-      "source_hash": "61a31b55f4abb89b27502d853d2e9e69db85a383547d685f09f8ea6388394d24",
-      "generated_hash": "e6e7f1d5fc0958cceaa76a20930caa6ae7b11e8306b3f72cd104557a98695742"
+      "source_hash": "9523b8484cb14c10d04b0da98d14f424c85922d61c561d65f453518cc2eea547",
+      "generated_hash": "ee4b54fc1436ff63a44f03bb287fd0ac5a30f0e38ccba8fcd9e2e00763756039"
     },
     {
       "name": "cc-hooks",
@@ -309,8 +309,8 @@
     {
       "name": "council",
       "source_skill": "skills/council",
-      "source_hash": "9a0b369318aee9c6793b72ee5792dbc0d515260d424588b83faad17e1d1f6de8",
-      "generated_hash": "cdb1075f05b458de631ff08037dd28409ad83c392322b34359a511b10768df67"
+      "source_hash": "6dfea32318dc9846e0d444dd673838e0a19b25b92277748f1dc6fcbe828d54b2",
+      "generated_hash": "67c51925518bb823b7a07737ac6e39a2d8851820c37641a01394b586e81fe370"
     },
     {
       "name": "craft-goal",
@@ -459,8 +459,8 @@
     {
       "name": "skill-builder",
       "source_skill": "skills/skill-builder",
-      "source_hash": "2dfd2668e607b97760aba2c9062408dfd9eeafdb5225dc888d92040da3c4a097",
-      "generated_hash": "896f179f87ee58b026864e76259fbbc4f82659c181975d122105cda5c13f0da6"
+      "source_hash": "925fc77d7c8e8cec215a949e9497922471d1d738d384572263985498e1c80a7d",
+      "generated_hash": "3258f9a9875bc2bcecc5eaf19c31b24e2b29aaf316eee9cb354a43fc5cd978fa"
     },
     {
       "name": "skill-eval",
@@ -489,8 +489,8 @@
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "ebb18339d6e9e959402790efe9a2ddab6f4606327e473bd5200b29dbf14a16fe",
-      "generated_hash": "2b5b93c6d4fa394fe81c4b5ae880f4caa157345fe171bf28f9732de9a11393f9"
+      "source_hash": "618b07941b76d0713d276c1c3a153662ef7f7c06948eba5fa2cd1bc1c13aa4e5",
+      "generated_hash": "04b1b94a861a5a769b73617de8657e527404d160bb2086756c13236b1aa5a78b"
     }
   ],
   "package_count": 38

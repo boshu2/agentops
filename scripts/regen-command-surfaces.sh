@@ -41,7 +41,7 @@ tmp_matrix="$(mktemp)"
 trap 'rm -f "$tmp_smoke" "$tmp_matrix"' EXIT
 
 sed -E \
-  -e "s/\[\[ \"\$top_count\" != \"[0-9]+\" \|\| \"\$sub_count\" != \"[0-9]+\" \|\| \"\$all_count\" != \"[0-9]+\" \]\]/[[ \"\$top_count\" != \"${top_count}\" || \"\$sub_count\" != \"${sub_count}\" || \"\$all_count\" != \"${all_count}\" ]]/" \
+  -e "s/\[\[ \"\\\$top_count\" != \"[0-9]+\" \|\| \"\\\$sub_count\" != \"[0-9]+\" \|\| \"\\\$all_count\" != \"[0-9]+\" \]\]/[[ \"\\\$top_count\" != \"${top_count}\" || \"\\\$sub_count\" != \"${sub_count}\" || \"\\\$all_count\" != \"${all_count}\" ]]/" \
   -e "s/-ne [0-9]+ \]\]/-ne ${all_count} ]]/" \
   "$smoke" > "$tmp_smoke"
 sed -E "s/cli-command-headings: top=[0-9]+ sub=[0-9]+ all=[0-9]+/cli-command-headings: top=${top_count} sub=${sub_count} all=${all_count}/" \
