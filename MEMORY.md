@@ -1,3 +1,4 @@
+<!-- Retention (moved from the retired docs/contracts/agents-documentation-authority.yaml): MEMORY.md is a machine-consumed memory projection, not an AgentOps authority; its claims belong to their cited sources. Consumer audit 2026-08-07: scripts/corpus-delta-harness.sh reads it as a context surface in both A/B arms, and coding agents load a root memory file by convention. The ao session memory writer is removed, so this file is read-only. Retire it when the harness stops reading it and a caller-owned memory system serves the convention. -->
 # Project Memory
 
 ## Architecture

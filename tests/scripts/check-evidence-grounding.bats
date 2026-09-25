@@ -115,8 +115,8 @@ run_gate() {
 	[[ "$output" == *"PASS"* ]]
 }
 
-@test "a self-declared HISTORICAL doc is exempt" {
-	printf '# old audit\n\n> HISTORICAL — superseded 2026-01-01.\n\nSee `scripts/ghost.sh`.\n' \
+@test "a doc declaring front-matter status: historical is exempt" {
+	printf -- '---\nstatus: historical\n---\n\n# old audit\n\nSee `scripts/ghost.sh`.\n' \
 		>"$WORK_REPO/docs/audits/old.md"
 	commit_all
 

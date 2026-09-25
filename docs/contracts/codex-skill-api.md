@@ -289,7 +289,7 @@ bespoke skills or deliberate Codex-only divergence recorded in
 `skills-codex-overrides/catalog.json`; otherwise fix the source skill or the
 codex-sync transform/template and regenerate.
 
-The current catalog has no bespoke or pointer twins. Every live Codex package is
+The current catalog has no bespoke twins. Every live Codex package is
 a generated parity projection of `skills/<name>/SKILL.md` plus its linked local
 files. `scripts/codex-sync.sh` owns those packages; manual edits under
 `skills-codex/<name>/` are drift and will be overwritten.

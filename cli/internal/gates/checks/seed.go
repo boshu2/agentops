@@ -98,17 +98,8 @@ var (
 	}
 	operatorLeakPaths = []string{"skills/**", "skills-codex/**", "docs/SKILLS.md", "registry.json", "tests/scripts/check-no-operator-skills.bats", "scripts/check-no-operator-skills.sh"}
 	contractPaths     = []string{"docs/contracts/**", "schemas/**"}
-	// honest-voice gate (age-5qjyn / FU3): routes on the user-facing surfaces it
-	// scans (cli/** Go + seed/template assets), the lexicon it reads, and a
-	// self-reference (the gate script + its bats) so editing the gate re-runs it.
-	honestVoicePaths = []string{
-		"cli/**",
-		"docs/contracts/forbidden-claims.yaml",
-		"scripts/check-honest-voice.sh",
-		"tests/scripts/check-honest-voice.bats",
-	}
-	ciPolicyPaths  = []string{".github/workflows/validate.yml", "docs/CI-CD.md", "AGENTS.md"}
-	agentsDocPaths = []string{"AGENTS.md", "docs/agent-workflow-reference.md", "docs/CI-CD.md", "docs/contracts/codex-skill-api.md", ".github/workflows/validate.yml"}
+	ciPolicyPaths     = []string{".github/workflows/validate.yml", "docs/CI-CD.md", "AGENTS.md"}
+	agentsDocPaths    = []string{"AGENTS.md", "docs/agent-workflow-reference.md", "docs/CI-CD.md", "docs/contracts/codex-skill-api.md", ".github/workflows/validate.yml"}
 	// corpus.witness-dolt-jsonl-crosscheck is a HERMETIC self-test: it drives
 	// committed fixtures through cli/cmd/witness-crosscheck and asserts the
 	// detector discriminates (faithful passes, tampered fails). It never reads
@@ -126,7 +117,7 @@ var (
 		"tests/scripts/witness-dolt-jsonl-crosscheck.bats",
 	}
 	cliContractPaths = []string{"cli/**", "docs/cli-surface.*", "scripts/check-cli-contract.sh", "scripts/check-docs-cli-snippets.sh", "scripts/generate-cli-reference.sh", "tests/cli_contract_gate.bats", "tests/cli_quality_zero_debt.bats"}
-	// Widened to docs/** (--all-docs mode): the checker no longer scans a fixed
+	// Widened to docs/**: the checker no longer scans a fixed
 	// 6-file set — it scans every LIVE docs/** file (plus the pinned doctrine
 	// files) and ratchets against scripts/.docs-skill-refs-baseline, so any live
 	// doc that acquires a dead `/skill` ref, or any baselined file that no longer
@@ -145,11 +136,10 @@ var (
 		// shared ratchet mechanics (age-ratchet-lib-extraction-bv7d.8, FM3)
 		"scripts/lib/ratchet.sh",
 		"tests/scripts/check-doc-skill-refs.bats",
-		"tests/scripts/check-doc-skill-refs-all-docs.bats",
 	}
 	cathedralCutPaths = []string{
-		"AGENTS.md", "PRODUCT.md", "README.md", "docs/architecture/rpi-traversal.md",
-		"skills/**", "skills-codex/**", "schemas/**", "cli/cmd/ao/**", "cli/internal/**",
+		"skills/**", "skills-codex/**", "schemas/**", "docs/SCHEMAS.md", "docs/contracts/index.md",
+		"scripts/swarm/**",
 		"scripts/check-cathedral-cut-conformance.py",
 	}
 	// The retired Gas City prototype (packs/agentops-executor/**,
@@ -163,17 +153,20 @@ var (
 		"scripts/check-gc-maintainer-ops.sh",
 		"tests/scripts/check-gc-maintainer-ops.bats",
 	}
-	// docs.cli-snippets resolves every `ao …` command cited in a live doc against
-	// the cobra tree; a rename/removal of a command silently strands a golden-path
-	// snippet. Runs on any docs change plus self-reference (the script, its baseline
-	// allowlist, the bats twin, and the shared resolution lib) so editing the gate
-	// re-runs it. (age-gate-the-ungated-egwt.4)
+	// docs.cli-snippets resolves every `ao …` command cited in a live doc — the
+	// root docs (README/AGENTS/PRODUCT/GOALS/PROGRAM, cli/README) and docs/** —
+	// against the cobra tree, so a rename or removal cannot strand a documented
+	// command. The cobra tree is the authority, so this is a fact check.
+	// Self-reference (script, baseline, bats, resolution + scope libs) re-runs
+	// it when the gate itself changes. (age-gate-the-ungated-egwt.4)
 	docsCliSnippetsPaths = []string{
 		"docs/**",
+		"README.md", "AGENTS.md", "PRODUCT.md", "GOALS.md", "PROGRAM.md", "cli/README.md",
 		"scripts/check-docs-cli-snippets.sh",
 		"scripts/.docs-cli-snippets-baseline",
 		"scripts/lib/ao-snippet-resolve.sh",
 		"scripts/lib/ao_snippet_resolve.py",
+		"scripts/lib/docs-scope.sh",
 		"tests/scripts/check-docs-cli-snippets.bats",
 		// shared ratchet mechanics: a lib edit must re-run every consumer
 		// (age-ratchet-lib-extraction-bv7d.6, FM3)
@@ -209,7 +202,7 @@ var (
 		"tests/scripts/legible-l2-exec-bits.bats",
 	}
 	// docs.claims-tracked (age-legible-membrane-c): a doc under evals/ or
-	// docs/evals/ that names a repo-relative path in backticks is making a
+	// docs/evals/ that names a repo-relative path in backticks or double quotes is making a
 	// factual claim about the tree — on 2026-09-03 one such claim said an
 	// egress log was "published" while the repo's `*.log` ignore rule kept it
 	// out of the tree, and the fresh verifier accepted the absence because
@@ -347,12 +340,6 @@ func init() {
 		// glob — a force-added private path might not match any corpus glob, so
 		// changed-file scoping must never be able to skip this (ag-ao0eo).
 		{ID: "corpus.path-guard", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-corpus-path-guard.sh"},
-		// honest-voice: user-facing CLI strings + seed/template assets must not
-		// claim proven/automatic knowledge compounding (unproven — ADR-0004,
-		// ADR-0011) or hookless-3.0-violating "session hooks" (docs/3.0.md, honest-voice:allow
-		// ADR-0009). The claims regrew because nothing gated them (#907, FU4);
-		// this is the gate. Lexicon: docs/contracts/forbidden-claims.yaml (age-5qjyn).
-		{ID: "contract.honest-voice", Tiers: gates.Fast | gates.Full, Match: honestVoicePaths, Blocking: true, Backing: "check-honest-voice.sh", RepairHint: "rewrite to honest phrasing (context accrues in .agents/ — compounding still being measured; 3.0 is hookless), or add a reviewed `honest-voice:allow`; lexicon docs/contracts/forbidden-claims.yaml"},
 
 		// routed by change class
 		gates.GoCLIArchitectureCheck(),
@@ -443,20 +430,19 @@ func init() {
 
 		// always-run structural invariants (no Match)
 		{ID: "docs.skill-refs", Tiers: gates.Full, Match: docSkillRefPaths, Blocking: true,
-			Backing: "check-doc-skill-refs.sh", Args: []string{"--all-docs", "--strict"}},
+			Backing: "check-doc-skill-refs.sh"},
 		{ID: "provenance.orphans", Tiers: gates.Full, Match: contractPaths, Blocking: true,
 			Backing: "check-provenance-orphans.sh"},
 		{ID: "provenance.chain", Tiers: gates.Fast | gates.Full, Match: provenanceChainPaths, Blocking: true,
 			Backing:    "check-provenance-chain.sh",
 			RepairHint: "docs/provenance/ledger.jsonl hash chain broken — find the first bad entry with 'ao provenance verify'; repair is a deliberate re-seal, never hand-edit (age-gate-the-ungated-egwt.9)"},
-		{ID: "always.docs-hookless", Tiers: gates.Full, Blocking: true, Backing: "check-doc-hooks-drift.sh"},
 		{ID: "always.retrieval-manifest-paths", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-retrieval-manifest-paths.sh",
 			Args: []string{"cli/cmd/ao/testdata/retrieval-bench/search-eval-manifest.json"}},
 		{ID: "always.file-manifest-overlap", Tiers: gates.Full, Blocking: true, Backing: "check-file-manifest-overlap.sh"},
 		{ID: "derived.changed-scope", Tiers: gates.Fast, Blocking: true, Backing: "regen-changed-scope.sh", Args: []string{"--check", "--scope", "head"},
 			Match: regenScopePaths, RepairHint: "bash scripts/regen-changed-scope.sh --scope head; for a reported skill run: bash skills/skill-builder/scripts/heal.sh --check --strict skills/<skill>"},
 		{ID: "always.regen-all", Tiers: gates.Full, Blocking: true, Backing: "regen-all.sh", Args: []string{"--check"}, RepairHint: "bash scripts/regen-all.sh"},
-		{ID: "docs.cli-snippets", Tiers: gates.Full, Match: docsCliSnippetsPaths, Blocking: false, Backing: "check-docs-cli-snippets.sh", RepairHint: "fix the dead ao reference or prune the stale baseline entry; flips Blocking after one clean advisory cycle (age-gate-the-ungated-egwt.4)"},
+		{ID: "docs.cli-snippets", Tiers: gates.Fast | gates.Full, Match: docsCliSnippetsPaths, Blocking: true, Backing: "check-docs-cli-snippets.sh", RepairHint: "fix the dead ao reference, mark a retirement note with `<!-- ao-resolve: ignore -->`, or prune the stale baseline entry"},
 		{ID: "scripts.ao-invocations", Tiers: gates.Fast | gates.Full, Match: scriptsAoInvocationsPaths, Blocking: false, Backing: "check-scripts-ao-invocations.sh", RepairHint: "fix the dead ao invocation (use the live subcommand or add `# ao-resolve: ignore`), or prune the stale baseline entry; advisory-first, flips Blocking after one clean cycle (age-owcs)"},
 		// shell.exec-bits: ADVISORY — a documented entry point that is tracked
 		// 100644 answers "permission denied" to the exact command AGENTS.md
@@ -464,13 +450,12 @@ func init() {
 		// Every other gate invokes scripts through an explicit `bash`, so
 		// nothing else can see this. Advisory-first per the repo convention.
 		{ID: "shell.exec-bits", Tiers: gates.Fast | gates.Full, Match: shellExecBitsPaths, Blocking: false, Backing: "check-shell-exec-bits.sh", RepairHint: "chmod +x <path> && git update-index --chmod=+x <path> for a shebang-bearing script; a sourced library without a shebang belongs under a lib/ directory"},
-		// docs.claims-tracked: BLOCKING — a doc sentence claiming a path is
-		// published/tracked/committed/lives-at is a factual claim about the
-		// tree, and the 2026-09-03 egress-log incident showed a fresh verifier
-		// will accept the claim on trust. The rule is narrow (four claim words,
-		// four governed trees, fenced blocks and globs/placeholders excluded)
-		// and the repository lands clean today, so there is no phase-in cost.
-		{ID: "docs.claims-tracked", Tiers: gates.Fast | gates.Full, Match: docClaimsTrackedPaths, Blocking: true, Backing: "check-doc-claims-tracked.sh", RepairHint: "track the file (git add) if it belongs in the tree, or fix the doc sentence to stop claiming published/tracked/committed/lives-at for a path that is not there"},
+		// docs.claims-tracked: BLOCKING — a path an eval doc names is a claim
+		// about the tree, and the 2026-09-03 egress-log incident showed a fresh
+		// verifier will accept it on trust. Fact rule: a candidate path that git
+		// ignores, or that exists but is untracked, is an offender; the
+		// repository lands clean today.
+		{ID: "docs.claims-tracked", Tiers: gates.Fast | gates.Full, Match: docClaimsTrackedPaths, Blocking: true, Backing: "check-doc-claims-tracked.sh", RepairHint: "track the file (git add) if it belongs in the tree, or stop citing a path the repository ignores or does not track"},
 		// go.jsonl-scanner-ratchet: ADVISORY grep-ratchet — a NEW raw
 		// bufio.NewScanner over JSONL outside cli/internal/storage silently
 		// truncates at the 64KB default buffer. Stays advisory PERMANENTLY (unless

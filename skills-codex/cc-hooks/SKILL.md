@@ -30,7 +30,7 @@ Add a PreToolUse hook to fleet-router/.claude/settings.json that blocks `git pus
 ## Constraints
 
 - Enforcement hooks (the PreToolUse policy dispatcher) ship by DEFAULT: plugin installs auto-wire `hooks/hooks.json`; skill copies and checkouts wire with one command (`scripts/install-hooks.sh`). Operators can disable per host (`/plugin disable`, or remove the settings matchers).
-- Injection hooks (SessionStart/UserPromptSubmit context stuffing) stay dead — the #511 teardown proved delta=0 at 10.35M resident tokens. Never ship one; the hookless-cold-start gate still enforces this.
+- Injection hooks (SessionStart/UserPromptSubmit context stuffing) stay dead — the #511 teardown proved delta=0 at 10.35M resident tokens. Never ship one; tests/scripts/policy-dispatch.bats fails if hooks/hooks.json registers one.
 - Keep the happy path silent and block only with the event's documented exit/JSON contract because stray stdout can corrupt a tool call.
 - Bound Stop hooks with `stop_hook_active` and scope matchers narrowly to prevent recursion and unrelated-command interception.
 

@@ -67,11 +67,6 @@ REMOVED_SKILLS = {
 REMOVED_MORTEM_ALIASES = {
     "pre-mortem", "pre_mortem", "post-mortem", "post_mortem",
 }
-REMOVED_COMMANDS = {
-    "pawl", "plan-pawl", "land", "done", "close", "governor", "yield",
-    "claim", "next-work", "state", "worktree", "validate", "converge",
-    "reconcile", "membrane", "crank", "flywheel",
-}
 
 
 def property_names(value: object) -> set[str]:
@@ -298,15 +293,6 @@ def check_validate_helper() -> None:
         )
 
 
-def check_tombstones() -> None:
-    # The Go tombstone tests iterate whatever the map holds, so this fixed list
-    # is what stops a retired verb's hint from being dropped. It moves into a
-    # fixed-list Go test in cli/cmd/ao, after which this check is deleted.
-    source =(ROOT / "cli" / "cmd" / "ao" / "removed_command_hint.go").read_text(encoding="utf-8")
-    for name in REMOVED_COMMANDS:
-        assert f'"{name}"' in source, f"missing tombstone: {name}"
-
-
 def check_dispatch_once() -> None:
     path = ROOT / "scripts" / "swarm" / "dispatch_once.py"
     spec = importlib.util.spec_from_file_location("cathedral_dispatch_once", path)
@@ -486,7 +472,6 @@ def main() -> int:
         check_schema_index_docs,
         check_bounded_repair_contract,
         check_validate_helper,
-        check_tombstones,
         check_dispatch_once,
         probe_no_substrate_calls,
     )

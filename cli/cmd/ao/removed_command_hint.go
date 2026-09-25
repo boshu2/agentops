@@ -51,7 +51,7 @@ var removedCommands = map[string]removedCommand{
 	"constraint": {use: "AgentOps no longer promotes findings into blocking policy; encode accepted rules in repository-owned checks"},
 	"inject":     {use: "AgentOps no longer retrieves prior knowledge; use the caller's own memory or context tooling"},
 	"verify":     {use: "the 3.2 verification front door was removed; semantic judgment is the Validate skill. If `ao verify init` installed a pre-push hook, delete the AGENTOPS-VERIFY-RATCHET block from .git/hooks/pre-push (see docs/UPGRADING.md)"},
-	"flywheel":   {use: "the knowledge-flywheel product surface was retired; AgentOps no longer computes knowledge-compounding state. Learning remains an optional off-path consumer of durable verdicts (the learn skill)"},
+	"flywheel":   {use: "the knowledge-flywheel product surface was retired; AgentOps no longer computes knowledge-compounding state. Learning remains an optional off-path consumer of durable verdicts (the memory skill)"},
 	"eval":       {use: "the offline eval surface was retired unconsumed (no gate, workflow, or script ran it); use a repository-selected evaluator and record its result as generic `ao provenance` evidence"},
 	"redact":     {use: "its only declared caller (the compile skill's render-write) never existed; pipe through your own scrubber before writing, and keep credentials out of committed content"},
 

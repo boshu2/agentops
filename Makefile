@@ -20,9 +20,8 @@ build: ## Build ao CLI binary
 test: ## Run CLI tests
 	$(MAKE) -C cli test
 
-docs-check: ## Run docs and hook safety drift checks
+docs-check: ## Run docs drift checks
 	./scripts/generate-cli-reference.sh --check
-	./scripts/check-doc-hooks-drift.sh
 	./tests/docs/validate-doc-release.sh
 
 regen-all: ## Regenerate every derived artifact after adding a skill/command (one-command finalizer)

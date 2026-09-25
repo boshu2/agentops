@@ -74,20 +74,9 @@ def validate_graph(entries: list[dict[str, Any]]) -> None:
         for dep in entry["dependencies"]:
             if dep not in names:
                 raise ValueError(f"dangling dependency: {entry['name']} -> {dep}")
-    core = {entry["name"]: set(entry["dependencies"]) for entry in entries if entry["name"] in {"rpi", "plan", "implement", "validate"}}
-    expected = {"rpi": {"plan", "implement", "validate"}, "plan": set(), "implement": set(), "validate": set()}
-    if core != expected:
-        raise ValueError(f"core dependency graph mismatch: {core!r}")
-    # ADR-0017: crank is the one non-core skill with a hard dependency, on rpi
-    # alone (it executes a wave by invoking RPI per lane). Nothing else may.
-    allowed_extra = {"crank": ["rpi"]}
-    extra = {
-        entry["name"]: entry["dependencies"]
-        for entry in entries
-        if entry["name"] != "rpi" and entry["dependencies"] and allowed_extra.get(entry["name"]) != list(entry["dependencies"])
-    }
-    if extra:
-        raise ValueError(f"only rpi (and crank on rpi, ADR-0017) may declare hard dependencies: {extra!r}")
+    # The core graph and only-rpi rules are owned by scripts/check-skill-mesh.py
+    # (gate contract.skill-mesh); the generator only refuses unbuildable input.
+
 
 
 def catalog(entries: list[dict[str, Any]]) -> dict[str, Any]:

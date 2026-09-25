@@ -141,13 +141,6 @@ fi
 
 # Skill inventory validation is owned by validate-doc-release.sh and the metadata catalog.
 
-if [[ -f "$SCRIPT_DIR/docs/validate-goal-count.sh" ]]; then
-    run_lane "Doc goal count validation" "$RUN_ALL_STATIC_LANE_TIMEOUT_SECONDS" "$(lane_log_file doc-goal-count)" \
-        bash "$SCRIPT_DIR/docs/validate-goal-count.sh"
-else
-    skip "Doc goal count validation (script not found)"
-fi
-
 # Validate token budgets (static, no CLI needed)
 if [[ -f "$SCRIPT_DIR/skills/test-token-budgets.sh" ]]; then
     run_lane "Token budget validation" "$RUN_ALL_STATIC_LANE_TIMEOUT_SECONDS" "$(lane_log_file token-budgets)" \

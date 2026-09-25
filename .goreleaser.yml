@@ -37,7 +37,7 @@ changelog:
 
 release:
   # Release notes are generated from CHANGELOG.md by scripts/extract-release-notes.sh
-  # and passed via --release-notes in the workflow. GoReleaser's auto-changelog is disabled.
+  # and applied after publish by `gh release edit --notes-file release-notes.md` in release.yml. GoReleaser's auto-changelog is disabled.
   name_template: "{{ .Tag }}"
 
 brews:
