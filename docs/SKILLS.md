@@ -38,7 +38,7 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 
 | Skill | Use it for |
 |---|---|
-| [council](https://github.com/boshu2/agentops/blob/main/skills/council/SKILL.md) | Compare independent views on a consequential or contested decision. Use when: the caller selects multiple judges; evidence resolves disagreement, not voting. |
+| [council](https://github.com/boshu2/agentops/blob/main/skills/council/SKILL.md) | Compare model perspectives to brainstorm, plan, validate, duel on scored ideas, or answer an interview. Use when: the caller selects independent proposals or judgments, with optional bounded debate. |
 | [craft-goal](https://github.com/boshu2/agentops/blob/main/skills/craft-goal/SKILL.md) | Draft or lint a bounded persistent goal above a bead graph of RPI experiments. Use when: this goal workflow is explicitly selected; shaping a single change belongs to Plan. |
 | [idea-genie](https://github.com/boshu2/agentops/blob/main/skills/idea-genie/SKILL.md) | Generate evidenced options or challenge an idea. Use when: deciding what to build or comparing alternatives; exploration does not authorize implementation. |
 | [interview](https://github.com/boshu2/agentops/blob/main/skills/interview/SKILL.md) | Interview the caller one question at a time to settle a big outcome before agents work alone. Use when: shaping a goal or large RPI. Not for one question on one slice; use Plan. |
@@ -78,7 +78,7 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 | `cass` | execution | `keep_optional_adapter` | - | `cass` | `rebuild_local_index`, `sync_remote_sources`, `download_semantic_model` |
 | `cc-hooks` | execution | `keep_optional_adapter` | - | `cc_hooks` | `write_hook_config`, `append_guardrail_telemetry`, `write_session_sentinel` |
 | `codex-exec` | orchestration | `keep_optional_adapter` | - | `codex_exec` | `run_codex_process`, `sandbox_tiered_workspace_and_network_effects` |
-| `council` | judgment | `keep_strategy` | - | `collect_independent_judgments`, `synthesize_disagreement` | `write_advisory_council_report` |
+| `council` | judgment | `keep_strategy` | - | `collect_independent_judgments`, `synthesize_disagreement`, `bounded_deliberation`, `duel_scored_ideas`, `answer_interview_panel` | `write_advisory_council_report` |
 | `craft-goal` | judgment | `keep_strategy` | - | `goal_prompt_design`, `goal_prompt_lint` | - |
 | `dcg` | execution | `keep_optional_adapter` | - | `dcg` | `write_dcg_config` |
 | `doc` | product | `keep_specialist` | - | `doc`, `initialize_missing_docs`, `write_session_handoff` | `write_documentation`, `write_requested_handoff`, `create_requested_evidence_directory` |

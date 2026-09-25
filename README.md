@@ -36,8 +36,8 @@ many RPIs tracked in
 | Says “done” after a green test run | A fresh judge that didn't write the change |
 | Loses the thread on work bigger than one session | A Beads graph holding intent, dependencies and verdicts |
 | Runs off with a half-formed goal | An interview that settles the goal before agents go autonomous |
-| Gives one model's answer to a hard call | A [council](skills/council/SKILL.md): judges in fresh contexts, one model family or several vendors, weigh the same evidence and keep dissent; [Idea Genie](skills/idea-genie/SKILL.md) brainstorms options |
-| Loses its research and decisions when the session ends | Research, council and idea reports saved locally under `.agents/` for later sessions |
+| Gives one model's answer to a hard call | A [council](skills/council/SKILL.md): judges in fresh contexts, one model family or several vendors, compare views, duel (score each other's ideas) or debate to a majority you choose, keep dissent, and can answer an interview for you; [Idea Genie](skills/idea-genie/SKILL.md) brainstorms options |
+| Loses its plans, research and decisions when the session ends | Plans and decisions saved on the bead or issue: Plan updates it in place, Interview appends settled decisions to the root epic, Navigate writes wave checkpoints there; research and idea reports saved locally under `.agents/`, council reports in storage you choose |
 | Repeats the last session's investigation | [Memory](skills/memory/SKILL.md) turns reviewed, disclosure-checked lessons into `.context/` pages safe to commit |
 
 <a id="install"></a>
@@ -279,7 +279,7 @@ catalog: **[docs/SKILL-ROUTER.md](docs/SKILL-ROUTER.md)**.
 | Coordination | [`orchestrate`](skills/orchestrate/SKILL.md) [`agent-native`](skills/agent-native/SKILL.md) | Fresh workers per bead, disjoint scopes, integration |
 | On demand | [`research`](skills/research/SKILL.md) [`domain`](skills/domain/SKILL.md) [`test`](skills/test/SKILL.md) [`refactor`](skills/refactor/SKILL.md) [`review`](skills/review/SKILL.md) [`security`](skills/security/SKILL.md) [`doc`](skills/doc/SKILL.md) [`reverse-engineer`](skills/reverse-engineer/SKILL.md) | Reached for when a specific question comes up |
 | Learning | [`memory`](skills/memory/SKILL.md) [`cass`](skills/cass/SKILL.md) | Curated `.context/` pages safe to commit, and past-session search |
-| Judgment strategies | [`council`](skills/council/SKILL.md) [`premortem`](skills/premortem/SKILL.md) [`postmortem`](skills/postmortem/SKILL.md) [`reality-check`](skills/reality-check/SKILL.md) [`idea-genie`](skills/idea-genie/SKILL.md) | Multi-model councils, idea brainstorms, plan challenges, postmortems and claim audits |
+| Judgment strategies | [`council`](skills/council/SKILL.md) [`premortem`](skills/premortem/SKILL.md) [`postmortem`](skills/postmortem/SKILL.md) [`reality-check`](skills/reality-check/SKILL.md) [`idea-genie`](skills/idea-genie/SKILL.md) | Multi-model councils (debates, idea duels, interview panels), idea brainstorms, plan challenges, postmortems and claim audits |
 | Runtimes and factories | [`codex-exec`](skills/codex-exec/SKILL.md) [`agy-native`](skills/agy-native/SKILL.md) [`ntm`](skills/ntm/SKILL.md) [`agent-mail`](skills/agent-mail/SKILL.md) [`using-gc`](skills/using-gc/SKILL.md) [`using-flywheel`](skills/using-flywheel/SKILL.md) | Selected executors, panes, mail and factories |
 | Guards and utilities | [`cc-hooks`](skills/cc-hooks/SKILL.md) [`dcg`](skills/dcg/SKILL.md) [`account-rotation`](skills/account-rotation/SKILL.md) [`rch`](skills/rch/SKILL.md) [`sbh`](skills/sbh/SKILL.md) [`ms`](skills/ms/SKILL.md) | Hooks, command guards, accounts, builds, disk, skill search |
 | Skill craft | [`skill-builder`](skills/skill-builder/SKILL.md) [`skill-eval`](skills/skill-eval/SKILL.md) | Author skills and measure whether they help |
