@@ -232,13 +232,23 @@ func TestRemovedCommandHintsNameLiveSkills(t *testing.T) {
 			t.Errorf("%q hint names skill %q, which does not ship: %v", verb, skill, err)
 		}
 	}
-	// Any other hint that points at a skill ("the X skill", "invoke x") must
-	// point at one that ships. A possessive ("the compile skill's") describes
+	// Any other hint that points at a skill ("the X skill", "invoke the X
+	// skill", "invoke x") must point at one that ships, including hints for
+	// retired subcommands. A possessive ("the compile skill's") describes
 	// history, not a destination, and is skipped.
+	hints := map[string]string{}
 	for verb, tomb := range removedCommands {
-		for _, m := range skillMention.FindAllStringSubmatch(tomb.use, -1) {
+		hints[verb] = tomb.use
+	}
+	for parent, children := range removedChildCommands {
+		for child, tomb := range children {
+			hints[parent+" "+child] = tomb.use
+		}
+	}
+	for verb, use := range hints {
+		for _, m := range skillMention.FindAllStringSubmatch(use, -1) {
 			name := strings.ToLower(m[1] + m[2])
-			if name == "the" { // "invoke the X skill": the first alternative catches X
+			if name == "the" { // "invoke the <non-skill>": not a skill reference
 				continue
 			}
 			if _, err := os.Stat(filepath.Join(repo, "skills", name, "SKILL.md")); err != nil {
@@ -248,8 +258,8 @@ func TestRemovedCommandHintsNameLiveSkills(t *testing.T) {
 	}
 }
 
-// skillMention matches "the <Name> skill" (not possessive) or "invoke <name>".
-var skillMention = regexp.MustCompile(`\bthe ([A-Za-z-]+) skill\b(?:[^'\w]|$)|\binvoke ([a-z][a-z-]+)\b`)
+// skillMention matches "[invoke ]the <Name> skill" (not possessive) or "invoke <name>".
+var skillMention = regexp.MustCompile(`\b(?:invoke )?the ([A-Za-z-]+) skill\b(?:[^'\w]|$)|\binvoke ([a-z][a-z-]+)\b`)
 
 // findMigrationDoc walks up from the test's working directory to the repo
 // root and returns the path to docs/MIGRATION.md.

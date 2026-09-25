@@ -141,6 +141,17 @@ try:
 except AssertionError as exc:
     assert "mixes deprecated" in str(exc), exc
 
+# A deprecated link in its own paragraph at the end of the current section
+# passes the block-order rule; only the section rule catches it.
+assert "\n## Legacy compatibility" in text
+doc.write_text(text.replace("\n## Legacy compatibility", "\nSee [`plan-packet.v1`](../schemas/plan-packet.v1.schema.json).\n\n## Legacy compatibility", 1))
+try:
+    cut.check_schema_index_docs()
+    raise SystemExit("deprecated paragraph under the current section passed")
+except AssertionError as exc:
+    assert "section 'Core loop' mixes deprecated" in str(exc), exc
+doc.write_text(text)
+
 verdict = root / "schemas" / "verdict.v2.schema.json"
 schema = json.loads(verdict.read_text())
 schema["properties"]["criteria"]["items"]["properties"]["result"]["enum"].append("WARN")

@@ -146,6 +146,11 @@ def schema_link_targets(text: str) -> list[str]:
     return targets
 
 
+# Schema docs that separate current and legacy schemas by `##` section: each
+# section must be all-current or all-deprecated.
+SECTIONED_SCHEMA_DOCS = ("docs/SCHEMAS.md",)
+
+
 def check_schema_index_docs() -> None:
     """Schema docs never present a deprecated schema as current.
 
@@ -176,6 +181,15 @@ def check_schema_index_docs() -> None:
             elif new and first_deprecated is not None:
                 raise AssertionError(
                     f"{relative}: current schema {new[0]} is listed after deprecated {first_deprecated}"
+                )
+        if relative in SECTIONED_SCHEMA_DOCS:
+            for section in re.split(r"(?m)^## ", text)[1:]:
+                names = schema_link_targets(section)
+                old = [name for name in names if name in deprecated]
+                new = [name for name in names if name not in deprecated]
+                heading = section.splitlines()[0].strip()
+                assert not (old and new), (
+                    f"{relative}: section '{heading}' mixes deprecated {old} with current {new}"
                 )
 
 
