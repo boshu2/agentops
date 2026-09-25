@@ -70,6 +70,19 @@ class ReceiptIntegrity(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "symlink"):
             tree_hash(self.root / "task")
 
+    def test_old_package_identity_is_retained_and_checked(self):
+        control = self.root / "control-skills"
+        control.mkdir()
+        (control / "SKILL.md").write_text("baseline package")
+        frozen = json.loads(self.manifest.read_text())
+        frozen["control_skills_sha256"] = tree_hash(control)
+        write_json(self.manifest, frozen)
+        result = collect([self.manifest])
+        self.assertEqual(result["trials"][0]["skills_sha256"], tree_hash(control))
+        (control / "SKILL.md").write_text("changed after freeze")
+        with self.assertRaisesRegex(ValueError, "control package changed"):
+            collect([self.manifest])
+
     def test_extra_instructions_are_not_an_ignored_default(self):
         altered = dict(self.config, extra_instructions=["different acceptance"])
         write_json(self.native, altered)

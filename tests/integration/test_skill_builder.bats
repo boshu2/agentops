@@ -102,6 +102,11 @@ PYCODE
   run env HEAL_REPO_ROOT="$SCRATCH_ROOT" bash "$SCRATCH_ROOT/skills/skill-builder/scripts/heal.sh" --fix "$SCRATCH_ROOT/skills/$name/"
   [ "$status" -eq 0 ]
   diff -r "$BATS_TEST_TMPDIR/sibling-before" "$SCRATCH_ROOT/skills-codex/plan"
+  # Equivalent relative spelling must retain this skill and sibling boundary.
+  cd "$SCRATCH_ROOT"
+  run env HEAL_REPO_ROOT="$SCRATCH_ROOT" bash "$SCRATCH_ROOT/skills/skill-builder/scripts/heal.sh" --fix "skills/$name/"
+  [ "$status" -eq 0 ]
+  diff -r "$BATS_TEST_TMPDIR/sibling-before" "$SCRATCH_ROOT/skills-codex/plan"
   [ ! -e "$SCRATCH_ROOT/skills-codex/$name/scripts" ]
   grep -q 'Report changed paths inline' "$SCRATCH_ROOT/skills-codex/$name/SKILL.md"
   run bash "$SCRATCH_ROOT/skills/skill-builder/scripts/audit.sh" --strict "$SCRATCH_ROOT/skills/$name"

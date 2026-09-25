@@ -26,19 +26,34 @@ copied into a public fixture or staging manifest.
 
 ```sh
 python evals/skills-rpi/prepare.py \
-  --task evals/skills-rpi/tasks/learning-read-error \
-  --output /absolute/protected/cohort/learning-read-error \
+  --task evals/skills-rpi/tasks/input-scope \
+  --output /absolute/protected/cohort/input-scope \
   --skills /absolute/frozen/skills-codex \
   --auth-file /absolute/native/codex/auth.json --reps 2
 ```
 
 Preparation builds the worker and separate verifier, freezes their image IDs,
 stages public source and the full package, and writes native Harbor job configs.
+For task-bank cases with `controls.json`, it first runs every positive and negative
+control through that exact verifier image's `/tests/test.sh`. Correct paraphrases
+and equivalent commands must pass alongside the reference solution; wrong work
+must fail. A missing verifier result is an execution error, never a successful
+negative control. Exact protocol fields such as case verdicts remain exact.
+Calibration failure publishes no launch configs. `calibration.json` binds those
+results to the oracle and image for the pre-launch check; retain it with the
+prepared comparison rather than rewriting it after an unfavorable result.
+
+For an old/new package comparison, add `--control-skills /absolute/frozen/old-skills-codex`.
+Both complete packages and both arms' configs are frozen in this single preparation,
+sharing one task, oracle and pair of images. Do not prepare and launch each arm
+separately. Without this option, the control has no installed skill bundle.
 Digest-named local retention tags keep earlier images available when another
 variant replaces a build tag; explicit Docker image removal can still remove them.
 It starts no agents and refuses to overwrite an existing output. The initial
-Go incident is a historical development case; this suite does not present it
-as an unseen holdout. Other cases are sanitized standalone Go modules.
+Go incident (`learning-read-error`) is a historical development case; this suite
+does not present it as an unseen holdout. It lacks packaged calibration controls,
+so its staging remains available for inspection but the pre-launch check refuses
+it. Other cases are sanitized standalone Go modules with declared controls.
 
 Before launching, declare the decision, assigned cases/repetitions, cumulative
 start limit, concurrency and actual time ceiling. Include infrastructure
@@ -47,11 +62,25 @@ configuration never refunds a start. The September pilot permits 24 cumulative
 coding starts, at most two concurrent, and eight separately budgeted downstream
 memory starts. Those are experiment bounds, not universal RPI rules.
 
+Immediately before either arm launches, recheck the whole frozen comparison:
+
+```sh
+python evals/skills-rpi/prepare.py --check-staged /absolute/protected/cohort/input-scope/staged.json
+```
+
+This read-only check requires both arms, verifies task/oracle/package/config
+bytes and packaged calibration coverage, and compares native configurations
+including model and image identities. Only bound package paths and output
+locations may differ. It rejects changed inputs, missing arms, configuration
+drift and missing or failed calibration. This is a caller-invoked check, not a
+launch interceptor: run Harbor only after it succeeds, using the pinned runtime.
+It does not attest authentication, actual skill loading or completed execution.
+
 Run selected config files through Harbor directly. For example, with a host
 `timeout` utility and a predeclared 1,320-second outer limit:
 
 ```sh
-timeout -k 30s 1320s harbor run -c /absolute/protected/cohort/learning-read-error/learning-read-error-control-1.json
+timeout -k 30s 1320s harbor run -c /absolute/protected/cohort/input-scope/input-scope-control-1.json
 ```
 
 Each config disables automatic retries and executes one trial. Task timeouts
