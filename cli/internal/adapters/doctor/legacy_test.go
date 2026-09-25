@@ -25,7 +25,6 @@ func TestLegacyChecksIncludesEveryDoctorSafetySection(t *testing.T) {
 		WorkingDir:  func() (string, error) { return root, nil },
 		HomeDir:     func() (string, error) { return home, nil },
 		LedgerPath:  func() string { return filepath.Join(root, "ledger.jsonl") },
-		Environment: func() []string { return nil },
 		Now:         time.Now,
 	}
 	checks := adapter.Checks(context.Background())
@@ -108,7 +107,6 @@ func pristineAdapter(t *testing.T, cwd string) LegacyChecks {
 		WorkingDir:  func() (string, error) { return cwd, nil },
 		HomeDir:     func() (string, error) { return home, nil },
 		LedgerPath:  func() string { return filepath.Join(cwd, "ledger.jsonl") },
-		Environment: func() []string { return nil },
 		Now:         time.Now,
 	}
 }

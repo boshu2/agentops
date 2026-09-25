@@ -21,7 +21,6 @@ type LegacyChecks struct {
 	LedgerPath  func() string
 	WorkingDir  func() (string, error)
 	HomeDir     func() (string, error)
-	Environment func() []string
 	Now         func() time.Time
 }
 
@@ -65,7 +64,7 @@ func (adapter LegacyChecks) Checks(_ context.Context) []quality.Check {
 func SystemLegacyChecks(toolVersion string, ledgerPath func() string) LegacyChecks {
 	return LegacyChecks{
 		ToolVersion: toolVersion, LedgerPath: ledgerPath,
-		WorkingDir: os.Getwd, HomeDir: os.UserHomeDir, Environment: os.Environ, Now: time.Now,
+		WorkingDir: os.Getwd, HomeDir: os.UserHomeDir, Now: time.Now,
 	}
 }
 
