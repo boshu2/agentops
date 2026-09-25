@@ -31,6 +31,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `images/gemini` package (`agentops-core-gemini`) and its generator branch.
   Remove an installed copy with `agy plugin uninstall agentops-core-gemini`.
 
+### Fixed
+
+- `ao skills link`, `unlink` and `ao doctor` use Pi's user skills dir,
+  `~/.pi/agent/skills`, and detect Pi by `~/.pi/agent`. Links an earlier version
+  made in `~/.pi/skills` are no longer swept by default; remove them with
+  `ao skills unlink --dest ~/.pi/skills`.
+
 ## [3.8.0] - 2026-09-22
 
 AgentOps 3.8 refactors the engineering workflow across 13 skills: 11 existing
