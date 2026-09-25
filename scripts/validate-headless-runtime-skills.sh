@@ -43,7 +43,7 @@ Options:
   --codex-bin <path>            Codex CLI binary (default: codex)
   --codex-profile <name>        Codex profile for headless exec (default: none)
   --timeout <seconds>           Per-runtime timeout (default: 120)
-  --max-budget-usd <amount>     Accepted for old callers; ignored (Claude print is forbidden)
+  --max-budget-usd <amount>     Accepted for old callers; ignored (Claude validation runs --help only)
   --help                        Show this help
 
 Environment:

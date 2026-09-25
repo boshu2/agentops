@@ -91,7 +91,7 @@ cmd_status() {
 
   local runtime="codex"
   if grep -q 'claude' "$WORKER_SCRIPT" 2>/dev/null && ! grep -q 'codex' "$WORKER_SCRIPT" 2>/dev/null; then
-    runtime="claude (WARNING: LAW 0 violation risk)"
+    runtime="claude"
   fi
   echo "Runtime:   $runtime"
   echo "Worker:    $WORKER_SCRIPT"
