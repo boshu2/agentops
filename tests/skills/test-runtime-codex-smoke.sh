@@ -21,9 +21,8 @@ echo ""
 
 PLUGIN_JSON="$REPO_ROOT/.codex-plugin/plugin.json"
 MARKETPLACE_JSON="$REPO_ROOT/plugins/marketplace.json"
-TOMBSTONE="$REPO_ROOT/scripts/install-codex.sh"
 
-# ── 1. Legacy plugin manifests still ship (compat artifacts) ─────────────────
+# ── 1. Codex plugin manifests ship ────────────────────────────────────────────
 echo "Stage 1: Codex plugin manifest artifacts"
 
 if [[ -f "$PLUGIN_JSON" ]]; then
@@ -42,21 +41,16 @@ fi
 
 echo ""
 
-# ── 2. Public installer is a tombstone pointing at ao skills link ────────────
-echo "Stage 2: Codex installer tombstone"
+# ── 2. Retired Codex installers stay deleted ─────────────────────────────────
+echo "Stage 2: retired Codex installers"
 
-if [[ -f "$TOMBSTONE" ]]; then
-    bash -n "$TOMBSTONE" && pass "install-codex.sh syntax valid" || fail "install-codex.sh syntax invalid"
-    grep -q 'ao skills link' "$TOMBSTONE" \
-        && pass "install-codex.sh tombstone points at ao skills link" || fail "install-codex.sh missing ao skills link"
-    if bash "$TOMBSTONE" >/dev/null 2>&1; then
-        fail "install-codex.sh tombstone exited 0"
+for gone in install-codex.sh install-codex.ps1; do
+    if [[ ! -e "$REPO_ROOT/scripts/$gone" ]]; then
+        pass "$gone deleted"
     else
-        pass "install-codex.sh tombstone exits nonzero"
+        fail "$gone still exists"
     fi
-else
-    fail "scripts/install-codex.sh not found"
-fi
+done
 
 if [[ ! -e "$REPO_ROOT/scripts/install-codex-plugin.sh" ]]; then
     pass "install-codex-plugin.sh deleted"

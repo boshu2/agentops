@@ -20,28 +20,20 @@ echo "=== OpenCode Runtime Smoke Tests ==="
 echo "Proof tier: Tier S structural/install smoke"
 echo ""
 
-# ── 1. OpenCode install tombstone + canonical docs ───────────────────────────
+# ── 1. OpenCode install docs (npx skills path) ───────────────────────────────
 echo "Stage 1: OpenCode install surface"
 
-OPENCODE_INSTALL="$REPO_ROOT/scripts/install-opencode.sh"
 OPENCODE_DOCS="$REPO_ROOT/.opencode/INSTALL.md"
-if [[ -f "$OPENCODE_INSTALL" ]]; then
-    bash -n "$OPENCODE_INSTALL" && pass "install-opencode.sh syntax valid" || fail "install-opencode.sh syntax invalid"
-    grep -q 'ao skills link' "$OPENCODE_INSTALL" \
-        && pass "install-opencode.sh tombstone points at ao skills link" || fail "install-opencode.sh missing ao skills link"
-    if bash "$OPENCODE_INSTALL" >/dev/null 2>&1; then
-        fail "install-opencode.sh tombstone exited 0"
-    else
-        pass "install-opencode.sh tombstone exits nonzero"
-    fi
+if [[ ! -e "$REPO_ROOT/scripts/install-opencode.sh" ]]; then
+    pass "install-opencode.sh deleted"
 else
-    fail "install-opencode.sh not found at $OPENCODE_INSTALL"
+    fail "install-opencode.sh still exists"
 fi
 
-if [[ -f "$OPENCODE_DOCS" ]] && grep -q 'ao skills link' "$OPENCODE_DOCS"; then
-    pass ".opencode/INSTALL.md documents ao skills link"
+if [[ -f "$OPENCODE_DOCS" ]] && grep -q 'npx skills@latest add boshu2/agentops -a opencode' "$OPENCODE_DOCS"; then
+    pass ".opencode/INSTALL.md documents the npx skills path"
 else
-    fail ".opencode/INSTALL.md missing ao skills link guidance"
+    fail ".opencode/INSTALL.md missing npx skills install guidance"
 fi
 
 echo ""

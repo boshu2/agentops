@@ -7,7 +7,6 @@ import argparse
 import json
 from pathlib import Path
 import re
-import shutil
 import sys
 from typing import Any
 
@@ -259,20 +258,6 @@ def codex_image(entries: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def gemini_plugin(entries: list[dict[str, Any]]) -> dict[str, Any]:
-    version = json.loads((ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))["version"]
-    return {
-        "name": "agentops-core-gemini",
-        "version": version,
-        "description": f"AgentOps {len(entries)}-skill metadata-derived bundle for Google Antigravity and Gemini.",
-        "skills": "./skills",
-        "agents": "./agents",
-        "rules": "./rules",
-        "hooks": "./hooks/hooks.json",
-        "mcpServers": {"agent-mail": {"command": "am", "args": ["serve-stdio"]}},
-    }
-
-
 def outputs(entries: list[dict[str, Any]]) -> dict[Path, bytes]:
     return {
         ROOT / "skills" / "catalog.json": (json.dumps(catalog(entries), indent=2, sort_keys=True) + "\n").encode(),
@@ -285,7 +270,6 @@ def outputs(entries: list[dict[str, Any]]) -> dict[Path, bytes]:
         ROOT / "docs" / "contracts" / "context-map.md": context_map(entries).encode(),
         ROOT / "images" / "claude" / "manifest.json": (json.dumps(claude_image(entries), indent=2, sort_keys=True) + "\n").encode(),
         ROOT / "images" / "codex" / "manifest.json": (json.dumps(codex_image(entries), indent=2, sort_keys=True) + "\n").encode(),
-        ROOT / "images" / "gemini" / "plugin.json": (json.dumps(gemini_plugin(entries), indent=2, sort_keys=True) + "\n").encode(),
     }
 
 
@@ -301,51 +285,15 @@ def cited_references(skill_md: Path) -> set[str]:
     return cited
 
 
-def gemini_projection_files(name: str) -> dict[str, Path]:
-    """Relative path -> source file for one skill's Gemini projection: SKILL.md plus
-    the whole references/ directory (every skill's references/ is well under 1 MB),
-    so a SKILL.md that cites references/<file> resolves inside the projection."""
-    skill_dir = ROOT / "skills" / name
-    files = {"SKILL.md": skill_dir / "SKILL.md"}
-    references = skill_dir / "references"
-    if references.is_dir():
-        for path in sorted(references.rglob("*")):
-            if path.is_file():
-                files[path.relative_to(skill_dir).as_posix()] = path
-    return files
-
-
-def sync_gemini_skills(entries: list[dict[str, Any]], check: bool) -> list[str]:
-    destination = ROOT / "images" / "gemini" / "skills"
-    expected = {entry["name"] for entry in entries}
-    actual = {path.name for path in destination.iterdir() if path.is_dir()} if destination.is_dir() else set()
-    drift: list[str] = []
-    for name in sorted(actual - expected):
-        path = destination / name
-        if check:
-            drift.append(path.relative_to(ROOT).as_posix())
-        else:
-            shutil.rmtree(path)
-    for name in sorted(expected):
-        files = gemini_projection_files(name)
-        target_dir = destination / name
-        if check:
-            present = {path.relative_to(target_dir).as_posix(): path for path in target_dir.rglob("*") if path.is_file()} if target_dir.is_dir() else {}
-            if set(present) != set(files) or any(present[rel].read_bytes() != src.read_bytes() for rel, src in files.items()):
-                drift.append(target_dir.relative_to(ROOT).as_posix())
-                continue
-            # Every references/<file> the projected SKILL.md cites must exist in the projection.
-            for cited in sorted(cited_references(target_dir / "SKILL.md")):
-                if not (target_dir / "references" / cited).is_file():
-                    drift.append(f"{target_dir.relative_to(ROOT).as_posix()}: SKILL.md cites references/{cited}, absent from the projection")
-        else:
-            if target_dir.exists():
-                shutil.rmtree(target_dir)
-            for rel, src in files.items():
-                target = target_dir / rel
-                target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_bytes(src.read_bytes())
-    return drift
+def missing_reference_citations(entries: list[dict[str, Any]]) -> list[str]:
+    """Every references/<file> a canonical SKILL.md cites must exist in that skill."""
+    missing: list[str] = []
+    for entry in entries:
+        skill_dir = ROOT / "skills" / entry["name"]
+        for cited in sorted(cited_references(skill_dir / "SKILL.md")):
+            if not (skill_dir / "references" / cited).is_file():
+                missing.append(f"{skill_dir.relative_to(ROOT).as_posix()}: SKILL.md cites references/{cited}, which does not exist")
+    return missing
 
 
 def main() -> int:
@@ -381,7 +329,8 @@ def main() -> int:
             else:
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_bytes(payload)
-        drift.extend(sync_gemini_skills(entries, args.check))
+        if args.check:
+            drift.extend(missing_reference_citations(entries))
         if drift:
             for path in drift:
                 print(f"DRIFT: {path}", file=sys.stderr)

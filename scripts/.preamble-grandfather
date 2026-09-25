@@ -143,17 +143,10 @@ scripts/generate-sku-catalog.sh
 scripts/goal-failure-taxonomy.sh
 scripts/golangci-lint-v2.sh
 scripts/ingest-ci-deterministic-catches.sh
-scripts/install-agy.sh
 scripts/install-bd.sh
-scripts/install-claude.sh
-scripts/install-codex-native-skills.sh
-scripts/install-codex-plugin.sh
-scripts/install-codex.sh
 scripts/install-installed-skill-edit-guard.sh
-scripts/install-opencode.sh
 scripts/install-pre-push-gate.sh
 scripts/install-workflows.sh
-scripts/install.sh
 scripts/intake.sh
 scripts/land-lane-flaky-retry.sh
 scripts/land-lane-run.sh

@@ -135,12 +135,6 @@ function Remove-IfExists {
 
 Write-Step "Checking PowerShell installer syntax"
 Test-PowerShellSyntax (Join-PathSegments -Base $RepoRoot -Segments 'scripts', 'install-ao.ps1')
-$codexTombstone = Join-PathSegments -Base $RepoRoot -Segments 'scripts', 'install-codex.ps1'
-Test-PowerShellSyntax $codexTombstone
-$tombstoneText = Get-Content -Raw -LiteralPath $codexTombstone
-if ($tombstoneText -notmatch 'removed in 3\.3' -or $tombstoneText -notmatch 'ao skills link') {
-  throw "install-codex.ps1 must remain an AgentOps 3.3 tombstone pointing at ao skills link"
-}
 
 # ---------------------------------------------------------------------------
 # 2. Install ao release binary into a temp directory

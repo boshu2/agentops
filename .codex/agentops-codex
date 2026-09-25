@@ -15,7 +15,7 @@ const agentopsRepoDir = path.join(homeDir, '.codex', 'agentops');
 const agentopsGitDir = path.join(agentopsRepoDir, '.git');
 const installMetadataFile = path.join(homeDir, '.codex', '.agentops-codex-install.json');
 const defaultStaleDays = 14;
-const fallbackUpdateCommand = 'curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash';
+const fallbackUpdateCommand = 'codex plugin marketplace upgrade agentops-marketplace && codex plugin add agentops@agentops-marketplace';
 
 function parsePositiveInt(value, fallback) {
     const parsed = Number.parseInt(value, 10);

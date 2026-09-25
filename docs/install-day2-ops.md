@@ -13,25 +13,34 @@ These guidance commands do not write skills, hooks, or project state. `ao init`
 is optional local evidence setup, not a prerequisite. Development features can
 be built from this checkout with `cd cli && go install ./cmd/ao`.
 
-Three optional skill installation paths remain supported. The
+Three skill installation paths are supported. Pick one per agent: a plugin
+plus npx on the same agent gives you every skill twice. The
 [host/install mapping](contracts/multi-runtime-tier-charter.md#host-and-install-surface-mapping)
 defines each consumer and separates structural checks from actual host loading
 and execution evidence.
 
-- `npx skills@latest add boshu2/agentops --all -g` — requests the full skill
-  library for all agents supported by the external Skills installer.
-- Runtime plugins for Claude Code and Codex — managed bundles that update with
-  the release.
-- One canonical checkout plus `ao skills link` — source-tracked symlinks for
-  users who edit skills or contribute.
+- Claude Code plugin — managed bundle with skills, four agents and hooks;
+  updates with the release ([below](#install-and-update-runtime-plugins)).
+- Codex plugin — managed bundle of the generated Codex skills
+  ([below](#install-and-update-runtime-plugins)).
+- `npx skills@latest add boshu2/agentops` — everything else: the external Skills
+  installer puts the same `SKILL.md` skills into the agents you pick.
 
-With npx or a plugin, install and updates are handled by that tool. The plugin
-commands below install the managed bundle; the checkout path follows afterward.
+Run npx from your project directory and choose agents and skills
+interactively; add `-g` for a user-level install. In scripts, name the agents:
+`npx skills@latest add boshu2/agentops -g -a cursor opencode -y`, and add
+`--skill test refactor` for a subset. Installer targets include `cursor`,
+`opencode`, `gemini-cli`, `antigravity`, `pi`, `grok` (Grok Build) and
+`openclaw`. Use `-g` for OpenClaw: its project scope writes `./skills` into
+your repository. Grok Bot has no installer target; add the same `SKILL.md`
+folders through [its skill settings](https://docs.x.ai/grok-bot/skills-routines-and-automations).
+
 The npx path installs skills, not runtime plugins, AO, hooks or native roles.
-Its default link/copy behavior belongs to that installer; use
-`npx skills@latest --help` for the current contract. For a selected subset, use
-`npx skills@latest add boshu2/agentops --skill test refactor -g` and select the
-intended agents. `--all` explicitly selects every supported agent and skill.
+Its link/copy behavior belongs to that installer; use `npx skills@latest --help`
+for the current contract. Don't pass `-y` without `-a`, and don't use `--all`:
+both can target every agent the installer knows and create config directories
+for agents you don't have. Contributors link a checkout instead; see
+[the contributor section](#install-source-checkout).
 
 Whichever path you install through, the skills themselves have runtime
 requirements. Most need nothing beyond the coding agent; these need more:
@@ -52,7 +61,7 @@ requirements. Most need nothing beyond the coding agent; these need more:
 | `security` | `python3`, conditional | the composable suite and offline redteam surfaces run `security_suite.py` when that scan type is selected |
 | `cass` | `python3`, optional | `scripts/prompt_miner.py` mines repeated prompts; one of several selectable Scripts-table entries |
 
-The plugin and `npx skills@latest add boshu2/agentops --all -g` install the skill library, regardless of whether you have `python3` or `ao`.
+The plugins and `npx skills@latest add boshu2/agentops` install the skill library, regardless of whether you have `python3` or `ao`.
 
 ## Install and update runtime plugins
 
@@ -126,10 +135,12 @@ Without Homebrew: `go install github.com/boshu2/agentops/cli/cmd/ao@latest`
 To track skills from a local checkout instead of a release bundle, run
 `ao skills link` from that checkout — the full flow is below.
 
-## Install (source checkout)
+<a id="install-source-checkout"></a>
 
-To make selected guidance discoverable, install the CLI, clone AgentOps, and
-link those skills:
+## Contributors: source checkout and `ao skills link`
+
+This path is for contributors and people who edit skills; users install through
+a plugin or npx. Install the CLI, clone AgentOps, and link selected skills:
 
 ```bash
 brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops
@@ -159,10 +170,10 @@ The command links selected canonical `skills/<slug>/` directories into
 `~/.codex/skills`, `~/.gemini/skills`, `~/.cursor/skills` and `~/.pi/skills` when
 their parent config directories exist.
 It refuses to replace real directories, foreign links, or user-owned skills.
-For OpenCode's dedicated discovery root, use an explicit destination; its
-portable `~/.agents/skills` root is already included. Follow the
-[install guide](https://github.com/boshu2/agentops/blob/main/.opencode/INSTALL.md). A `--dest` installation must use the
-same destination for later audit, update and unlink commands.
+For OpenCode's dedicated discovery root, pass
+`--dest ~/.config/opencode/skills`; its portable `~/.agents/skills` root is
+already included. A `--dest` installation must use the same destination for
+later audit, update and unlink commands.
 
 Invocation uses the host's actual registered name, independently of the catalog
 slug passed to `--skill`. Observed Codex source discovery registered Plan as
@@ -174,6 +185,15 @@ Registration does not establish loaded content or successful execution; see the
 [host evidence limits](contracts/multi-runtime-tier-charter.md#host-and-install-surface-mapping).
 
 ## Update
+
+Plugins: see [Install and update runtime plugins](#install-and-update-runtime-plugins).
+npx installs:
+
+```bash
+npx skills@latest update
+```
+
+Contributor source links:
 
 ```bash
 cd ~/.local/share/agentops
@@ -203,7 +223,8 @@ declaring the update complete.
 
 ## Audit
 
-Preview the complete runtime fan-out without changing anything:
+For contributor source links, preview the complete runtime fan-out without
+changing anything:
 
 ```bash
 cd ~/.local/share/agentops
@@ -243,20 +264,26 @@ only those after review. Never delete an entire shared cache or config file to
 resolve one collision. The legacy marker is `~/.codex/.agentops-codex-install.json`;
 its presence alone does not establish ownership of every adjacent directory.
 
-### Gemini / Antigravity
+### Retired Gemini / Antigravity package
+
+The `agentops-core-gemini` package is retired; Gemini CLI and Antigravity use
+npx. If you installed that package, remove it:
 
 ```bash
 agy plugin disable agentops-core-gemini
 agy plugin uninstall agentops-core-gemini
 ```
 
-The 3.x curl installer scripts are refusing tombstones; install via npx, a
-runtime plugin, or the checkout above.
+The 3.x curl installers were removed; install through a plugin or npx.
 
 ## Uninstall
 
-From the canonical checkout, rehearse and then remove only links pointing into
-that checkout:
+Plugins: `claude plugin uninstall agentops@agentops-marketplace` or
+`codex plugin remove agentops@agentops-marketplace`. npx installs:
+`npx skills@latest remove` (add `-g` for a user-level install).
+
+Contributor source links: from the canonical checkout, rehearse and then remove
+only links pointing into that checkout:
 
 ```bash
 ao skills unlink --dry-run
@@ -346,6 +373,7 @@ verify user-owned entries survive; these instructions alone do not prove it.
 
 ## Escalate
 
-Include the runtime and OS, `ao version`, the JSON result of `ao skills link
---dry-run --json`, and the output of `readlink` for one affected skill. Do not
+Include the runtime and OS, your install method, `ao version`, for source links
+the JSON result of `ao skills link --dry-run --json`, and the output of
+`readlink` for one affected skill. Do not
 include credentials or unrelated runtime configuration.

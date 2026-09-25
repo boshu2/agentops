@@ -227,27 +227,6 @@ EOF
     [ "$status" -eq 1 ]
 }
 
-@test "dangerous pattern scan allows first-party installer one-liners" {
-    mkdir -p "$TMP_DIR/scripts"
-    cat > "$TMP_DIR/scripts/install-claude.sh" <<'EOF'
-curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-claude.sh | bash
-EOF
-    cat > "$TMP_DIR/scripts/install-agy.sh" <<'EOF'
-curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-agy.sh | bash -s -- --ref v3.1.0
-EOF
-
-    run env SCRIPT_UNDER_TEST="$SCRIPT" FIXTURE_DIR="$TMP_DIR" bash -c '
-        set -euo pipefail
-        set --
-        export AGENTOPS_CI_LOCAL_RELEASE_SOURCE_ONLY=1
-        source "$SCRIPT_UNDER_TEST"
-        cd "$FIXTURE_DIR"
-        run_dangerous_pattern_scan
-    '
-
-    [ "$status" -eq 0 ]
-}
-
 @test "dangerous pattern scan skips canonical installer plumbing" {
     mkdir -p "$TMP_DIR/scripts/lib"
     cat > "$TMP_DIR/scripts/install-bd.sh" <<'EOF'

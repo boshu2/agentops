@@ -107,8 +107,8 @@ registers both names for checkout use.
 `scripts/install-codex-context-agents.sh` copies the generated templates for
 personal or project use, preserving changed roles and config with unique
 backups. It requires Node and an installed Codex with `config/batchWrite`. The
-removed `scripts/install-codex.sh` remains a tombstone. The plugin manifest
-continues shipping `./skills-codex`; no new skill or automatic hook wiring.
+plugin manifest continues shipping `./skills-codex`; no new skill or automatic
+hook wiring.
 Source guidance is shared, so the existing parity_only catalog treatment is
 retained rather than inventing an override or editing generated twins.
 

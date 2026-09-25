@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Install narrowed to three paths: the Claude Code plugin, the Codex plugin, and
+  `npx skills@latest add boshu2/agentops` for every other agent (Cursor,
+  OpenCode, Gemini CLI/Antigravity, Pi, Grok Build, OpenClaw). Grok Bot takes
+  the same `SKILL.md` files through its own skill settings. `ao skills link` is
+  now documented as the contributor path. The docs no longer suggest `--all -g`,
+  which creates config directories for agents you don't have.
+
+### Removed
+
+- The 3.x curl and PowerShell skill installer tombstones (`scripts/install.sh`,
+  `install-claude.sh`, `install-codex.sh`, `install-agy.sh`,
+  `install-opencode.sh`, `install-codex.ps1`). Their raw URLs now 404, so an old
+  `curl … | bash` line silently does nothing; switch to a plugin or npx.
+- The `images/gemini` package (`agentops-core-gemini`) and its generator branch.
+  Remove an installed copy with `agy plugin uninstall agentops-core-gemini`.
+
 ## [3.8.0] - 2026-09-22
 
 AgentOps 3.8 refactors the engineering workflow across 13 skills: 11 existing

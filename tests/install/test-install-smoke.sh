@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Smoke tests for install surfaces — validates syntax and the canonical
-# AgentOps 3.3 install path (ao skills link). Legacy 3.x plugin installers are
-# retained only as tombstones that exit nonzero with migration guidance.
+# Smoke tests for install surfaces — validates the kept opt-in installers and
+# the contributor source-link path (ao skills link). Users install through the
+# Claude Code plugin, the Codex plugin or npx skills; the legacy 3.x curl and
+# PowerShell skill installers were deleted and must stay deleted.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
@@ -57,36 +58,9 @@ check "install-bd.sh loads installer-common" \
 
 echo ""
 
-# ── Tombstones: public curl entrypoints must refuse and point at ao skills link ──
-TOMBSTONES=(
-    "scripts/install.sh"
-    "scripts/install-claude.sh"
-    "scripts/install-codex.sh"
-    "scripts/install-agy.sh"
-    "scripts/install-opencode.sh"
-)
-
-for script in "${TOMBSTONES[@]}"; do
-    check "$script syntax valid" bash -n "$REPO_ROOT/$script"
-    check "$script is a removed-installer tombstone" \
-        grep -q 'removed in 3.3' "$REPO_ROOT/$script"
-    check "$script points at ao skills link" \
-        grep -q 'ao skills link' "$REPO_ROOT/$script"
-    # Must exit nonzero (migration refusal).
-    if bash "$REPO_ROOT/$script" >/dev/null 2>&1; then
-        echo "FAIL: $script tombstone exited 0"
-        FAIL=$((FAIL + 1))
-    else
-        echo "PASS: $script tombstone exits nonzero"
-        PASS=$((PASS + 1))
-    fi
-done
-
-echo ""
-
-# ── Canonical product path ──
-check "README documents ao skills link" \
-    grep -q 'ao skills link' "$REPO_ROOT/README.md"
+# ── Contributor source-link path ──
+check "install guide documents ao skills link" \
+    grep -q 'ao skills link' "$REPO_ROOT/docs/install-day2-ops.md"
 check "MIGRATION documents ao skills link" \
     grep -q 'ao skills link' "$REPO_ROOT/docs/MIGRATION.md"
 check "refresh-codex-local.sh wraps ao skills link" \
@@ -94,9 +68,17 @@ check "refresh-codex-local.sh wraps ao skills link" \
 
 # Deleted internals must stay gone.
 for gone in \
+    scripts/install.sh \
+    scripts/install-claude.sh \
+    scripts/install-codex.sh \
+    scripts/install-agy.sh \
+    scripts/install-opencode.sh \
+    scripts/install-codex.ps1 \
     scripts/install-codex-plugin.sh \
     scripts/install-codex-native-skills.sh \
-    scripts/select-spine-skills.sh
+    scripts/select-spine-skills.sh \
+    scripts/ci/verify-windows-install.ps1 \
+    images/gemini
 do
     if [[ -e "$REPO_ROOT/$gone" ]]; then
         echo "FAIL: $gone still exists (should be deleted)"

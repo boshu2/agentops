@@ -17,10 +17,12 @@ and get each change judged by a fresh agent session that didn't write it.**
 
 </div>
 
-AgentOps is 38 optional skills and a CLI (`ao`) for AI coding agents such as
-Claude Code and Codex. You state intent as behavior in your domain's words. The
-skills carry it through one change (Plan → Implement → Validate, an **RPI**) or,
-for bigger work, a goal made of many RPIs tracked in
+AgentOps is 38 optional skills and a CLI (`ao`). The same `SKILL.md` skills work
+with coding agents (Claude Code, Codex, Cursor, OpenCode, Gemini CLI, Pi and
+others) and personal assistants (OpenClaw, Grok Bot). You state intent as
+behavior in your domain's words. The skills carry it through one change
+(Plan → Implement → Validate, an **RPI**) or, for bigger work, a goal made of
+many RPIs tracked in
 [Beads](https://github.com/gastownhall/beads), a dependency-aware issue tracker.
 
 <a id="why-these-skills-exist"></a>
@@ -39,9 +41,8 @@ for bigger work, a goal made of many RPIs tracked in
 
 ## Quickstart
 
-Pick one install method so you don't get duplicate copies. Claude Code and Codex
-have managed plugins; other agents that read Agent Skills (`SKILL.md`) use the
-Skills installer or their own install path.
+Pick one method per agent: a plugin plus npx on the same agent gives you every
+skill twice.
 
 <details>
 <summary><strong>Claude Code</strong></summary>
@@ -76,20 +77,25 @@ custom roles and read limits have [separate setup](docs/install-day2-ops.md#inst
 </details>
 
 <details>
-<summary><strong>Cursor, Grok Bot, Gemini, Pi and other agents</strong></summary>
+<summary><strong>Everything else</strong> (Cursor, OpenCode, Gemini CLI, Pi, OpenClaw, Grok Bot)</summary>
 
-With Node.js installed, run from your project directory:
+<a id="everything-else"></a>
+
+With Node.js installed, run from your project directory, then pick your agents
+and skills:
 
 ```bash
 npx skills@latest add boshu2/agentops
 ```
 
-Choose your agent and the skills you want; add `-g` for a user-level install.
-For an agent the installer doesn't list, follow its Agent Skills instructions
-and the [source-link guide](docs/install-day2-ops.md#install-source-checkout).
-Confirm the agent lists and loads the selected skill. Some skills need extra
-tools ([install guide](docs/install-day2-ops.md)); what each host has been
-tested for is in [host coverage and limits](docs/contracts/multi-runtime-tier-charter.md#host-and-install-surface-mapping).
+Add `-g` for a user-level install. In scripts, name the agents:
+`npx skills@latest add boshu2/agentops -g -a cursor opencode -y`
+(`-y` without `-a` can install into every agent the installer knows).
+Installer targets include `cursor`, `opencode`, `gemini-cli`, `antigravity`,
+`pi`, `grok` (Grok Build) and `openclaw`. Grok Bot has no installer target; add
+the same `SKILL.md` folders through [its skill settings](https://docs.x.ai/grok-bot/skills-routines-and-automations).
+Some skills need extra tools ([install guide](docs/install-day2-ops.md)); what
+each host has been tested for is in [host coverage and limits](docs/contracts/multi-runtime-tier-charter.md#host-and-install-surface-mapping).
 
 </details>
 
@@ -326,7 +332,7 @@ With Go installed: `go install github.com/boshu2/agentops/cli/cmd/ao@latest`.
 
 Version 3.8 retains existing 3.7 command and skill names. Use the
 [plugin update instructions](docs/install-day2-ops.md#install-and-update-runtime-plugins)
-or the [source and Skills installer guide](docs/install-day2-ops.md#update).
+or, for npx installs, `npx skills@latest update` ([update notes](docs/install-day2-ops.md#update)).
 For Homebrew: `brew update && brew upgrade agentops`. Start a new session
 afterward; new installs do not silently remove obsolete copies.
 
@@ -339,19 +345,10 @@ See the [3.8 release notes](docs/releases/2026-09-22-v3.8.0-notes.md) and
 </details>
 
 <details>
-<summary><strong>Source installs and skill dependencies</strong></summary>
+<summary><strong>Skill dependencies</strong></summary>
 
 <a id="other-installation-paths"></a>
 
-From an AgentOps checkout with `ao` installed:
-
-```bash
-ao skills link --skill test --skill refactor --dry-run
-ao skills link --skill test --skill refactor
-```
-
-Omit selectors for the whole catalog. Linking preserves existing real
-directories and foreign links. See [source setup and removal](docs/install-day2-ops.md#install-source-checkout).
 Skill installation does not install tool dependencies:
 
 | Skill | Needs | Why |
@@ -399,7 +396,8 @@ Read-budget guards, Codex roles and trusted Codex hooks have [separate setup](do
 
 Disable Claude's plugin with `/plugin disable agentops`. Remove it with
 `claude plugin uninstall agentops@agentops-marketplace`; for Codex, use
-`codex plugin remove agentops@agentops-marketplace`.
+`codex plugin remove agentops@agentops-marketplace`; for npx installs, use
+`npx skills@latest remove`.
 
 </details>
 
@@ -475,6 +473,8 @@ external storage, following each owner's access and retention rules.
 ## Contributing
 
 Contributions are welcome: documentation fixes, reproducible bug reports,
-tests, CLI improvements and skills. Read the [contribution guide](docs/CONTRIBUTING.md).
+tests, CLI improvements and skills. Read the [contribution guide](docs/CONTRIBUTING.md);
+to work on skills from a checkout, link them with
+[`ao skills link`](docs/install-day2-ops.md#install-source-checkout).
 
 Licensed under [Apache-2.0](LICENSE).

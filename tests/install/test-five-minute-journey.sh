@@ -6,7 +6,7 @@
 # (that requires runtime auth and budget). Instead it validates that each
 # checkpoint on the 5-minute path is wired and reachable:
 #
-#   t<60s    Step 1: install bundle resolves (install.sh syntax OK)
+#   t<60s    Step 1: skill link surface resolves (ao skills link --help)
 #   t<90s    Step 2: ao binary builds and `ao --version` works
 #   t<120s   Step 3: skill-loop front door present (plan/implement/validate)
 #   t<180s   Step 4: docs/SKILLS.md router names the skill-loop path
@@ -62,9 +62,7 @@ step() {
 
 echo "=== PG1 five-minute first-value journey (floor: ${FLOOR_SECONDS}s) ==="
 
-# Step 1: install tombstone + canonical link surface present
-step "Step 1: install.sh is a removed-installer tombstone" \
-    "grep -q 'ao skills link' scripts/install.sh && bash -n scripts/install.sh && echo OK"
+# Step 1: source-link surface present
 step "Step 1: ao skills link help resolves" \
     "test -x cli/bin/ao || (cd cli && go build -o bin/ao ./cmd/ao); cli/bin/ao skills link --help >/dev/null && echo OK"
 
