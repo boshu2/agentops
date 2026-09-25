@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 790" role="img" aria-labelledby="arTitle arDesc">
+  <title id="arTitle">AgentOps 3.8 routes: enter anywhere, repair within real limits, then a fresh judgment</title>
+  <desc id="arDesc">Engineering workflow. Intent that is clear and accepted goes to Implement; unclear intent goes to Plan, then to Implement once settled. An existing change goes straight to fresh judgment. Implement runs native checks, then fresh judgment, independent of the author. Accepted work finishes. Failed behavior goes back to Implement for repair. Missing evidence is gathered, then the candidate is judged again. Repair stays within real limits; when they are spent, the work stops and goes back to the caller. Beside it, the optional learning loop: a result becomes a protected draft outside Git, gets a fresh support and disclosure review, lands in reviewed .context/ pages, and later work queries it.</desc>
+
+  <defs>
+    <linearGradient id="arPanel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0d0b08"/>
+      <stop offset="100%" stop-color="#070605"/>
+    </linearGradient>
+    <filter id="arGlow" x="-10%" y="-30%" width="120%" height="160%">
+      <feGaussianBlur stdDeviation="3"/>
+    </filter>
+    <marker id="arArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 1 L9 5 L0 9" fill="none" stroke="#fbbf24" stroke-width="1.4"/>
+    </marker>
+  </defs>
+
+  <!-- ground -->
+  <rect x="0" y="0" width="960" height="790" fill="#070a08"/>
+
+  <!-- drawing strip -->
+  <g font-family="'JetBrains Mono', ui-monospace, monospace">
+    <text x="30" y="36" font-size="20" letter-spacing="1.5" fill="#b78318">FIG. 03 · AGENTOPS 3.8 ROUTES</text>
+    <text x="930" y="36" text-anchor="end" font-size="20" fill="#8a8378">ENTER ANYWHERE</text>
+  </g>
+  <line x1="30" y1="52" x2="930" y2="52" stroke="#f59e0b" stroke-opacity="0.22"/>
+
+  <!-- ===== engineering workflow ===== -->
+  <g font-family="'JetBrains Mono', ui-monospace, monospace" text-anchor="middle">
+    <!-- entry points (dashed) -->
+    <rect x="70" y="110" width="240" height="60" rx="7" fill="url(#arPanel)" stroke="#f59e0b" stroke-opacity="0.75" stroke-dasharray="6 4"/>
+    <text x="190" y="148" font-size="24" font-weight="700" fill="#e8e4dd">Intent</text>
+
+    <rect x="350" y="425" width="240" height="60" rx="7" fill="url(#arPanel)" stroke="#f59e0b" stroke-opacity="0.75" stroke-dasharray="6 4"/>
+    <text x="470" y="463" font-size="24" font-weight="700" fill="#e8e4dd">Existing change</text>
+
+    <!-- work -->
+    <rect x="350" y="215" width="240" height="60" rx="7" fill="url(#arPanel)" stroke="#f59e0b" stroke-opacity="0.5"/>
+    <text x="470" y="253" font-size="24" font-weight="700" fill="#e8e4dd">Plan</text>
+
+    <rect x="70" y="320" width="240" height="60" rx="7" fill="url(#arPanel)" stroke="#f59e0b" stroke-opacity="0.5"/>
+    <text x="190" y="358" font-size="24" font-weight="700" fill="#e8e4dd">Implement</text>
+
+    <rect x="70" y="425" width="240" height="60" rx="7" fill="url(#arPanel)" stroke="#f59e0b" stroke-opacity="0.5"/>
+    <text x="190" y="463" font-size="24" font-weight="700" fill="#e8e4dd">Native checks</text>
+
+    <!-- fresh judgment -->
+    <rect x="70" y="535" width="520" height="84" rx="8" fill="none" stroke="#fbbf24" stroke-opacity="0.55" filter="url(#arGlow)"/>
+    <rect x="70" y="535" width="520" height="84" rx="8" fill="url(#arPanel)" stroke="#fbbf24" stroke-opacity="0.95" stroke-width="1.4"/>
+    <text x="330" y="571" font-size="28" font-weight="700" fill="#fbbf24">Fresh judgment</text>
+    <text x="330" y="602" font-size="20" fill="#b78318">independent of the author</text>
+
+    <!-- outcomes -->
+    <rect x="70" y="690" width="240" height="60" rx="7" fill="url(#arPanel)" stroke="#fbbf24" stroke-opacity="0.8"/>
+    <text x="190" y="728" font-size="24" font-weight="700" fill="#fbbf24">Finish</text>
+
+    <rect x="350" y="690" width="240" height="60" rx="7" fill="url(#arPanel)" stroke="#f59e0b" stroke-opacity="0.5"/>
+    <text x="470" y="728" font-size="24" font-weight="700" fill="#e8e4dd">Gather evidence</text>
+  </g>
+
+  <!-- routes -->
+  <g fill="none" stroke="#fbbf24" stroke-width="1.6" marker-end="url(#arArrow)">
+    <!-- clear: intent -> implement -->
+    <line x1="190" y1="170" x2="190" y2="318"/>
+    <!-- unclear: intent -> plan -->
+    <path d="M310 140 H470 V213"/>
+    <!-- settled: plan -> implement -->
+    <path d="M470 275 V350 H312"/>
+    <!-- implement -> checks -> judgment -->
+    <line x1="190" y1="380" x2="190" y2="423"/>
+    <line x1="190" y1="485" x2="190" y2="533"/>
+    <!-- existing change -> judgment -->
+    <line x1="470" y1="485" x2="470" y2="533"/>
+    <!-- accepted -> finish; missing evidence -> gather -->
+    <line x1="190" y1="619" x2="190" y2="688"/>
+    <line x1="470" y1="619" x2="470" y2="688"/>
+  </g>
+
+  <!-- repair loops (dashed) -->
+  <g fill="none" stroke="#fbbf24" stroke-width="1.6" stroke-dasharray="4 4" marker-end="url(#arArrow)">
+    <!-- failed behavior -> implement -->
+    <path d="M70 577 H46 V350 H68"/>
+    <!-- gather evidence -> judged again -->
+    <path d="M590 720 H614 V577 H592"/>
+  </g>
+
+  <!-- route labels -->
+  <g font-family="'JetBrains Mono', ui-monospace, monospace" font-size="22" fill="#b78318">
+    <text x="202" y="238">clear,</text>
+    <text x="202" y="264">accepted</text>
+    <text x="390" y="128" text-anchor="middle">unclear</text>
+    <text x="482" y="318">settled</text>
+    <text x="202" y="662">accepted</text>
+    <text x="482" y="648">missing</text>
+    <text x="482" y="672">evidence</text>
+    <text transform="translate(36 463) rotate(-90)" text-anchor="middle">failed → repair</text>
+    <text transform="translate(634 648) rotate(-90)" text-anchor="middle">again</text>
+  </g>
+
+  <!-- ===== optional learning loop ===== -->
+  <rect x="680" y="66" width="250" height="692" rx="8" fill="none" stroke="#f59e0b" stroke-opacity="0.45" stroke-dasharray="3 5"/>
+  <g font-family="'JetBrains Mono', ui-monospace, monospace">
+    <text x="696" y="100" font-size="20" font-weight="700" letter-spacing="1" fill="#fbbf24">LEARNING LOOP</text>
+    <text x="696" y="126" font-size="20" fill="#8a8378">optional</text>
+  </g>
+
+  <g font-family="'JetBrains Mono', ui-monospace, monospace" text-anchor="middle">
+    <rect x="696" y="146" width="218" height="78" rx="7" fill="url(#arPanel)" stroke="#f59e0b" stroke-opacity="0.45"/>
+    <text x="805" y="180" font-size="22" font-weight="700" fill="#e8e4dd">Result</text>
+    <text x="805" y="208" font-size="20" fill="#b78318">of any route</text>
+
+    <rect x="696" y="270" width="218" height="78" rx="7" fill="url(#arPanel)" stroke="#f59e0b" stroke-opacity="0.45"/>
+    <text x="805" y="304" font-size="22" font-weight="700" fill="#e8e4dd">Protected draft</text>
+    <text x="805" y="332" font-size="20" fill="#b78318">outside Git</text>
+
+    <rect x="696" y="394" width="218" height="100" rx="7" fill="url(#arPanel)" stroke="#fbbf24" stroke-opacity="0.8"/>
+    <text x="805" y="428" font-size="22" font-weight="700" fill="#fbbf24">Fresh review</text>
+    <text x="805" y="456" font-size="20" fill="#b78318">support +</text>
+    <text x="805" y="480" font-size="20" fill="#b78318">disclosure</text>
+
+    <rect x="696" y="540" width="218" height="78" rx="7" fill="url(#arPanel)" stroke="#f59e0b" stroke-opacity="0.45"/>
+    <text x="805" y="574" font-size="22" font-weight="700" fill="#e8e4dd">.context/</text>
+    <text x="805" y="602" font-size="20" fill="#b78318">reviewed pages</text>
+
+    <rect x="696" y="664" width="218" height="78" rx="7" fill="url(#arPanel)" stroke="#f59e0b" stroke-opacity="0.45"/>
+    <text x="805" y="698" font-size="22" font-weight="700" fill="#e8e4dd">Later work</text>
+    <text x="805" y="726" font-size="20" fill="#b78318">queries it</text>
+  </g>
+
+  <g fill="none" stroke="#f59e0b" stroke-opacity="0.8" stroke-width="1.4" stroke-dasharray="3 4" marker-end="url(#arArrow)">
+    <line x1="805" y1="224" x2="805" y2="268"/>
+    <line x1="805" y1="348" x2="805" y2="392"/>
+    <line x1="805" y1="494" x2="805" y2="538"/>
+    <line x1="805" y1="618" x2="805" y2="662"/>
+  </g>
+</svg>

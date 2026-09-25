@@ -56,6 +56,8 @@ runtime slot alone is not a dispatch reason. Reserve capacity for integration,
 review and repair; reduce new starts while candidates accumulate. Record only
 the concrete constraint and next action in the existing native handoff, then
 reassess when evidence changes. Do not add a capacity ledger or queue.
+On a bead graph toward frozen acceptance, [Navigate](../navigate/SKILL.md)
+picks the wave and records verdicts; Orchestrate dispatches it.
 
 Use [Agent Native](../agent-native/SKILL.md) for runtime mechanics: executor
 selection, startup/engagement evidence, actual context identity, normalized

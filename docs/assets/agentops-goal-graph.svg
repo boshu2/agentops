@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 790" role="img" aria-labelledby="ggTitle ggDesc">
+  <title id="ggTitle">AgentOps goal over the bead graph: one bead per worker</title>
+  <desc id="ggDesc">A goal acts as the orchestrator. It observes the Beads work graph, picks a bounded wave of ready beads, consumes their verdicts, and ratchets or stops. The graph holds a root epic for the goal outcome and child beads: bead A is closed with a PASS verdict, bead B was discovered from A and is ready, bead C is ready, and bead D is blocked by C. From the ready frontier, B and C are picked for the wave. Each picked bead gets one RPI: when the goal delegates, a worker that starts with only that bead plans if unclear and implements, then Validate runs in a separate fresh context that is not the author. The verdict and notes are written back to the bead, where the goal reads them on its next pass.</desc>
+
+  <defs>
+    <linearGradient id="ggPanel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0d0b08"/>
+      <stop offset="100%" stop-color="#070605"/>
+    </linearGradient>
+    <filter id="ggGlow" x="-10%" y="-30%" width="120%" height="160%">
+      <feGaussianBlur stdDeviation="3"/>
+    </filter>
+    <marker id="ggArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 1 L9 5 L0 9" fill="none" stroke="#fbbf24" stroke-width="1.4"/>
+    </marker>
+  </defs>
+
+  <!-- ground -->
+  <rect x="0" y="0" width="960" height="790" fill="#070a08"/>
+
+  <!-- drawing strip -->
+  <g font-family="'JetBrains Mono', ui-monospace, monospace">
+    <text x="30" y="36" font-size="20" letter-spacing="1.5" fill="#b78318">FIG. 04 · GOAL OVER THE BEAD GRAPH</text>
+    <text x="930" y="36" text-anchor="end" font-size="20" fill="#8a8378">ONE BEAD PER WORKER</text>
+  </g>
+  <line x1="30" y1="52" x2="930" y2="52" stroke="#f59e0b" stroke-opacity="0.22"/>
+
+  <!-- ===== goal / orchestrator ===== -->
+  <rect x="70" y="76" width="800" height="124" rx="8" fill="none" stroke="#fbbf24" stroke-opacity="0.55" filter="url(#ggGlow)"/>
+  <rect x="70" y="76" width="800" height="124" rx="8" fill="url(#ggPanel)" stroke="#fbbf24" stroke-opacity="0.95" stroke-width="1.4"/>
+  <g font-family="'JetBrains Mono', ui-monospace, monospace">
+    <text x="95" y="114" font-size="26" font-weight="700" fill="#fbbf24">Goal · orchestrator</text>
+    <text x="845" y="114" text-anchor="end" font-size="17" fill="#b78318">may delegate the work</text>
+  </g>
+
+  <g font-family="'JetBrains Mono', ui-monospace, monospace" font-size="17" text-anchor="middle">
+    <rect x="95" y="140" width="150" height="40" rx="6" fill="url(#ggPanel)" stroke="#f59e0b" stroke-opacity="0.5"/>
+    <text x="170" y="166" fill="#e8e4dd">observe graph</text>
+    <rect x="285" y="140" width="130" height="40" rx="6" fill="url(#ggPanel)" stroke="#f59e0b" stroke-opacity="0.5"/>
+    <text x="350" y="166" fill="#e8e4dd">pick a wave</text>
+    <rect x="455" y="140" width="180" height="40" rx="6" fill="url(#ggPanel)" stroke="#f59e0b" stroke-opacity="0.5"/>
+    <text x="545" y="166" fill="#e8e4dd">consume verdicts</text>
+    <rect x="675" y="140" width="170" height="40" rx="6" fill="url(#ggPanel)" stroke="#f59e0b" stroke-opacity="0.5"/>
+    <text x="760" y="166" fill="#e8e4dd">ratchet or stop</text>
+  </g>
+  <g fill="none" stroke="#fbbf24" stroke-width="1.4" marker-end="url(#ggArrow)">
+    <line x1="245" y1="160" x2="283" y2="160"/>
+    <line x1="415" y1="160" x2="453" y2="160"/>
+    <line x1="635" y1="160" x2="673" y2="160"/>
+  </g>
+
+  <!-- goal reads the graph -->
+  <line x1="170" y1="200" x2="170" y2="248" fill="none" stroke="#fbbf24" stroke-width="1.6" marker-end="url(#ggArrow)"/>
+  <text x="182" y="230" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="17" fill="#b78318">bd ready</text>
+
+  <!-- ===== beads work graph ===== -->
+  <rect x="70" y="250" width="800" height="280" rx="8" fill="none" stroke="#f59e0b" stroke-opacity="0.45" stroke-dasharray="3 5"/>
+  <g font-family="'JetBrains Mono', ui-monospace, monospace">
+    <text x="90" y="278" font-size="18" font-weight="700" letter-spacing="1" fill="#fbbf24">BEADS · THE WORK GRAPH</text>
+    <text x="850" y="278" text-anchor="end" font-size="17" fill="#8a8378">survives compaction</text>
+    <text x="850" y="322" text-anchor="end" font-size="17" fill="#fbbf24">ready frontier: B, C</text>
+    <text x="850" y="346" text-anchor="end" font-size="16" fill="#b78318">picked for this wave</text>
+  </g>
+
+  <!-- parent-child bus -->
+  <g fill="none" stroke="#f59e0b" stroke-opacity="0.35" stroke-width="1.2">
+    <path d="M205 356 V378"/>
+    <path d="M175 378 H770"/>
+    <path d="M175 378 V400"/>
+    <path d="M355 378 V400"/>
+    <path d="M535 378 V400"/>
+    <path d="M770 378 V400"/>
+  </g>
+
+  <g font-family="'JetBrains Mono', ui-monospace, monospace" text-anchor="middle">
+    <!-- root epic -->
+    <rect x="95" y="296" width="220" height="60" rx="7" fill="url(#ggPanel)" stroke="#f59e0b" stroke-opacity="0.75" stroke-dasharray="6 4"/>
+    <text x="205" y="321" font-size="20" font-weight="700" fill="#e8e4dd">Root epic</text>
+    <text x="205" y="344" font-size="16" fill="#b78318">goal outcome</text>
+
+    <!-- bead A: closed -->
+    <rect x="95" y="400" width="160" height="60" rx="7" fill="url(#ggPanel)" stroke="#fbbf24" stroke-opacity="0.8"/>
+    <text x="175" y="425" font-size="20" font-weight="700" fill="#fbbf24">bead A</text>
+    <text x="175" y="448" font-size="16" fill="#b78318">closed · PASS</text>
+
+    <!-- bead B: ready -->
+    <rect x="275" y="400" width="160" height="60" rx="7" fill="none" stroke="#fbbf24" stroke-opacity="0.55" filter="url(#ggGlow)"/>
+    <rect x="275" y="400" width="160" height="60" rx="7" fill="url(#ggPanel)" stroke="#fbbf24" stroke-opacity="0.95" stroke-width="1.4"/>
+    <text x="355" y="425" font-size="20" font-weight="700" fill="#e8e4dd">bead B</text>
+    <text x="355" y="448" font-size="16" fill="#fbbf24">ready</text>
+
+    <!-- bead C: ready -->
+    <rect x="455" y="400" width="160" height="60" rx="7" fill="none" stroke="#fbbf24" stroke-opacity="0.55" filter="url(#ggGlow)"/>
+    <rect x="455" y="400" width="160" height="60" rx="7" fill="url(#ggPanel)" stroke="#fbbf24" stroke-opacity="0.95" stroke-width="1.4"/>
+    <text x="535" y="425" font-size="20" font-weight="700" fill="#e8e4dd">bead C</text>
+    <text x="535" y="448" font-size="16" fill="#fbbf24">ready</text>
+
+    <!-- bead D: blocked -->
+    <rect x="690" y="400" width="160" height="60" rx="7" fill="url(#ggPanel)" stroke="#f59e0b" stroke-opacity="0.3"/>
+    <text x="770" y="425" font-size="20" font-weight="700" fill="#8a8378">bead D</text>
+    <text x="770" y="448" font-size="16" fill="#8a8378">blocked</text>
+  </g>
+
+  <!-- blocks: C before D -->
+  <line x1="615" y1="430" x2="688" y2="430" fill="none" stroke="#fbbf24" stroke-width="1.6" marker-end="url(#ggArrow)"/>
+  <text x="651" y="420" text-anchor="middle" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="16" fill="#b78318">blocks</text>
+
+  <!-- discovered-from: B came out of A -->
+  <path d="M315 460 V488 H175 V462" fill="none" stroke="#fbbf24" stroke-width="1.4" stroke-dasharray="3 4" marker-end="url(#ggArrow)"/>
+  <text x="245" y="512" text-anchor="middle" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="16" fill="#b78318">discovered-from</text>
+
+  <!-- dispatch: one bead per fresh context -->
+  <g fill="none" stroke="#fbbf24" stroke-width="1.6" marker-end="url(#ggArrow)">
+    <line x1="355" y1="460" x2="355" y2="573"/>
+    <line x1="535" y1="460" x2="535" y2="573"/>
+  </g>
+  <text x="445" y="556" text-anchor="middle" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="16" fill="#b78318">one bead each</text>
+
+  <!-- ===== isolated worker contexts ===== -->
+  <g font-family="'JetBrains Mono', ui-monospace, monospace" text-anchor="middle">
+    <rect x="70" y="575" width="385" height="160" rx="8" fill="url(#ggPanel)" stroke="#f59e0b" stroke-opacity="0.6"/>
+    <text x="262" y="607" font-size="20" font-weight="700" fill="#e8e4dd">One RPI · bead B</text>
+    <text x="262" y="632" font-size="16" fill="#b78318">fresh worker when delegated</text>
+
+    <rect x="485" y="575" width="385" height="160" rx="8" fill="url(#ggPanel)" stroke="#f59e0b" stroke-opacity="0.6"/>
+    <text x="677" y="607" font-size="20" font-weight="700" fill="#e8e4dd">One RPI · bead C</text>
+    <text x="677" y="632" font-size="16" fill="#b78318">fresh worker when delegated</text>
+  </g>
+
+  <!-- one RPI inside each context -->
+  <g font-family="'JetBrains Mono', ui-monospace, monospace" font-size="16" text-anchor="middle">
+    <rect x="88" y="652" width="70" height="38" rx="6" fill="url(#ggPanel)" stroke="#f59e0b" stroke-opacity="0.5" stroke-dasharray="6 4"/>
+    <text x="123" y="677" fill="#e8e4dd">Plan</text>
+    <rect x="184" y="652" width="118" height="38" rx="6" fill="url(#ggPanel)" stroke="#f59e0b" stroke-opacity="0.5"/>
+    <text x="243" y="677" fill="#e8e4dd">Implement</text>
+    <rect x="328" y="652" width="108" height="38" rx="6" fill="url(#ggPanel)" stroke="#fbbf24" stroke-opacity="0.95"/>
+    <text x="382" y="677" fill="#fbbf24">Validate</text>
+
+    <rect x="503" y="652" width="70" height="38" rx="6" fill="url(#ggPanel)" stroke="#f59e0b" stroke-opacity="0.5" stroke-dasharray="6 4"/>
+    <text x="538" y="677" fill="#e8e4dd">Plan</text>
+    <rect x="599" y="652" width="118" height="38" rx="6" fill="url(#ggPanel)" stroke="#f59e0b" stroke-opacity="0.5"/>
+    <text x="658" y="677" fill="#e8e4dd">Implement</text>
+    <rect x="743" y="652" width="108" height="38" rx="6" fill="url(#ggPanel)" stroke="#fbbf24" stroke-opacity="0.95"/>
+    <text x="797" y="677" fill="#fbbf24">Validate</text>
+
+    <text x="262" y="718" fill="#b78318">Validate: separate fresh context</text>
+    <text x="677" y="718" fill="#b78318">Validate: separate fresh context</text>
+  </g>
+  <!-- worker context | separate validator context -->
+  <g fill="none" stroke="#fbbf24" stroke-opacity="0.6" stroke-width="1.2" stroke-dasharray="2 4">
+    <line x1="315" y1="644" x2="315" y2="698"/>
+    <line x1="730" y1="644" x2="730" y2="698"/>
+  </g>
+  <g fill="none" stroke="#fbbf24" stroke-width="1.4" marker-end="url(#ggArrow)">
+    <line x1="158" y1="671" x2="182" y2="671"/>
+    <line x1="302" y1="671" x2="326" y2="671"/>
+    <line x1="573" y1="671" x2="597" y2="671"/>
+    <line x1="717" y1="671" x2="741" y2="671"/>
+  </g>
+
+  <!-- verdicts return to the graph and the goal -->
+  <g fill="none" stroke="#fbbf24" stroke-width="1.6" stroke-dasharray="4 4">
+    <path d="M677 735 V760"/>
+    <path d="M262 735 V760 H905 V470 H872" marker-end="url(#ggArrow)"/>
+  </g>
+  <text transform="translate(926 615) rotate(-90)" text-anchor="middle" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="17" fill="#b78318">verdict + notes on the bead</text>
+</svg>

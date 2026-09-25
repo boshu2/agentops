@@ -82,7 +82,9 @@ Stop after 1 compilation pass. Never create a goal or mutate beads.
 
 **Fuzzy route is acceptable; fuzzy success is not.** Before goal creation, the
 caller must know the outcome, what evidence would prove it, non-goals, and
-authority. The exact experiment graph may still be unknown.
+authority. The exact experiment graph may still be unknown. Write each terminal
+criterion as a Given/When/Then example with an observable result, and name each
+domain term once; the caller can settle these with Interview first.
 
 - Return `USE_RPI` for one shaped experiment with no verdict-driven follow-on.
 - Use a goal for a terminal outcome that may need several related experiments.
@@ -127,79 +129,15 @@ outcome; do not invent one universal budget.
 
 Stop when the goal reports `ACHIEVED`, `NOT_ACHIEVED`, or `NEEDS_OPERATOR`.
 
-## Bead graph contract
+## Graph walk
 
-Record each experiment in a bead with:
-
-- question or hypothesis and the acceptance gap it addresses;
-- method, expected observation, falsifier, scope, and non-goals;
-- notes/scratch sufficient to resume after compaction;
-- exact RPI verdict/evidence references and observed learning.
-
-Use graph semantics deliberately:
-
-- `parent-child` for goal → experiment membership;
-- `blocks` only for real execution ordering;
-- `related` for alternatives or correlated observations;
-- `discovered-from` for provenance of newly exposed work.
-
-Code and its requested retrospective can share a goal without the retrospective
-blocking code judgment. The analysis consumes the known outcome and judgment;
-both deliverables remain required before the overall goal is achieved.
-
-Use the caller's actual tracker as the authority for work and dependencies.
-In this repository that is BD (`bd`); verify `bd context --json` before mutation.
-BR (`br`) is a different implementation, never a fallback or alias for BD.
-Beads Viewer (`bv`) offers advice over an explicitly refreshed export; recheck
-its suggestions against live BD and frozen acceptance. Viewer ranking proves
-neither readiness nor permission for concurrent writes. Never treat a static
-plan as fresher than the live graph. Craft-goal reads tracker state when present
-but starts nothing and needs no tracker installed to compile a prompt.
-
-## What counts as a ratchet
-
-An RPI makes progress when its durable result does at least one:
-
-1. proves part of terminal acceptance;
-2. falsifies a live hypothesis with discriminating evidence and prunes it;
-3. resolves an uncertainty or owner so the next experiment is materially
-   different.
-
-More code, a changed digest, fewer findings, another commit, a repeated error,
-or a rewritten plan is not itself progress. Cite the acceptance criterion or
-blocking uncertainty, the exact evidence, and the decision it changes. A
-NOT_PROVEN or FAIL may be informative when it falsifies a live hypothesis or
-narrows the next experiment; repeated red without new information is churn.
-Preserve necessary unresolved findings even when a result is informative.
-
-Separate newly discovered pre-existing defects from regressions introduced by
-the change using before/after reproduction or equivalent causal evidence under
-the same acceptance. Counts, timestamps, and new ids cannot establish cause.
-Unknown cause, a reopened finding, or recurrence of a closed finding class
-warrants causal HOLD; none alone proves that the design is wrong. Do not relabel
-a necessary finding as optional to claim progress. Stop when no ratchet remains
-inside the envelope.
-
-## Mayor loop
-
-1. **Observe.** Reconstruct the root outcome, acceptance matrix, ready graph,
-   prior verdicts, unresolved uncertainties, and remaining budgets.
-2. **Select one bounded wave.** Choose the smallest set of high-information
-   ready experiments. Parallelize only disjoint write and regeneration scopes.
-3. **Run RPIs.** Each selected bead goes through exactly one RPI, ending in its
-   independent verdict and human-readable summary.
-4. **Ratchet the graph.** Preserve evidence and learning. PASS may satisfy a
-   criterion. Red may revise a hypothesis or expose a child experiment.
-5. **Classify discoveries.**
-   - Necessary for frozen acceptance, within authority and remaining budget:
-     add a `discovered-from` child and consider it in a later wave.
-   - Useful but not necessary: record/link it; do not execute it in this goal.
-   - Changes acceptance, exceeds authority, or cannot fit the envelope: HOLD.
-6. **Checkpoint.** Measure ratchet versus churn, then continue, invoke the
-   breaker, or emit a terminal report.
-
-Every newly selected RPI must address an unmet criterion or a named uncertainty
-blocking one. A new commit, subject, bead, helper, or wave never resets totals.
+[Navigate](../navigate/SKILL.md) owns the runtime walk: the bead graph
+contract, edge semantics, what counts as a ratchet, discovery classes and the
+wave checkpoint. The frozen prompt tells the goal to apply it each wave. Lint
+that the prompt names a root epic or its bounded bootstrap rule, ties each
+experiment to an unmet criterion or named blocking uncertainty, keeps all
+three discovery classes and never counts activity as progress. Craft Goal reads tracker state when present but
+starts nothing and needs no tracker installed to compile a prompt.
 
 ## Convergence and andons
 
@@ -289,4 +227,4 @@ Stop after 1 lint pass and zero goal executions. Paired evidence:
 
 Return `UNSAFE_GOAL` with missing decisions. Do not invent acceptance,
 authority, graph semantics, or campaign size. The caller owns revision and goal
-creation.
+creation and can settle the missing decisions first with Interview.

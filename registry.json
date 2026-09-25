@@ -237,6 +237,42 @@
     },
     {
       "driven_by_skills": [
+        "interview"
+      ],
+      "id": "skill:interview:interview_caller",
+      "name": "interview_caller",
+      "path": "skills/interview/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "interview"
+      ],
+      "id": "skill:interview:settle_caller_choices",
+      "name": "settle_caller_choices",
+      "path": "skills/interview/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "interview"
+      ],
+      "id": "skill:interview:write_acceptance_examples",
+      "name": "write_acceptance_examples",
+      "path": "skills/interview/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "interview"
+      ],
+      "id": "skill:interview:settle_domain_terms",
+      "name": "settle_domain_terms",
+      "path": "skills/interview/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
         "memory"
       ],
       "id": "skill:memory:recall_applicable_context",
@@ -278,6 +314,42 @@
       "id": "skill:ms:ms",
       "name": "ms",
       "path": "skills/ms/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "navigate"
+      ],
+      "id": "skill:navigate:observe_work_graph",
+      "name": "observe_work_graph",
+      "path": "skills/navigate/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "navigate"
+      ],
+      "id": "skill:navigate:select_next_wave",
+      "name": "select_next_wave",
+      "path": "skills/navigate/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "navigate"
+      ],
+      "id": "skill:navigate:ratchet_work_graph",
+      "name": "ratchet_work_graph",
+      "path": "skills/navigate/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "navigate"
+      ],
+      "id": "skill:navigate:report_graph_hygiene",
+      "name": "report_graph_hygiene",
+      "path": "skills/navigate/SKILL.md",
       "type": "skill"
     },
     {
@@ -690,19 +762,19 @@
     "cli_commands": 0,
     "gates": 0,
     "reference_impls": 0,
-    "skills": 76,
-    "total": 76
+    "skills": 84,
+    "total": 84
   },
   "cli_top_level_commands": [],
   "schema_version": 3,
   "summary": {
-    "capabilities": 76,
+    "capabilities": 84,
     "cli_commands": 0,
     "eval_files": 0,
     "hooks": 0,
     "job_types": 0,
     "knowledge_stores": 0,
-    "skills": 36,
+    "skills": 38,
     "workflows": 0
   },
   "surfaces": {
@@ -946,6 +1018,24 @@
       },
       {
         "capabilities": [
+          "interview_caller",
+          "settle_caller_choices",
+          "write_acceptance_examples",
+          "settle_domain_terms"
+        ],
+        "disposition": "keep_strategy",
+        "effects": [
+          "update_intent_source"
+        ],
+        "has_references": false,
+        "has_skill_md": true,
+        "name": "interview",
+        "path": "skills/interview/",
+        "reference_count": 0,
+        "tier": "execution"
+      },
+      {
+        "capabilities": [
           "recall_applicable_context",
           "mine_supported_observations",
           "curate_topic_pages",
@@ -978,6 +1068,24 @@
         "has_skill_md": true,
         "name": "ms",
         "path": "skills/ms/",
+        "reference_count": 0,
+        "tier": "execution"
+      },
+      {
+        "capabilities": [
+          "observe_work_graph",
+          "select_next_wave",
+          "ratchet_work_graph",
+          "report_graph_hygiene"
+        ],
+        "disposition": "keep_strategy",
+        "effects": [
+          "update_native_graph"
+        ],
+        "has_references": false,
+        "has_skill_md": true,
+        "name": "navigate",
+        "path": "skills/navigate/",
         "reference_count": 0,
         "tier": "execution"
       },
