@@ -39,7 +39,9 @@ for bigger work, a goal made of many RPIs tracked in
 
 ## Quickstart
 
-Pick one install method so you don't get duplicate copies.
+Pick one install method so you don't get duplicate copies. Claude Code and Codex
+have managed plugins; other agents that read Agent Skills (`SKILL.md`) use the
+Skills installer or their own install path.
 
 <details>
 <summary><strong>Claude Code</strong></summary>
@@ -74,24 +76,27 @@ custom roles and read limits have [separate setup](docs/install-day2-ops.md#inst
 </details>
 
 <details>
-<summary><strong>Cursor and other agents</strong></summary>
+<summary><strong>Cursor, Gemini, Pi and other agents</strong></summary>
 
 With Node.js installed, run from your project directory:
 
 ```bash
-npx skills@latest add boshu2/agentops --agent cursor
+npx skills@latest add boshu2/agentops
 ```
 
-Select the skills you want or the whole library. Omit `--agent cursor` to
-choose another agent; add `-g` for a user-level install. Check the skill's
-source path in Cursor's [native skill picker](https://cursor.com/docs/skills).
-See [host coverage and limits](docs/contracts/multi-runtime-tier-charter.md#host-and-install-surface-mapping).
+Choose your agent and the skills you want; add `-g` for a user-level install.
+For an agent the installer doesn't list, follow its Agent Skills instructions
+and the [source-link guide](docs/install-day2-ops.md#install-source-checkout).
+Confirm the agent lists and loads the selected skill. Some skills need extra
+tools ([install guide](docs/install-day2-ops.md)); what each host has been
+tested for is in [host coverage and limits](docs/contracts/multi-runtime-tier-charter.md#host-and-install-surface-mapping).
 
 </details>
 
-Start a new session so the skills load. Validate also needs the
-[`ao` CLI](#optional-ao-cli). This README shows Claude Code's `/agentops:<skill>`;
-Codex uses `$agentops:<skill>`.
+Start a new session so the skills load. Most skills need only your coding
+agent; Validate also needs the [`ao` CLI](#optional-ao-cli). Invocation names
+vary by agent: this README shows Claude Code's `/agentops:<skill>`; Codex uses
+`$agentops:<skill>`.
 
 <a id="workflow"></a>
 
