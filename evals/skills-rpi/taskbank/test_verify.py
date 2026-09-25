@@ -50,6 +50,30 @@ class VerifierIntegrityTests(unittest.TestCase):
         self.assertEqual(result["failure_kind"], "execution")
         self.assertEqual(calibrate.packaged_outcome(self.log, completed.returncode), "error")
 
+    def test_started_go_with_broken_runtime_cannot_satisfy_negative_control(self):
+        completed = subprocess.run(
+            [sys.executable, str(Path(__file__).with_name("verify.py")),
+             str(self.baseline), str(self.candidate), str(self.task / "tests"), str(self.log)],
+            env=dict(os.environ, GOROOT=str(self.root / "missing-goroot")), capture_output=True, timeout=60)
+        result = json.loads((self.log / "grade.json").read_text())
+        self.assertEqual(completed.returncode, 1)
+        self.assertIn("cannot find GOROOT", (self.log / "go-test.log").read_text())
+        self.assertEqual(result["failure_kind"], "execution")
+        self.assertEqual(calibrate.packaged_outcome(self.log, completed.returncode), "error")
+
+    def test_broken_oracle_build_is_not_a_completed_candidate_rejection(self):
+        tests = self.root / "broken-tests"
+        shutil.copytree(self.task / "tests", tests)
+        (tests / "oracle_test.go").write_text("not Go source\n")
+        completed = subprocess.run(
+            [sys.executable, str(Path(__file__).with_name("verify.py")),
+             str(self.baseline), str(self.candidate), str(tests), str(self.log)],
+            capture_output=True, timeout=60)
+        result = json.loads((self.log / "grade.json").read_text())
+        self.assertEqual(completed.returncode, 1)
+        self.assertEqual(result["failure_kind"], "execution")
+        self.assertEqual(calibrate.packaged_outcome(self.log, completed.returncode), "error")
+
     def test_public_test_deletion_is_rejected(self):
         (self.candidate / "select_test.go").unlink()
         with self.assertRaisesRegex(ValueError, "out-of-scope change"):

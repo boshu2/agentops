@@ -93,11 +93,23 @@ def grade(baseline, candidate, tests, log):
         for oracle in tests.glob("*_test.go"):
             shutil.copy2(oracle, clean / oracle.name)
         env = dict(os.environ, GOWORK="off", GOFLAGS="", GOTOOLCHAIN="local", GOPROXY="off")
-        check = subprocess.run(["go", "test", "-count=1", "-timeout=30s", "./..."], cwd=clean, env=env,
+        check = subprocess.run(["go", "test", "-json", "-count=1", "-timeout=30s", "./..."], cwd=clean, env=env,
                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=60)
         (log / "go-test.log").write_bytes(check.stdout)
+        test_actions = set()
+        for line in check.stdout.splitlines():
+            try:
+                event = json.loads(line)
+            except (ValueError, UnicodeDecodeError):
+                continue
+            if isinstance(event, dict) and event.get("Test"):
+                test_actions.add(event.get("Action"))
         if check.returncode:
+            if "fail" not in test_actions:
+                raise ValueError("oracle tool/build failure without a completed test rejection; see go-test.log")
             raise CandidateRejected("endpoint oracle failed; see go-test.log")
+        if "pass" not in test_actions:
+            raise ValueError("oracle reported no completed endpoint tests; see go-test.log")
     result = {"endpoint_pass": True, "subject_sha256": digest(after),
               "checked": spec["checked"], "not_checked": spec.get("not_checked", [])}
     if spec.get("limitations"):
