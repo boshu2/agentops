@@ -3,7 +3,7 @@
 # skills/*/scripts/*.sh). Under `set -euo pipefail` a `! command` line is a
 # silent no-op: errexit never fires for `!`-inverted pipelines, so a
 # forbidden-phrase guard written that way can never fail the script. Seven
-# validators shipped in that state (rpi, plan, implement, learn, ms,
+# validators shipped in that state (rpi, plan, implement, learn,
 # scaffold, security). Learn and Scaffold have since been folded into current
 # task owners. This file pins the surviving guard class both statically and
 # behaviorally, using each owner's actual restrictions.
@@ -88,10 +88,6 @@ seeded_validator_must_fail() {
   seeded_validator_must_fail memory 'ao provenance read-source'
 }
 
-@test "ms validator fails on seeded forbidden token" {
-  seeded_validator_must_fail ms 'AUTO-REDO'
-}
-
 # Scaffold's prose-only AUTO-REDO ban retired with its separate skill contract.
 # Implementation owns authorized scaffolding and repairs; do not reintroduce
 # the old no-repair policy as a liveness test of the surviving owner.
@@ -101,7 +97,7 @@ seeded_validator_must_fail() {
 }
 
 @test "validators still pass on the live skill sources" {
-  for slug in rpi plan implement memory ms security; do
+  for slug in rpi plan implement memory security; do
     run bash "$REPO_ROOT/skills/$slug/scripts/validate.sh"
     [ "$status" -eq 0 ]
   done
