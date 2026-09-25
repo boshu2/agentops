@@ -1,6 +1,7 @@
 """Narrow verifier integrity tests; no runtime credentials or model calls."""
 import importlib.util
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -11,6 +12,9 @@ import unittest
 loader = importlib.util.spec_from_file_location("verify", Path(__file__).with_name("verify.py"))
 verify = importlib.util.module_from_spec(loader)
 loader.loader.exec_module(verify)
+calibration_loader = importlib.util.spec_from_file_location("calibrate", Path(__file__).with_name("calibrate.py"))
+calibrate = importlib.util.module_from_spec(calibration_loader)
+calibration_loader.loader.exec_module(calibrate)
 
 
 class VerifierIntegrityTests(unittest.TestCase):
@@ -33,6 +37,18 @@ class VerifierIntegrityTests(unittest.TestCase):
         (self.candidate / "go.mod").write_text("module bypass\n")
         with self.assertRaisesRegex(ValueError, "out-of-scope change: go.mod"):
             self.grade()
+
+    def test_missing_go_execution_cannot_satisfy_a_negative_control(self):
+        absent = self.root / "empty-path"
+        absent.mkdir()
+        completed = subprocess.run(
+            [sys.executable, str(Path(__file__).with_name("verify.py")),
+             str(self.baseline), str(self.candidate), str(self.task / "tests"), str(self.log)],
+            env=dict(os.environ, PATH=str(absent)), capture_output=True, timeout=60)
+        result = json.loads((self.log / "grade.json").read_text())
+        self.assertEqual(completed.returncode, 1)
+        self.assertEqual(result["failure_kind"], "execution")
+        self.assertEqual(calibrate.packaged_outcome(self.log, completed.returncode), "error")
 
     def test_public_test_deletion_is_rejected(self):
         (self.candidate / "select_test.go").unlink()
@@ -125,6 +141,8 @@ class VerifierCaseOutputTests(unittest.TestCase):
             "candidate-a": "PASS", "candidate-b": "NOT_PROVEN", "candidate-c": "PASS",
         })
         self.assertEqual((status, reward, result["endpoint_pass"]), (1, "0", False))
+        self.assertEqual(result["failure_kind"], "candidate")
+        self.assertEqual(calibrate.packaged_outcome(self.log, status), "fail")
         rows = result["case_results"]
         self.assertEqual([row["expected"] for row in rows], ["FAIL", "PASS", "NOT_PROVEN"])
         self.assertEqual([row["classification"] for row in rows], ["false_acceptance", "false_blocker", "false_acceptance"])

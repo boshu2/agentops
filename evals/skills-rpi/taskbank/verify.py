@@ -10,7 +10,11 @@ import sys
 import tempfile
 
 
-class VerdictMismatch(ValueError):
+class CandidateRejected(ValueError):
+    """A completed contract check rejected the submitted candidate."""
+
+
+class VerdictMismatch(CandidateRejected):
     def __init__(self, case_results):
         super().__init__("verdicts do not match the case-level oracle")
         self.case_results = case_results
@@ -42,17 +46,17 @@ def judge_verdicts(expected, actual):
 
 def snapshot(root):
     if root.is_symlink() or not root.is_dir():
-        raise ValueError("subject root must be a real directory")
+        raise CandidateRejected("subject root must be a real directory")
     result = {}
     for path in sorted(root.rglob("*")):
         name = path.relative_to(root).as_posix()
         if name == ".git" or name.startswith(".git/"):
             continue
         if path.is_symlink():
-            raise ValueError("symlink in subject: " + name)
+            raise CandidateRejected("symlink in subject: " + name)
         if path.is_file():
             if path.stat().st_size > 1024 * 1024:
-                raise ValueError("oversize subject file: " + name)
+                raise CandidateRejected("oversize subject file: " + name)
             result[name] = path.read_bytes()
     return result
 
@@ -66,17 +70,21 @@ def digest(files):
 
 def grade(baseline, candidate, tests, log):
     spec = json.loads((tests / "spec.json").read_text())
-    before, after = snapshot(baseline), snapshot(candidate)
+    try:
+        before = snapshot(baseline)
+    except CandidateRejected as error:
+        raise ValueError("invalid evaluator baseline: " + str(error)) from error
+    after = snapshot(candidate)
     allowed = set(spec["editable"])
     for name in sorted(before.keys() | after.keys()):
         if before.get(name) == after.get(name):
             continue
         added_test = name not in before and name.endswith("_test.go") and spec.get("allow_added_tests", False)
         if name not in allowed and not added_test:
-            raise ValueError("out-of-scope change: " + name)
+            raise CandidateRejected("out-of-scope change: " + name)
     for name in spec.get("production", []):
         if name not in after:
-            raise ValueError("missing source: " + name)
+            raise CandidateRejected("missing source: " + name)
     with tempfile.TemporaryDirectory(prefix="fixture-oracle-") as tmp:
         clean = Path(tmp)
         shutil.copytree(baseline, clean, dirs_exist_ok=True, ignore=shutil.ignore_patterns(".git"))
@@ -89,7 +97,7 @@ def grade(baseline, candidate, tests, log):
                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=60)
         (log / "go-test.log").write_bytes(check.stdout)
         if check.returncode:
-            raise ValueError("endpoint oracle failed; see go-test.log")
+            raise CandidateRejected("endpoint oracle failed; see go-test.log")
     result = {"endpoint_pass": True, "subject_sha256": digest(after),
               "checked": spec["checked"], "not_checked": spec.get("not_checked", [])}
     if spec.get("limitations"):
@@ -107,9 +115,12 @@ def grade(baseline, candidate, tests, log):
             error.grade_context = {**result, "endpoint_pass": False}
             raise
     if spec.get("dispositions"):
-        actual = json.loads(after.get("dispositions.json", b"{}"))
+        try:
+            actual = json.loads(after.get("dispositions.json", b"{}"))
+        except (ValueError, UnicodeDecodeError) as error:
+            raise CandidateRejected("unreadable recorded dispositions") from error
         if actual != spec["dispositions"]:
-            raise ValueError("recorded dispositions do not match fixed caller authority")
+            raise CandidateRejected("recorded dispositions do not match fixed caller authority")
     return result
 
 
@@ -125,7 +136,8 @@ def main():
         status = 0
     except (ValueError, OSError, subprocess.SubprocessError) as error:
         (log / "reward.txt").write_text("0\n")
-        result = {"endpoint_pass": False, "error": str(error)}
+        result = {"endpoint_pass": False, "error": str(error),
+                  "failure_kind": "candidate" if isinstance(error, CandidateRejected) else "execution"}
         if isinstance(error, VerdictMismatch):
             result.update(error.grade_context)
             result["case_results"] = error.case_results

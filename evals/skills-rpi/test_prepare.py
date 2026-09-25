@@ -37,7 +37,7 @@ class PairedPreflight(unittest.TestCase):
         calibration = {"verifier_image_id": self.verifier,
                        "oracle_sha256": self.frozen["oracle_sha256"],
                        "controls": [{"control": "correct", "expected": "pass", "actual": "pass"},
-                                    {"control": "wrong", "expected": "fail", "actual": "fail"}]}
+                                    {"control": "wrong", "expected": "fail", "actual": "fail", "failure_kind": "candidate"}]}
         prepare.write_json(self.root / "calibration.json", calibration)
         self.frozen["calibration_sha256"] = prepare.sha(self.root / "calibration.json")
         for arm, package in (("control", "control-skills"), ("treatment", "skills")):
@@ -126,6 +126,16 @@ class PairedPreflight(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "calibration"):
             self.check()
 
+    def test_ambiguous_negative_grade_cannot_be_admitted(self):
+        p = self.root / "calibration.json"
+        value = json.loads(p.read_text())
+        value["controls"][1].pop("failure_kind")
+        prepare.write_json(p, value)
+        self.frozen["calibration_sha256"] = prepare.sha(p)
+        self.save()
+        with self.assertRaisesRegex(ValueError, "calibration"):
+            self.check()
+
 
 class PackagedCalibration(unittest.TestCase):
     def test_broken_entrypoint_does_not_satisfy_negative_control(self):
@@ -135,6 +145,10 @@ class PackagedCalibration(unittest.TestCase):
             (root / "reward.txt").write_text("0\n")
             self.assertEqual(calibrate.packaged_outcome(root, 1), "error")
             prepare.write_json(root / "grade.json", {"endpoint_pass": False})
+            self.assertEqual(calibrate.packaged_outcome(root, 1), "error")
+            prepare.write_json(root / "grade.json", {"endpoint_pass": False, "failure_kind": "execution"})
+            self.assertEqual(calibrate.packaged_outcome(root, 1), "error")
+            prepare.write_json(root / "grade.json", {"endpoint_pass": False, "failure_kind": "candidate"})
             self.assertEqual(calibrate.packaged_outcome(root, 1), "fail")
             self.assertEqual(calibrate.packaged_outcome(root, 127), "error")
 

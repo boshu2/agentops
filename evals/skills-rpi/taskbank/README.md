@@ -107,6 +107,9 @@ must be frozen with both packages, model and runner before any live batch; use
 `prepare.py --check-staged` on the complete comparison immediately before either
 arm launches. Packaging errors cannot satisfy a negative control, and all declared
 controls, including valid semantic alternatives, must appear in calibration.
+Negative grades must carry the verifier's `failure_kind: candidate` classification.
+Missing tools, timeouts and malformed evaluator inputs are execution errors;
+an ambiguous older zero reward cannot stand in for a completed rejection.
 
 ## Three-shape skill development cases
 

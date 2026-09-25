@@ -94,7 +94,8 @@ def check_staged(path):
             len(rows) != len(expected_controls) or
             {r["control"]: r["expected"] for r in rows} != expected_controls or
             not rows or {r["expected"] for r in rows} != {"pass", "fail"} or
-            any(r["expected"] != r["actual"] for r in rows)):
+            any(r["expected"] != r["actual"] or
+                (r["actual"] == "fail" and r.get("failure_kind") != "candidate") for r in rows)):
         raise ValueError("packaged calibration failed or belongs to another verifier")
     pairs = defaultdict(dict)
     names = set()

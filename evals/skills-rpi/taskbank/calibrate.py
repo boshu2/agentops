@@ -20,7 +20,8 @@ def packaged_outcome(log, exit_code):
         grade = json.loads((log / "grade.json").read_text())
         if exit_code == 0 and reward == "1" and grade.get("endpoint_pass") is True:
             return "pass"
-        if exit_code == 1 and reward == "0" and grade.get("endpoint_pass") is False:
+        if (exit_code == 1 and reward == "0" and grade.get("endpoint_pass") is False
+                and grade.get("failure_kind") == "candidate"):
             return "fail"
     except (OSError, ValueError):
         pass
@@ -64,7 +65,8 @@ def packaged(task, verifier_image, output):
             finally:
                 subprocess.run(["docker", "rm", "-f", name], capture_output=True, timeout=30, check=True)
             row = {"control": control, "expected": expected, "actual": actual,
-                   "exit_code": completed.returncode}
+                   "exit_code": completed.returncode,
+                   "failure_kind": "candidate" if actual == "fail" else None}
             results.append(row)
             print(control, actual, "OK" if actual == expected else "MISMATCH", flush=True)
     return results
@@ -98,7 +100,7 @@ def main():
                     result = {"error": str(error)}
                     if isinstance(error, verify.VerdictMismatch):
                         result["case_results"] = error.case_results
-                    actual = "fail"
+                    actual = "fail" if isinstance(error, verify.CandidateRejected) else "error"
                 row = {"task": name, "control": control, "expected": expected, "actual": actual, **result}
                 (log / "result.json").write_text(json.dumps(row, indent=2) + "\n")
                 results.append(row)
