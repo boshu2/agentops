@@ -226,7 +226,7 @@ machine-readable form (`ao skills list`).
 | Tier | Purpose | Skills that declare it |
 |------|---------|------------------------|
 | `judgment` | Legacy internal tier name for validation and review gates | anti-ceremony, council, craft-goal, one-way-door, postmortem, premortem, reality-check, validate |
-| `execution` | Single-task implementation and runtime adapters | account-rotation, agent-mail, cass, cc-hooks, codebase-recon, dcg, idea-genie, implement, learn, ms, ntm, pattern-mining, plan, rch, refactor, research, reverse-engineer, sbh, scaffold, swarm, test, using-flywheel, using-gc |
+| `execution` | Single-task implementation and runtime adapters | account-rotation, agent-mail, cass, cc-hooks, codebase-recon, dcg, idea-genie, implement, interview, learn, ms, navigate, ntm, pattern-mining, plan, rch, refactor, research, reverse-engineer, sbh, scaffold, swarm, test, using-flywheel, using-gc |
 | `orchestration` | Multi-skill coordination | codex-exec |
 | `session` | Session lifecycle | bootstrap, handoff, status |
 | `knowledge` | Reference corpora loaded on demand | domain, standards |

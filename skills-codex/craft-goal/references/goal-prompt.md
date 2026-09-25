@@ -8,7 +8,10 @@ Goal outcome:
 <larger caller-visible result>
 
 Terminal acceptance and evidence:
-1. <criterion> — <authoritative proof>
+1. Given <state>, when <event>, then <observable result> — <authoritative proof>
+
+Domain terms:
+- <term>: <one-line definition>; use only this word in beads, code and tests
 
 Non-goals and authority:
 - <excluded outcomes/mechanisms>
@@ -20,6 +23,8 @@ Bead graph:
 - Record notes, scratch, evidence, verdict refs, and dependency/provenance links.
 
 Experiment policy:
+- Apply the `navigate` skill each wave: observe, pick, ratchet, checkpoint.
+  These policy lines bind with or without it.
 - One bead is one RPI experiment.
 - Select only work tied to an unmet criterion or named blocking uncertainty.
 - Consume each verdict unchanged; useful progress needs evidence tied to an

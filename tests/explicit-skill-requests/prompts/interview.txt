@@ -1,0 +1,1 @@
+Run /agentops:interview before I craft a goal to make the job worker safe under redelivery; ask one question at a time and do not create the goal

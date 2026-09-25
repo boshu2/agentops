@@ -1,7 +1,7 @@
 {
   "image": "codex",
   "schema_version": "skill-image.v1",
-  "skill_count": 36,
+  "skill_count": 38,
   "skills": [
     {
       "disposition": "keep_optional_adapter",
@@ -88,6 +88,12 @@
       "twin_path": "skills-codex/implement/"
     },
     {
+      "disposition": "keep_strategy",
+      "slug": "interview",
+      "source_path": "skills/interview/",
+      "twin_path": "skills-codex/interview/"
+    },
+    {
       "disposition": "keep_off_path",
       "slug": "memory",
       "source_path": "skills/memory/",
@@ -98,6 +104,12 @@
       "slug": "ms",
       "source_path": "skills/ms/",
       "twin_path": "skills-codex/ms/"
+    },
+    {
+      "disposition": "keep_strategy",
+      "slug": "navigate",
+      "source_path": "skills/navigate/",
+      "twin_path": "skills-codex/navigate/"
     },
     {
       "disposition": "keep_optional_adapter",

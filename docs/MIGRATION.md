@@ -101,7 +101,7 @@ aliases. Ordinary native coding requires no replacement invocation.
 
 The 3.7 migration baseline has 34 skills, compared with 52 in 3.6.0. Twenty former roots
 were retired; `memory` and `skill-eval` are new relative to that release. The
-current menu additionally exposes Review and Orchestrate; no baseline skill is retired or
+current menu additionally exposes Review, Orchestrate, Interview and Navigate; no baseline skill is retired or
 renamed by that addition. Use
 [the current menu](SKILL-ROUTER.md) to choose guidance for the actual task.
 
@@ -256,6 +256,18 @@ Read-budget hooks are also separate opt-ins. Use
 hook review/trust. Do not infer that installing a skill or role activates a hook;
 see [the Codex runtime contract](design/codex-context-budget.md) for discovery,
 linked-worktree restrictions and the sandbox limitation.
+
+### Interview and Navigate batch
+
+This batch adds two optional goal entrypoints, bringing the source inventory to 38.
+
+| Existing request or consumer | Owner after this batch |
+|---|---|
+| Settle a big outcome with the caller before autonomous work | New `interview`: one question per turn with a labeled recommendation; acceptance as Given/When/Then, one domain term per concept. Human-invoked only; creates no goal or bead. |
+| Pick a goal's next wave and keep its bead graph honest | New `navigate`: acceptance matrix, ready frontier, wave choice, verdicts and discoveries recorded on beads. It never dispatches, judges, closes or edits acceptance. |
+| Bead graph contract, ratchet definition and wave loop | Moved from `craft-goal` to `navigate`; Craft Goal keeps admission, envelopes, HOLD, the frozen prompt and its lint rubric. |
+
+RPI's hard dependencies remain Plan, Implement and Validate.
 
 ## Verdicts and identity
 

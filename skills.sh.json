@@ -20,7 +20,7 @@
     {
       "title": "Deliberate workflows",
       "description": "Select worker coordination, a review strategy, the RPI charter, goal planning, or skill authoring and evaluation when the task calls for it.",
-      "skills": ["orchestrate", "premortem", "council", "postmortem", "rpi", "craft-goal", "skill-builder", "skill-eval"]
+      "skills": ["orchestrate", "premortem", "council", "postmortem", "rpi", "interview", "craft-goal", "navigate", "skill-builder", "skill-eval"]
     },
     {
       "title": "Optional tool adapters",

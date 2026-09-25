@@ -1,7 +1,7 @@
 {
   "image": "claude",
   "schema_version": "skill-image.v1",
-  "skill_count": 36,
+  "skill_count": 38,
   "skills": [
     {
       "disposition": "keep_optional_adapter",
@@ -74,6 +74,11 @@
       "slug": "implement"
     },
     {
+      "disposition": "keep_strategy",
+      "path": "skills/interview/",
+      "slug": "interview"
+    },
+    {
       "disposition": "keep_off_path",
       "path": "skills/memory/",
       "slug": "memory"
@@ -82,6 +87,11 @@
       "disposition": "keep_optional_adapter",
       "path": "skills/ms/",
       "slug": "ms"
+    },
+    {
+      "disposition": "keep_strategy",
+      "path": "skills/navigate/",
+      "slug": "navigate"
     },
     {
       "disposition": "keep_optional_adapter",
