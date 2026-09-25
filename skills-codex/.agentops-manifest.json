@@ -459,8 +459,8 @@
     {
       "name": "skill-builder",
       "source_skill": "skills/skill-builder",
-      "source_hash": "3c347e926010eef7cde57bb8adf43251cd7c326b525c29d6ff380ad6a092ab4c",
-      "generated_hash": "1e1d35469fb54b9341c515462980a737fda0341867dcd59e6b0ee7db7113ea2a"
+      "source_hash": "925fc77d7c8e8cec215a949e9497922471d1d738d384572263985498e1c80a7d",
+      "generated_hash": "3258f9a9875bc2bcecc5eaf19c31b24e2b29aaf316eee9cb354a43fc5cd978fa"
     },
     {
       "name": "skill-eval",
