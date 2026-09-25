@@ -3,9 +3,9 @@
 # skills/*/scripts/*.sh). Under `set -euo pipefail` a `! command` line is a
 # silent no-op: errexit never fires for `!`-inverted pipelines, so a
 # forbidden-phrase guard written that way can never fail the script. Seven
-# validators shipped in that state (rpi, plan, implement, learn,
+# validators shipped in that state (rpi, plan, implement, learn, ms,
 # scaffold, security). Learn and Scaffold have since been folded into current
-# task owners. This file pins the surviving guard class both statically and
+# task owners, and MS was withdrawn. This file pins the surviving guard class both statically and
 # behaviorally, using each owner's actual restrictions.
 
 setup() {

@@ -33,12 +33,12 @@ bounded_contexts:
     name: Runtime
     product_layer: "Optional runtime specialists"
     responsibility: "Adapt explicit caller requests to local tools without acquiring lifecycle authority."
-    center_of_gravity: [codex-exec, rch, sbh, cc-hooks]
+    center_of_gravity: [codex-exec, cc-hooks]
     ports: [RuntimePort, DiagnosticPort]
 
   - id: BC6
     name: Dispatch
     product_layer: "Optional factory adapters"
     responsibility: "Dispatch explicit disjoint packets once and return per-packet facts."
-    center_of_gravity: [ntm, swarm, agent-mail, agent-native]
+    center_of_gravity: [swarm, agent-native]
     ports: [DispatchOncePort, MessagePort]
