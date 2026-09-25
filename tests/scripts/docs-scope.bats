@@ -30,15 +30,19 @@ setup() {
     # A plain live doc (in scope, not exempt).
     printf '# Overview\n\nThis is a live doc.\n' > "$DOCS_ROOT/docs/live.md"
 
-    # A live doc that self-declares historical via a first-line banner.
+    # A live doc that declares itself historical in its front matter.
+    printf -- '---\nlast_reviewed: 2026-09-25\nstatus: historical\n---\n\n# Old Design\n' \
+      > "$DOCS_ROOT/docs/historical.md"
+
+    # A doc that only SAYS it is retired, in prose: no declared marker.
     printf '# Old Design (RETIRED)\n\nSuperseded content.\n' > "$DOCS_ROOT/docs/banner.md"
 
-    # A doc whose RETIRED banner sits at line 20 (OUTSIDE the first 15 lines).
-    { for i in $(seq 1 19); do printf 'filler line %s\n' "$i"; done; \
-      printf 'This section is RETIRED and no longer used.\n'; } \
-      > "$DOCS_ROOT/docs/late-banner.md"
+    # `status: historical` that is not inside a leading front-matter block:
+    # once in the body after the block closes, once with no block at all.
+    printf -- '---\nstatus: reference\n---\n\nstatus: historical\n' > "$DOCS_ROOT/docs/body-marker.md"
+    printf '# Notes\n\nstatus: historical\n' > "$DOCS_ROOT/docs/no-front-matter.md"
 
-    # A doc under docs/adr/ (excluded from scope AND exempt).
+    # A doc under docs/adr/ (excluded from scope).
     printf '# ADR-0099 Some Decision\n\nContext.\n' > "$DOCS_ROOT/docs/adr/ADR-0099-thing.md"
 
     # A doc under a dated-snapshot excluded dir (docs/audits/).
@@ -80,14 +84,21 @@ setup() {
 
 # ---- docs_scope_is_exempt (exemption verdict) -------------------------------
 
-@test "banner-exempt doc (RETIRED in first 15 lines) is exempt" {
-    run docs_scope_is_exempt "docs/banner.md"
+@test "front-matter status: historical is exempt" {
+    run docs_scope_is_exempt "docs/historical.md"
     [ "$status" -eq 0 ]
 }
 
-@test "docs/adr file is exempt" {
-    run docs_scope_is_exempt "docs/adr/ADR-0099-thing.md"
-    [ "$status" -eq 0 ]
+@test "a RETIRED prose banner without the front-matter marker is NOT exempt" {
+    run docs_scope_is_exempt "docs/banner.md"
+    [ "$status" -eq 1 ]
+}
+
+@test "status: historical outside a leading front-matter block is NOT exempt" {
+    run docs_scope_is_exempt "docs/body-marker.md"
+    [ "$status" -eq 1 ]
+    run docs_scope_is_exempt "docs/no-front-matter.md"
+    [ "$status" -eq 1 ]
 }
 
 @test "plain live doc is NOT exempt" {
@@ -100,14 +111,8 @@ setup() {
     [ "$status" -eq 0 ]
 }
 
-# EDGE: a RETIRED banner at line 20 (outside the first 15 lines) must NOT exempt.
-@test "RETIRED banner at line 20 (outside first 15 lines) is NOT exempt" {
-    run docs_scope_is_exempt "docs/late-banner.md"
-    [ "$status" -eq 1 ]
-}
-
 # The exemption test also resolves a path directly (already readable) — the
 # check script cd's to the root and passes docs/... paths that resolve as-is.
 @test "exemption resolves a directly-readable path too" {
-    ( cd "$DOCS_ROOT" && docs_scope_is_exempt "docs/banner.md" )
+    ( cd "$DOCS_ROOT" && docs_scope_is_exempt "docs/historical.md" )
 }

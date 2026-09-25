@@ -43,7 +43,6 @@ scripts/check-contract-compatibility.sh
 scripts/check-contracts-structural-floor.sh
 scripts/check-corpus-freshness.sh
 scripts/check-corpus-path-guard.sh
-scripts/check-doc-hooks-drift.sh
 scripts/check-doc-skill-refs.sh
 scripts/check-docs-cli-snippets.sh
 scripts/check-door9-no-claude-p.sh
@@ -210,7 +209,6 @@ scripts/seed-evolution-roadmap-beads.sh
 scripts/session-pr-scope.sh
 scripts/ship.sh
 scripts/skill-eval.sh
-scripts/smart-skill-md-merge.sh
 scripts/smoke-test-codex-skills.sh
 scripts/snapshot-flywheel-compounding.sh
 scripts/spec-consistency-gate.sh

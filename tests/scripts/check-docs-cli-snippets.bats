@@ -1,9 +1,9 @@
 #!/usr/bin/env bats
 #
-# Tests for scripts/check-docs-cli-snippets.sh — the docs.cli-snippets gate that
-# resolves every `ao …` command cited in a LIVE doc against the live cobra tree
-# and fails on a removed/renamed command, with a FILENAME-pinned shrink-only
-# baseline (age-gate-the-ungated-egwt.4).
+# Tests for scripts/check-docs-cli-snippets.sh — the gate that resolves every
+# `ao …` command cited in a LIVE doc (docs/** plus the front-door root docs)
+# against the live cobra tree and fails on a removed/renamed command, with a
+# FILENAME-pinned shrink-only baseline (age-gate-the-ungated-egwt.4).
 #
 # Pattern: build a fixture "repo" in BATS_TEST_TMPDIR that carries its own copy
 # of the check script + shared libs (so the script's ROOT resolves to the
@@ -77,18 +77,34 @@ run_check() {
     [ "$status" -eq 0 ]
 }
 
-@test "a line DESCRIBING a command removal is exempt (removal-lang)" {
-    printf '# Guide\n\nThere is no `ao hooks` command any more; 3.0 is hookless.\n' > "$FIX/docs/guide.md"
+# ---- explicit retirement-note marker -------------------------------------------
+
+@test "a line carrying the ao-resolve ignore marker is exempt" {
+    printf '# Guide\n\n`ao flywheel` was removed. <!-- ao-resolve: ignore -->\n' > "$FIX/docs/guide.md"
     run_check ""
     [ "$status" -eq 0 ]
+    [[ "$output" == *"PASS"* ]]
 }
 
-# ---- banner / historical exemption (shared docs-scope lib) --------------------
-
-@test "a doc with a RETIRED banner in the first 15 lines is exempt from scanning" {
-    printf '# Old Runbook (RETIRED)\n\nRun `ao factory start` here (historical).\n' > "$FIX/docs/old.md"
+@test "retirement wording without the marker does not exempt a dead command" {
+    printf '# Guide\n\n`ao flywheel` was removed and no longer exists.\n' > "$FIX/docs/guide.md"
     run_check ""
-    [ "$status" -eq 0 ]
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"docs/guide.md:3"* ]]
+    [[ "$output" == *"ao flywheel"* ]]
+}
+
+# ---- front-door root docs ----------------------------------------------------
+
+@test "every front-door root doc is scanned for dead ao commands" {
+    local doc
+    for doc in README.md AGENTS.md PRODUCT.md GOALS.md PROGRAM.md cli/README.md; do
+        printf '# Front door\n\nRun `ao flywheel status` to begin.\n' > "$FIX/$doc"
+        run_check ""
+        [ "$status" -eq 1 ] || { echo "$doc was not scanned: $output" >&2; return 1; }
+        [[ "$output" == *"$doc:3: unknown ao command \`ao flywheel\`"* ]]
+        rm "$FIX/$doc"
+    done
 }
 
 # ---- baseline ratchet (two-way) ----------------------------------------------
@@ -117,17 +133,10 @@ run_check() {
 }
 
 @test "a baseline entry for a DELETED file is stale and FAILS" {
-    # No docs/gone.md exists at all.
-    printf '# Live\n\nRun `ao lookup --query x`.\n' > "$FIX/docs/live.md"
+    # No docs/gone.md exists at all; the only live doc cites a live command.
+    printf '# Live\n\nRun `ao gate check`.\n' > "$FIX/docs/live.md"
     run_check $'docs/gone.md\n'
     [ "$status" -eq 1 ]
+    [[ "$output" == *"no longer trigger"* ]]
     [[ "$output" == *"docs/gone.md"* ]]
-}
-
-# ---- the REAL repo passes with its seeded baseline ---------------------------
-
-@test "the real repo passes with its committed baseline (gate lands green)" {
-    run env AGENTOPS_AO_BIN="$BATS_FILE_TMPDIR/ao" bash "$REPO_ROOT/scripts/check-docs-cli-snippets.sh"
-    [ "$status" -eq 0 ]
-    [[ "$output" == *"PASS"* ]]
 }

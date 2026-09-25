@@ -35,3 +35,5 @@
 #                         a generator that no longer exists in the tree. Fixing
 #                         it means deciding the doc's fate, which belongs to a
 #                         change that owns docs/evidence/**, not to this gate.
+# 2026-06-07 ag-qidx handoff: its 'pick up here' list names lib/common.sh, a planned file that was never created; the record stays as written.
+docs/handoffs/2026-06-07-ag-qidx-postmortem.md # dated-audit

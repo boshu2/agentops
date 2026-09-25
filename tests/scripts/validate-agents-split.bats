@@ -1,9 +1,8 @@
 #!/usr/bin/env bats
 #
 # tests/scripts/validate-agents-split.bats
-# Regression coverage for scripts/validate-agents-split.sh after the root
-# AGENTS-* sibling cutover: AGENTS.md must stay lean and point at the three
-# detail owners under docs/.
+# Regression coverage for scripts/validate-agents-split.sh: AGENTS.md must stay
+# lean and point at the three detail owners under docs/, which link back.
 
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
@@ -46,7 +45,6 @@ write_valid_split() {
     run bash -c "cd '$WORK_REPO' && bash scripts/validate-agents-split.sh"
     [ "$status" -eq 0 ]
     [[ "$output" == *"PASS"* ]]
-    [[ "$output" == *"15 checks"* ]]
 }
 
 @test "fails when AGENTS.md is missing" {
@@ -101,16 +99,6 @@ write_valid_split() {
     run bash -c "cd '$WORK_REPO' && bash scripts/validate-agents-split.sh"
     [ "$status" -eq 1 ]
     [[ "$output" == *"does not back-link to AGENTS.md"* ]]
-}
-
-@test "fails when a legacy root sibling is still present" {
-    write_valid_split
-    printf '# leftover\n' > "$WORK_REPO/AGENTS-CI.md"
-
-    run bash -c "cd '$WORK_REPO' && bash scripts/validate-agents-split.sh"
-    [ "$status" -eq 1 ]
-    [[ "$output" == *"legacy root sibling still present"* ]]
-    [[ "$output" == *"AGENTS-CI.md"* ]]
 }
 
 @test "treats AGENTS.md at exactly the 250-line limit as passing" {

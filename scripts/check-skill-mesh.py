@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Check that every skill projection agrees with SKILL.md metadata."""
+"""Check that every skill projection agrees with SKILL.md metadata.
+
+This gate is the single owner of the skill dependency graph (RPI depends on
+the three core operations; no other skill declares hard dependencies) and of
+acceptance authority (one verdict.v2 producer; advisory skills cannot judge).
+"""
 
 from __future__ import annotations
 
@@ -42,6 +47,43 @@ def fail(message: str, failures: list[str]) -> None:
     failures.append(message)
 
 
+def check_graph_and_authority(skills: dict[str, dict]) -> list[str]:
+    """Dependency-graph and acceptance-authority rules over parsed SKILL.md frontmatter."""
+    failures: list[str] = []
+    names = set(skills)
+    for name, data in skills.items():
+        metadata = data.get("metadata") or {}
+        for dependency in metadata.get("dependencies") or []:
+            if dependency not in names:
+                fail(f"dangling dependency: {name} -> {dependency}", failures)
+
+    core_graph = {
+        name: set((skills.get(name, {}).get("metadata") or {}).get("dependencies") or [])
+        for name in CORE
+    }
+    if core_graph != EXPECTED_CORE:
+        fail(f"core dependency graph mismatch: {core_graph!r}", failures)
+    for name, data in sorted(skills.items()):
+        dependencies = (data.get("metadata") or {}).get("dependencies") or []
+        if name != "rpi" and dependencies:
+            fail(f"only rpi may declare hard dependencies: {name} -> {sorted(dependencies)}", failures)
+
+    verdict_producers = sorted(
+        name for name, data in skills.items() if "verdict.v2" in (data.get("produces") or [])
+    )
+    if len(verdict_producers) != 1:
+        fail(f"exactly one skill must produce verdict.v2, found {verdict_producers}", failures)
+    for name in sorted(skills):
+        data = skills[name]
+        metadata = data.get("metadata") or {}
+        judges = "judge_acceptance" in (metadata.get("capabilities") or [])
+        if name in verdict_producers and not judges:
+            fail(f"verdict.v2 producer does not declare judge_acceptance: {name}", failures)
+        if judges and not (data.get("produces") or []) and not (metadata.get("effects") or []):
+            fail(f"advisory skill (no produces, no effects) declares judge_acceptance: {name}", failures)
+    return failures
+
+
 def main() -> int:
     failures: list[str] = []
     skills: dict[str, dict] = {}
@@ -59,18 +101,7 @@ def main() -> int:
         skills[name] = data
 
     names = set(skills)
-    for name, data in skills.items():
-        metadata = data.get("metadata") or {}
-        for dependency in metadata.get("dependencies") or []:
-            if dependency not in names:
-                fail(f"dangling dependency: {name} -> {dependency}", failures)
-
-    core_graph = {
-        name: set((skills.get(name, {}).get("metadata") or {}).get("dependencies") or [])
-        for name in CORE
-    }
-    if core_graph != EXPECTED_CORE:
-        fail(f"core dependency graph mismatch: {core_graph!r}", failures)
+    failures.extend(check_graph_and_authority(skills))
 
     catalog = json.loads((ROOT / "skills/catalog.json").read_text(encoding="utf-8"))
     catalog_names = [entry.get("name") for entry in catalog.get("skills", [])]

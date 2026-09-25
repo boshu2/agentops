@@ -1,3 +1,7 @@
+---
+status: historical
+---
+
 # Decision — making AgentOps evals agent-runnable + agent-monitorable
 
 > **HISTORICAL:** Captures a 2026-06-16 decision about CLI surfaces later removed.

@@ -1,3 +1,7 @@
+---
+status: historical
+---
+
 # Bushido Refinery — continuous main-validation backstop
 
 > **RETIRED:** The refinery command and lifecycle described here are no longer live. BR and `ao beads dir` examples below preserve historical behavior; they are not current tracker instructions. Use the repository operating contract and native BD for current work.

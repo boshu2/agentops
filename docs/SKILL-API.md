@@ -89,7 +89,7 @@ Valid section names:
 | Section | What it named |
 |---------|---------------|
 | `HISTORY` | Past session summaries |
-| `INTEL` | Mined learnings and patterns. The surface that produced them was retired with `ao flywheel` and `ao knowledge`; the name is still accepted so old declarations parse, and it now names nothing. |
+| `INTEL` | Mined learnings and patterns. The surface that produced them was retired with `ao flywheel` and `ao knowledge`; the name is still accepted so old declarations parse, and it now names nothing. <!-- ao-resolve: ignore --> |
 | `TASK` | Current bead ID and predecessor context |
 
 **v1 status:** Metadata compatibility only. The lookup command was removed and
@@ -112,8 +112,8 @@ Declares what the skill is doing.
 #### Retired: `context.intel_scope`
 
 `context.intel_scope` declared how much of the knowledge flywheel to inject.
-That surface is gone — `ao flywheel`, `ao knowledge`, `ao patterns`, and
-`ao inject` were all removed (see [MIGRATION.md](MIGRATION.md)), and a search
+That surface is gone — `ao flywheel`, `ao knowledge`, `ao patterns`, and <!-- ao-resolve: ignore -->
+`ao inject` were all removed (see [MIGRATION.md](MIGRATION.md)), and a search <!-- ao-resolve: ignore -->
 of `cli/` and `scripts/` finds no reader for the key. No shipped skill declares
 it any more. `schemas/skill-frontmatter.v1.schema.json` still accepts it so
 third-party skills written against the old shape keep validating; a declaration
@@ -237,7 +237,7 @@ machine-readable form (`ao skills list`).
 The schema's tier enum also still accepts `background`, `contribute`, and
 `experimental`. No shipped skill uses them: the `background` family
 (`push`, `ratchet`, `flywheel`, `forge`) and the `contribute` family (`pr-*`,
-`oss-docs`) were retired, and `ao ratchet`, `ao flywheel`, and `ao forge` are
+`oss-docs`) were retired, and `ao ratchet`, `ao flywheel`, and `ao forge` are <!-- ao-resolve: ignore -->
 removed verbs — see [MIGRATION.md](MIGRATION.md).
 
 ### `output_contract`

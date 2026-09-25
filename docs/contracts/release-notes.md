@@ -27,9 +27,8 @@ Product-area headings under `## Product Areas` use this taxonomy:
 - Security, Privacy, and Supply Chain
 - Contributor/Internal Refactors
 
-Top-level bullets under a product area start with one of: `Added:`, `Changed:`,
-`Refactored:`, `Fixed:`, `Deprecated:`, `Removed:`, `Security:`, or `Docs:`.
+Top-level bullets sit under a `### <product area>` heading.
 
 `scripts/validate-release-notes.sh` is the executable owner of section, taxonomy,
-action-label, and changed-path coverage checks. `scripts/scaffold-release-notes.sh`
+bullet-placement, and changed-path coverage checks. `scripts/scaffold-release-notes.sh`
 may create a draft; it never publishes, tags, or declares a release valid.

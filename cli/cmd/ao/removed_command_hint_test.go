@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -189,6 +190,76 @@ func TestRootHelpNamesNoRemovedVerbs(t *testing.T) {
 		}
 	}
 }
+
+// TestRemovedVerbsStayHinted pins the verbs whose removal hint must never be
+// dropped. The other tombstone tests iterate removedCommands itself, so only
+// a fixed list can notice an entry disappearing from the map.
+func TestRemovedVerbsStayHinted(t *testing.T) {
+	for _, verb := range []string{
+		"pawl", "plan-pawl", "land", "done", "close", "governor", "yield",
+		"claim", "next-work", "state", "worktree", "validate", "converge",
+		"reconcile", "membrane", "crank", "flywheel",
+	} {
+		err := fmt.Errorf("unknown command %q for %q", verb, "ao")
+		hint := removedCommandHint(bareRoot(), err)
+		if want := fmt.Sprintf("%q was removed", verb); !strings.Contains(hint, want) {
+			t.Errorf("ao %s hint = %q; want it to contain %q", verb, hint, want)
+		}
+	}
+}
+
+// TestRemovedCommandHintsNameLiveSkills proves each hint that sends the user
+// to a skill names one that ships: a hint pointing at a retired skill (the
+// flywheel hint once named "the learn skill") strands the user.
+func TestRemovedCommandHintsNameLiveSkills(t *testing.T) {
+	repo := filepath.Dir(filepath.Dir(findMigrationDoc(t)))
+	for verb, skill := range map[string]string{
+		"plan-pawl": "premortem",
+		"pawl":      "validate",
+		"validate":  "validate",
+		"verify":    "validate",
+		"flywheel":  "memory",
+	} {
+		tomb, ok := removedCommands[verb]
+		if !ok {
+			t.Errorf("%q lost its tombstone", verb)
+			continue
+		}
+		if !strings.Contains(strings.ToLower(tomb.use), skill) {
+			t.Errorf("%q hint %q does not name the %s skill", verb, tomb.use, skill)
+		}
+		if _, err := os.Stat(filepath.Join(repo, "skills", skill, "SKILL.md")); err != nil {
+			t.Errorf("%q hint names skill %q, which does not ship: %v", verb, skill, err)
+		}
+	}
+	// Any other hint that points at a skill ("the X skill", "invoke the X
+	// skill", "invoke x") must point at one that ships, including hints for
+	// retired subcommands. A possessive ("the compile skill's") describes
+	// history, not a destination, and is skipped.
+	hints := map[string]string{}
+	for verb, tomb := range removedCommands {
+		hints[verb] = tomb.use
+	}
+	for parent, children := range removedChildCommands {
+		for child, tomb := range children {
+			hints[parent+" "+child] = tomb.use
+		}
+	}
+	for verb, use := range hints {
+		for _, m := range skillMention.FindAllStringSubmatch(use, -1) {
+			name := strings.ToLower(m[1] + m[2])
+			if name == "the" { // "invoke the <non-skill>": not a skill reference
+				continue
+			}
+			if _, err := os.Stat(filepath.Join(repo, "skills", name, "SKILL.md")); err != nil {
+				t.Errorf("%q hint points at skill %q, which does not ship", verb, name)
+			}
+		}
+	}
+}
+
+// skillMention matches "[invoke ]the <Name> skill" (not possessive) or "invoke <name>".
+var skillMention = regexp.MustCompile(`\b(?:invoke )?the ([A-Za-z-]+) skill\b(?:[^'\w]|$)|\binvoke ([a-z][a-z-]+)\b`)
 
 // findMigrationDoc walks up from the test's working directory to the repo
 // root and returns the path to docs/MIGRATION.md.
