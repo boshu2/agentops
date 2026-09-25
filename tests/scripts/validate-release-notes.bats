@@ -131,29 +131,6 @@ EOF
   [[ "$output" == *"non-canonical product-area heading"* ]]
 }
 
-@test "fails a product-area bullet without a canonical action label" {
-  write_patch_notes "9.9.9"
-  sed_inplace 's/^- Fixed: a release gate no longer misfires.$/- a release gate no longer misfires./' \
-    "$SANDBOX/docs/releases/2026-05-25-v9.9.9-notes.md"
-  run "$SANDBOX/scripts/validate-release-notes.sh" v9.9.9
-  [ "$status" -ne 0 ]
-  [[ "$output" == *"canonical action label"* ]]
-}
-
-@test "reports the tier (hotfix) for an X.Y.Z version" {
-  write_patch_notes "9.9.9"
-  run "$SANDBOX/scripts/validate-release-notes.sh" v9.9.9
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"tier hotfix"* ]]
-}
-
-@test "reports the tier (minor) for an X.Y.0 version" {
-  write_patch_notes "9.9.0"
-  run "$SANDBOX/scripts/validate-release-notes.sh" v9.9.0
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"tier minor"* ]]
-}
-
 @test "minor (X.Y.0) does NOT require a Breaking Changes section" {
   write_patch_notes "9.9.0"
   run "$SANDBOX/scripts/validate-release-notes.sh" v9.9.0

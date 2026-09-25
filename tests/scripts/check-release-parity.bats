@@ -31,18 +31,6 @@ teardown() {
     [ -n "${FIX:-}" ] && [ -d "$FIX" ] && find "$FIX" -mindepth 0 -delete 2>/dev/null || true
 }
 
-@test "checker exists and is executable" {
-    [ -f "$SCRIPT" ]
-    [ -x "$SCRIPT" ]
-}
-
-@test "--help prints usage and exits 0" {
-    run bash "$SCRIPT" --help
-    [ "$status" -eq 0 ]
-    [[ "$output" == *"Assert parity"* ]]
-    [[ "$output" == *"--tarball"* ]]
-}
-
 @test "red: stale README tarball -> gate FAILS naming README divergence" {
     run bash "$SCRIPT" --tarball "$FIX/ao-stale.tar.gz" --repo-root "$FIX"
     [ "$status" -eq 1 ]

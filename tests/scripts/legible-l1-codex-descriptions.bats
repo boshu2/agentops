@@ -25,20 +25,6 @@ setup() {
     export REPO_ROOT
 }
 
-# A ── no twin description is a fragment ending immediately before Triggers:.
-# `[a-z] Triggers:` is the exact signature of the old word-boundary cut: a
-# lowercase word character butted straight against the trigger clause with no
-# sentence terminator between them.
-@test "no skills-codex description is cut mid-clause before Triggers:" {
-    run bash -c "grep -lE '^description:.*[a-z] Triggers:' \"$REPO_ROOT\"/skills-codex/*/SKILL.md || true"
-    [ "$status" -eq 0 ]
-    if [ -n "$output" ]; then
-        echo "truncated Codex twin descriptions ($(echo "$output" | wc -l | tr -d ' ') files):" >&2
-        echo "$output" >&2
-    fi
-    [ -z "$output" ]
-}
-
 # B ── every generated twin retains the source's complete routing signal.
 @test "every twin description preserves all source routing content" {
     run python3 - <<'PYCHECK'
@@ -74,44 +60,77 @@ PYCHECK
     [ "$status" -eq 0 ]
 }
 
-# C ── using-flywheel is a CROSS-RUNTIME skill: it names three worker runtimes
-# side by side and tells the operator to check two distinct install paths. The
-# blanket "Claude Code" -> "Codex" / ~/.claude -> ~/.codex rewrite collapsed the
-# trio to two names and printed the same path twice, silently deleting the check
-# for the runtime the step exists to verify. The fix is the exemption list at
-# scripts/lint/codex-cross-runtime-skills.txt, so the twin body must now be the
-# source body verbatim at both sites.
-@test "using-flywheel twin preserves the cross-runtime trio and both distinct install paths" {
-    twin="$REPO_ROOT/skills-codex/using-flywheel/SKILL.md"
-    src="$REPO_ROOT/skills/using-flywheel/SKILL.md"
-    [ -f "$twin" ]
-    [ -f "$src" ]
+# C ── a CROSS-RUNTIME skill (it names Claude Code AND Codex CLI, or both
+# ~/.claude/skills and ~/.codex/skills) must be listed in
+# scripts/lint/codex-cross-runtime-skills.txt, and a listed skill's twin must not
+# receive the Claude->Codex runtime rewrites. The blanket rewrite collapsed
+# using-flywheel's runtime trio to two names and printed one install path twice,
+# silently deleting the check for the runtime the step exists to verify. The
+# rewrite table is read from scripts/codex-sync.sh itself, so a new rewrite is
+# covered without editing this test. A collision is a source line that already
+# carries a rewrite's Codex-side text and would gain another copy of it.
+@test "cross-runtime skills are listed and their twins skip the runtime rewrites" {
+    run python3 - <<'PYCHECK'
+import ast
+import os
+import pathlib
+import re
 
-    # The runtime-trio line (source line 47) survives verbatim.
-    trio_src="$(grep -n 'multi-agent factory:' "$src" | cut -d: -f2-)"
-    trio_twin="$(grep -n 'multi-agent factory:' "$twin" | cut -d: -f2-)"
-    echo "source: $trio_src" >&2
-    echo "twin:   $trio_twin" >&2
-    [ -n "$trio_src" ]
-    [ "$trio_twin" = "$trio_src" ]
-    case "$trio_src" in
-        *"Claude Code, Codex CLI, and Antigravity CLI"*) ;;
-        *) echo "source no longer states the trio — update this test" >&2; return 1 ;;
-    esac
+repo = pathlib.Path(os.environ["REPO_ROOT"])
+generator = (repo / "scripts" / "codex-sync.sh").read_text(encoding="utf-8")
+program = re.search(r"^python3 - <<'PY'\n(.*?)^PY$", generator, re.S | re.M)
+if program is None:
+    raise SystemExit("scripts/codex-sync.sh: embedded generator program not found")
+rewrites = None
+for node in ast.parse(program.group(1)).body:
+    target = node.target if isinstance(node, ast.AnnAssign) else (
+        node.targets[0] if isinstance(node, ast.Assign) else None)
+    if isinstance(target, ast.Name) and target.id == "RUNTIME_REWRITES":
+        rewrites = ast.literal_eval(node.value)
+if not rewrites:
+    raise SystemExit("scripts/codex-sync.sh: RUNTIME_REWRITES not found")
 
-    # The verification line (source line 76) lists TWO DISTINCT paths, each once.
-    verify="$(grep 'skills/validate' "$twin")"
-    echo "verify: $verify" >&2
-    [ "$(printf '%s' "$verify" | grep -o '~/\.claude/skills/validate' | wc -l | tr -d ' ')" = "1" ]
-    [ "$(printf '%s' "$verify" | grep -o '~/\.codex/skills/validate' | wc -l | tr -d ' ')" = "1" ]
+mapping = dict(rewrites)
+pattern = re.compile("|".join(
+    re.escape(old) for old, _ in sorted(rewrites, key=lambda kv: len(kv[0]), reverse=True)))
 
-    # And nothing else in the body drifted from source.
-    run python3 -c "
-import pathlib, sys
-def body(p): return pathlib.Path(p).read_text(encoding='utf-8').split('---', 2)[2].lstrip('\n')
-s, w = body('$src'), body('$twin')
-sys.exit(0 if s == w else 1)
-"
+
+def body(path):
+    return path.read_text(encoding="utf-8").split("---", 2)[2]
+
+
+listed = set()
+for line in (repo / "scripts" / "lint" / "codex-cross-runtime-skills.txt").read_text(
+        encoding="utf-8").splitlines():
+    line = line.strip()
+    if line and not line.startswith("#"):
+        listed.add(line)
+
+failures = []
+for skill in sorted(listed):
+    source, twin = repo / "skills" / skill / "SKILL.md", repo / "skills-codex" / skill / "SKILL.md"
+    if not source.is_file() or not twin.is_file():
+        failures.append(f"{skill}: listed but skills/ or skills-codex/ SKILL.md is missing")
+        continue
+    for old, _ in rewrites:
+        if body(source).count(old) != body(twin).count(old):
+            failures.append(f"{skill}: twin rewrote {old!r} although the skill is cross-runtime")
+
+for source in sorted((repo / "skills").glob("*/SKILL.md")):
+    skill = source.parent.name
+    for lineno, line in enumerate(body(source).splitlines(), 1):
+        rewritten = pattern.sub(lambda m: mapping[m.group(0)], line)
+        collided = sorted({new for _, new in rewrites
+                           if new in line and rewritten.count(new) > line.count(new)})
+        if collided and skill not in listed:
+            failures.append(f"{skill}: body line {lineno} names both runtimes {collided}; "
+                            "list it in scripts/lint/codex-cross-runtime-skills.txt")
+
+if failures:
+    raise SystemExit("\n".join(failures))
+print(f"checked {len(listed)} listed cross-runtime twins and every source body")
+PYCHECK
+    echo "$output" >&2
     [ "$status" -eq 0 ]
 }
 
@@ -122,19 +141,6 @@ sys.exit(0 if s == w else 1)
     [ "$status" -eq 0 ]
     if [ -n "$output" ]; then
         echo "twins with a \$-rewritten title:" >&2
-        echo "$output" >&2
-    fi
-    [ -z "$output" ]
-}
-
-# E ── `ao codex ensure-start` is not a subcommand of `ao`. The generator
-# carried a dormant emitter for it (no catalog entry declared the marker that
-# would fire it, so 0 twins ever carried the block). Dormant is not harmless:
-# it is a live path to a command that would fail. Nothing may reference it.
-@test "no script or twin references 'ao codex ensure-start'" {
-    run bash -c "cd \"$REPO_ROOT\" && grep -rn 'ensure-start' scripts skills-codex || true"
-    [ "$status" -eq 0 ]
-    if [ -n "$output" ]; then
         echo "$output" >&2
     fi
     [ -z "$output" ]

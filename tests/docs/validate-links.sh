@@ -2,21 +2,11 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-ALLOWLIST="$REPO_ROOT/tests/docs/broken-links-allowlist.txt"
 
+# A broken link is fixed at its source, never tolerated: there is no allowlist.
 total=0
 broken=0
-allowlisted=0
 generated=0
-
-# Load allowlist into associative array
-declare -A allowed
-if [[ -f "$ALLOWLIST" ]]; then
-  while IFS= read -r line; do
-    [[ -z "$line" || "$line" == \#* ]] && continue
-    allowed["$line"]=1
-  done < "$ALLOWLIST"
-fi
 
 # Build a set of paths that are generated at MkDocs build time (docs/_hooks/gen_*.py).
 # These files don't exist on disk but resolve at build time via the mkdocs-gen-files
@@ -112,13 +102,8 @@ PY
         generated=$((generated + 1))
         continue
       fi
-      allowlist_key="$rel_file:$target_path"
-      if [[ -n "${allowed[$allowlist_key]+x}" ]]; then
-        allowlisted=$((allowlisted + 1))
-      else
-        broken=$((broken + 1))
-        echo "BROKEN: $rel_file:$line_num -> $target_path"
-      fi
+      broken=$((broken + 1))
+      echo "BROKEN: $rel_file:$line_num -> $target_path"
     fi
   done < <(
     awk '
@@ -144,7 +129,7 @@ PY
 done
 
 echo ""
-echo "$total links checked, $broken broken ($allowlisted allowlisted, $generated mkdocs-generated)"
+echo "$total links checked, $broken broken ($generated mkdocs-generated)"
 
 if [[ "$broken" -gt 0 ]]; then
   exit 1
