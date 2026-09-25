@@ -94,7 +94,7 @@ batch mode selects no backlog work, creates no queue and integrates no changes.
    through the caller-owned native recording channel with its provenance and
    permitted source locator. Preserve launch failures and unknowns if startup
    never becomes observable. Follow
-   [session associations](../agent-native/references/session-associations.md#work-to-session-associations)
+   [session associations](references/session-associations.md#work-to-session-associations)
    for separate parent/resume links, supported multi-work spans and frozen source
    bounds. A controller is not necessarily a native parent; every requested
    child and resumed execution needs its own observed association. If recording
@@ -118,3 +118,7 @@ recorded, is a declared runtime fact like context identity — see
 [Native judgment receipts](references/judgment-receipts.md) defines exact private
 receipt references and the independent profile/subject/acceptance checks for
 caller-required model diversity. Missing native identity never satisfies a leg.
+
+For a demonstrated need to inspect exact native source spans, follow
+[bounded raw source reads](references/RAW_SOURCE_READS.md); its caller-selected
+access and output limits apply before reading any source bytes.
