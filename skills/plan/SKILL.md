@@ -62,6 +62,8 @@ it can answer; none is a required planning stage.
    expand/migrate/contract approach and state where integration is required.
    Include recapture of affected bound evidence where necessary; use
    `ao provenance evidence-orphans` when applicable, not a mandatory ledger.
+   Across an epic, [Navigate](../navigate/SKILL.md) picks which bead comes
+   next; Plan shapes that bead.
 4. When evidence disproves an approach, briefly retain the failed assumption,
    evidence and revised check in the existing intent or handoff. Approach
    changes within accepted outcome and scope need no new permission; acceptance

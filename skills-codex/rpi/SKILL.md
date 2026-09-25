@@ -30,7 +30,8 @@ delivery. AgentOps supplies a small charter and fresh judgment, not a scheduler.
    legs. There is no fixed ten-minute cap; explicitly required
    reviewers remain required. Risk deepens evidence, not reviewer multiplication. Repair
    actionable findings within authority and remaining bounds, then revalidate
-   the changed exact subject.
+   the changed exact subject. For `NOT_PROVEN` from missing evidence, gather it
+   without changing the subject and obtain fresh judgment again.
 6. Stop at completed acceptance, cancellation, refusal, a spent real bound or
    an unresolved causal stall after the help below. Adjacent improvements are
    not permission to expand the goal. Report them briefly only when useful;

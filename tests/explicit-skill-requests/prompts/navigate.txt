@@ -1,0 +1,1 @@
+Use /agentops:navigate on epic ag-1234 to rebuild the acceptance matrix, pick the next wave with one reason per bead, and list graph-hygiene findings. Do not dispatch workers, close beads or change acceptance.

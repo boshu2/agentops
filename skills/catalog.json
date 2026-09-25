@@ -1,6 +1,6 @@
 {
   "schema_version": "3",
-  "skill_count": 36,
+  "skill_count": 38,
   "skills": [
     {
       "canonical_status": "canonical",
@@ -483,6 +483,47 @@
     {
       "canonical_status": "canonical",
       "capabilities": [
+        "interview_caller",
+        "settle_caller_choices",
+        "write_acceptance_examples",
+        "settle_domain_terms"
+      ],
+      "codex_override_present": true,
+      "consumes": [
+        "repo-context",
+        "native-work-state"
+      ],
+      "context_rel": [
+        {
+          "kind": "supplier-to",
+          "with": "craft-goal"
+        }
+      ],
+      "dependencies": [],
+      "description": "Interview the caller one question at a time to settle a big outcome before agents work alone. Use when: shaping a goal or large RPI. Not for one question on one slice; use Plan.",
+      "disposition": "keep_strategy",
+      "effects": [
+        "update_intent_source"
+      ],
+      "graph_root": false,
+      "hexagonal_role": "domain",
+      "name": "interview",
+      "practices": [
+        "bdd-gherkin",
+        "ddd-bounded-context",
+        "design-by-contract"
+      ],
+      "produces": [
+        "caller-outcome",
+        "goal-acceptance"
+      ],
+      "references_count": 0,
+      "tier": "execution",
+      "user_invocable": true
+    },
+    {
+      "canonical_status": "canonical",
+      "capabilities": [
         "recall_applicable_context",
         "mine_supported_observations",
         "curate_topic_pages",
@@ -538,6 +579,52 @@
         "pragmatic-programmer"
       ],
       "produces": [],
+      "references_count": 0,
+      "tier": "execution",
+      "user_invocable": true
+    },
+    {
+      "canonical_status": "canonical",
+      "capabilities": [
+        "observe_work_graph",
+        "select_next_wave",
+        "ratchet_work_graph",
+        "report_graph_hygiene"
+      ],
+      "codex_override_present": true,
+      "consumes": [
+        "outer-goal-prompt",
+        "goal-acceptance",
+        "native-work-state",
+        "validation-result"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "craft-goal"
+        },
+        {
+          "kind": "supplier-to",
+          "with": "orchestrate"
+        }
+      ],
+      "dependencies": [],
+      "description": "Pick the next wave on a bead graph and keep the graph honest toward frozen acceptance. Use when: a goal starts a wave, or you ask what is next on an epic.",
+      "disposition": "keep_strategy",
+      "effects": [
+        "update_native_graph"
+      ],
+      "graph_root": false,
+      "hexagonal_role": "supporting",
+      "name": "navigate",
+      "practices": [
+        "lean-startup",
+        "bdd-gherkin",
+        "ddd-bounded-context"
+      ],
+      "produces": [
+        "native-handoffs"
+      ],
       "references_count": 0,
       "tier": "execution",
       "user_invocable": true

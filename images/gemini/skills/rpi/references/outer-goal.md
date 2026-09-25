@@ -6,6 +6,11 @@ budgets, stops and delivery authority. No AO scheduler, new command or goal
 ledger is required. The RPI charter already owns a single authorized outcome
 through finish; an outer goal is not permission needed for ordinary repair.
 
+A crafted goal orchestrates many RPIs over one bead graph.
+Craft Goal writes and lints the frozen goal prompt;
+[Navigate](../../navigate/SKILL.md) is the graph walk the goal applies each
+wave. The goal still selects work, and neither adds a scheduler or a ledger.
+
 Carry accepted terminal outcome and scope, measured remaining allowance and the
 current causal incident in the native work/handoff source. Choose the smallest
 acceptance-advancing action or consequential uncertainty. Reserve capacity for

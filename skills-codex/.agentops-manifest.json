@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "eab91b163e5db8c036f365ccf4e7520bb0f0a98fb055d68b9fca686aac3613c9",
+  "codex_override_catalog_hash": "080c956129bcb8cb72268d78f9009a09cf688a1e5e8600d342dbf3eb2dc938d0",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -248,6 +248,18 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Native coordination guidance remains canonical in skills/orchestrate; preserve its complete contract and selectively loaded owner references."
+      },
+      {
+        "name": "interview",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Auto-generated parity twin (codex-sync): skills/interview is the source of truth; no durable Codex-specific divergence yet."
+      },
+      {
+        "name": "navigate",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Auto-generated parity twin (codex-sync): skills/navigate is the source of truth; no durable Codex-specific divergence yet."
       }
     ]
   },
@@ -303,8 +315,8 @@
     {
       "name": "craft-goal",
       "source_skill": "skills/craft-goal",
-      "source_hash": "a7bf1d672f03f789d282bd886a807100d38d67b254c736374cade28ac74b4bac",
-      "generated_hash": "48c2aa4970a442eaf13be1e57b2a96b484bb6d6c149755f02c50f19e6954b762"
+      "source_hash": "2a0627d667afcd41285352639e36d5a99c1ae1d0ca0572484a8429e33948d52c",
+      "generated_hash": "e1cddcf3e55bb18db88702338294cd60806c372bef01866cdaa1ff8605358479"
     },
     {
       "name": "dcg",
@@ -337,6 +349,12 @@
       "generated_hash": "bd0cc7420e5b0db039f1d13c49eea32af3c440f7896ff6fc9fda7a869ed84e93"
     },
     {
+      "name": "interview",
+      "source_skill": "skills/interview",
+      "source_hash": "d93cb4ca7924eaf3943177bcbeca0bb22bf9e1e8e87943ca7fb831910e266cd8",
+      "generated_hash": "bcabf7997208ee7fbd244dc40f4c9509623292aede310348bc4ccc924f7486c6"
+    },
+    {
       "name": "memory",
       "source_skill": "skills/memory",
       "source_hash": "a828b4c5c344fa4a2f287073768e52077d7d973d7c279a8f0208463f2d28ba61",
@@ -349,6 +367,12 @@
       "generated_hash": "c8a188f6a83a409a08c0bfc25d0d746bca669e6acf89fb55d607653107b0d0bd"
     },
     {
+      "name": "navigate",
+      "source_skill": "skills/navigate",
+      "source_hash": "da53c1033fd9b8250ba95b03f920378829355af9e4a932b2b3c1bbb7a9bb0a3f",
+      "generated_hash": "846fe8475ca3de9fe1d121025ce9284628ab4fbdaf66671866c89a70988bda1e"
+    },
+    {
       "name": "ntm",
       "source_skill": "skills/ntm",
       "source_hash": "34a1762405cc054d1600feede85c040950a8a815983b87bd12a45338f912729c",
@@ -357,14 +381,14 @@
     {
       "name": "orchestrate",
       "source_skill": "skills/orchestrate",
-      "source_hash": "5a17afab2e2b197c18c1f58e89467a718e00bd33fe3e26fb97aeb18555570d68",
-      "generated_hash": "03b3843471a65413e6c7049fd10b2dc5d8735268f33f4f4e2045de630dc72841"
+      "source_hash": "53136d70134597377164e3d53e1fb1ce45a4d434d3aac1479d7e3cb7b4abbde5",
+      "generated_hash": "74c4c291227fed9550a935c4e140ce677048760be2791eb020c9ae5376346875"
     },
     {
       "name": "plan",
       "source_skill": "skills/plan",
-      "source_hash": "d73dbe67da983ddfd26ddb4e8d5908816dee281c7ad27a0b6c2892cce9db576d",
-      "generated_hash": "6b14982381e27415c4524616d4d8b6edc484b9d1730a79cbd5d238fce4386b0f"
+      "source_hash": "822e7be5d22ca46a4cebabc26e2b0bb5580f57ff3311bf8d61e37dce8468dd1c",
+      "generated_hash": "21e9d90acabaab8c3d91dcd1cdf4bef5a270375f4edb607aa36a38a138006fcb"
     },
     {
       "name": "postmortem",
@@ -417,8 +441,8 @@
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "47ba75a0bba866ec0db1210e309ad40ede89f48c65ec90a00cb6d1e2e606505e",
-      "generated_hash": "e693c85afa9523379659186a8713724f30566ebae71dd864927dd434e089de38"
+      "source_hash": "ee1eaf83f9a62be1b937623ccf4d774509cb45a66a44bba511f0aab547377dbb",
+      "generated_hash": "e6c43f2b78273b5759b417171657826ec047ab186bb075b1a0adf7fd67e759ec"
     },
     {
       "name": "sbh",
@@ -469,5 +493,5 @@
       "generated_hash": "2b5b93c6d4fa394fe81c4b5ae880f4caa157345fe171bf28f9732de9a11393f9"
     }
   ],
-  "package_count": 36
+  "package_count": 38
 }

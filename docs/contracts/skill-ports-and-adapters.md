@@ -103,6 +103,8 @@ authority.
 |---|---|---|---|
 | Product and fitness | Define or measure the desired state | `product`, `fitness` | Evidence to caller or Goal |
 | Campaign design | Compile or lint the outer autonomy contract | `craft-goal` | Goal prompt or safety report |
+| Intent interview | Settle caller choices one question at a time before autonomous work | `interview` | Decisions in the caller's intent source; next step Craft Goal, RPI or Plan |
+| Graph walk | Pick a goal's next wave and keep its bead graph honest | `navigate` | Wave checkpoint to caller or Goal |
 | Goal observation | Report durable state without steering | `status`, `handoff` | Facts to caller or Goal |
 | Intent evidence | Reduce uncertainty before one experiment is frozen | `research`, `codebase-recon`, `domain`, `standards`, `cass`, `reverse-engineer` | Cited facts to Goal or Plan |
 | Option shaping | Generate, challenge, or route candidate hypotheses | `idea-genie`, `reality-check`, `automation-shape-routing` | Advisory options, gaps, or semantic route to caller, Goal, or Plan |
