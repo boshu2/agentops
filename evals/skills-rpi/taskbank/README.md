@@ -93,14 +93,27 @@ python3 -m unittest discover -s evals/skills-rpi/taskbank -p 'test_*.py'
 
 `--tasks input-scope` restricts calibration while developing. The calibration
 runner makes a fresh candidate per control, overlays the intended solution or
-an intentionally wrong/incomplete candidate, and calls the same verifier used
-by the separate container. Public baseline tests remain green; hidden tests
+an intentionally wrong/incomplete candidate, and imports the verifier on the host.
+This checks grader logic, not packaging. Before live use, `prepare.py` additionally
+runs those controls through the frozen verifier image's actual entry point,
+copying candidates and results through Docker without requiring host bind mounts.
+Public baseline tests remain green; hidden tests
 make no-op repairs fail. Reset and integrity tests ensure failed candidates
 cannot contaminate the pristine baseline or substitute their own tests.
 
 No model calls, live handoffs, real stop delivery, container builds or claimed
 skill benefit occur in these local checks. The public task and grader versions
-must be frozen with the package, model and runner before any live batch.
+must be frozen with both packages, model and runner before any live batch; use
+`prepare.py --check-staged` on the complete comparison immediately before either
+arm launches. Packaging errors cannot satisfy a negative control, and all declared
+controls, including valid semantic alternatives, must appear in calibration.
+Negative grades must carry the verifier's `failure_kind: candidate` classification.
+Missing tools, timeouts, tool/build failures without a completed test rejection,
+and malformed evaluator inputs are execution errors. The verifier reads Go's
+structured test events; process exit alone is insufficient. A compilation failure
+still receives zero reward, but cannot serve as a calibrated semantic negative
+because the fixed endpoint tests did not run. An ambiguous older zero reward
+cannot stand in for a completed rejection.
 
 ## Three-shape skill development cases
 
