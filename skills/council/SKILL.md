@@ -37,8 +37,13 @@ contexts useful; routine work needs no council.
 
 1. Freeze the question, constraints or acceptance, authorized evidence, and
    subject digest. Select participants, model pins, and real dispatch bounds.
+   The caller may give each participant its own model, effort and perspective
+   (for example architect, reliability, security or simplicity); the same model
+   in separate contexts counts as separate participants on the roster, but their
+   agreement still weighs as one model's confirmation (see Model-diversity axis).
 2. Give each participant a fresh independent context and the same bounded
-   packet. Collect proposals or judgments before revealing any peer response.
+   packet; a perspective steers what a member examines, never what evidence it
+   gets. Collect proposals or judgments before revealing any peer response.
 3. Require evidence, reasoning, and omissions. For brainstorming, distinguish
    new hypotheses from supported claims; novelty is not proof.
 4. Synthesize the sealed initial views, or run the caller-selected bounded
