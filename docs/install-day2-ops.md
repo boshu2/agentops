@@ -33,7 +33,7 @@ interactively; add `-g` for a user-level install. In scripts, name the agents:
 `opencode`, `gemini-cli`, `antigravity`, `pi`, `grok` (Grok Build) and
 `openclaw`. Use `-g` for OpenClaw: its project scope writes `./skills` into
 your repository. Grok Bot has no installer target; add the same `SKILL.md`
-folders through its own skill settings (Settings → Plugins).
+folders through [its skill settings](https://docs.x.ai/grok-bot/skills-routines-and-automations).
 
 The npx path installs skills, not runtime plugins, AO, hooks or native roles.
 Its link/copy behavior belongs to that installer; use `npx skills@latest --help`

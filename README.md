@@ -93,7 +93,7 @@ Add `-g` for a user-level install. In scripts, name the agents:
 (`-y` without `-a` can install into every agent the installer knows).
 Installer targets include `cursor`, `opencode`, `gemini-cli`, `antigravity`,
 `pi`, `grok` (Grok Build) and `openclaw`. Grok Bot has no installer target; add
-the same `SKILL.md` folders through its own skill settings (Settings → Plugins).
+the same `SKILL.md` folders through [its skill settings](https://docs.x.ai/grok-bot/skills-routines-and-automations).
 Some skills need extra tools ([install guide](docs/install-day2-ops.md)); what
 each host has been tested for is in [host coverage and limits](docs/contracts/multi-runtime-tier-charter.md#host-and-install-surface-mapping).
 
