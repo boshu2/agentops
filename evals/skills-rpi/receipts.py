@@ -34,6 +34,9 @@ def collect(manifests):
             raise ValueError(f"staged task changed after freeze: {path}")
         if tree_hash(root / "skills") != frozen["skills_sha256"]:
             raise ValueError(f"staged package changed after freeze: {path}")
+        control_hash = frozen.get("control_skills_sha256")
+        if control_hash is not None and tree_hash(root / "control-skills") != control_hash:
+            raise ValueError(f"staged control package changed after freeze: {path}")
         for job in frozen["jobs"]:
             input_path = Path(job["input_config"])
             if sha(input_path) != job["input_sha256"]:
@@ -50,7 +53,7 @@ def collect(manifests):
                 "rep": job["rep"], "arm": job["arm"],
                 "task_checksum": frozen["task_checksum"],
                 "oracle_sha256": frozen["oracle_sha256"],
-                "skills_sha256": frozen["skills_sha256"] if job["arm"] == "treatment" else None,
+                "skills_sha256": frozen["skills_sha256"] if job["arm"] == "treatment" else control_hash,
                 "runtime": frozen["runtime"], "isolation": frozen["isolation"],
                 "configuration_sha256": sha(native),
                 "staging_manifest": {"path": str(path), "sha256": sha(path)},

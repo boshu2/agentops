@@ -77,6 +77,9 @@ jobs:
             go:
               - 'cli/**'
               - 'evals/skills-rpi/**'
+              - 'skills/skill-builder/scripts/**'
+              - 'tests/integration/test_skill_builder.bats'
+              - 'tests/integration/test_skill_audit.bats'
               - 'go.mod'
               - 'go.sum'
               - 'tests/windows/**'
@@ -278,17 +281,17 @@ jobs:
       # bats needs Python with jsonschema/PyYAML, jq, and ripgrep. It does not
       # need a semantic-review runtime or a pre-seeded lifecycle verdict.
       - name: Set up Python (bats and smoke-test)
-        if: runner.os == 'Linux' && (needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.bats == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.docs == 'true')
+        if: runner.os == 'Linux' && (needs.changes.outputs.go == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.bats == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.docs == 'true')
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.14'
 
       - name: Install bats Python dependencies
-        if: runner.os == 'Linux' && (needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.bats == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.docs == 'true')
+        if: runner.os == 'Linux' && (needs.changes.outputs.go == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.bats == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.docs == 'true')
         run: python3 -m pip install jsonschema pyyaml
 
       - name: Install bats
-        if: runner.os == 'Linux' && (needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.bats == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.docs == 'true')
+        if: runner.os == 'Linux' && (needs.changes.outputs.go == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.bats == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.docs == 'true')
         run: sudo npm install -g bats@1.12.0
 
       - name: Run bats tests
@@ -328,6 +331,7 @@ jobs:
           EVAL_PYTHON="$RUNNER_TEMP/skill-eval-venv/bin/python"
           "$EVAL_PYTHON" -m pip install -r evals/skills-rpi/requirements.txt -r evals/skills-rpi/requirements-readout.txt pytest==8.4.2
           "$EVAL_PYTHON" -m unittest discover -s evals/skills-rpi -p test_receipts.py -q
+          "$EVAL_PYTHON" -m unittest discover -s evals/skills-rpi -p test_prepare.py -q
           "$EVAL_PYTHON" -m unittest discover -s evals/skills-rpi/taskbank -p test_verify.py -q
           "$EVAL_PYTHON" -m pytest -q evals/skills-rpi/test_readout.py evals/_stats
           "$EVAL_PYTHON" evals/skills-rpi/taskbank/calibrate.py --output "$RUNNER_TEMP/skill-eval-calibration"
@@ -340,6 +344,10 @@ jobs:
           cd cli
           go build -o /tmp/ao-test ./cmd/ao
           echo "✅ ao CLI builds successfully"
+
+      - name: Check skill wrappers and adjacent valid behavior
+        if: runner.os == 'Linux' && (needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true')
+        run: AO_SKILL_BUILDER_BIN=/tmp/ao-test bats --print-output-on-failure tests/integration/test_skill_builder.bats tests/integration/test_skill_audit.bats
 
       - name: Run Go tests with race detection and coverage
         if: runner.os == 'Linux' && (needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true')
