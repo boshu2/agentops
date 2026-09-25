@@ -21,8 +21,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SKILLS_DIR="$REPO_ROOT/skills-codex"
 
-# Cross-runtime skills legitimately document non-Codex runtimes (cass parses
-# Claude Code logs, cc-hooks is about Claude Code hooks). Shared exemption list
+# Cross-runtime skills legitimately document non-Codex runtimes (agent-native
+# and agy-native cover several runtimes). Shared exemption list
 # with codex-sync and the other Codex gates.
 CROSS_RUNTIME_FILE="$REPO_ROOT/scripts/lint/codex-cross-runtime-skills.txt"
 is_cross_runtime() {
@@ -163,8 +163,8 @@ check_skill() {
     fi
 
     # --- Check 3: ~/.claude/ paths ---
-    # Cross-runtime skills may reference ~/.claude accurately (cc-hooks documents
-    # the Claude Code hook config path); skip this check for them.
+    # Cross-runtime skills may reference ~/.claude accurately; skip this check
+    # for them.
     if is_cross_runtime "$skill_name"; then
         pass "$skill_name: cross-runtime skill — ~/.claude/ check skipped"
         return

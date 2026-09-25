@@ -49,7 +49,7 @@ they pollute context — use sparingly:
 
 ## The guard
 
-Ships as `skills/cc-hooks/hooks/installed-skill-edit-guard.sh`. It reads the
+Ships as `hooks/guards/hooks/installed-skill-edit-guard.sh`. It reads the
 PreToolUse JSON on stdin, matches `tool_input.file_path` only, and derives the
 repo-relative `skills/<name>/` target for the redirect message.
 

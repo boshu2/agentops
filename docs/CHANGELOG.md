@@ -18,11 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- Bundled Flywheel tool skills (`account-rotation`, `agent-mail`, `cass`, `dcg`,
+- Bundled Flywheel tool skills (`account-rotation`, `agent-mail`, `cass`, `cc-hooks`, `dcg`,
   `ms`, `ntm`, `rch`, `sbh`, `using-flywheel`) and their generated Codex copies.
   Obtain tools and skills from their upstream authors; see the README
   recommendations. This changes the available skill names in the next release.
   Existing personal installations are not automatically removed.
+  AgentOps-native plugin guards remain under `hooks/guards/`, outside the skill library.
 
 - The 3.x curl and PowerShell skill installer tombstones (`scripts/install.sh`,
   `install-claude.sh`, `install-codex.sh`, `install-agy.sh`,

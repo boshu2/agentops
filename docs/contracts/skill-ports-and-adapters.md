@@ -115,7 +115,7 @@ authority.
 | Post-verdict analysis | Analyze recurrence or causality without changing outcomes | `learn`, `postmortem` | Observations or hypotheses to caller or Goal |
 | Capability evolution | Find repeated toil/patterns and propose reusable behavior | `toil-mining`, `pattern-mining`, `operationalize` | Proposal to a later Plan |
 | Runtime transport | Execute supplied packets or coordinate explicit actors | `agent-native`, `agy-native`, `codex-exec`, `swarm`, `using-gc` | Candidate, evidence, or runtime error |
-| Cross-cutting support | Prepare or protect the environment without steering | `bootstrap`, `cc-hooks` | Factual result to the invoking owner |
+| Cross-cutting support | Prepare or protect the environment without steering | `bootstrap` | Factual result to the invoking owner |
 
 An optional strategy that finds a material defect cannot silently edit its
 input. For example, an optional Premortem finding may disprove an approach;

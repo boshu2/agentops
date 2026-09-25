@@ -1,5 +1,5 @@
 #!/usr/bin/env bats
-# Contract for skills/cc-hooks/hooks/read-budget-guard.sh — the opt-in
+# Contract for hooks/guards/hooks/read-budget-guard.sh — the opt-in
 # PreToolUse / Read|Bash read-budget guard (policy core.context:unbounded-read).
 #
 # The guard BLOCKS (exit 2 + stderr) an UNBOUNDED read of a text file over the
@@ -16,7 +16,7 @@
 # string — per the guard-test fixture-fidelity rule. TMPDIR and HOME are
 # isolated per test; telemetry is pointed into TMPDIR.
 
-GUARD="${GUARD:-$BATS_TEST_DIRNAME/../../skills/cc-hooks/hooks/read-budget-guard.sh}"
+GUARD="${GUARD:-$BATS_TEST_DIRNAME/../../hooks/guards/hooks/read-budget-guard.sh}"
 POLICY="core.context:unbounded-read"
 
 setup() {

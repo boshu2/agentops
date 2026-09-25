@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 # Pair guard expectations with the native utility's exit and output. GNU-only
 # forms run through a real GNU inode named cat/head, not through a BSD command.
-GUARD="${GUARD:-$BATS_TEST_DIRNAME/../../skills/cc-hooks/hooks/read-budget-guard.sh}"
+GUARD="${GUARD:-$BATS_TEST_DIRNAME/../../hooks/guards/hooks/read-budget-guard.sh}"
 
 setup() {
   export TMPDIR="$(mktemp -d)"

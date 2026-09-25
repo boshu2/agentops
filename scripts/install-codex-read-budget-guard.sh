@@ -47,7 +47,7 @@ mkdir -p "$(dirname "$hooks_file")"
 config_dir="$(CDPATH= cd "$(dirname "$hooks_file")" && pwd)"
 hooks_file="$config_dir/$(basename "$hooks_file")"
 assets="$config_dir/hooks/agentops-read-budget"
-source_dir="$REPO_ROOT/skills/cc-hooks/hooks"
+source_dir="$REPO_ROOT/hooks/guards/hooks"
 for name in read-budget-guard.sh codex-read-budget-guard.sh; do
   [[ -f "$source_dir/$name" ]] || { echo "Missing guard source: $source_dir/$name" >&2; exit 1; }
 done

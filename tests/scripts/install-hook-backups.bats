@@ -97,19 +97,19 @@ policy_fixture() {
 edit_guard_fixture() {
   local checkout="$1"
   installer="$checkout/scripts/install-installed-skill-edit-guard.sh"
-  sources=("$checkout/skills/cc-hooks/hooks/installed-skill-edit-guard.sh")
+  sources=("$checkout/hooks/guards/hooks/installed-skill-edit-guard.sh")
   destinations=("$TEST_HOME/.claude/hooks/installed-skill-edit-guard.sh")
   matchers='["Edit|Write"]'
 }
 
 @test "policy source installer retains same-second backups while refreshing stale assets" {
-  policy_fixture "$REPO/skills/cc-hooks"
+  policy_fixture "$REPO/hooks/guards"
   exercise_repeated_install
 }
 
-@test "copied policy skill retains same-second backups without a repository" {
-  cp -R "$REPO/skills/cc-hooks" "$BATS_TEST_TMPDIR/copied skill"
-  policy_fixture "$BATS_TEST_TMPDIR/copied skill"
+@test "copied policy package retains same-second backups without a repository" {
+  cp -R "$REPO/hooks/guards" "$BATS_TEST_TMPDIR/copied guards"
+  policy_fixture "$BATS_TEST_TMPDIR/copied guards"
   exercise_repeated_install
 }
 
@@ -120,10 +120,10 @@ edit_guard_fixture() {
 
 @test "copied edit guard installer retains same-second backups without Git metadata" {
   local checkout="$BATS_TEST_TMPDIR/copied checkout"
-  mkdir -p "$checkout/scripts/lib" "$checkout/skills/cc-hooks/hooks"
+  mkdir -p "$checkout/scripts/lib" "$checkout/hooks/guards/hooks"
   cp "$REPO/scripts/install-installed-skill-edit-guard.sh" "$checkout/scripts/"
   cp "$REPO/scripts/lib/repo-root.sh" "$checkout/scripts/lib/"
-  cp "$REPO/skills/cc-hooks/hooks/installed-skill-edit-guard.sh" "$checkout/skills/cc-hooks/hooks/"
+  cp "$REPO/hooks/guards/hooks/installed-skill-edit-guard.sh" "$checkout/hooks/guards/hooks/"
   edit_guard_fixture "$checkout"
   exercise_repeated_install
 }

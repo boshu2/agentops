@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 # Codex CLI 0.154.0 documented canonical PreToolUse Bash input, including its
 # native metadata. Live runtime scheduling/trust needs a separate session proof.
-GUARD="${GUARD:-$BATS_TEST_DIRNAME/../../skills/cc-hooks/hooks/codex-read-budget-guard.sh}"
+GUARD="${GUARD:-$BATS_TEST_DIRNAME/../../hooks/guards/hooks/codex-read-budget-guard.sh}"
 bats_require_minimum_version 1.5.0
 
 setup() {

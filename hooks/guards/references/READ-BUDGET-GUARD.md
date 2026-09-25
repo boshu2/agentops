@@ -56,7 +56,7 @@ as JSON and breaks the tool call), block via exit 2 + stderr only, fail OPEN.
 
 ## The contract
 
-Ships as `skills/cc-hooks/hooks/read-budget-guard.sh` (inert until the opt-in
+Ships as `hooks/guards/hooks/read-budget-guard.sh` (inert until the opt-in
 installer wires it; `set -uo pipefail`, no `-e`). It reads the real PreToolUse
 JSON on stdin (`{tool_name, tool_input, session_id, cwd}`) with `jq`; a missing
 `session_id` is `nosession`. Policy id and `token_class`:
