@@ -50,7 +50,7 @@ After the publisher completes:
 2. Verify checksums for at least one downloaded artifact.
 3. Install the published binary in a clean temporary environment and run
    `ao version` plus one read-only command.
-4. Confirm Claude, Codex, and Gemini bundle manifests contain the generated
+4. Confirm Claude and Codex bundle manifests contain the generated
    metadata-owned skill inventory.
 
 ## Failure and rollback

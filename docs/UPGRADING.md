@@ -20,10 +20,10 @@ Three actions prevent broken workflows after upgrading:
    `./.agents/ao/config.yaml`. Legacy paths are still read as a fallback for
    this release, with a deprecation warning.
 3. **Refresh your install.** Plugin installs keep working — update the bundle
-   through your runtime's plugin update. npx installs re-run
-   `npx skills@latest add boshu2/agentops --all -g`. The 3.x curl installer
-   scripts are refusing tombstones. To track skills from source instead, see
-   the next section.
+   through your runtime's plugin update. npx installs run
+   `npx skills@latest update` (or re-run the original `add` with the same `-a`
+   agents and scope). The 3.x curl installer scripts were removed. To track
+   skills from source instead, see the next section.
 
 The semantic loop became (3.0 through 3.6):
 

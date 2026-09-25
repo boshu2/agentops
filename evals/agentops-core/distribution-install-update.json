@@ -118,10 +118,9 @@
       "id": "skill-refresh-install-contract",
       "title": "skill refresh uses ao skills link (no 3.x curl installer)",
       "kind": "artifact_check",
-      "objective": "Protect the supported latest-source refresh path after 3.x plugin installers were tombstoned.",
+      "objective": "Protect the supported latest-source refresh path after the 3.x plugin installers were deleted.",
       "expectations": [
         {"type": "artifact_contains", "target": "../../scripts/refresh-codex-local.sh", "value": "skills link"},
-        {"type": "artifact_contains", "target": "../../scripts/install.sh", "value": "ao skills link"},
         {"type": "artifact_contains", "target": "../../skills/bootstrap/SKILL.md", "value": "installing or invoking"}
       ],
       "dimensions": ["process_adherence", "artifact_quality", "runtime_compatibility", "safety"]

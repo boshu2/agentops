@@ -68,7 +68,7 @@ func jsonVersionAt(doc any, path string) (string, bool) {
 //
 // This closes a real drift class, not a hypothetical one. At the 3.5.0 -> 3.6.0
 // cut, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`,
-// `.codex-plugin/plugin.json`, and `images/gemini/plugin.json` were bumped
+// `.codex-plugin/plugin.json`, and `images/gemini/plugin.json` (since retired) were bumped
 // while `images/claude/verify.sh`'s EXPECTED_VERSION default was missed. The
 // guard whose whole job is catching plugin.json drift behind the release then
 // rejected the CORRECT version, so a user following `images/claude/README.md`
@@ -93,7 +93,6 @@ func TestVersion_FallbackMatchesReleaseManifests(t *testing.T) {
 		filepath.Join(".claude-plugin", "plugin.json"):      {"version"},
 		filepath.Join(".claude-plugin", "marketplace.json"): {"metadata/version", "plugins/0/version"},
 		filepath.Join(".codex-plugin", "plugin.json"):       {"version"},
-		filepath.Join("images", "gemini", "plugin.json"):    {"version"},
 	}
 	for rel, paths := range jsonSurfaces {
 		raw, err := os.ReadFile(filepath.Join(root, rel))

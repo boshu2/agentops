@@ -24,6 +24,9 @@ git clone https://github.com/YOUR_USERNAME/agentops.git
 cd agentops
 ```
 
+To try your skill edits in an agent, link the checkout's skills with
+`ao skills link` ([contributor setup](install-day2-ops.md#install-source-checkout)).
+
 ## High-Leverage Ways To Contribute
 
 You do not need to add a brand-new skill to make a good contribution.

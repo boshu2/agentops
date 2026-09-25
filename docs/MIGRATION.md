@@ -317,11 +317,11 @@ commands remain covered by the breaking-boundary table above, not aliases.
 
 ## Install migration
 
-AgentOps supports three optional skill install paths: `npx skills@latest add
-boshu2/agentops --all -g` (all agents supported by the external Skills installer), runtime plugins for
-Claude Code and Codex (managed bundles that update with the release), and one
-canonical checkout plus source symlinks for users who edit skills or
-contribute. The [host/install mapping](contracts/multi-runtime-tier-charter.md#host-and-install-surface-mapping)
+AgentOps supports three skill install paths: the Claude Code plugin, the Codex
+plugin, and `npx skills@latest add boshu2/agentops` for every other agent
+(Cursor, OpenCode, Gemini CLI/Antigravity, Pi, Grok Build, OpenClaw and others
+the external Skills installer lists). Contributors who edit skills link one
+canonical checkout with `ao skills link` instead. The [host/install mapping](contracts/multi-runtime-tier-charter.md#host-and-install-surface-mapping)
 accounts for the retained runtime, export and package consumers; each host's
 live qualification remains separate from structural checks.
 
@@ -338,12 +338,12 @@ untested promise. Every live claim still needs evidence on the final installatio
 |---|---|---|
 | Claude Code plugin and source links | keep; [.claude-plugin](https://github.com/boshu2/agentops/blob/main/.claude-plugin/plugin.json), [marketplace](https://github.com/boshu2/agentops/blob/main/.claude-plugin/marketplace.json), [Claude image](https://github.com/boshu2/agentops/blob/main/images/claude/README.md) and canonical `skills/` | First-class host. Retain qualified plugin names, full bundle, agents and policy dispatcher; source linking keeps selected names. |
 | Codex plugin and source links | keep; [.codex-plugin](https://github.com/boshu2/agentops/blob/main/.codex-plugin/plugin.json), [marketplace](https://github.com/boshu2/agentops/blob/main/plugins/marketplace.json), [Codex image](https://github.com/boshu2/agentops/blob/main/images/codex/README.md) and generated `skills-codex/` | First-class host. Preserve canonical/projection parity and qualified plugin names; source links retain catalog names. |
-| Cursor rules and source links | keep; [converter](https://github.com/boshu2/agentops/blob/main/skills/skill-builder/scripts/converter/convert.sh) and [destination resolver](https://github.com/boshu2/agentops/blob/main/cli/internal/skillsapp/roots.go) | Retain `.mdc` export and detected Cursor skills root; structural coverage remains distinct from live discovery/execution. |
-| OpenCode portable and explicit source roots | keep; [OpenCode guide](https://github.com/boshu2/agentops/blob/main/.opencode/INSTALL.md) and [destination resolver](https://github.com/boshu2/agentops/blob/main/cli/internal/skillsapp/roots.go) | Retain portable root and explicit `--dest` config-root installation, including selected optional hooks. |
-| Gemini / Antigravity package and export | keep; [Gemini package](https://github.com/boshu2/agentops/blob/main/images/gemini/README.md), generated [manifest](https://github.com/boshu2/agentops/blob/main/images/gemini/plugin.json), [bundle generator](https://github.com/boshu2/agentops/blob/main/scripts/generate-skill-mesh.py) and detected Gemini root | Retain migration compatibility bundle, agents, rules, hooks and optional Agent Mail configuration. Each claimed host journey remains separately qualified. |
+| Cursor rules and source links | keep; npx `-a cursor`, [converter](https://github.com/boshu2/agentops/blob/main/skills/skill-builder/scripts/converter/convert.sh) and [destination resolver](https://github.com/boshu2/agentops/blob/main/cli/internal/skillsapp/roots.go) | Install through npx. Retain `.mdc` export and the contributor-detected Cursor skills root; structural coverage remains distinct from live discovery/execution. |
+| OpenCode portable and explicit source roots | keep; npx `-a opencode`, [OpenCode guide](https://github.com/boshu2/agentops/blob/main/.opencode/INSTALL.md) and [destination resolver](https://github.com/boshu2/agentops/blob/main/cli/internal/skillsapp/roots.go) | Install through npx into the portable root. Contributors retain explicit `--dest` config-root linking; optional hooks stay selectable. |
+| Gemini / Antigravity package and export | retire; the `images/gemini` package and its [bundle generator](https://github.com/boshu2/agentops/blob/main/scripts/generate-skill-mesh.py) branch were deleted | Gemini CLI and Antigravity install through npx (`-a gemini-cli`, `-a antigravity`). Remove an installed package with `agy plugin disable agentops-core-gemini`, then `agy plugin uninstall agentops-core-gemini`. |
 | Skill Builder exports (`codex`, `cursor`, `test`) | keep; [converter](https://github.com/boshu2/agentops/blob/main/skills/skill-builder/scripts/converter/convert.sh) | Preserve supported target selection and Codex modular/inline layouts. Exported files require separate host-load qualification. |
-| Pi, portable and explicit-destination source consumers | keep; [destination resolver](https://github.com/boshu2/agentops/blob/main/cli/internal/skillsapp/roots.go) | Preserve detected Pi root, always-included portable root and explicit destination semantics; no new live-host claim. |
-| External `npx skills` installer | keep; canonical `skills/` and [install guide](install-day2-ops.md) | Preserve full and selected installs through the external installer's own contract; it does not install AO, runtime plugins, roles or hooks. |
+| Pi, portable and explicit-destination source consumers | keep; npx `-a pi` and [destination resolver](https://github.com/boshu2/agentops/blob/main/cli/internal/skillsapp/roots.go) | Install through npx. For contributors, preserve detected Pi root, always-included portable root and explicit destination semantics; no new live-host claim. |
+| External `npx skills` installer | keep; canonical `skills/` and [install guide](install-day2-ops.md) | The install path for every agent except the two plugin hosts. Name agents with `-a`; never `--all`. It does not install AO, runtime plugins, roles or hooks. |
 | AO source, Go, Homebrew and release-binary installs | keep; [CLI installation](install-day2-ops.md#maintainer-contributor-the-ao-binary), [release build](https://github.com/boshu2/agentops/blob/main/.goreleaser.yml), [Windows AO installer](https://github.com/boshu2/agentops/blob/main/scripts/install-ao.ps1) | Retain source builds and published-binary consumers, including the Windows CLI installer. Skill loading is separate from binary availability. |
 | Claude agent roles and optional Codex context roles | keep; [Claude agents](../agents/), [Codex role sources](../skills/agent-native/agents/) and [role installer](https://github.com/boshu2/agentops/blob/main/scripts/install-codex-context-agents.sh) | Preserve role identity and explicit Codex activation, backups and unrelated configuration. Installing skills does not activate Codex roles. |
 | Claude policy dispatcher | keep; [plugin hooks](https://github.com/boshu2/agentops/blob/main/hooks/hooks.json), [source wrapper](https://github.com/boshu2/agentops/blob/main/scripts/install-policy-dispatch.sh) and [packaged owner](https://github.com/boshu2/agentops/blob/main/skills/cc-hooks/scripts/install-hooks.sh) | The dispatcher is automatically active when installed through the Claude plugin; source/copy installation uses the existing owner-selected installer. Native zero-skill work remains hookless. |
@@ -351,9 +351,9 @@ untested promise. Every live claim still needs evidence on the final installatio
 | Claude named workflows | keep; [canonical workflows](../workflows/), [`ao workflows`](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md#ao-workflows), [user-level installer](https://github.com/boshu2/agentops/blob/main/scripts/install-workflows.sh) | Keep project-local owned-link refusal semantics. The user-level installer retains its distinct backed-up replacement semantics; do not assume the two installers are interchangeable. |
 | Optional BD binary installer | keep; [install-bd.sh](https://github.com/boshu2/agentops/blob/main/scripts/install-bd.sh) | Installs selected native BD; does not create or replace the repository's work store. |
 | Optional MS post-merge index hook | keep; [install-ms-reindex-hook.sh](https://github.com/boshu2/agentops/blob/main/scripts/install-ms-reindex-hook.sh) | Retain explicit installation and its canonical-checkout/main/changed-skills guards; no mandatory background indexing. |
-| Legacy 3.x skill curl/PowerShell installers | retire, retained refusal tombstones; `install.sh`, `install-claude.sh`, `install-codex.sh`, `install-agy.sh`, `install-opencode.sh`, `install-codex.ps1` under [scripts](../scripts/) | Existing breaking boundary below remains unchanged. `install-ao.ps1` is a retained CLI installer, not this retired skill installer. |
+| Legacy 3.x skill curl/PowerShell installers | retire; deleted: `install.sh`, `install-claude.sh`, `install-codex.sh`, `install-agy.sh`, `install-opencode.sh`, `install-codex.ps1` | Their raw URLs now 404; see the breaking boundary below. `install-ao.ps1` is a retained CLI installer, not this retired skill installer. |
 
-For a selected source installation, preserve the same selectors on upgrade:
+For a contributor source installation, preserve the same selectors on upgrade:
 
 ```bash
 git clone https://github.com/boshu2/agentops.git ~/.local/share/agentops
@@ -368,11 +368,13 @@ its portable `~/.agents/skills` discovery root is already included in fan-out.
 Selection does not remove previously installed
 skills, stale copied names or user-owned collisions.
 
-The 3.x curl installers (`scripts/install.sh`, `install-claude.sh`,
-`install-codex.sh`, `install-agy.sh`, `install-opencode.sh`, and
-`install-codex.ps1`) are tombstones: they refuse to install and print the
-supported paths. Internal helpers (`install-codex-plugin.sh`,
-`install-codex-native-skills.sh`) were deleted.
+The 3.x curl and PowerShell installers (`scripts/install.sh`,
+`install-claude.sh`, `install-codex.sh`, `install-agy.sh`, `install-opencode.sh`
+and `install-codex.ps1`) were deleted, and their raw URLs now 404. A
+`curl -fsSL <url> | bash` without `pipefail` then does nothing and exits 0, so
+switch old scripts to a plugin or npx. Internal helpers
+(`install-codex-plugin.sh`, `install-codex-native-skills.sh`) were deleted
+earlier.
 
 If you switch from a plugin to source links, remove the runtime plugin through
 that runtime before linking the checkout so only one corpus is visible:
@@ -383,8 +385,8 @@ that runtime before linking the checkout so only one corpus is visible:
   `codex plugin marketplace remove agentops-marketplace`. For older/manual
   installations, preserve the relevant configuration and cache first and
   identify exact owned entries using the [day-2 guide](install-day2-ops.md#switch-from-plugins-to-source-links).
-- Gemini/Antigravity: `agy plugin disable agentops-core-gemini`, then
-  `agy plugin uninstall agentops-core-gemini`.
+- Retired Gemini/Antigravity package: `agy plugin disable agentops-core-gemini`,
+  then `agy plugin uninstall agentops-core-gemini`.
 
 `ao skills link` refuses to replace real directories and foreign links. Resolve
 each reported conflict deliberately; never delete a user-owned skill merely to
