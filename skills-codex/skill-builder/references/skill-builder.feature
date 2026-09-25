@@ -1,29 +1,25 @@
-# Executable spec for the /skill-builder skill — skill scaffolding (BC1 Corpus / Skill Catalog).
-# /skill-builder scaffolds a new SKILL.md (or absorbs an existing one) against the unified
-# AgentOps template, then generates the Codex parity bundle, self-audits, and overlays a
-# factory score. Hexagon: supporting; consumes: a build request + the unified template;
-# produces: a new skill + build-report.json. (soc-qk4b)
+Feature: Skill Builder creates an explicitly incomplete source and owned projections
+  Scenario: A small adapter starts without optional helper files
+    When build.sh from-scratch creates a named package
+    Then SKILL.md is its only created source file
+    And its report says authoring_state scaffold and semantics_evaluated false
+    And the source carries metadata.authoring_state scaffold
+    And strict source checking reports INCOMPLETE_SCAFFOLD
 
-Feature: Skill-builder materializes template-conformant skills
-  As an author adding a skill to the catalog
-  I want it scaffolded from the unified template and parity-checked
-  So that every new skill is well-formed and Codex-mirrored from the start
+  Scenario: Completed concise behavior needs no decorative sections
+    Given an author states applicability, inputs, authority, result, done and failure
+    And removes the explicit scaffold state after authoring
+    When the source is checked, projected and audited
+    Then missing optional helpers and heading labels do not block conformance
+    And a fresh reviewer still judges semantic completeness
 
-  Background:
-    Given the unified AgentOps SKILL.md template
+  Scenario: External observation remains clean-room
+    When absorb-external receives an existing input file
+    Then it records the source hint and creates blank placeholders
+    And it copies no external name, prose, prompt, script or example
 
-  Scenario: A mode is dispatched for build or absorb
-    When /skill-builder runs
-    Then it dispatches the requested mode (scaffold a new skill or absorb an existing one)
-
-  Scenario: The skill is materialized from the template
-    When the build proceeds
-    Then it produces a SKILL.md conformant to the unified template
-
-  Scenario: The Codex parity bundle is generated
-    When the skill is materialized
-    Then it generates the matching skills-codex bundle and hashes
-
-  Scenario: The build self-audits and scores before reporting
-    When materialization completes
-    Then it self-audits the result and overlays a factory score in build-report.json
+  Scenario: A report destination is explicit
+    When no report path is supplied
+    Then build JSON is returned on stdout without a workspace receipt
+    When a new report path in a protected external non-Git directory is supplied
+    Then Go writes the compatible report with a one-file source list

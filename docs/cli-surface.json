@@ -374,10 +374,31 @@
     },
     {
       "category": "public-tested",
+      "command": "skills audit",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "skills build",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
       "command": "skills check",
       "coverage_status": "allowlisted",
       "kind": "leaf",
       "reason": "Covered by internal/commands/skills module tests after the skills carve-out."
+    },
+    {
+      "category": "public-tested",
+      "command": "skills check-source",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
       "category": "public-tested",

@@ -2,7 +2,6 @@
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-REPO_ROOT="$(cd "$SKILL_DIR/../.." && pwd)"
 
 for path in \
   SKILL.md \
@@ -10,9 +9,11 @@ for path in \
   scripts/init.sh \
   scripts/heal.sh \
   scripts/audit.sh \
+  scripts/audit-legacy.sh \
   scripts/score_agentops_skill.py \
   schemas/build-report.json \
   schemas/audit-report.json \
+  schemas/audit-report-legacy.json \
   references/audit-checks.md \
   references/codex-parity.md; do
   [[ -f "$SKILL_DIR/$path" ]] || {

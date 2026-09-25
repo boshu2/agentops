@@ -15,11 +15,13 @@
     "files_created": {
       "type": "array",
       "items": {"type": "string"},
-      "minItems": 2,
+      "minItems": 1,
       "uniqueItems": true
     },
     "structure_check_pass": {"type": "boolean"},
-    "source_hint": {"type": "string"}
+    "source_hint": {"type": "string"},
+    "authoring_state": {"const": "scaffold"},
+    "semantics_evaluated": {"const": false}
   },
   "additionalProperties": false
 }

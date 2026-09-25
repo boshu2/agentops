@@ -40,7 +40,6 @@ skill.cli-snippets
 skill.codex-override-coverage
 skill.codex-parity-drift
 skill.codex-runtime-sections
-skill.heal-strict
 skill.runtime-formats
 skill.runtime-parity
 skill.triggers

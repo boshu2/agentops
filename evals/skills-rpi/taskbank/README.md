@@ -101,3 +101,80 @@ cannot contaminate the pristine baseline or substitute their own tests.
 No model calls, live handoffs, real stop delivery, container builds or claimed
 skill benefit occur in these local checks. The public task and grader versions
 must be frozen with the package, model and runner before any live batch.
+
+## Three-shape skill development cases
+
+`cass-source-boundary`, `validator-controls` and `builder-recovery` are exposed
+cases for the CASS adapter, Validate judgment and Skill Builder executable
+workflow. They are not heldouts or evidence of causal benefit from shorter
+prose. The task instructions and skill jointly guide execution. Forced skill
+invocation does not measure normal catalog selection.
+
+The two runtime cases reuse `verify.py`, `calibrate.py`, task-local Go oracles
+and ordinary `workflow.sh` production overlays. Their fixed setup runs the
+actual AO source-reader or builder against disposable synthetic state; no
+replacement implementation of those interfaces is supplied. Correct, no-op,
+false-completion and plausible wrong controls are in each task's `controls.json`.
+CASS's wrong control confuses denied disclosure with no match. Builder's wrong
+control overwrites the original failed report after otherwise valid recovery.
+Valid formatting controls include detailed CASS evidence and equivalent Builder
+failure wording. The oracle must not reject correct behavior for an undisclosed
+output shape or English phrase. Builder's authored adapter semantics require
+independent judgment; mechanical source/projection checks cannot establish them.
+Native loading, resource use and action traces remain separate `not_checked`
+items. A supplied synthetic observation is not host-delivery attestation.
+The CASS verifier supplies shared baseline installed-resource paths for replayed
+code that rechecks them. Worker loading is measured in the native worker trace;
+verifier resource availability is not proof of that loading.
+
+Before calling the existing `prepare.py`, copy each task to protected external
+staging and populate its `environment/runtime/` with the selected current public
+snapshot. Copy only `cli/`, `scripts/`, `skills/`, `skills-codex/`,
+`skills-codex-overrides/`, `docs/`, `images/`, `.claude-plugin/` and `registry.json`;
+reject symlinks and record relative paths and SHA-256 of every copied file.
+Never copy repository state, tracker routing/data, operator home, native sessions,
+prior output or evaluator tests/solutions into that runtime. Use current bytes,
+not `git archive HEAD`, when judging an uncommitted candidate. The task image
+builds AO from that frozen `cli/` and sets `AO_RUNTIME_ROOT=/opt/agentops` and
+`AO_SKILL_BUILDER_BIN=/usr/local/bin/ao`. The Dockerfile never supplies evaluator
+controls to the worker. In an old/new installed-package comparison, keep executable
+owners identical across arms and use the same baseline instruction prose in any
+runtime source or dormant projections accessible to both. Otherwise a control can
+read the revised skill through the runtime tree. Record this deliberate runtime
+composition separately from each installed package identity. Freeze the staged
+task/runtime/package before admission.
+
+For an isolated canonical development host, append image setup that symlinks
+each selected complete canonical package from `/opt/agentops/skills/<slug>` into
+`/root/.agents/skills/<slug>`; include the required sibling-resource closure.
+Supply no Harbor skill bundle for this arm. For the generated host, use the
+existing Harbor Codex adapter's skill-bundle upload/copy into
+`$HOME/.agents/skills`, and do not also install canonical symlinks. These are
+separate task/config identities, not two aliases for the same installation.
+Use isolated containers, never change the operator's installed roots.
+
+Capture the host's actual resolved skill path and bytes, active invocation
+policy, native reads of required resources and endpoint output. Package staging
+hashes and catalog visibility alone are insufficient. Count descriptions,
+bodies, references, repeated reads and tool output when reporting context cost.
+For CASS the missing-resource case is a deliberately incomplete operation-local
+fixture; the grader checks no third AO call, but only native trace can establish
+that the model stopped the dependent action rather than fabricating a marker.
+The Builder endpoint checks retained contents and reports; native trace must
+establish that recovery did not delete and recreate the source.
+
+Local calibration uses the same actual runtime with no model calls:
+
+```sh
+AO_RUNTIME_ROOT=/absolute/frozen/public/runtime \
+AO_SKILL_BUILDER_BIN=/absolute/current/ao \
+python3 evals/skills-rpi/taskbank/calibrate.py \
+  --tasks cass-source-boundary builder-recovery validator-controls \
+  --output /absolute/external/new-calibration
+```
+
+Honor the caller's shared window even for calibration. In the S3/S4 pilot the
+window begins at the first evaluation preflight or calibration, and failed starts
+and retries consume the same allowance. The existing executable `prepare.py`
+pins Harbor 0.22.0; do not substitute the newer requirements-file pin while
+claiming the same runtime. Runtime availability remains a separate check.

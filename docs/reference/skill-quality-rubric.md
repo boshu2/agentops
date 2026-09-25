@@ -21,16 +21,14 @@ requires both gates to pass and effectiveness level E2 or E3 below.
 
 ### Gate decision rules
 
-Portable conformance is evaluated against the Agent Skills specification before
-any host profile. `PASS` requires only the six specified top-level frontmatter
-keys (`name`, `description`, `license`, `compatibility`, `metadata`, and
-experimental `allowed-tools`), all field constraints, string-to-string
-`metadata`, a space-separated `allowed-tools` string when present, valid
-relative resource links, and a loadable body. A package that
-passes its repository schema but uses additional host fields is
-`FAIL — HOST_EXTENDED` for the portable gate, not portable `PASS`. Report the
-repository/host profile separately so an extension cannot hide a portable
-failure.
+Evaluate each surface against its declared target. Canonical `skills/` source
+is intentionally host-extended and uses the AgentOps source contract. Generated
+Codex packages must meet the portable field, identity, type and resource-link
+contract in [Codex Skill API](../contracts/codex-skill-api.md). Do not apply the
+portable key allowlist to canonical source or silently accept host-only fields
+in a claimed portable projection. Headings and optional helper directories are
+not conformance requirements. Fresh review judges the actual input, authority,
+result, completion and failure semantics; lexical presence cannot certify them.
 
 The static safety screen uses these severity rules:
 
@@ -46,9 +44,28 @@ The static safety screen uses these severity rules:
 - `PASS (static)`: every tracked package file was inspected and no concrete gap
   was found. It is a negative static screen, never runtime-safety proof.
 
-## Static package-readiness score
+## Default audit report and compatibility
 
-The deterministic scorer remains a cheap triage signal. It measures visible
+Skill Builder's `audit.sh` now emits `skill-audit.v2`: selected static conformance,
+located effect observations with coverage limitations, unmeasured behavioral
+evidence, and non-gating located authoring suspicions. It has no aggregate quality
+verdict, score, band or ranking. Static conformance can pass while effects and
+behavior remain `NOT_PROVEN`. Generic wording or optional-file presence cannot
+improve those substantive statuses. A cited command path is an observation to
+review, not runtime-safety proof; an untested package is not effective by default.
+
+The old complete JSON report is available only through `audit.sh --legacy` under
+`audit-report-legacy.json`. That compatibility window preserves S1's field and
+exit contracts, including nonblocking canonical lexical warnings under strict
+mode. The default `--json` path is now a new external non-Git report, with stdout
+as the nonpersisting default. Remaining legacy consumers must opt in explicitly;
+remove compatibility only when those consumers have migrated. Shared trigger CI
+policy is independent and unchanged.
+
+## Legacy static package-readiness score
+
+The opt-in legacy deterministic scorer preserves old measurements for consumers.
+Do not rank packages or add files and labels to optimize this score. It measures visible
 package properties only; it evaluates neither the safety gate nor skill
 effectiveness. Each mechanically inspectable category receives 0–3:
 

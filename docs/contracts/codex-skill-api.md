@@ -85,8 +85,9 @@ policy in canonical `agents/openai.yaml`; those installs bypass projection.
 
 The portable Codex skill root is `.agents/skills/` at repository or parent
 scope and `$HOME/.agents/skills/` at user scope. Current Codex desktop installs
-may also index `$HOME/.codex/skills/`; on Bo's development fleet both user roots
-are symlinks to this repository's canonical `skills/` tree.
+may also index `$HOME/.codex/skills/`. Inspect the actual package at each root:
+a development symlink, a copied package and a generated release package can
+coexist. A root name alone does not establish which bytes the host loaded.
 
 | Scope | Path | Use Case |
 |-------|------|----------|
@@ -100,6 +101,12 @@ are symlinks to this repository's canonical `skills/` tree.
 
 Development symlinks may point directly at `skills/<name>/`; checked-in
 `skills-codex/` packages are the portable Agent Skills release projection.
+Host checks must record the resolved loaded path, exact root/reference bytes,
+invocation policy and native resource-read evidence for each tested installation.
+A development symlink check and a generated-package check are distinct claims;
+regeneration equality or a catalog listing alone proves neither invocation nor
+required-resource use. Separate explicit invocation from normal catalog selection
+and leave unobserved routing or loading unproven.
 Canonical `skills/` frontmatter is intentionally host-extended and is evaluated
 against the AgentOps profile, not mislabeled as portable. The release gate
 `scripts/validate-codex-api-conformance.sh` validates every projected package

@@ -25,7 +25,7 @@ var approvedDefaultChildren = map[string]map[string]bool{
 	},
 	"session": {"bootstrap": true, "handoff": true, "prune-agents": true, "read-source": true, "rehydrate": true},
 	"skills": {
-		"check": true, "consumers": true, "find": true, "graph": true,
+		"audit": true, "build": true, "check-source": true, "check": true, "consumers": true, "find": true, "graph": true,
 		"link": true, "list": true, "producers": true, "resolve": true,
 		"unlink": true,
 	},

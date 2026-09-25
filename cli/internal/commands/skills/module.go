@@ -119,6 +119,9 @@ broken reference links, codex parity drift) without mutating either
 tree.`,
 	}
 	root.AddCommand(m.checkCommand())
+	root.AddCommand(m.buildCommand())
+	root.AddCommand(m.sourceCheckCommand())
+	root.AddCommand(m.evidenceCommand())
 	root.AddCommand(m.resolveCommand())
 	root.AddCommand(m.findCommand())
 	root.AddCommand(m.listCommand())

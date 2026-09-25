@@ -38,7 +38,7 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 
 | Skill | Use it for |
 |---|---|
-| [council](https://github.com/boshu2/agentops/blob/main/skills/council/SKILL.md) | Compare model perspectives to brainstorm, plan, validate, duel on scored ideas, or answer an interview. Use when: the caller selects independent proposals or judgments, with optional bounded debate. |
+| [council](https://github.com/boshu2/agentops/blob/main/skills/council/SKILL.md) | Compare model perspectives for brainstorming, planning, validation, idea duels or interviews. Use when: independent proposals or judgments need optional bounded debate. |
 | [craft-goal](https://github.com/boshu2/agentops/blob/main/skills/craft-goal/SKILL.md) | Draft or lint a bounded persistent goal above a bead graph of RPI experiments. Use when: this goal workflow is explicitly selected; shaping a single change belongs to Plan. |
 | [idea-genie](https://github.com/boshu2/agentops/blob/main/skills/idea-genie/SKILL.md) | Generate evidenced options or challenge an idea. Use when: deciding what to build or comparing alternatives; exploration does not authorize implementation. |
 | [interview](https://github.com/boshu2/agentops/blob/main/skills/interview/SKILL.md) | Interview the caller one question at a time to settle a big outcome before agents work alone. Use when: shaping a goal or large RPI. Not for one question on one slice; use Plan. |

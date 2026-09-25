@@ -48,7 +48,7 @@ HEAL_REPO_ROOT="$FIX" bash "$HEAL" --fix skills/target >/dev/null 2>&1
 fix_rc=$?
 set -e
 [[ "$fix_rc" -eq 1 ]]
-grep -q '^skill_api_version: 1$' "$FIX/skills/target/SKILL.md"
+if grep -q '^skill_api_version:' "$FIX/skills/target/SKILL.md"; then exit 1; fi
 if grep -q '^skill_api_version:' "$FIX/skills/sibling/SKILL.md"; then exit 1; fi
 [[ "$(shasum -a 256 "$FIX/skills/sibling/SKILL.md" | awk '{print $1}')" == "$sibling_before" ]]
 

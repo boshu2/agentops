@@ -1,6 +1,60 @@
-# Deep Skill Audit Checks
+# Skill audit evidence
 
-`audit.sh` runs the structural `heal.sh --check --strict` pass, eight content
+The advertised `scripts/audit.sh` delegates to `ao skills audit`. Its default
+`skill-audit.v2` schema is `schemas/audit-report.json` and reports:
+
+- **Conformance:** selected static package checks, their applicability, findings,
+  checked scope and explicit untested scope. Canonical uses the existing source
+  checker; portable checks identity, field allowlist and types; external observation
+  does not enforce repository metadata or claim portable compatibility.
+- **Effects:** located declared/detected reads, disclosure, credentials, network,
+  execution and mutation. Every observation includes a source path, line, snippet
+  and literal reachability chain. A remote response piped into a shell is surfaced
+  as that concrete conditional failure path, not hidden by safety labels.
+- **Behavior:** `NOT_PROVEN`, zero trials. Skill Eval and native trial owners retain
+  behavioral evidence; static inspection neither launches nor fabricates trials.
+- **Authoring:** located generic-advice suspicions, always non-gating. Necessary
+  prohibitions, phase counts, section labels and optional files are not defects.
+
+The scanner starts at SKILL.md and follows literal package-local Markdown links
+and recognized script invocations. Referenced siblings resolve inside the declared
+repository/catalog; their contents and transitive effects remain uninspected.
+Dynamic paths, external commands, conditional loading, binary assets, runtime
+permissions and disclosure controls remain limitations. No count, absence of
+matches or inventory certifies full reachability or safety. Effect status remains
+`NOT_PROVEN` even when selected static conformance is `PASS`.
+
+Canonical source and portable projections are distinct subjects. The existing
+complete-bundle portable release gate and host checks remain necessary; this
+bounded audit does not attest installed invocation policy or host execution.
+
+Exit 0 means only no selected static conformance failure; exit 1 means a concrete
+conformance defect; exit 2 means invalid inputs or destination. `--strict` is
+accepted but cannot turn suspicions into blockers. JSON defaults to stdout;
+`--json PATH` creates a new protected external non-Git report without overwrite.
+
+## Explicit legacy compatibility
+
+`audit.sh --legacy` emits the accepted S1 report under
+`schemas/audit-report-legacy.json`, with the original field/exit contract.
+The historical reference below applies **only** to that option. Canonical lexical
+WARNs remain nonblocking even under strict mode; external strict semantics stay
+unchanged. Direct readiness/craft scripts remain legacy measurements, not a
+ranking objective. The shared conformance-profile/trigger CI consumer is unchanged.
+Retire this option only after actual v1 consumers have migrated.
+
+### Legacy deep skill audit checks
+
+Current Skill Builder migration: canonical `repo-runtime` Pass 2 checks are
+legacy authoring suspicions, all WARN and nonblocking even with `--strict`.
+Pass 1 source defects still produce FAIL. The eight IDs and JSON schema stay
+stable. External-observation strict behavior and other shared-profile consumers
+remain unchanged. The older per-check FAIL labels below describe the legacy
+profile defaults, not canonical audit acceptance. No static result or score
+establishes semantic completeness, safety or effectiveness.
+
+
+`audit.sh --legacy` runs the structural `heal.sh --check --strict` pass, eight content
 checks, an advisory static package-readiness score, and advisory craft
 instrumentation. The checks protect usability without rewarding ceremony or
 package size.
@@ -125,6 +179,6 @@ to satisfy a heuristic.
 ```bash
 for skill in skills/*; do
   [[ -f "$skill/SKILL.md" ]] || continue
-  bash skills/skill-builder/scripts/audit.sh "$skill" >/dev/null
+  bash skills/skill-builder/scripts/audit.sh --legacy "$skill" >/dev/null
 done
 ```

@@ -1,0 +1,24 @@
+{
+  "editable": [
+    "workflow.sh",
+    "review.md"
+  ],
+  "production": [
+    "workflow.sh"
+  ],
+  "checked": [
+    "actual source creation followed by Codex projection failure",
+    "retained caller content and failed report",
+    "remaining source check and projection recovery",
+    "honest static audit and partial failure summary"
+  ],
+  "not_checked": [
+    "native loaded skill and required reference bytes",
+    "native trace proving no delete-and-recreate recovery",
+    "semantic usefulness of authored adapter",
+    "Authored adapter prose satisfies applicability, read-only authority, result and failure semantics; independent semantic review required, not phrase matching."
+  ],
+  "limitations": [
+    "Controlled local filesystem projection failure, not process death, remote mutation or universal atomicity."
+  ]
+}
