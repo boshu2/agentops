@@ -10,8 +10,8 @@ this guard ships **inert**; you activate it with the opt-in installer.
 An `Edit`/`Write` whose target path is under `*/.claude/skills/**` has **no
 legitimate form**. Those files are installed / symlinked copies:
 
-- they are **overwritten** on `scripts/install.sh`, so an edit there is silently
-  lost work, or
+- they are **overwritten** by the next `npx skills@latest update` (or a re-run of
+  `npx skills@latest add`), so an edit there is silently lost work, or
 - they **symlink through** to the factory checkout, so an edit there writes into
   whatever branch that checkout happens to be on — never the intended source.
 

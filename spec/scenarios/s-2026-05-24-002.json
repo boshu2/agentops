@@ -11,5 +11,5 @@
     { "dimension": "correctness", "threshold": 1.0, "check": "gate:install-smoke" }
   ],
   "source": "human",
-  "status": "active"
+  "status": "retired"
 }

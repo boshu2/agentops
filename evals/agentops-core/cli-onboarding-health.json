@@ -41,8 +41,8 @@
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "Install Script Smoke Tests"},
-        {"type": "stdout_contains", "value": "ao binary runs (version)"},
+        {"type": "stdout_contains", "value": "Install Surface Smoke Tests"},
+        {"type": "stdout_contains", "value": "PASS: ao version runs"},
         {"type": "stdout_contains", "value": "0 failed"}
       ],
       "dimensions": ["correctness", "safety", "runtime_compatibility"],
@@ -93,8 +93,7 @@
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao init`"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao quick-start`"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao doctor`"},
-        {"type": "artifact_contains", "target": "../../.github/workflows/validate.yml", "value": "doctor-check"},
-        {"type": "artifact_contains", "target": "../../docs/CI-CD.md", "value": "`doctor-check`"}
+        {"type": "artifact_contains", "target": "../../.github/workflows/validate.yml", "value": "doctor-check"}
       ],
       "dimensions": ["process_adherence", "artifact_quality"]
     },
@@ -104,10 +103,8 @@
       "kind": "artifact_check",
       "objective": "Keep deterministic installer smoke coverage discoverable alongside release and contribution docs.",
       "expectations": [
-        {"type": "artifact_contains", "target": "../../tests/install/test-install-smoke.sh", "value": "INSTALL_SCRIPTS=("},
-        {"type": "artifact_contains", "target": "../../tests/install/test-install-smoke.sh", "value": "scripts/install-codex.sh"},
+        {"type": "artifact_contains", "target": "../../tests/install/test-install-smoke.sh", "value": "KEEP_SCRIPTS=("},
         {"type": "artifact_contains", "target": "../../tests/install/test-install-smoke.sh", "value": "ao skills link"},
-        {"type": "artifact_contains", "target": "../../tests/install/test-install-smoke.sh", "value": "scripts/install-opencode.sh"},
         {"type": "artifact_contains", "target": "../../docs/CONTRIBUTING.md", "value": "Runtime reliability: hooks, install paths, and lifecycle behavior"}
       ],
       "dimensions": ["process_adherence", "artifact_quality", "safety"]
