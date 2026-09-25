@@ -243,7 +243,10 @@
       "canonical_status": "canonical",
       "capabilities": [
         "collect_independent_judgments",
-        "synthesize_disagreement"
+        "synthesize_disagreement",
+        "bounded_deliberation",
+        "duel_scored_ideas",
+        "answer_interview_panel"
       ],
       "codex_override_present": true,
       "consumes": [
@@ -252,7 +255,7 @@
       ],
       "context_rel": [],
       "dependencies": [],
-      "description": "Compare independent views on a consequential or contested decision. Use when: the caller selects multiple judges; evidence resolves disagreement, not voting.",
+      "description": "Compare model perspectives to brainstorm, plan, validate, duel on scored ideas, or answer an interview. Use when: the caller selects independent proposals or judgments, with optional bounded debate.",
       "disposition": "keep_strategy",
       "effects": [
         "write_advisory_council_report"

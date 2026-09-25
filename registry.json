@@ -120,6 +120,33 @@
     },
     {
       "driven_by_skills": [
+        "council"
+      ],
+      "id": "skill:council:bounded_deliberation",
+      "name": "bounded_deliberation",
+      "path": "skills/council/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "council"
+      ],
+      "id": "skill:council:duel_scored_ideas",
+      "name": "duel_scored_ideas",
+      "path": "skills/council/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "council"
+      ],
+      "id": "skill:council:answer_interview_panel",
+      "name": "answer_interview_panel",
+      "path": "skills/council/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
         "craft-goal"
       ],
       "id": "skill:craft-goal:goal_prompt_design",
@@ -762,13 +789,13 @@
     "cli_commands": 0,
     "gates": 0,
     "reference_impls": 0,
-    "skills": 84,
-    "total": 84
+    "skills": 87,
+    "total": 87
   },
   "cli_top_level_commands": [],
   "schema_version": 3,
   "summary": {
-    "capabilities": 84,
+    "capabilities": 87,
     "cli_commands": 0,
     "eval_files": 0,
     "hooks": 0,
@@ -905,7 +932,10 @@
       {
         "capabilities": [
           "collect_independent_judgments",
-          "synthesize_disagreement"
+          "synthesize_disagreement",
+          "bounded_deliberation",
+          "duel_scored_ideas",
+          "answer_interview_panel"
         ],
         "disposition": "keep_strategy",
         "effects": [
