@@ -38,7 +38,8 @@ tracks, implements, or validates work.
 
 Elicitation is the entry mode. Dueling is an optional escalation for a
 consequential choice, typically consuming an `idea-portfolio.v1` or a framed
-question.
+question. For a scored multi-member duel, where members score each other's
+ideas, use [Council](../council/SKILL.md)'s duel mode.
 
 ## Elicit mode
 

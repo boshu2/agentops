@@ -46,6 +46,14 @@ My recommendation: <answer>, because <source or reason>.
 Tradeoff: <the one cost that matters>
 ```
 
+## Answerer
+
+The caller answers by default. On request ("let a council answer my
+interview"), a council answers through [Council](../council/SKILL.md)'s
+interview-panel mode. The caller still accepts or amends those answers in one
+pass before anything is recorded; authority, budgets and acceptance changes
+stay the caller's.
+
 ## BDD: acceptance as examples
 
 Drive each criterion to a Given/When/Then with an observable result and its

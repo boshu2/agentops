@@ -1,6 +1,6 @@
 # council
 
-Compare independent views on a consequential or contested decision. Use when: the caller selects multiple judges; evidence resolves disagreement, not voting.
+Compare model perspectives to brainstorm, plan, validate, duel on scored ideas, or answer an interview. Use when: the caller selects independent proposals or judgments, with optional bounded debate.
 
 ## Instructions
 
