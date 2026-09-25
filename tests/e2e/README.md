@@ -85,7 +85,7 @@ The agentops snapshot (audited 2026-05-18):
 | Nightly dream cycle | 4 | 2 | 8 | ✅ mock-free (`proof-run.sh` Phase 6) |
 | Goals scenarios link + lint | 4 | 2 | 8 | ✅ mock-free (`goals-scenarios-link.sh`) |
 | RPI phased domain dispatch | 4 | 3 | 12 | ✅ mock-free (`rpi-phased-domain.sh`) |
-| `install.sh` curl-pipe | 5 | 3 | 15 | ✅ mock-free (`.github/workflows/install-e2e.yml`) |
+| `ao skills link` fresh-HOME install | 5 | 3 | 15 | ✅ mock-free (`.github/workflows/install-e2e.yml`) |
 | openclaw daemon API | 2 | 2 | 4 | ⚠️ httptest fixture — acceptable, internal-only |
 | Claude CLI skill invocation | 3 | 4 | 12 | ⚠️ real Claude, non-deterministic — acceptable as advisory |
 

@@ -2,7 +2,7 @@
 
 AgentOps runs as skills inside a coding agent — Claude Code, Codex, Cursor, or
 any runtime that loads skills. Install the skills into your agent
-(`npx skills@latest add boshu2/agentops --all -g`, a runtime plugin, or a
+(`npx skills@latest add boshu2/agentops`, a runtime plugin, or a
 source checkout), then invoke RPI **in that agent's chat** with one behavior:
 
 ```text

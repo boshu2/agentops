@@ -59,7 +59,7 @@ utilities. Semantic workflows remain skills rather than CLI lifecycle commands.
 ## Installation
 
 The CLI is optional — skills install without it via
-`npx skills@latest add boshu2/agentops --all -g` or a runtime plugin.
+`npx skills@latest add boshu2/agentops` or a runtime plugin.
 
 ```bash
 brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops
@@ -68,8 +68,8 @@ brew install agentops
 
 Without Homebrew: `go install github.com/boshu2/agentops/cli/cmd/ao@latest`
 
-To track skills from a source checkout instead, run `ao skills link` from that
-checkout (see [Install and day-2 operations](../install-day2-ops.md)).
+Contributors tracking skills from a source checkout run `ao skills link` from
+that checkout (see [Install and day-2 operations](../install-day2-ops.md)).
 
 ## Quickstart
 

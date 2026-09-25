@@ -425,9 +425,6 @@ run_dangerous_pattern_scan() {
             . 2>/dev/null || true)"
         while IFS= read -r match; do
             [[ -n "$match" ]] || continue
-            if is_allowed_installer_pipe_match "$match"; then
-                continue
-            fi
             echo "$match"
             echo "Found dangerous pattern: $pattern"
             found=1
@@ -435,15 +432,6 @@ run_dangerous_pattern_scan() {
     done
 
     [[ "$found" -eq 0 ]]
-}
-
-is_allowed_installer_pipe_match() {
-    local match="$1"
-
-    [[ "$match" =~ ^\./scripts/install(-(agy|claude|codex|codex-native-skills|codex-plugin|opencode))?\.sh:[0-9]+: ]] || return 1
-    [[ "$match" =~ https://raw\.githubusercontent\.com/boshu2/agentops/main/scripts/install-(agy|claude|codex|opencode)\.sh ]] || return 1
-    [[ "$match" =~ \|[[:space:]]*bash ]] || return 1
-    return 0
 }
 
 check_manifest_version_consistency() {

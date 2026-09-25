@@ -1,6 +1,5 @@
-# Windows onboarding leg: exercise scripts/install-ao.ps1 on windows-latest.
-# Skills install via `ao skills link` (canonical AgentOps 3.3 path). The old
-# install-codex.ps1 plugin installer is retained only as a tombstone.
+# Windows onboarding leg: exercise scripts/install-ao.ps1 on windows-latest,
+# then the contributor `ao skills link` path via tests/windows/test-windows-smoke.ps1.
 
 name: windows-installers
 
@@ -11,7 +10,6 @@ on:
   pull_request:
     paths:
       - 'scripts/install-ao.ps1'
-      - 'scripts/install-codex.ps1'
       - 'tests/windows/test-windows-smoke.ps1'
       - '.github/workflows/windows-installers.yml'
 
@@ -27,16 +25,6 @@ jobs:
         shell: pwsh
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Confirm install-codex.ps1 is a removed-installer tombstone
-        run: |
-          $script = Get-Content -Raw (Join-Path $env:GITHUB_WORKSPACE 'scripts\install-codex.ps1')
-          if ($script -notmatch 'removed in 3\.3') {
-            throw "install-codex.ps1 should be an AgentOps 3.3 tombstone"
-          }
-          if ($script -notmatch 'ao skills link') {
-            throw "install-codex.ps1 tombstone must point at ao skills link"
-          }
 
       - name: Install ao CLI release binary (sandboxed install dir)
         env:
