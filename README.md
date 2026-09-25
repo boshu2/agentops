@@ -5,7 +5,7 @@
 # AgentOps
 
 **DevOps discipline for AI coding agents: shape the work, track it as a graph,
-and get each change judged by a context that didn't write it.**
+and get each change judged by a fresh agent session that didn't write it.**
 
 [![Validate](https://github.com/boshu2/agentops/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/boshu2/agentops/actions/workflows/validate.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
@@ -13,13 +13,15 @@ and get each change judged by a context that didn't write it.**
 [![Skills](https://img.shields.io/badge/skills-38-black.svg)](docs/SKILL-ROUTER.md)
 
 [Install](#quickstart) · [The loop](#the-operational-loop) ·
-[Goals](#goals-many-rpis-over-a-bead-graph) · [Try it](#try-it) · [Skills](#skills-at-a-glance)
+[Goals](#goals) · [Try it](#try-it) · [Skills](#skills-at-a-glance)
 
 </div>
 
-AgentOps is 38 optional skills and a CLI (`ao`) for AI coding agents. You state
-intent as behavior in your domain's words. The skills carry it from one change
-to a goal that runs many RPIs over a Beads work graph.
+AgentOps is 38 optional skills and a CLI (`ao`) for AI coding agents such as
+Claude Code and Codex. You state intent as behavior in your domain's words. The
+skills carry it through one change (Plan → Implement → Validate, an **RPI**) or,
+for bigger work, a goal made of many RPIs tracked in
+[Beads](https://github.com/gastownhall/beads), a dependency-aware issue tracker.
 
 <a id="why-these-skills-exist"></a>
 
@@ -87,49 +89,72 @@ See [host coverage and limits](docs/contracts/multi-runtime-tier-charter.md#host
 
 </details>
 
-Validate needs the [`ao` CLI](#optional-ao-cli). This README shows Claude
-Code's `/agentops:<skill>`; Codex uses `$agentops:<skill>`.
+Start a new session so the skills load. Validate also needs the
+[`ao` CLI](#optional-ao-cli). This README shows Claude Code's `/agentops:<skill>`;
+Codex uses `$agentops:<skill>`.
 
 <a id="workflow"></a>
 
 ## The operational loop
 
-Each change is shaped, built and judged. Intent is written as behavior (BDD)
-in the domain's words (DDD). For a system that calls queued work a **Job**:
+Each change is shaped, built and judged. You (or Plan) write intent as
+behavior ([BDD](https://dannorth.net/introducing-bdd/)), using one word per
+concept ([DDD](https://martinfowler.com/bliki/DomainDrivenDesign.html)'s
+[ubiquitous language](https://martinfowler.com/bliki/UbiquitousLanguage.html)).
+For a system that calls queued work a **Job**, in [Gherkin](https://cucumber.io/docs/gherkin/reference/):
 
 ```gherkin
-Given a Job has already completed
-When the worker receives that Job again
-Then it returns the completed result without repeating the side effect
+Feature: Job redelivery is idempotent
+  A Job is one unit of queued work. Delivering it again never repeats its side effect.
+
+  Scenario: A completed Job is delivered again
+    Given Job "J-42" completed and charged the customer $20
+    When the worker receives Job "J-42" again
+    Then it returns the completed result of "J-42"
+    And the customer has been charged $20 exactly once
+
+  Scenario: A Job that failed before charging is delivered again
+    Given Job "J-43" failed before charging the customer $20
+    When the worker receives Job "J-43" again
+    Then Job "J-43" completes
+    And the customer has been charged $20 exactly once
 ```
+
+The feature defines the domain term once; each scenario has concrete data, one
+action and an observable result. Keep scenarios in the issue or conversation;
+no `.feature` file is required.
 
 <p align="center">
   <img src="docs/assets/agentops-routes.svg" alt="AgentOps routes: intent goes to Plan when unclear or straight to Implement when clear; Implement runs native checks, then a fresh judgment independent of the author. Accepted work finishes, failed behavior returns to Implement for repair, missing evidence is gathered and judged again. An existing change enters at fresh judgment. An optional learning loop turns results into reviewed .context/ pages that later work queries." width="100%">
 </p>
 
-| Step | Skill | What it does with the example |
+| Step | Skill | What it does with the scenarios |
 |---|---|---|
-| Shape | [`plan`](skills/plan/SKILL.md) | Pins it to one slice. Skip it when intent is clear. |
-| Build | [`implement`](skills/implement/SKILL.md) | Makes the change and tests both outcomes. |
-| Judge | [`validate`](skills/validate/SKILL.md) | A fresh context returns `PASS`, `FAIL` or `NOT_PROVEN` against the same example. |
+| Shape | [`plan`](skills/plan/SKILL.md) | Turns the request into scenarios for one small change. Skip it when intent is clear. |
+| Build | [`implement`](skills/implement/SKILL.md) | Makes the change and tests both scenarios. |
+| Judge | [`validate`](skills/validate/SKILL.md) | A new session that didn't write it returns `PASS`, `FAIL` or `NOT_PROVEN` against the same scenarios. |
 | Learn | [`memory`](skills/memory/SKILL.md) | Optional: reviewed `.context/` pages that later work can query. |
 
 Enter at the step you need; an existing change goes straight to Validate. The
-author never approves its own work. Delivery follows your repository's policy.
+author never approves its own work. Merging and releasing follow your repo's rules.
 
-## Goals: many RPIs over a bead graph
+<a id="goals-many-rpis-over-a-bead-graph"></a>
 
-[`rpi`](skills/rpi/SKILL.md) runs the loop hands-off for one outcome and stops
-at acceptance or a spent limit. A bigger outcome becomes a goal:
+## Goals
+
+[`rpi`](skills/rpi/SKILL.md) runs Plan → Implement → Validate for one outcome
+without check-ins (your agent's permission prompts still apply) and stops at
+acceptance, a blocker or a spent limit. Bigger work becomes a goal (experimental;
+needs Beads: `brew install beads`, then `bd init` in your repo):
 
 1. **[Interview](skills/interview/SKILL.md).** One question at a time, each with
    a recommended answer. You settle the outcome, its examples, domain terms,
    non-goals, authority and budget before agents go autonomous.
-2. **[Craft Goal](skills/craft-goal/SKILL.md).** Returns `SAFE_TO_CREATE` with a
-   prompt for `/goal` in Claude Code or Codex, `USE_RPI`, or `UNSAFE_GOAL`
-   naming what's undecided. Crafting alone creates nothing.
-3. **[Navigate](skills/navigate/SKILL.md) each wave.** Picks a small wave of
-   ready beads; each gets one RPI and a fresh Validate. The goal ends
+2. **[Craft Goal](skills/craft-goal/SKILL.md).** Returns `SAFE_TO_CREATE` plus a
+   prompt to paste into `/goal` (Claude Code or Codex), `USE_RPI` (small enough
+   for `rpi`), or `UNSAFE_GOAL` plus what's undecided. It creates nothing itself.
+3. **[Navigate](skills/navigate/SKILL.md) each round.** Picks a few ready work
+   items (beads); each gets one RPI and a fresh Validate. The goal ends
    `ACHIEVED`, `NOT_ACHIEVED` or `NEEDS_OPERATOR`.
 
 <p align="center">
@@ -139,13 +164,11 @@ at acceptance or a spent limit. A bigger outcome becomes a goal:
 **Beads holds the plan.** [Beads](https://github.com/gastownhall/beads) (`bd`)
 keeps work as a dependency graph outside any conversation, so a goal survives
 compaction and restarts. The root epic holds acceptance; each child bead is one
-RPI with its question, scope, notes and verdict. `blocks` means real ordering,
-`discovered-from` marks work a result exposed, and `bd ready` is the frontier.
+RPI with its question, scope, notes and verdict. `bd ready` lists what can start now.
 
 **One bead per worker.** When the goal delegates, the orchestrator holds the
 graph and verdicts, and each worker starts with one bead instead of the
-orchestrator's transcript. Validators start fresh. A wave counts only if it
-proves acceptance, kills a hypothesis or settles an uncertainty.
+orchestrator's transcript. Validators start fresh.
 
 ```bash
 bd create "Job redelivery is idempotent" -t epic
@@ -154,18 +177,23 @@ bd dep add <later-id> <earlier-id>         # real ordering only
 bd ready --parent <epic-id>                # the frontier
 ```
 
-Any tracker with status, dependencies and notes works; AgentOps never builds a
-second work index.
+Navigate shows `bd` commands; another tracker with status, dependencies and
+notes works if you map them. AgentOps never builds a second work index.
 
 ## Try it
 
+Start read-only in any repo, then swap the Job example for your own change.
+
 ```text
+# First look (changes nothing)
+/agentops:research how does this repo validate input? cite files and lines, change nothing
+
 # One change
 /agentops:plan make Job redelivery return the completed result without repeating the side effect
 /agentops:implement
-/agentops:validate     # new conversation: give it the example, the change and the author's ID
+/agentops:validate     # new session: paste the scenarios, the commit, and the authoring session's ID (your name for a hand-written change)
 
-# One outcome, hands-off
+# One outcome, end to end
 /agentops:rpi make Job redelivery return the completed result without repeating the side effect
 
 # A goal
@@ -232,8 +260,8 @@ catalog: **[docs/SKILL-ROUTER.md](docs/SKILL-ROUTER.md)**.
 | Group | Skills | What it covers |
 |---|---|---|
 | Operational loop | [`plan`](skills/plan/SKILL.md) [`implement`](skills/implement/SKILL.md) [`validate`](skills/validate/SKILL.md) | Shape, build and judge every change |
-| Autonomous | [`rpi`](skills/rpi/SKILL.md) | One outcome, hands-off |
-| Goals | [`interview`](skills/interview/SKILL.md) [`craft-goal`](skills/craft-goal/SKILL.md) [`navigate`](skills/navigate/SKILL.md) | Shape, write and walk a goal over the bead graph |
+| Autonomous | [`rpi`](skills/rpi/SKILL.md) | One outcome, end to end |
+| Goals (experimental) | [`interview`](skills/interview/SKILL.md) [`craft-goal`](skills/craft-goal/SKILL.md) [`navigate`](skills/navigate/SKILL.md) | Shape, write and walk a goal over the bead graph |
 | Coordination | [`orchestrate`](skills/orchestrate/SKILL.md) [`agent-native`](skills/agent-native/SKILL.md) | Fresh workers per bead, disjoint scopes, integration |
 | On demand | [`research`](skills/research/SKILL.md) [`domain`](skills/domain/SKILL.md) [`test`](skills/test/SKILL.md) [`refactor`](skills/refactor/SKILL.md) [`review`](skills/review/SKILL.md) [`security`](skills/security/SKILL.md) [`doc`](skills/doc/SKILL.md) [`reverse-engineer`](skills/reverse-engineer/SKILL.md) | Reached for when a specific question comes up |
 | Learning | [`memory`](skills/memory/SKILL.md) [`cass`](skills/cass/SKILL.md) | Reviewed project context and past-session search |
@@ -264,22 +292,23 @@ proof that every combination has been tested.
 
 </details>
 
-## Optional `ao` CLI
+<a id="optional-ao-cli"></a>
 
-Install `ao` for deterministic repository checks, evidence tools, or a skill
-that requires it, including Validate.
+## `ao` CLI (needed for Validate)
+
+Most skills need only your coding agent. Validate uses `ao` to identify the
+exact change it judges.
 
 ```bash
-brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops
+brew tap boshu2/agentops
+brew trust --tap boshu2/agentops
 brew install agentops
 ao version
-ao quick-start
 ```
 
 With Go installed: `go install github.com/boshu2/agentops/cli/cmd/ao@latest`.
-`ao quick-start` provides read-only guidance; `ao init` is optional evidence setup.
-Use `ao gate check` for repository checks and `ao config --show` to inspect
-configuration. See the [command reference](cli/docs/COMMANDS.md) and
+`ao init` is optional evidence setup; `ao config --show` inspects configuration;
+`ao gate check` runs this repository's own gates (mainly for contributors). See the [command reference](cli/docs/COMMANDS.md) and
 [installation guide](docs/install-day2-ops.md).
 
 ## Updating and advanced setup
