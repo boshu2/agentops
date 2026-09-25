@@ -232,6 +232,29 @@ func TestCheckSkillLinksExactMissingAndStale(t *testing.T) {
 	}
 }
 
+func TestCheckSkillLinksPiUsesAgentSkillsDir(t *testing.T) {
+	root := t.TempDir()
+	writeFakeAgentopsRepo(t, root)
+	home := t.TempDir()
+	linkFixtureSkills(t, filepath.Join(root, "skills"), filepath.Join(home, ".agents", "skills"))
+	if err := os.MkdirAll(filepath.Join(home, ".pi"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if check := CheckSkillLinks(root, home); check.Status != quality.StatusPass {
+		t.Fatalf("bare ~/.pi must not count as an installed Pi: %+v", check)
+	}
+	if err := os.MkdirAll(filepath.Join(home, ".pi", "agent"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if check := CheckSkillLinks(root, home); check.Status != quality.StatusWarn || !strings.Contains(check.Detail, "2 missing") {
+		t.Fatalf("~/.pi/agent without links = %+v", check)
+	}
+	linkFixtureSkills(t, filepath.Join(root, "skills"), filepath.Join(home, ".pi", "agent", "skills"))
+	if check := CheckSkillLinks(root, home); check.Status != quality.StatusPass {
+		t.Fatalf("links in ~/.pi/agent/skills = %+v", check)
+	}
+}
+
 // checkoutOnlyCommands are commands an installed user cannot run: `ao skills
 // link` resolves the repository's own skills/ directory and fails closed
 // outside a checkout, so naming it to a reader who has no checkout is advice

@@ -36,7 +36,7 @@ func TestResolveTargetDests(t *testing.T) {
 	t.Run("fans out to installed runtimes", func(t *testing.T) {
 		home := t.TempDir()
 		t.Setenv("HOME", home)
-		for _, rt := range []string{".codex", ".gemini", ".pi"} {
+		for _, rt := range []string{".codex", ".gemini", filepath.Join(".pi", "agent")} {
 			if err := os.MkdirAll(filepath.Join(home, rt), 0o755); err != nil {
 				t.Fatal(err)
 			}
@@ -49,7 +49,7 @@ func TestResolveTargetDests(t *testing.T) {
 			filepath.Join(home, ".agents", "skills"),
 			filepath.Join(home, ".codex", "skills"),
 			filepath.Join(home, ".gemini", "skills"),
-			filepath.Join(home, ".pi", "skills"),
+			filepath.Join(home, ".pi", "agent", "skills"),
 		}
 		if len(got) != len(want) {
 			t.Fatalf("got %v, want %v", got, want)
@@ -57,6 +57,49 @@ func TestResolveTargetDests(t *testing.T) {
 		for i := range want {
 			if got[i] != want[i] {
 				t.Fatalf("got %v, want %v", got, want)
+			}
+		}
+	})
+
+	// Pi's USER-level skills dir is ~/.pi/agent/skills, detected by ~/.pi/agent
+	// existing — NOT ~/.pi/skills (Pi's separate PROJECT-level dir; see
+	// cli/internal/gates/routing.go). A bare ~/.pi with no agent/ subdir must
+	// not be treated as Pi being installed (defect: previously linked into
+	// ~/.pi/skills, a location Pi never loads from).
+	t.Run("Pi detection keys off ~/.pi/agent, not bare ~/.pi", func(t *testing.T) {
+		home := t.TempDir()
+		t.Setenv("HOME", home)
+		// A bare ~/.pi (e.g. holding only the unrelated project-level
+		// .pi/skills convention) must not trigger Pi user-scope linking.
+		if err := os.MkdirAll(filepath.Join(home, ".pi"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		got, err := ResolveTargetDests("")
+		if err != nil {
+			t.Fatalf("err: %v", err)
+		}
+		want := []string{filepath.Join(home, ".agents", "skills")}
+		if len(got) != len(want) || got[0] != want[0] {
+			t.Fatalf("bare ~/.pi got %v, want %v", got, want)
+		}
+
+		if err := os.MkdirAll(filepath.Join(home, ".pi", "agent"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		got, err = ResolveTargetDests("")
+		if err != nil {
+			t.Fatalf("err: %v", err)
+		}
+		want = []string{
+			filepath.Join(home, ".agents", "skills"),
+			filepath.Join(home, ".pi", "agent", "skills"),
+		}
+		if len(got) != len(want) {
+			t.Fatalf("with ~/.pi/agent got %v, want %v", got, want)
+		}
+		for i := range want {
+			if got[i] != want[i] {
+				t.Fatalf("with ~/.pi/agent got %v, want %v", got, want)
 			}
 		}
 	})

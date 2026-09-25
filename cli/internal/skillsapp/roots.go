@@ -71,18 +71,41 @@ func ResolveRepoSkillsDir() (string, error) {
 	return skillsDir, nil
 }
 
-// runtimeConfigDirs are the per-agent config dirs whose skills/ subdir is that
-// runtime's live tier. AgentOps skills are identical across runtimes, so a
-// default `ao skills link` links into EVERY runtime the user actually has
-// installed — Claude, Codex (~/.codex/skills), AGY/Gemini (~/.gemini/skills),
-// Cursor, and Pi (~/.pi/skills) — not just Claude. Detection is by the config
-// dir existing under $HOME. Order is display order.
-var runtimeConfigDirs = []string{".claude", ".codex", ".gemini", ".cursor", ".pi"}
+// runtimeSkillTarget pairs a runtime's install-detection dir with its
+// user-level skills dir, both relative to $HOME. For most runtimes skills is
+// <detect>/skills; Pi is the exception.
+type runtimeSkillTarget struct {
+	// detect is the dir under $HOME whose existence signals the runtime is
+	// installed.
+	detect string
+	// skills is the dir under $HOME to link/unlink this runtime's skills into.
+	skills string
+}
+
+// runtimeSkillTargets are the per-runtime user-level skill dirs `ao skills
+// link` fans out into, in display order. AgentOps skills are identical across
+// runtimes, so a default `ao skills link` links into EVERY runtime the user
+// actually has installed — Claude, Codex (~/.codex/skills), AGY/Gemini
+// (~/.gemini/skills), Cursor, and Pi (~/.pi/agent/skills) — not just Claude.
+// Most runtimes are detected by their config dir existing under $HOME, with
+// that same dir holding skills/. Pi is the exception: its USER-level skills
+// dir is ~/.pi/agent/skills, detected by ~/.pi/agent existing — ~/.pi/skills
+// is Pi's separate PROJECT-level dir. Ground truth: the npx `skills`
+// installer's agent table (skills v1.7.0, dist/cli.mjs). The doctor adapter's
+// runtimeSkillRoots mirrors this list.
+var runtimeSkillTargets = []runtimeSkillTarget{
+	{detect: ".claude", skills: filepath.Join(".claude", "skills")},
+	{detect: ".codex", skills: filepath.Join(".codex", "skills")},
+	{detect: ".gemini", skills: filepath.Join(".gemini", "skills")},
+	{detect: ".cursor", skills: filepath.Join(".cursor", "skills")},
+	{detect: filepath.Join(".pi", "agent"), skills: filepath.Join(".pi", "agent", "skills")},
+}
 
 // ResolveTargetDests returns the skills dirs to link into. An explicit dest wins
-// as the single target. Otherwise it returns <home>/<rt>/skills for every
-// runtime config dir that EXISTS under $HOME. The portable ~/.agents/skills root
-// is always included, even in a fresh home with no runtime configuration yet.
+// as the single target. Otherwise it returns each runtimeSkillTargets entry's
+// <home>/skills path for every runtime whose detect dir EXISTS under $HOME.
+// The portable ~/.agents/skills root is always included, even in a fresh home
+// with no runtime configuration yet.
 func ResolveTargetDests(explicitDest string) ([]string, error) {
 	if strings.TrimSpace(explicitDest) != "" {
 		return []string{explicitDest}, nil
@@ -92,9 +115,9 @@ func ResolveTargetDests(explicitDest string) ([]string, error) {
 		return nil, fmt.Errorf("resolve home dir for default --dest: %w", err)
 	}
 	dests := []string{filepath.Join(home, ".agents", "skills")}
-	for _, rt := range runtimeConfigDirs {
-		if isDir(filepath.Join(home, rt)) {
-			dests = append(dests, filepath.Join(home, rt, "skills"))
+	for _, rt := range runtimeSkillTargets {
+		if isDir(filepath.Join(home, rt.detect)) {
+			dests = append(dests, filepath.Join(home, rt.skills))
 		}
 	}
 	return dests, nil

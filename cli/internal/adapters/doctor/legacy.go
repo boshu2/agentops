@@ -70,7 +70,15 @@ func SystemLegacyChecks(toolVersion string, ledgerPath func() string) LegacyChec
 	}
 }
 
-var runtimeSkillRoots = []string{".claude", ".codex", ".gemini", ".cursor", ".pi"}
+// runtimeSkillRoots mirrors skillsapp's runtimeSkillTargets (cli/internal/skillsapp/roots.go):
+// each runtime's detection dir and user-level skills dir under $HOME. Keep the two in step.
+var runtimeSkillRoots = []struct{ detect, skills string }{
+	{".claude", filepath.Join(".claude", "skills")},
+	{".codex", filepath.Join(".codex", "skills")},
+	{".gemini", filepath.Join(".gemini", "skills")},
+	{".cursor", filepath.Join(".cursor", "skills")},
+	{filepath.Join(".pi", "agent"), filepath.Join(".pi", "agent", "skills")},
+}
 
 // CheckSkillLinks verifies the source-linked distribution contract: canonical skills are
 // consumed directly from one checkout through exact symlinks. Portable
@@ -110,9 +118,9 @@ func CheckSkillLinks(repoRoot, home string) quality.Check {
 		return check
 	}
 	dests := []string{filepath.Join(home, ".agents", "skills")}
-	for _, config := range runtimeSkillRoots {
-		if info, err := os.Stat(filepath.Join(home, config)); err == nil && info.IsDir() {
-			dests = append(dests, filepath.Join(home, config, "skills"))
+	for _, rt := range runtimeSkillRoots {
+		if info, err := os.Stat(filepath.Join(home, rt.detect)); err == nil && info.IsDir() {
+			dests = append(dests, filepath.Join(home, rt.skills))
 		}
 	}
 
