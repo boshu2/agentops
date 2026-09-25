@@ -378,3 +378,39 @@ telemetry_lines() {
   run jq -r '.path_sha256 | length' "$AGENTOPS_GUARDRAIL_TELEMETRY"
   [ "$output" = "64" ]
 }
+
+# ---------- plugin hook manifest ----------------------------------------------
+# skills/cc-hooks/SKILL.md: injection hooks (SessionStart/UserPromptSubmit
+# context stuffing) stay dead; only enforcement events ship. Assert the event
+# keys of the shipped plugin manifest, not doc wording. A denylist, not an exact
+# key set, so a future enforcement event (e.g. PostToolUse) needs no edit here.
+MANIFEST="${MANIFEST:-$BATS_TEST_DIRNAME/../../hooks/hooks.json}"
+INJECTION_EVENTS='["SessionStart","SessionEnd","UserPromptSubmit","PreCompact"]'
+
+# $1 = hooks manifest; prints each registered injection event, one per line.
+# Errors (non-zero) when .hooks is not an object, so the check cannot pass vacuously.
+injection_events() {
+  jq -r --argjson deny "$INJECTION_EVENTS" \
+    '.hooks | if type == "object" then keys[] else error("hooks is not an object") end
+     | select(. as $e | $deny | any(. == $e))' "$1"
+}
+
+@test "plugin manifest: hooks/hooks.json registers no session-injection hook event" {
+  run injection_events "$MANIFEST"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "plugin manifest: an injection event added to the shipped manifest is reported" {
+  jq '.hooks.SessionStart = .hooks.PreToolUse' "$MANIFEST" > "$TMPDIR/hooks.json"
+  run injection_events "$TMPDIR/hooks.json"
+  [ "$status" -eq 0 ]
+  [ "$output" = "SessionStart" ]
+}
+
+@test "plugin manifest: a manifest without a hooks object fails the check" {
+  jq '{hooks: [.hooks]}' "$MANIFEST" > "$TMPDIR/hooks.json"
+  run injection_events "$TMPDIR/hooks.json"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"hooks is not an object"* ]]
+}

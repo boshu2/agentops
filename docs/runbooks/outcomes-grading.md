@@ -1,3 +1,7 @@
+---
+status: historical
+---
+
 # Runbook: Outcomes grading (holdout-safe Outcomes projection)
 
 > **RETIRED:** This page documents the removed `ao eval` surface for historical

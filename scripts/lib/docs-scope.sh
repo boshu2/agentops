@@ -8,24 +8,19 @@
 #
 # Shared LIVE-doc scope helper (age-gate-the-ungated-egwt.1)
 # so any docs-scoped gate resolves the SAME live-doc set and the SAME
-# historical-exemption rule from one place. The retired-tech line-level
-# REMOVAL_LANG past-tense exemption is retired-tech-specific and stays in that
-# check script — it is deliberately NOT part of this lib.
+# historical-exemption rule from one place.
 #
 # IMPORTANT — behavior-preserving contract: this lib does NOT `set -euo pipefail`
-# on behalf of its callers. Historical extractor
-# sets strict mode itself; forcing it here could change a different caller's
-# behavior. The functions below are pure/idempotent and safe under either mode.
+# on behalf of its callers; forcing it here could change a caller's behavior.
+# The functions below are pure/idempotent and safe under either mode.
 #
 # Scope resolution is anchored at DOCS_ROOT (default: the current directory).
 # Callers that `cd` to the repo root before use get the historical relative
 # `docs/...` paths unchanged; tests inject DOCS_ROOT to point at a fixture tree.
 
 # docs_scope_live_files — emit the LIVE docs/**/*.md set (one path per line),
-# NUL-safe ordering via `sort`. Paths are emitted relative to DOCS_ROOT and
-# always begin with `docs/` (matching the extracting script's historical output).
-#
-# The exclude list is the dated/historical-archive set copied verbatim from
+# sorted. Paths are emitted relative to DOCS_ROOT and always begin with `docs/`.
+# The exclude list is the set of dated/historical-archive directories.
 docs_scope_live_files() {
   local root="${DOCS_ROOT:-.}"
   ( cd "$root" && find docs -name '*.md' \
@@ -39,11 +34,12 @@ docs_scope_live_files() {
 }
 
 # docs_scope_is_exempt FILE — return 0 (exempt / historical-by-design) if the
-# doc opts out of live-staleness scanning by ANY of:
+# doc opts out of live-staleness scanning by EITHER:
 #   - a migration/upgrade/retirement/closeout/index filename glob
-#   - a RETIRED / HISTORICAL / SUPERSEDED banner in its FIRST 15 lines
-#   - living under docs/adr/
-# Otherwise return 1 (a live doc, in scope).
+#   - a YAML front-matter block (the file's first line is `---`) that declares
+#     the top-level key `status: historical`
+# Otherwise return 1 (a live doc, in scope). Prose wording never exempts a doc:
+# a page that is historical by design says so in its front matter.
 #
 # FILE is resolved relative to DOCS_ROOT when it is not already readable as-is,
 # so callers that pass a `docs/...` path after `cd`-ing to the root keep working
@@ -54,17 +50,15 @@ docs_scope_is_exempt() {
     *-migration*|*-retirement*|*-sunset*|*-closeout*|*CHANGELOG*) return 0 ;;
     *MIGRATION*|*UPGRADING*|*documentation-index*) return 0 ;;
   esac
-  # docs/adr/ is historical by design.
-  case "$f" in
-    docs/adr/*|*/docs/adr/*) return 0 ;;
-  esac
-  # self-declared historical banner in the first 15 lines
-  local path="$f"
-  if [ ! -r "$path" ] && [ -n "${DOCS_ROOT:-}" ] && [ -r "${DOCS_ROOT%/}/$f" ]; then
-    path="${DOCS_ROOT%/}/$f"
+  local doc="$f"
+  if [ ! -r "$doc" ] && [ -n "${DOCS_ROOT:-}" ] && [ -r "${DOCS_ROOT%/}/$f" ]; then
+    doc="${DOCS_ROOT%/}/$f"
   fi
-  if head -n 15 "$path" 2>/dev/null | grep -qiE 'RETIRED|HISTORICAL|SUPERSEDED'; then
-    return 0
-  fi
-  return 1
+  [ -r "$doc" ] || return 1
+  awk '
+    NR == 1 { if ($0 !~ /^---[ \t\r]*$/) exit; next }
+    /^(---|\.\.\.)[ \t\r]*$/ { exit }
+    /^status:[ \t]*["'\'']?historical["'\'']?[ \t\r]*(#.*)?$/ { found = 1; exit }
+    END { exit found ? 0 : 1 }
+  ' "$doc"
 }

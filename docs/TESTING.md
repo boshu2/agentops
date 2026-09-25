@@ -9,7 +9,7 @@ complete candidate.
 ```bash
 python3 -m unittest discover -s skills/validate/tests
 ./scripts/check-cathedral-cut-conformance.py
-python3 scripts/generate-skill-mesh.py --check
+python3 scripts/check-skill-mesh.py
 cd cli && go test ./...
 ```
 

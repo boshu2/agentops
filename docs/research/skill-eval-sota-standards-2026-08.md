@@ -1,3 +1,7 @@
+---
+status: historical
+---
+
 # SOTA standards for evaluating agent skills — and what it takes to prove ours work
 
 > **HISTORICAL** — dated research snapshot (2026-08-04). The in-repo `ao eval` surface it cites was later removed unconsumed; see docs/MIGRATION.md.

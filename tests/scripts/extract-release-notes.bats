@@ -152,3 +152,11 @@ assert_line() {
 
   assert_line "[Full changelog](https://github.com/boshu2/agentops/blob/main/docs/CHANGELOG.md)"
 }
+
+@test "release body links the tag's checksums and the compare range from the previous tag" {
+  run bash -c "cd '$SANDBOX' && '$REPO_ROOT/scripts/extract-release-notes.sh' v9.9.9 v9.9.8"
+  [ "$status" -eq 0 ]
+
+  grep -Fq "(https://github.com/boshu2/agentops/releases/download/v9.9.9/checksums.txt)" "$SANDBOX/release-notes.md"
+  grep -Fq "https://github.com/boshu2/agentops/compare/v9.9.8...v9.9.9" "$SANDBOX/release-notes.md"
+}

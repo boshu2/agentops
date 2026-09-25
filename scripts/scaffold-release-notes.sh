@@ -13,7 +13,7 @@
 #   - one "### <product area>" per area the range touched (>= threshold files),
 #     each seeded with the conventional-commit subjects for that area as
 #     "- Changed: <subject>" stubs to curate.
-# The result is a DRAFT — curate the prose, fix action labels, then run
+# The result is a DRAFT — curate the prose, then run
 # scripts/validate-release-notes.sh to confirm it conforms.
 
 set -euo pipefail
@@ -134,4 +134,4 @@ ncommits="$(git rev-list --count --no-merges "${SINCE}..${endpoint}" 2>/dev/null
 } > "$OUT"
 
 echo "Scaffolded $OUT (tier $TIER, ${ncommits} commits since ${SINCE})"
-echo "Next: curate prose + action labels, then: scripts/validate-release-notes.sh v${VERSION} --since ${SINCE}"
+echo "Next: curate prose, then: scripts/validate-release-notes.sh v${VERSION} --since ${SINCE}"

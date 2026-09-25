@@ -26,7 +26,6 @@ always.retrieval-manifest-paths
 ci.policy-parity
 contract.compatibility
 contract.finding-registry
-contract.skill-mesh
 contract.verdict-corpus
 derived.changed-scope
 go.cli-contract

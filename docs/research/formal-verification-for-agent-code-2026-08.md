@@ -2,7 +2,7 @@
 
 > **Date:** 2026-08-04 · **Status:** research synthesis (no code changes) · companion to
 > [skill-eval-sota-standards-2026-08.md](skill-eval-sota-standards-2026-08.md) and the
-> since-retired eval architecture (its `ao eval` surface was removed unconsumed; see [MIGRATION.md](../MIGRATION.md))
+> since-retired eval architecture (its `ao eval` surface was removed unconsumed; see [MIGRATION.md](../MIGRATION.md)) <!-- ao-resolve: ignore -->
 > **Method:** bounded deep-research workflow (3 angles → 17 sources → 85 claims extracted →
 > top 8 adversarially verified: 3 confirmed, 5 killed) plus two targeted follow-up passes for
 > the areas the sweep didn't reach. Labels: **verified** = survived adversarial refutation

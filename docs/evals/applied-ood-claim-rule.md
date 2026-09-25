@@ -1,3 +1,7 @@
+---
+status: historical
+---
+
 # Applied-OOD moat claim rule — PRE-REGISTRATION (the sentinel-recall ban)
 
 > **HISTORICAL:** Locked preregistration for a retired evaluation harness.

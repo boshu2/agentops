@@ -28,3 +28,23 @@
   # repair, bounded help and fresh judgment without adding delivery machinery.
   ! grep -Eq 'ao land|next-work|Plan-Pawl' "$contract"
 }
+
+@test "every relative file link in the root contract resolves" {
+  repo_root="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
+  run python3 - "$repo_root" <<'EOF'
+import re
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+text = (root / "AGENTS.md").read_text(encoding="utf-8")
+targets = re.findall(r"\]\(([^)\s]+)\)", text)
+local = [t.split("#", 1)[0] for t in targets if "://" not in t and not t.startswith("#")]
+missing = [t for t in local if t and not (root / t).exists()]
+assert local, "AGENTS.md links no repository files"
+if missing:
+    print("missing:", missing)
+    raise SystemExit(1)
+EOF
+  [ "$status" -eq 0 ]
+}

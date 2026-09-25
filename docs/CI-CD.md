@@ -54,7 +54,7 @@ once for the complete candidate:
 ```bash
 cd cli && go test ./...
 python3 scripts/check-cathedral-cut-conformance.py
-python3 scripts/generate-skill-mesh.py --check
+python3 scripts/check-skill-mesh.py
 bash scripts/check-doc-claims-tracked.sh
 bash scripts/ci-local-release.sh
 ```

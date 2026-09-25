@@ -1,71 +1,53 @@
 #!/usr/bin/env bats
 # Acceptance surface for scripts/check-doc-skill-refs.sh — backtick-slash skill
-# references and slash-command headings in doctrine/router docs must resolve to
-# an existing skills/<dir>. Lines carrying a retirement marker
-# (retired|folded|legacy|historical) are exempt. Advisory by default (exit 0,
-# prints findings); --strict fails.
+# references and slash-command headings must resolve to an existing
+# skills/<dir>. Scope is the pinned non-docs doctrine files (AGENTS.md,
+# CLAUDE.md, skills/SKILL-TIERS.md) plus the LIVE docs/** set
+# (scripts/lib/docs-scope.sh), gated by a filename-pinned shrink baseline:
+#   - a NON-baselined doc with a dead `/skill` ref -> FAIL
+#   - a baselined file that no longer offends      -> FAIL (prune it)
+# Detection stays slash-syntax + headings ONLY (never bare skill names).
 #
-# Fixtures are generated in tmp trees (not committed) so repo-wide doc scanners
+# Fixtures are built in tmp trees (--docs-root injected) so repo-wide scanners
 # never see them.
 
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     SCRIPT="$REPO_ROOT/scripts/check-doc-skill-refs.sh"
-    DOCS="$(mktemp -d "$BATS_TMPDIR/docs.XXXXXX")"
-    SKILLS="$(mktemp -d "$BATS_TMPDIR/skills.XXXXXX")"
-    mkdir -p "$SKILLS/alpha"
+    DOCS="$BATS_TEST_TMPDIR/docs"
+    SKILLS="$BATS_TEST_TMPDIR/skills"
+    BASELINE="$BATS_TEST_TMPDIR/baseline"
+    : > "$BASELINE"
+    mkdir -p "$SKILLS/alpha" "$SKILLS/cc-hooks" "$SKILLS/validate" "$SKILLS/postmortem"
+    mkdir -p "$DOCS/docs" "$DOCS/docs/levels" "$DOCS/skills"
 }
 
-teardown() {
-    [ -n "${DOCS:-}" ] && rm -rf "$DOCS"
-    [ -n "${SKILLS:-}" ] && rm -rf "$SKILLS"
+run_check() {
+    run bash "$SCRIPT" --docs-root "$DOCS" --skills-root "$SKILLS" --baseline "$BASELINE"
 }
 
-@test "checker exists and is executable" {
-    [ -f "$SCRIPT" ]
-    [ -x "$SCRIPT" ]
-}
-
-@test "red: phantom skill ref -> strict exits non-zero naming doc and slug" {
+@test "red: phantom skill ref in a pinned non-docs file fails naming doc and slug" {
     printf 'Run `/zzz-phantom` to do the thing.\n' > "$DOCS/CLAUDE.md"
-    run bash "$SCRIPT" --strict --docs-root "$DOCS" --skills-root "$SKILLS"
-    [ "$status" -ne 0 ]
-    [[ "$output" == *"CLAUDE.md"* ]]
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"NEW-OFFENDER CLAUDE.md"* ]]
     [[ "$output" == *"zzz-phantom"* ]]
 }
 
-@test "red: phantom skill ref -> advisory default exits 0 but still prints the finding" {
-    printf 'Run `/zzz-phantom` to do the thing.\n' > "$DOCS/CLAUDE.md"
-    run bash "$SCRIPT" --docs-root "$DOCS" --skills-root "$SKILLS"
-    [ "$status" -eq 0 ]
-    [[ "$output" == *"zzz-phantom"* ]]
-    [[ "$output" == *"1 unresolved skill reference(s)"* ]]
-}
-
-@test "green: resolving refs (bare and with args) -> strict exits 0" {
+@test "green: resolving refs (bare and with args) pass" {
     printf 'Run `/alpha` first, then `/alpha --strict` again.\n' > "$DOCS/CLAUDE.md"
-    run bash "$SCRIPT" --strict --docs-root "$DOCS" --skills-root "$SKILLS"
+    run_check
     [ "$status" -eq 0 ]
     [[ "$output" == *"0 unresolved skill reference(s)"* ]]
 }
 
-@test "exempt: retired-note line citing a gone skill is not flagged" {
-    {
-        printf '`/zzz-phantom` was retired and folded into `/alpha`.\n'
-        printf 'Use `/alpha` going forward.\n'
-    } > "$DOCS/CLAUDE.md"
-    run bash "$SCRIPT" --strict --docs-root "$DOCS" --skills-root "$SKILLS"
-    [ "$status" -eq 0 ]
-    [[ "$output" != *"FINDING"* ]]
-}
-
 @test "scans the nested doc paths under --docs-root" {
-    mkdir -p "$DOCS/docs/architecture" "$DOCS/skills"
+    mkdir -p "$DOCS/docs/architecture"
     printf '### /zzz-router-phantom\n' > "$DOCS/docs/SKILLS.md"
     printf 'Skills: `/zzz-loop-phantom` runs the loop.\n' > "$DOCS/docs/architecture/rpi-traversal.md"
     printf 'Tier 1: `/zzz-tier-phantom`.\n' > "$DOCS/skills/SKILL-TIERS.md"
-    run bash "$SCRIPT" --strict --docs-root "$DOCS" --skills-root "$SKILLS"
-    [ "$status" -ne 0 ]
+    run_check
+    [ "$status" -eq 1 ]
     [[ "$output" == *"docs/SKILLS.md"* ]]
     [[ "$output" == *"zzz-router-phantom"* ]]
     [[ "$output" == *"rpi-traversal.md"* ]]
@@ -79,19 +61,9 @@ teardown() {
         printf 'Read `/mnt/c/Users/x` and `docs/templates/intent-issue.md`.\n'
         printf 'Branch `<type>/<bead-id>` and `git -C _beads push` are fine.\n'
     } > "$DOCS/CLAUDE.md"
-    run bash "$SCRIPT" --strict --docs-root "$DOCS" --skills-root "$SKILLS"
+    run_check
     [ "$status" -eq 0 ]
     [[ "$output" == *"0 unresolved skill reference(s)"* ]]
-}
-
-@test "advisory against the real repo exits 0" {
-    run bash "$SCRIPT"
-    [ "$status" -eq 0 ]
-}
-
-@test "strict against the real repo exits 0" {
-    run bash "$SCRIPT" --strict
-    [ "$status" -eq 0 ]
 }
 
 @test "unknown flag exits 2" {
@@ -99,9 +71,54 @@ teardown() {
     [ "$status" -eq 2 ]
 }
 
-@test "--help exits 0 and documents the check" {
-    run bash "$SCRIPT" --help
+@test "long-tail doc citing /hooks-authoring fails naming the file and suggesting cc-hooks" {
+    # /hooks-authoring is the classic dead ref; cc-hooks is the nearest live skill.
+    printf 'Author your own gate with `/hooks-authoring`.\n' > "$DOCS/docs/levels/how-to.md"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"docs/levels/how-to.md"* ]]
+    [[ "$output" == *"did you mean \`/cc-hooks\`?"* ]]
+}
+
+@test "SKILL-ROUTER bad ref fails (curated router is checked)" {
+    printf '### /zzz-router-phantom\nUse `/alpha` instead.\n' > "$DOCS/docs/SKILL-ROUTER.md"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"docs/SKILL-ROUTER.md"* ]]
+    [[ "$output" == *"zzz-router-phantom"* ]]
+}
+
+@test "baselined offender is allowed (no new-offender), gate passes" {
+    printf 'Run `/zzz-phantom`.\n' > "$DOCS/docs/legacy-page.md"
+    printf 'docs/legacy-page.md\n' > "$BASELINE"
+    run_check
     [ "$status" -eq 0 ]
-    [[ "$output" == *"--strict"* ]]
-    [[ "$output" == *"retired"* ]]
+    [[ "$output" != *"NEW-OFFENDER"* ]]
+    [[ "$output" != *"FAIL"* ]]
+}
+
+@test "stale baseline entry fails demanding a prune" {
+    # A clean doc (no dead ref) that is nonetheless listed in the baseline is stale.
+    printf 'Use `/alpha` — all good.\n' > "$DOCS/docs/clean-page.md"
+    printf 'docs/clean-page.md\n' > "$BASELINE"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"no longer offend"* ]]
+    [[ "$output" == *"docs/clean-page.md"* ]]
+}
+
+@test "non-baselined live doc with a dead ref fails as NEW-OFFENDER" {
+    printf 'See `/zzz-gone` for details.\n' > "$DOCS/docs/new-page.md"
+    run_check
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"NEW-OFFENDER docs/new-page.md"* ]]
+    [[ "$output" == *"zzz-gone"* ]]
+}
+
+@test "detection stays slash-only: a bare skill name is never flagged" {
+    # Bare `hooks-authoring` (no slash) must NOT trip the gate — false-positive swamp.
+    printf 'Author with the `hooks-authoring` skill and read `skills/cc-hooks/`.\n' > "$DOCS/docs/prose.md"
+    run_check
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"NEW-OFFENDER"* ]]
 }

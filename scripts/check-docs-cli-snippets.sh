@@ -9,9 +9,14 @@
 # than forking it (age-gate-the-ungated-egwt.4).
 #
 # Scope = the shared LIVE-doc set (scripts/lib/docs-scope.sh: docs/**/*.md minus
-# dated archives and self-declared-historical docs). Extraction covers BOTH
+# dated archives and self-declared-historical docs) PLUS the front-door docs
+# listed in ROOT_DOCS below, which are always live. Extraction covers BOTH
 # fenced code blocks and inline code spans; plain prose is NOT scanned (the
 # false-positive guard).
+#
+# A line that names a retired command on purpose (a retirement note) opts out
+# with the explicit inline marker `<!-- ao-resolve: ignore -->`. The marker is
+# the only line-level exemption; retirement vocabulary alone exempts nothing.
 #
 # Resolution is SOUND: unlike the skills gate's byte-identical `help`-mode
 # predicate, this uses `ao <chain> --help` and rejects cobra's "unknown command"
@@ -49,6 +54,12 @@ DOCS_ROOT="$ROOT"
 export DOCS_ROOT
 
 BASELINE="${DOCS_CLI_SNIPPETS_BASELINE:-$ROOT/scripts/.docs-cli-snippets-baseline}"
+
+# Front-door docs outside docs/ that teach `ao` commands. They are scanned
+# whenever present and never take the docs-scope historical exemption.
+ROOT_DOCS=(README.md AGENTS.md PRODUCT.md GOALS.md PROGRAM.md cli/README.md)
+DOCS_CLI_ROOT_DOCS="$(printf '%s\n' "${ROOT_DOCS[@]}")"
+export DOCS_CLI_ROOT_DOCS
 
 # Build (or reuse) the archive-tagged ao binary; sets + exports AO_BIN.
 ao_snippet_resolve_bin "$ROOT" >/dev/null
@@ -95,6 +106,14 @@ def is_exempt(f):
     rc, _ = _sh(f'docs_scope_is_exempt "{f}"')
     return rc == 0
 
+def scan_files():
+    for f in live_files():
+        if not is_exempt(f):
+            yield f
+    for f in os.environ["DOCS_CLI_ROOT_DOCS"].splitlines():
+        if f and (docs_root / f).is_file():
+            yield f
+
 # ---- nearest-live-command suggestion -----------------------------------------
 def _levenshtein(a, b):
     if a == b:
@@ -134,14 +153,9 @@ def suggest(token):
         return best
     return None
 
-# A line that DESCRIBES a command's removal (negation / past-tense) is documenting
-# the retirement, not prescribing the dead command — not an offender. Mirrors the
-# REMOVAL_LANG exemption for retired-tech wording.
-_REMOVAL_LANG = re.compile(
-    r"no `ao|removed|retired|deleted|deprecat|superseded|no longer|is gone|are gone|"
-    r"not a (?:selectable|valid)|deprecation pointer|gets? a deprecation",
-    re.IGNORECASE,
-)
+# A retirement note that names a dead command on purpose carries this explicit
+# inline marker (as `<!-- ao-resolve: ignore -->` in Markdown) on the same line.
+_IGNORE_MARKER = "ao-resolve: ignore"
 
 # ---- resolve one snippet; return the offending token or None -----------------
 def offending_token(snippet):
@@ -169,9 +183,7 @@ def offending_token(snippet):
     return first
 
 # ---- scan ---------------------------------------------------------------------
-for f in live_files():
-    if is_exempt(f):
-        continue
+for f in scan_files():
     p = docs_root / f
     try:
         text = p.read_text(encoding="utf-8")
@@ -179,12 +191,12 @@ for f in live_files():
         continue
     lines = text.splitlines()
     for lineno, snippet in iter_snippets(text):
+        src_line = lines[lineno - 1] if 0 <= lineno - 1 < len(lines) else ""
+        if _IGNORE_MARKER in src_line:
+            continue  # a marked retirement note, not a prescribed command
         tok = offending_token(snippet)
         if tok is None:
             continue
-        src_line = lines[lineno - 1] if 0 <= lineno - 1 < len(lines) else ""
-        if _REMOVAL_LANG.search(src_line):
-            continue  # describing the removal, not prescribing the dead command
         sug = suggest(tok) or ""
         print(f"{f}\x1f{lineno}\x1f{tok}\x1f{sug}\x1f{snippet}")
 PY
@@ -217,7 +229,7 @@ if [[ -n "$new_offenders" ]]; then
     done <<< "$findings_raw"
   done <<< "$new_offenders"
   echo "" >&2
-  echo "Fix the dead ao reference (use the live equivalent, or historical wording), or — only if the page is a dyr0-lane golden path — add it to $baseline_rel." >&2
+  echo "Fix the dead ao reference (use the live equivalent), mark a deliberate retirement note with <!-- ao-resolve: ignore --> on that line, or — only if the page is a dyr0-lane golden path — add it to $baseline_rel." >&2
 fi
 
 if [[ -n "$stale_baseline" ]]; then

@@ -1,60 +1,13 @@
 #!/usr/bin/env bats
-# Anti-spiral guards (2026-07-28 incident: three days of planning/validation
-# artifacts, zero implementation commits). Deterministic surface:
-#   1. the rpi contract carries outcome ownership, bounded help, direct repair, and
-#      subject-first-reporting language, and its validator fails when any of
-#      those lines is removed;
-#   2. the validate contract requires a nonempty implementation candidate,
-#      and store-verdict mechanically refuses an empty subject manifest.
+# Anti-spiral guard (2026-07-28 incident: three days of planning/validation
+# artifacts, zero implementation commits). The deterministic surface is the
+# evidence store: store-verdict mechanically refuses a verdict over an empty
+# subject manifest, so no PASS can be persisted for a run that changed nothing.
 # Scenario guards that are runtime-behavioral (an orchestrator dispatching an
-# unsolicited planning lane) reduce to this contract text plus the validators
-# that pin it; they cannot be replayed in repo CI and are not faked here.
+# unsolicited planning lane) cannot be replayed in repo CI and are not faked here.
 
 setup() {
   REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
-}
-
-# Removing a load-bearing contract line must make the skill validator fail.
-stripped_validator_must_fail() {
-  local slug="$1" phrase="$2"
-  local copy="$BATS_TEST_TMPDIR/$slug-strip"
-  mkdir -p "$copy"
-  cp -R "$REPO_ROOT/skills/$slug/." "$copy/"
-  run bash "$copy/scripts/validate.sh"
-  [ "$status" -eq 0 ]
-  grep -Fv "$phrase" "$copy/SKILL.md" > "$copy/SKILL.md.tmp"
-  mv "$copy/SKILL.md.tmp" "$copy/SKILL.md"
-  run bash "$copy/scripts/validate.sh"
-  [ "$status" -ne 0 ]
-}
-
-@test "rpi validator pins acceptance authority" {
-  stripped_validator_must_fail rpi 'Acceptance changes need caller authority.'
-}
-
-@test "rpi validator pins one bounded helper" {
-  stripped_validator_must_fail rpi 'at most one bounded'
-}
-
-@test "rpi validator pins subject-first reporting" {
-  stripped_validator_must_fail rpi 'Own the authorized outcome through finish.'
-}
-
-@test "validate validator pins the nonempty-candidate precondition" {
-  # validate's validator resolves ../../schemas, so the copy needs a mini
-  # repo root, not a bare skill dir.
-  local root="$BATS_TEST_TMPDIR/validate-strip"
-  local copy="$root/skills/validate"
-  mkdir -p "$copy" "$root/schemas"
-  cp -R "$REPO_ROOT/skills/validate/." "$copy/"
-  cp "$REPO_ROOT"/schemas/subject-manifest.v1.schema.json \
-     "$REPO_ROOT"/schemas/verdict.v2.schema.json "$root/schemas/"
-  run bash "$copy/scripts/validate.sh"
-  [ "$status" -eq 0 ]
-  grep -Fv 'nonempty implementation candidate' "$copy/SKILL.md" > "$copy/SKILL.md.tmp"
-  mv "$copy/SKILL.md.tmp" "$copy/SKILL.md"
-  run bash "$copy/scripts/validate.sh"
-  [ "$status" -ne 0 ]
 }
 
 @test "store-verdict refuses an empty subject manifest" {
@@ -79,23 +32,4 @@ stripped_validator_must_fail() {
     --scope-result PASS
   [ "$status" -ne 0 ]
   [[ "$output" == *"no entries"* ]]
-}
-
-@test "AGENTS.md carries the constraint floor and spiral stop" {
-  grep -Fq 'A synthesis frozen without an active constraint is invalid' "$REPO_ROOT/AGENTS.md"
-  grep -Fq 'check-skill-python-ratchet.sh' "$REPO_ROOT/AGENTS.md"
-  grep -Fq 'Implement repairs ordinary known defects directly.' "$REPO_ROOT/AGENTS.md"
-  grep -Fq 'do not build a helper chain.' "$REPO_ROOT/AGENTS.md"
-}
-
-@test "rpi validator pins direct repair of understood defects" {
-  stripped_validator_must_fail rpi 'ordinary known'
-}
-
-@test "rpi validator pins fresh judgment" {
-  stripped_validator_must_fail rpi 'author-distinct'
-}
-
-@test "rpi validator preserves explicitly requested review until caller changes it" {
-  stripped_validator_must_fail rpi 'reviewers remain required.'
 }

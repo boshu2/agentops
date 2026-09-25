@@ -1,3 +1,7 @@
+---
+status: historical
+---
+
 # Headroom Pilot Runbook
 
 > **HISTORICAL:** This pilot references context and lookup commands removed from current `main`.

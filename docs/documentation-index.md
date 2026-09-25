@@ -20,7 +20,6 @@ Dated plans, audits, releases, and archive material are historical evidence, not
 
 ## Contracts
 
-- [Agents Documentation Authority](contracts/agents-documentation-authority.yaml)
 - [Bounded Contexts](contracts/bounded-contexts.yaml)
 - [Ci Jobs](contracts/ci-jobs.yaml)
 - [Codex Skill API Contract](contracts/codex-skill-api.md)
@@ -31,7 +30,6 @@ Dated plans, audits, releases, and archive material are historical evidence, not
 - [Finding Compiler Contract](contracts/finding-compiler.md)
 - [Finding Registry Contract](contracts/finding-registry.md)
 - [Finding Registry.Schema](contracts/finding-registry.schema.json)
-- [Forbidden Claims](contracts/forbidden-claims.yaml)
 - [GC 3.3 migration provenance](contracts/gc33-migration-provenance.md)
 - [Contracts](contracts/index.md)
 - [Optional Lesson Format](contracts/lesson-format.md)

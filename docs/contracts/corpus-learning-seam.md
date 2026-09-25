@@ -1,3 +1,7 @@
+---
+status: historical
+---
+
 # Corpus learning seam — the field-level public/private boundary
 
 > **SUPERSEDED CLI SURFACE:** The corpus commands cited below were retired; the

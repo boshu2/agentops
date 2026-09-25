@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # validate-agents-split.sh
 #
-# Enforces the lean AGENTS.md orientation contract after the root sibling
-# cutover (docs authority migrate-then-delete for AGENTS-*).
+# Enforces the lean AGENTS.md orientation contract.
 #   - AGENTS.md exists and is <=250 lines (orientation only)
 #   - AGENTS.md contains pointer links to the three detail owners
 #   - Each owner exists and links back to AGENTS.md
@@ -79,18 +78,10 @@ for owner in "${OWNERS[@]}"; do
   fi
 done
 
-# 6. Root AGENTS-* siblings must be gone
-for sib in AGENTS-WORKFLOW.md AGENTS-CI.md AGENTS-CODEX.md AGENTS-RUNTIME.md; do
-  checks=$((checks + 1))
-  if [ -e "$sib" ]; then
-    fail "legacy root sibling still present: $sib (migrate content to owners and delete)"
-  fi
-done
-
 echo "validate-agents-split: scanned $checks checks"
 
 if [ "$failed" -eq 0 ]; then
-  echo "PASS — AGENTS.md ($lines lines) + 3 detail owners, links bidirectional; no root siblings."
+  echo "PASS — AGENTS.md ($lines lines) + 3 detail owners, links bidirectional."
   exit 0
 fi
 

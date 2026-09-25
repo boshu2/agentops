@@ -32,7 +32,7 @@
       "id": "doc-release-stabilization-gate",
       "title": "doc-release stabilization gate passes",
       "kind": "command",
-      "objective": "Baseline the doc-release gate that validates links, metadata inventory, CLI-skills map parity, and release message freeze.",
+      "objective": "Baseline the doc-release gate that validates links, metadata inventory, CLI-skills map parity, and the changelog release entry.",
       "runtime": "shell",
       "timeout_seconds": 240,
       "inputs": {
@@ -43,7 +43,6 @@
         {"type": "exit_code", "value": 0},
         {"type": "stdout_contains", "value": "PASS: Link validation"},
         {"type": "stdout_contains", "value": "PASS: Skill count validation"},
-        {"type": "stdout_contains", "value": "PASS: release message freeze intact"},
         {"type": "stdout_contains", "value": "PASS: doc-release gate succeeded"}
       ],
       "dimensions": ["correctness", "process_adherence", "artifact_quality"],
@@ -129,7 +128,6 @@
       "expectations": [
         {"type": "artifact_contains", "target": "../../tests/docs/validate-doc-release.sh", "value": "run_check \"Link validation\""},
         {"type": "artifact_contains", "target": "../../tests/docs/validate-doc-release.sh", "value": "run_check \"Skill count validation\""},
-        {"type": "artifact_contains", "target": "../../tests/docs/validate-doc-release.sh", "value": "run_check \"Release message freeze validation\""},
         {"type": "artifact_contains", "target": "../../tests/docs/validate-skill-count.sh", "value": "metadata inventory covers"},
         {"type": "artifact_contains", "target": "../../scripts/validate-ci-policy-parity.sh", "value": "CI_POLICY_PARITY: PASS"}
       ],

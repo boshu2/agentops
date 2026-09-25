@@ -1,5 +1,5 @@
 # scripts/.docs-skill-refs-baseline — filename-pinned shrink baseline for
-# `check-doc-skill-refs.sh --all-docs` (age-gate-the-ungated-egwt.5).
+# `check-doc-skill-refs.sh` (age-gate-the-ungated-egwt.5).
 #
 # Each line is a LIVE docs/** path that currently carries a dead `/skill`
 # reference (a backtick-slash citation or slash-command heading that does not
@@ -11,8 +11,8 @@
 #   - A baselined file that no longer offends                  -> FAIL (PRUNE it
 #     from this list to lock the gain).
 #
-# To burn one down: repoint the `/skill` at its live successor, mark the line
-# retired/folded/legacy/historical, and then delete the file's line here.
+# To burn one down: repoint the `/skill` at its live successor, then delete the
+# file's line here.
 #
 # dyr0-owned / owner-locked pages (docs/getting-started/**, docs/comparisons/**,
 # receipts/proof pages, README/PRODUCT/GOALS) stay baselined if they offend —

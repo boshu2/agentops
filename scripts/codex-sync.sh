@@ -37,7 +37,7 @@
 # bespoke twin (many bespoke references are deliberate Codex rewrites of source);
 # refreshing one is a deliberate human edit. Auto-mirroring source over a bespoke
 # twin would clobber the hand-authored copy (age-0js4). Accidental drift is the
-# divergence gate's job (age-odv), not this generator's.
+# divergence gates' job (age-yxl, age-j1g), not this generator's.
 #
 # Usage:
 #   scripts/codex-sync.sh                 # generate any missing parity twin (writes)

@@ -18,7 +18,7 @@
 #   - the required section skeleton is present
 #   - major (X.0.0) carries a "## Breaking Changes" section
 #   - every "### " product-area heading is from the canonical taxonomy
-#   - every top-level product-area bullet uses a canonical action label
+#   - every top-level product-area bullet sits under a "### " product-area heading
 #   - COVERAGE: every product area the release actually touched (>= threshold files)
 #     appears as a "### " section — this is the mechanical guard against an
 #     under-scoped major (the v3.0.x churn root cause).
@@ -134,9 +134,8 @@ map_path_to_area() {
   esac
 }
 
-# --- Walk the Product Areas region: validate ### headings + bullet labels ---
+# --- Walk the Product Areas region: validate ### headings + bullet placement ---
 
-LABEL_RE='^- (Added|Changed|Refactored|Fixed|Deprecated|Removed|Security|Docs): '
 declare -A present_areas=()
 in_product_areas=0
 current_area=""
@@ -157,12 +156,8 @@ while IFS= read -r line; do
     continue
   fi
 
-  if [[ "$line" == "- "* ]]; then
-    if [[ -z "$current_area" ]]; then
-      fail "bullet outside any '### <product area>' heading: ${line}"
-    elif ! [[ "$line" =~ $LABEL_RE ]]; then
-      fail "bullet missing a canonical action label (Added:/Changed:/Refactored:/Fixed:/Deprecated:/Removed:/Security:/Docs:): ${line}"
-    fi
+  if [[ "$line" == "- "* && -z "$current_area" ]]; then
+    fail "bullet outside any '### <product area>' heading: ${line}"
   fi
 done < "$NOTES_FILE"
 

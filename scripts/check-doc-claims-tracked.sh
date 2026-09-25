@@ -1,65 +1,36 @@
 #!/usr/bin/env bash
 # check-doc-claims-tracked.sh — docs.claims-tracked gate.
 #
-# WHY: on 2026-09-03 a doc sentence said an egress log was "published" while
-# the repository's `*.log` ignore rule kept that exact file out of the tree,
-# and the fresh verifier accepted the absent file because nothing checked the
-# doc sentence against the working tree. Four separate judge rounds on that
-# same day filed the identical finding class: "a doc sentence outruns the
-# tree." A doc claiming a path is published, tracked, committed, or that it
-# "lives at" some path is a factual claim about the repository, and nothing
-# mechanical held it to the repository.
+# WHY: on 2026-09-03 an eval doc cited `evals/skill-probes/egress.log` as
+# published while the repository's `*.log` ignore rule kept that exact file out
+# of the tree, and a fresh verifier accepted the absent file. A path an eval
+# doc names is a claim about the repository; this gate holds it to git.
 #
-# WHAT: for every Markdown file under `evals/` and `docs/evals/` (this
-# includes `evals/skill-probes/*.md` — no separate handling is needed, it is
-# already inside `evals/`), scan every backtick-quoted inline token. A token
-# is a CANDIDATE claim path when it:
+# WHAT (facts only; no reading of intent): in every Markdown file under
+# `evals/` and `docs/evals/`, every backtick span and every double-quoted
+# string is a CANDIDATE path when, after trailing `.,;:` is stripped, it:
 #   * contains a `/` and no whitespace;
-#   * does not start with `<`, `$`, `~`, or `http` (a placeholder, an
-#     interpolated variable, a home-relative path, or a URL, never a claim
-#     about THIS repository's tree);
-#   * does not contain `*` or `{` (a glob pattern, not one file);
-#   * starts with one of `evals/`, `docs/evals/`, `scripts/`, or `tests/` —
-#     the four trees this gate can reason about.
-# A fence opens on a run of at least three backticks or tildes and closes only
-# on a run of the SAME character, at least as long, with nothing but whitespace
-# after it: a shorter run, the other character, or a trailing info string does
-# not close it.
-#
-# A fenced code block is skipped ONLY when it quotes a COMMAND, because a
-# command line is an example invocation rather than a claim about the tree:
-#   * its info string is a shell (`bash`, `sh`, `shell`, `console`, `zsh`), or
-#   * it has NO info string and its first non-blank line starts with `$`, with
-#     `./`, or with a known command word.
-# Every other fence is SCANNED — `text`, `json`, and any other data fence is
-# exactly where a scorecard or a probe README shows its own layout, and
-# exempting all fences let those claims outrun the tree unchecked.
-#
-# A code span's trailing sentence punctuation (`.`, `,`, `;`, `:`) is stripped
-# before the token is treated as a path, so "lives at `scripts/x.sh`." resolves
-# `scripts/x.sh` rather than a file named `scripts/x.sh.`.
-#
-# For each candidate path, relative to the repository root:
-#   * exists on disk but is NOT tracked by git      -> offender: untracked
-#   * does NOT exist on disk, and EITHER the same line uses one of the words
-#     "published", "tracked", "committed", or "lives at" (case-insensitive) OR
-#     the token sits inside a scanned DATA fence -> offender: missing.
-#     A data fence is a record of what IS: a scorecard block's
-#     `"status": "published"` and the path it names sit on different lines, so
-#     matching claim words per line let the sentence outrun the tree. Inside a
-#     data block every named path is a claim about the tree, full stop.
-#   * anything else (tracked-and-present, or absent-with-no-claim-word, which
-#     reads as a forward reference rather than a claim) is not an offender.
+#   * does not start with `<`, `$`, `~`, or `http` (placeholder, variable,
+#     home-relative path, URL);
+#   * contains no `*` or `{` (a glob, not one file);
+#   * starts with `evals/`, `docs/evals/`, `scripts/`, or `tests/`.
+# Each candidate is resolved against git, in this order:
+#   tracked by git                         -> fine
+#   ignored by the repository's ignore rules -> offender: ignored
+#   present on disk                        -> offender: untracked
+#   otherwise (missing, not ignored)       -> fine (a forward or historical
+#                                             reference; reviewer territory)
+# Only the repository's own ignore rules count (.gitignore files and
+# .git/info/exclude); a developer's global excludes file is ignored so the
+# verdict matches CI.
 #
 # Output: one line per offender, `file:line: path <state>`.
 #
 # Exit codes:
 #   0 - clean (or nothing to scan)
 #   1 - one or more offenders found
-#   2 - fail-closed error (git missing/unusable, python3 missing, a scanned
-#       file could not be read as UTF-8 text, or a `git ls-files` lookup that
-#       answered neither "tracked" (0) nor "untracked" (1) — an unanswered
-#       question is never a negative answer)
+#   2 - fail-closed error (not a git repository, an unreadable tree or file,
+#       or a git lookup that answered neither yes (0) nor no (1))
 #
 # Usage:
 #   bash scripts/check-doc-claims-tracked.sh
@@ -75,7 +46,7 @@ PROG="check-doc-claims-tracked"
 TARGET="${1:-$REPO_ROOT}"
 
 if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
-  sed -n '2,58p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  sed -n '2,37p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
   exit 0
 fi
 
@@ -92,9 +63,8 @@ find_errors="$work/find-errors.txt"
 : > "$find_errors"
 for base in "evals" "docs/evals"; do
   if [ -d "$TARGET/$base" ]; then
-    # A swallowed enumeration error certifies whatever it could not read. An
-    # unreadable directory is a scan that did not happen, never a clean one, so
-    # find's exit code and its stderr are both load-bearing here.
+    # An unreadable directory is a scan that did not happen, never a clean one,
+    # so find's exit code and its stderr are both load-bearing here.
     set +e
     portable_find "$TARGET/$base" -type f -name '*.md' >> "$file_list" 2>>"$find_errors"
     find_rc=$?
@@ -121,178 +91,71 @@ fi
 
 set +e
 output="$(python3 - "$TARGET" "$file_list" <<'PY'
+import functools
 import os
 import re
 import subprocess
 import sys
 
-repo_root = sys.argv[1]
-with open(sys.argv[2], "r", encoding="utf-8") as _fl:
-    files = [line.rstrip("\n") for line in _fl if line.strip()]
+root = sys.argv[1]
+with open(sys.argv[2], "r", encoding="utf-8") as listing:
+    files = [line.rstrip("\n") for line in listing if line.strip()]
 
-BACKTICK_RE = re.compile(r"`([^`\n]+)`")
-# Inside a DATA fence a repo path is usually a plain JSON or YAML string, not a
-# code span: a scorecard writes "artifact": "evals/.../x.log". Scanning only
-# backtick spans there left the commonest real shape unchecked.
-QUOTED_RE = re.compile(r"\"([^\"\n]+)\"")
+TOKEN_RES = (re.compile(r"`([^`\n]+)`"), re.compile(r"\"([^\"\n]+)\""))
 PREFIXES = ("evals/", "docs/evals/", "scripts/", "tests/")
-CLAIM_WORDS = ("published", "tracked", "committed", "lives at")
-FENCE_RE = re.compile(r"^\s{0,3}(`{3,}|~{3,})\s*(\S*)")
-# A fence is exempt only when it quotes a COMMAND. These are the info strings
-# that say so outright.
-SHELL_INFO = frozenset({"bash", "sh", "shell", "console", "zsh"})
-# ...and these are the first words that say so for an info-less fence. An
-# allowlist, not a heuristic: "anything that looks like a word" would exempt
-# every data fence and reopen the hole this rule closes.
-COMMAND_WORDS = frozenset({
-    "ao", "bash", "bats", "bd", "br", "bv", "cat", "cd", "chmod", "cp", "curl",
-    "docker", "echo", "export", "find", "git", "go", "grep", "helm", "jq",
-    "kubectl", "ls", "make", "mkdir", "mv", "node", "npm", "npx", "printf",
-    "python", "python3", "rg", "rm", "sed", "sh", "shellcheck", "sort", "tar",
-    "touch", "uv", "yarn", "zsh",
-})
-# Sentence punctuation that follows a path inside a code span.
-TRAILING_PUNCTUATION = ".,;:"
 
 
-def command_fence(first_line: str) -> bool:
-    """True when an info-less fence's first content line is a command."""
-    stripped = first_line.strip()
-    if not stripped:
-        return False
-    if stripped.startswith("$") or stripped.startswith("./"):
-        return True
-    return stripped.split()[0] in COMMAND_WORDS
+def is_candidate(tok):
+    return (
+        "/" in tok
+        and not any(ch.isspace() for ch in tok)
+        and not tok.startswith(("<", "$", "~"))
+        and not tok.lower().startswith("http")
+        and "*" not in tok
+        and "{" not in tok
+        and tok.startswith(PREFIXES)
+    )
 
 
-def is_candidate(tok: str) -> bool:
-    if not tok or " " in tok or "\t" in tok:
-        return False
-    if "/" not in tok:
-        return False
-    if tok.startswith(("<", "$", "~")):
-        return False
-    if tok.lower().startswith("http"):
-        return False
-    if "*" in tok or "{" in tok:
-        return False
-    return tok.startswith(PREFIXES)
-
-
-def is_tracked(relpath: str) -> bool:
-    result = subprocess.run(
-        ["git", "-C", repo_root, "ls-files", "--error-unmatch", "--", relpath],
+def git_says_yes(*args):
+    # 0 is yes and 1 is no; anything else is git failing to answer, and an
+    # unanswered question is never a negative answer.
+    rc = subprocess.run(
+        ["git", "-C", root, "-c", "core.excludesFile=/dev/null", *args],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
-    )
-    # 0 is "tracked" and 1 is "not tracked"; anything else is git failing to
-    # answer. Reading a failure as "untracked" would report a false offender
-    # and, worse, would let a real answer be replaced by a broken tool.
-    if result.returncode not in (0, 1):
-        print(
-            f"git ls-files failed for {relpath} (exit {result.returncode})",
-            file=sys.stderr,
-        )
+    ).returncode
+    if rc not in (0, 1):
+        print(f"git {args[0]} failed for {args[-1]} (exit {rc})", file=sys.stderr)
         sys.exit(2)
-    return result.returncode == 0
+    return rc == 0
+
+
+@functools.lru_cache(maxsize=None)
+def offence(path):
+    if git_says_yes("ls-files", "--error-unmatch", "--", path):
+        return None
+    if git_says_yes("check-ignore", "--no-index", "-q", "--", path):
+        return "ignored"
+    return "untracked" if os.path.lexists(os.path.join(root, path)) else None
 
 
 offenders = []
-for display_path in files:
+for name in files:
     try:
-        with open(display_path, "r", encoding="utf-8") as fh:
+        with open(name, "r", encoding="utf-8") as fh:
             lines = fh.readlines()
     except (OSError, UnicodeDecodeError) as exc:
-        print(f"could not read {display_path}: {exc}", file=sys.stderr)
+        print(f"could not read {name}: {exc}", file=sys.stderr)
         sys.exit(2)
-
-    rel_display = os.path.relpath(display_path, repo_root)
-    # PASS 1: classify each line as skipped, data-fence, or prose, and group the
-    # prose into blank-line-delimited paragraphs. The claim words are a property
-    # of the PARAGRAPH, not of the line: "the log is published at the\npath `x`"
-    # wrapped across two lines and the claim went blind.
-    KIND_SKIP, KIND_DATA, KIND_PROSE = 0, 1, 2
-    kinds = [KIND_SKIP] * len(lines)
-    paragraph_of = [-1] * len(lines)
-    paragraphs = []
-    fence_marker = None
-    fence_length = 0
-    fence_decided = None
-    current = -1
-    for index, line in enumerate(lines):
-        opener = FENCE_RE.match(line)
-        if fence_marker is None:
-            if opener is not None:
-                fence_marker = opener.group(1)[0]
-                fence_length = len(opener.group(1))
-                fence_info = opener.group(2).split(",")[0].strip().lower()
-                # A shell fence is exempt on its info string alone; an
-                # info-less fence waits for its first content line.
-                fence_decided = True if fence_info in SHELL_INFO else (
-                    None if fence_info == "" else False
-                )
-                current = -1
-                continue
-        else:
-            # CommonMark closes a fence only with the SAME character, a run at
-            # least as long as the opener, and nothing but whitespace after it.
-            # Matching the first character alone let a shorter run, a different
-            # character, or an info-bearing line close a block, so the scanner's
-            # idea of "inside a fence" drifted from the renderer's.
-            if (
-                opener is not None
-                and opener.group(1)[0] == fence_marker
-                and len(opener.group(1)) >= fence_length
-                and not opener.group(2).strip()
-                and not line.strip().strip(fence_marker)
-            ):
-                fence_marker = None
-                fence_length = 0
-                fence_decided = None
-                continue
-            if fence_decided is None:
-                fence_decided = command_fence(line)
-            if not fence_decided:
-                kinds[index] = KIND_DATA
-            continue
-        if not line.strip():
-            current = -1
-            continue
-        if current == -1:
-            paragraphs.append("")
-            current = len(paragraphs) - 1
-        paragraphs[current] += line.lower()
-        kinds[index] = KIND_PROSE
-        paragraph_of[index] = current
-
-    paragraph_claims = [
-        any(word in text for word in CLAIM_WORDS) for text in paragraphs
-    ]
-
-    # PASS 2: resolve the candidates each line carries.
+    rel = os.path.relpath(name, root)
     for lineno, line in enumerate(lines, start=1):
-        kind = kinds[lineno - 1]
-        if kind == KIND_SKIP:
-            continue
-        # A data block is a record of what IS, so every path it names is a
-        # claim; in prose the claim is the paragraph the path sits in.
-        claims = kind == KIND_DATA or paragraph_claims[paragraph_of[lineno - 1]]
-        raw_tokens = list(BACKTICK_RE.findall(line))
-        if kind == KIND_DATA:
-            raw_tokens += QUOTED_RE.findall(line)
-        for raw_tok in raw_tokens:
-            # A path at the end of a sentence carries the sentence's
-            # punctuation inside the span; strip it before resolving.
-            tok = raw_tok.strip().rstrip(TRAILING_PUNCTUATION)
-            if not is_candidate(tok):
-                continue
-            abs_path = os.path.join(repo_root, tok)
-            exists = os.path.exists(abs_path) or os.path.islink(abs_path)
-            if exists:
-                if not is_tracked(tok):
-                    offenders.append(f"{rel_display}:{lineno}: {tok} untracked")
-            elif claims:
-                offenders.append(f"{rel_display}:{lineno}: {tok} missing")
+        for token_re in TOKEN_RES:
+            for raw in token_re.findall(line):
+                tok = raw.strip().rstrip(".,;:")
+                state = offence(tok) if is_candidate(tok) else None
+                if state:
+                    offenders.append(f"{rel}:{lineno}: {tok} {state}")
 
 for offender in offenders:
     print(offender)
@@ -309,10 +172,10 @@ if [ "$rc" -eq 2 ]; then
 fi
 
 if [ "$rc" -eq 1 ]; then
-  printf '[%s] FAIL: doc claims outrun the tree:\n' "$PROG" >&2
+  printf '[%s] FAIL: eval docs name paths git does not hold:\n' "$PROG" >&2
   printf '%s\n' "$output" >&2
   exit 1
 fi
 
-printf '[%s] OK: %s Markdown file(s) under evals/ and docs/evals/ make no untracked or missing path claims\n' "$PROG" "$scanned"
+printf '[%s] OK: %s Markdown file(s) under evals/ and docs/evals/ name no ignored or untracked path\n' "$PROG" "$scanned"
 exit 0

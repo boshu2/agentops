@@ -52,7 +52,7 @@ Use the latest stable **BD (Beads)** for this repository. `br` is a different
 implementation and is not a fallback or an alias for `bd`. The repo-local
 `.beads/redirect` resolves the verified private BD/Dolt store from the root and
 subdirectories; use `bd context --json` to inspect the actual destination before
-mutating work. Do not use the removed `ao beads dir` command or initialize a new
+mutating work. Do not use the removed `ao beads dir` command or initialize a new <!-- ao-resolve: ignore -->
 store when routing is unavailable. The preserved `_beads` SQLite estate is migration history, not the live work queue.
 
 Beads Viewer is optional advice over an explicitly refreshed BD export. BD owns

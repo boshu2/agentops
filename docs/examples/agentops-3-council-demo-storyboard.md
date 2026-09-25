@@ -1,3 +1,7 @@
+---
+status: historical
+---
+
 # AgentOps 3.0 Council Demo Storyboard
 
 > **SUPERSEDED:** This storyboard targets command surfaces removed from current `main`. Its BR and `ao beads dir` commands are historical examples, not current instructions; current work uses native BD under the repository operating contract.

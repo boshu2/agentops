@@ -66,7 +66,7 @@ was cut rather than kept as a green-looking shell:
 - [ADR-0016](adr/ADR-0016-state-tiers.md) — one authority per claim;
   projections and scratch are never authoritative.
 
-`ao flywheel` and the whole knowledge-compounding command family were removed
+`ao flywheel` and the whole knowledge-compounding command family were removed <!-- ao-resolve: ignore -->
 with that cut; see [MIGRATION.md](MIGRATION.md) for the per-verb replacements.
 
 ## If you want the loop
