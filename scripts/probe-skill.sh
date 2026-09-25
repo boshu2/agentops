@@ -36,7 +36,7 @@
 #
 # MODES:
 #   live (default)  dispatch a cross-family worker (codex exec — the sanctioned
-#                   headless path; NEVER claude -p, LAW 0) for each arm x rep,
+#                   headless path) for each arm x rep,
 #                   capture the transcript, run the discriminator, and publish
 #                   a new immutable fixture set so its bound classification is
 #                   replayable. Existing fixture sets are never overwritten.

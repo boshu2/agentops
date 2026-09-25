@@ -82,16 +82,16 @@ echo "Test 4: Sandbox level mapping"
 assert_contains "full-auto for workspace-write" "full-auto" "$OUTPUT"
 assert_contains "read-only for read-only agent" "read-only" "$OUTPUT"
 
-# Test 5: Deprecated Claude runtime is rejected before dry-run command assembly
-echo "Test 5: Deprecated Claude runtime rejection"
+# Test 5: Unsupported Claude runtime is rejected before dry-run command assembly
+echo "Test 5: Unsupported Claude runtime rejection"
 CLAUDE_OUTPUT=$(cd "$REPO_ROOT" && TEAM_RUNNER_DRY_RUN=1 bash "$RUNNER" "$FIXTURES/sample-team-spec-claude.json" 2>&1)
 assert_eq "claude runtime rejected" "1" "$?"
-assert_contains "explains LAW 0 rejection" "runtime \"claude\" is disabled by LAW 0" "$CLAUDE_OUTPUT"
+assert_contains "explains unsupported-runtime rejection" "runtime \"claude\" is not supported by team-runner" "$CLAUDE_OUTPUT"
 assert_not_contains "does not print claude command" "claude -p" "$CLAUDE_OUTPUT"
 assert_not_contains "does not print stream invocation" "stream-json" "$CLAUDE_OUTPUT"
 
-# Test 6: Deprecated Claude runtime is rejected before binary lookup/spawn
-echo "Test 6: Deprecated Claude runtime does not invoke fake binary"
+# Test 6: Unsupported Claude runtime is rejected before binary lookup/spawn
+echo "Test 6: Unsupported Claude runtime does not invoke fake binary"
 mkdir -p "$TMPDIR/bin"
 cat > "$TMPDIR/bin/claude" <<CLAUDEEOF
 #!/usr/bin/env bash
@@ -103,7 +103,7 @@ chmod +x "$TMPDIR/bin/claude"
 CLAUDE_CRASH_OUTPUT=$(cd "$REPO_ROOT" && PATH="$TMPDIR/bin:$PATH" bash "$RUNNER" "$FIXTURES/sample-team-spec-claude.json" 2>&1)
 CLAUDE_CRASH_EXIT=$?
 assert_eq "claude rejection exit code 1" "1" "$CLAUDE_CRASH_EXIT"
-assert_contains "reports law0 rejection" "runtime \"claude\" is disabled by LAW 0" "$CLAUDE_CRASH_OUTPUT"
+assert_contains "reports unsupported-runtime rejection" "runtime \"claude\" is not supported by team-runner" "$CLAUDE_CRASH_OUTPUT"
 assert_eq "fake claude binary not invoked" "false" "$(test -f "$TMPDIR/claude-invoked" && echo true || echo false)"
 
 echo ""
