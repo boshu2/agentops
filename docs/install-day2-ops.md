@@ -167,8 +167,9 @@ Use `--dry-run` to preview and `--dest /path/to/skills` for one discovery root.
 
 The command links selected canonical `skills/<slug>/` directories into
 `~/.agents/skills` and detected runtime roots: `~/.claude/skills`,
-`~/.codex/skills`, `~/.gemini/skills`, `~/.cursor/skills` and `~/.pi/skills` when
-their parent config directories exist.
+`~/.codex/skills`, `~/.gemini/skills`, `~/.cursor/skills` and `~/.pi/agent/skills`
+when their parent config directories exist (`~/.pi/agent` for Pi, since its
+project-level dir `.pi/skills` is a separate location).
 It refuses to replace real directories, foreign links, or user-owned skills.
 For OpenCode's dedicated discovery root, pass
 `--dest ~/.config/opencode/skills`; its portable `~/.agents/skills` root is
