@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 790" role="img" aria-labelledby="arTitle arDesc">
-  <title id="arTitle">AgentOps 3.8 routes: enter anywhere, repair within real limits, then a fresh judgment</title>
-  <desc id="arDesc">Engineering workflow. Intent that is clear and accepted goes to Implement; unclear intent goes to Plan, then to Implement once settled. An existing change goes straight to fresh judgment. Implement runs native checks, then fresh judgment, independent of the author. Accepted work finishes. Failed behavior goes back to Implement for repair. Missing evidence is gathered, then the candidate is judged again. Repair stays within real limits; when they are spent, the work stops and goes back to the caller. Beside it, the optional learning loop: a result becomes a protected draft outside Git, gets a fresh support and disclosure review, lands in reviewed .context/ pages, and later work queries it.</desc>
+  <title id="arTitle">AgentOps 3.8 routes: enter anywhere, repair failures, then a fresh judgment</title>
+  <desc id="arDesc">Engineering workflow. Intent that is clear and accepted goes to Implement; unclear intent goes to Plan, then to Implement once settled. An existing change goes straight to fresh judgment. Implement runs native checks, then fresh judgment, independent of the author. Accepted work finishes. Failed behavior goes back to Implement for repair. Missing evidence is gathered, then the candidate is judged again. Beside it, the optional learning loop: a result becomes a protected draft outside Git, gets a fresh support and disclosure review, lands in reviewed .context/ pages, and later work queries it.</desc>
 
   <defs>
     <linearGradient id="arPanel" x1="0" y1="0" x2="0" y2="1">
