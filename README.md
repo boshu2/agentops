@@ -76,7 +76,7 @@ custom roles and read limits have [separate setup](docs/install-day2-ops.md#inst
 </details>
 
 <details>
-<summary><strong>Cursor, Gemini, Pi and other agents</strong></summary>
+<summary><strong>Cursor, Grok Bot, Gemini, Pi and other agents</strong></summary>
 
 With Node.js installed, run from your project directory:
 
