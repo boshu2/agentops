@@ -505,7 +505,8 @@ does not remove existing unselected skills or install dependencies automatically
 
 By DEFAULT it links into EVERY agent runtime you have installed —
 ~/.agents/skills, ~/.claude/skills, ~/.codex/skills, ~/.gemini/skills,
-~/.cursor/skills, and ~/.pi/skills — detected by the config root existing under $HOME;
+~/.cursor/skills, and ~/.pi/agent/skills — each detected by its config root
+existing under $HOME (~/.pi/agent for Pi);
 --dest overrides to a single dir. Idempotent and non-destructive: skills already
 linked to this repository are left alone. A wrong or broken symlink, or a name
 owned by a real directory, is reported as a conflict and never clobbered.
@@ -586,8 +587,9 @@ func (m *Module) unlinkCommand() *cobra.Command {
 live tier and remove EXACTLY the symlinks that link minted — those whose target
 resolves into THIS repo's skills/ tree. By DEFAULT it sweeps EVERY agent runtime
 you have installed — ~/.agents/skills, ~/.claude/skills, ~/.codex/skills,
-~/.gemini/skills, ~/.cursor/skills, and ~/.pi/skills — detected by the config
-root existing under $HOME; --dest overrides to a single dir. Idempotent and
+~/.gemini/skills, ~/.cursor/skills, and ~/.pi/agent/skills — each detected by
+its config root existing under $HOME (~/.pi/agent for Pi); --dest overrides to
+a single dir. Idempotent and
 non-destructive: a foreign symlink pointing outside the repo and a name owned by
 a real directory (a foreign corpus such as jsm) are both reported as foreign and
 never removed. A stale link to a skill since removed from the repo is still
