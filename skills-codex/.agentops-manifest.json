@@ -297,8 +297,8 @@
     {
       "name": "cc-hooks",
       "source_skill": "skills/cc-hooks",
-      "source_hash": "ecc1558048f30c40180780dc13ccab3dde255c4ad177eb9ae7ce8010a59fa4bd",
-      "generated_hash": "eaa9b97dc5ff10e5188473005eeb09bd80d7357db6e3fd51dd1a737b44f9e94e"
+      "source_hash": "8d5f7350a7db32c219b8cef07e76a170f2e5f10efb8db3deaa767e58375fd2b1",
+      "generated_hash": "675cab12ae355371f63210a16ca15f85e95d2ec306c42df13ae40c43c7d186b0"
     },
     {
       "name": "codex-exec",
@@ -309,8 +309,8 @@
     {
       "name": "council",
       "source_skill": "skills/council",
-      "source_hash": "b3f3b71c9e80e77e476f8644aa93680b176cb5b26c256f2ef24105b0cbc3a924",
-      "generated_hash": "f5dbc87b273d3de998d537e655352cb5f7f4343bd4ea3a9760958aa9406bd903"
+      "source_hash": "9a0b369318aee9c6793b72ee5792dbc0d515260d424588b83faad17e1d1f6de8",
+      "generated_hash": "cdb1075f05b458de631ff08037dd28409ad83c392322b34359a511b10768df67"
     },
     {
       "name": "craft-goal",

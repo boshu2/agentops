@@ -5,17 +5,9 @@ Codex release twins are generated under `skills-codex/` from the canonical
 cataloged Codex-specific override; generated hashes bind every twin to its
 source.
 
-New installations should use one checkout plus source links:
-
-```bash
-cd ~/.local/share/agentops
-ao skills link
-```
-
-That links the canonical skills into `~/.agents/skills` and
-`~/.codex/skills`. Codex release twins and the 3.x native plugin package remain
-distribution/migration compatibility artifacts for this release, not a second
-source of truth.
+Codex users install the AgentOps Codex plugin (see the README Quickstart), which
+ships these twins. Contributors working from a checkout can run `ao skills link`
+instead. The twins are a generated projection, not a second source of truth.
 
 Verify the generated image and source hashes with:
 

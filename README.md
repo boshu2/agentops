@@ -36,7 +36,7 @@ many RPIs tracked in
 | Says “done” after a green test run | A fresh judge that didn't write the change |
 | Loses the thread on work bigger than one session | A Beads graph holding intent, dependencies and verdicts |
 | Runs off with a half-formed goal | An interview that settles the goal before agents go autonomous |
-| Gives one model's answer to a hard call | A [council](skills/council/SKILL.md): judges in fresh contexts (one model family or several vendors) compare, duel (score each other's ideas) or debate to your majority, keep dissent, and can answer an interview for you; [Idea Genie](skills/idea-genie/SKILL.md) brainstorms options |
+| Gives one model's answer to a hard call | A [council](skills/council/SKILL.md): judges in fresh contexts, each with the model, effort and perspective you assign (one model family or several vendors), compare, duel (score each other's ideas) or debate to your majority, keep dissent, and can answer an interview for you; [Idea Genie](skills/idea-genie/SKILL.md) brainstorms options |
 | Loses its plans, research and decisions when the session ends | Plans and decisions saved on the bead or issue (Plan, Interview, Navigate); research and idea reports under `.agents/`; council reports where you choose |
 | Repeats the last session's investigation | [Memory](skills/memory/SKILL.md) turns reviewed, disclosure-checked lessons into `.context/` pages safe to commit |
 
