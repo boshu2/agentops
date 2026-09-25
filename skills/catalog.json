@@ -1,70 +1,7 @@
 {
   "schema_version": "3",
-  "skill_count": 38,
+  "skill_count": 29,
   "skills": [
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
-        "account_rotation"
-      ],
-      "codex_override_present": true,
-      "consumes": [],
-      "context_rel": [],
-      "dependencies": [],
-      "description": "Switch coding-agent accounts and verify runtime identity. Use when: the caller requests an account change; never rotate automatically to evade a quota.",
-      "disposition": "keep_optional_adapter",
-      "effects": [
-        "rotate_agent_account"
-      ],
-      "graph_root": false,
-      "hexagonal_role": "supporting",
-      "name": "account-rotation",
-      "practices": [
-        "pragmatic-programmer"
-      ],
-      "produces": [],
-      "references_count": 0,
-      "tier": "execution",
-      "user_invocable": true
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
-        "agent_mail"
-      ],
-      "codex_override_present": true,
-      "consumes": [
-        "coordination-request"
-      ],
-      "context_rel": [
-        {
-          "kind": "supplier-to",
-          "with": "agent-native"
-        }
-      ],
-      "dependencies": [],
-      "description": "Coordinate selected writers with Agent Mail messages and advisory file reservations. Use when: this adapter is requested; mail does not own tracker status.",
-      "disposition": "keep_optional_adapter",
-      "effects": [
-        "write_agent_mail_records",
-        "install_precommit_guard",
-        "authorized_destructive_reset"
-      ],
-      "graph_root": false,
-      "hexagonal_role": "supporting",
-      "name": "agent-mail",
-      "practices": [
-        "pragmatic-programmer"
-      ],
-      "produces": [
-        "agent-identity",
-        "file-reservation",
-        "acknowledged-handoff"
-      ],
-      "references_count": 3,
-      "tier": "execution",
-      "user_invocable": true
-    },
     {
       "canonical_status": "canonical",
       "capabilities": [
@@ -80,15 +17,7 @@
       "context_rel": [
         {
           "kind": "customer-of",
-          "with": "ntm"
-        },
-        {
-          "kind": "customer-of",
           "with": "codex-exec"
-        },
-        {
-          "kind": "customer-of",
-          "with": "agent-mail"
         }
       ],
       "dependencies": [],
@@ -110,7 +39,7 @@
         "worker-handoff",
         "per-packet-results"
       ],
-      "references_count": 3,
+      "references_count": 5,
       "tier": "meta",
       "user_invocable": true
     },
@@ -153,33 +82,6 @@
     {
       "canonical_status": "canonical",
       "capabilities": [
-        "cass"
-      ],
-      "codex_override_present": true,
-      "consumes": [],
-      "context_rel": [],
-      "dependencies": [],
-      "description": "Search agent session logs and cited episodes with CASS. Use when: past prompts, decisions or failures may answer a question; repeated text is not a proven lesson.",
-      "disposition": "keep_optional_adapter",
-      "effects": [
-        "rebuild_local_index",
-        "sync_remote_sources",
-        "download_semantic_model"
-      ],
-      "graph_root": false,
-      "hexagonal_role": "supporting",
-      "name": "cass",
-      "practices": [
-        "pragmatic-programmer"
-      ],
-      "produces": [],
-      "references_count": 17,
-      "tier": "execution",
-      "user_invocable": true
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
         "cc_hooks"
       ],
       "codex_override_present": true,
@@ -200,7 +102,7 @@
         "pragmatic-programmer"
       ],
       "produces": [],
-      "references_count": 8,
+      "references_count": 6,
       "tier": "execution",
       "user_invocable": true
     },
@@ -308,31 +210,6 @@
       ],
       "references_count": 1,
       "tier": "judgment",
-      "user_invocable": true
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
-        "dcg"
-      ],
-      "codex_override_present": true,
-      "consumes": [],
-      "context_rel": [],
-      "dependencies": [],
-      "description": "Diagnose a Destructive Command Guard block or configure its rules. Use when: DCG rejected an operation or policy work is requested; never disguise commands to bypass it.",
-      "disposition": "keep_optional_adapter",
-      "effects": [
-        "write_dcg_config"
-      ],
-      "graph_root": false,
-      "hexagonal_role": "supporting",
-      "name": "dcg",
-      "practices": [
-        "pragmatic-programmer"
-      ],
-      "produces": [],
-      "references_count": 6,
-      "tier": "execution",
       "user_invocable": true
     },
     {
@@ -562,33 +439,6 @@
     {
       "canonical_status": "canonical",
       "capabilities": [
-        "ms"
-      ],
-      "codex_override_present": true,
-      "consumes": [],
-      "context_rel": [],
-      "dependencies": [],
-      "description": "Find and load guidance with the meta_skill search engine. Use when: searching a skill corpus; CASS owns past sessions and Skill Builder owns package authoring.",
-      "disposition": "keep_optional_adapter",
-      "effects": [
-        "spawn_search_server",
-        "write_feedback_outcomes",
-        "rebuild_search_index"
-      ],
-      "graph_root": false,
-      "hexagonal_role": "supporting",
-      "name": "ms",
-      "practices": [
-        "pragmatic-programmer"
-      ],
-      "produces": [],
-      "references_count": 0,
-      "tier": "execution",
-      "user_invocable": true
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
         "observe_work_graph",
         "select_next_wave",
         "ratchet_work_graph",
@@ -627,42 +477,6 @@
       ],
       "produces": [
         "native-handoffs"
-      ],
-      "references_count": 0,
-      "tier": "execution",
-      "user_invocable": true
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
-        "ntm"
-      ],
-      "codex_override_present": true,
-      "consumes": [
-        "pane-command-request"
-      ],
-      "context_rel": [
-        {
-          "kind": "supplier-to",
-          "with": "agent-native"
-        }
-      ],
-      "dependencies": [],
-      "description": "Operate selected NTM agent panes and inspect native state. Use when: persistent tmux roles are requested; pane liveness and prompt delivery are not validation.",
-      "disposition": "keep_optional_adapter",
-      "effects": [
-        "manage_ntm_panes",
-        "dispatch_pane_commands"
-      ],
-      "graph_root": false,
-      "hexagonal_role": "supporting",
-      "name": "ntm",
-      "practices": [
-        "pragmatic-programmer"
-      ],
-      "produces": [
-        "ntm-robot-state",
-        "agent-worker-transcript"
       ],
       "references_count": 0,
       "tier": "execution",
@@ -793,32 +607,6 @@
       ],
       "references_count": 1,
       "tier": "judgment",
-      "user_invocable": true
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
-        "rch"
-      ],
-      "codex_override_present": true,
-      "consumes": [],
-      "context_rel": [],
-      "dependencies": [],
-      "description": "Offload one build through RCH or diagnose its remote compiler. Use when: remote compilation is selected; report errors without creating a retry controller.",
-      "disposition": "keep_optional_adapter",
-      "effects": [
-        "remote_compilation_offload",
-        "authorized_remote_daemon_worker_mutation"
-      ],
-      "graph_root": false,
-      "hexagonal_role": "supporting",
-      "name": "rch",
-      "practices": [
-        "pragmatic-programmer"
-      ],
-      "produces": [],
-      "references_count": 7,
-      "tier": "execution",
       "user_invocable": true
     },
     {
@@ -1040,33 +828,6 @@
     {
       "canonical_status": "canonical",
       "capabilities": [
-        "sbh"
-      ],
-      "codex_override_present": true,
-      "consumes": [],
-      "context_rel": [],
-      "dependencies": [],
-      "description": "Inspect disk pressure with SBH and perform an authorized recovery action. Use when: storage diagnosis or SBH recovery is requested; inspection does not authorize deletion.",
-      "disposition": "keep_optional_adapter",
-      "effects": [
-        "delete_reclaimable_files",
-        "release_disk_ballast",
-        "modify_host_storage_config"
-      ],
-      "graph_root": false,
-      "hexagonal_role": "supporting",
-      "name": "sbh",
-      "practices": [
-        "pragmatic-programmer"
-      ],
-      "produces": [],
-      "references_count": 0,
-      "tier": "execution",
-      "user_invocable": true
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
         "security"
       ],
       "codex_override_present": true,
@@ -1211,41 +972,6 @@
         "test-evidence"
       ],
       "references_count": 7,
-      "tier": "execution",
-      "user_invocable": true
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
-        "route_to_native_flywheel_workflow",
-        "expose_agentops_skills",
-        "observe_flywheel_runtime"
-      ],
-      "codex_override_present": true,
-      "consumes": [
-        "explicit-packets"
-      ],
-      "context_rel": [
-        {
-          "kind": "partnership",
-          "with": "using-gc"
-        }
-      ],
-      "dependencies": [],
-      "description": "Operate the Agentic Coding Flywheel through its native workflow. Use when: the caller explicitly selects this factory; convergence and closed work do not prove semantic acceptance.",
-      "disposition": "keep_optional_adapter",
-      "effects": [],
-      "graph_root": false,
-      "hexagonal_role": "driving-adapter",
-      "name": "using-flywheel",
-      "practices": [
-        "team-topologies",
-        "design-by-contract"
-      ],
-      "produces": [
-        "flywheel-runtime-evidence"
-      ],
-      "references_count": 0,
       "tier": "execution",
       "user_invocable": true
     },

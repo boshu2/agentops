@@ -7,11 +7,7 @@ consumes: [explicit-role-packets]
 produces: [runtime-evidence, worker-handoff, per-packet-results]
 context_rel:
 - kind: customer-of
-  with: ntm
-- kind: customer-of
   with: codex-exec
-- kind: customer-of
-  with: agent-mail
 skill_api_version: 1
 user-invocable: true
 metadata:
@@ -116,7 +112,7 @@ batch mode selects no backlog work, creates no queue and integrates no changes.
    through the caller-owned native recording channel with its provenance and
    permitted source locator. Preserve launch failures and unknowns if startup
    never becomes observable. Follow
-   [session associations](../cass/references/SESSION_FORMATS.md#work-to-session-associations)
+   [session associations](../agent-native/references/session-associations.md#work-to-session-associations)
    for separate parent/resume links, supported multi-work spans and frozen source
    bounds. A controller is not necessarily a native parent; every requested
    child and resumed execution needs its own observed association. If recording

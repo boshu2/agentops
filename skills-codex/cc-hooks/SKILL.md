@@ -98,40 +98,10 @@ Decisions: `"allow"` (auto-approve), `"deny"` (block), `"ask"` (show dialog)
   "updatedInput":{"command":"modified-command"}}}
 ```
 
-## Real-World: DCG + RCH
+## External command guards
 
-```json
-{"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[
-  {"type":"command","command":"dcg"},
-  {"type":"command","command":"rch"}
-]}]}}
-```
-
-- **DCG**: Blocks `git reset --hard`, `rm -rf`, `git push --force`
-- **RCH**: Routes builds to remote workers
-
-Details: [DCG-RCH.md](references/DCG-RCH.md)
-
-## Skill-First Coordination Guard (opt-in)
-
-A copy-paste PreToolUse recipe that nudges agents to **load the coordination
-skill before hand-rolling the `am`/`atm`/`ntm`/`tmux send-keys` CLI**. This
-recipe auto-installs nothing; you opt in per host (unlike the policy
-dispatcher, which ships by default).
-
-**Context-budget doctrine for hooks:** hooks are the most powerful enforcement
-(mechanical, can't be reasoned past) but they pollute context — use sparingly. A
-hook must be SILENT on the happy path (exit 0, no stdout/stderr), fire ONLY on a
-real violation (ideally once per session, sentinel-gated), prefer PreToolUse
-violation-guards over `UserPromptSubmit`/`SessionStart` per-turn injectors, and
-NEVER emit stray stdout on an exit-0 PreToolUse path (it is parsed as JSON and
-breaks the tool call). Block via exit 2 + stderr.
-
-The recipe ships both scripts verbatim, a precise head-only matcher (so a
-`br create --body "...am/atm/ntm..."` never false-fires), the two-matcher
-opt-in `settings.json` snippet, and a bats test proving every fire/silent case.
-
-Recipe: [SKILL-FIRST-COORDINATION-GUARD.md](references/SKILL-FIRST-COORDINATION-GUARD.md)
+For DCG, RCH and other external tool hooks, use the author's current
+installation guidance. See the [recommended tools](https://github.com/boshu2/agentops#recommended-tools-and-skills).
 
 ## Installed-Skill-Edit Guard (opt-in)
 
@@ -338,7 +308,6 @@ claude --debug  # Hook execution details
 ## References
 
 - [HOOK-EVENTS.md](references/HOOK-EVENTS.md) - All events with full schemas
-- [DCG-RCH.md](references/DCG-RCH.md) - Production examples (dcg, rch)
 - [INSTALLED-SKILL-EDIT-GUARD.md](references/INSTALLED-SKILL-EDIT-GUARD.md) - Opt-in guard routing installed-skill edits to repo skills/ (keystone)
 - [READ-BUDGET-GUARD.md](references/READ-BUDGET-GUARD.md) - Opt-in guard denying unbounded reads over the line budget; pairs with bulk-read / code-write delegation
 - [GUARDRAIL-VALUE-PROOF.md](references/GUARDRAIL-VALUE-PROOF.md) - Pre-registered value-proof methodology + per-fire telemetry contract (ADR-0002 l.58)

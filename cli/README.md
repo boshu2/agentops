@@ -50,7 +50,7 @@ Check the installed CASS help for available flags. Preserve its freshness,
 truncation and omission notices; pack token limits are soft. Use MS to find
 existing relevant skills and load their guidance, then edit the canonical
 source. Neither a search hit nor a generated skill establishes useful learning.
-The [CASS](../skills/cass/SKILL.md) and [MS](../skills/ms/SKILL.md) adapters own
+The upstream [CASS](https://github.com/Dicklesworthstone/coding_agent_session_search) and [MS](https://github.com/Dicklesworthstone/meta_skill) projects own
 their retrieval details; no AO search index or mandatory mining step is needed.
 
 Use the excerpt view when the investigation needs exact raw source spans,

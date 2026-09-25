@@ -3,24 +3,6 @@
   "capabilities": [
     {
       "driven_by_skills": [
-        "account-rotation"
-      ],
-      "id": "skill:account-rotation:account_rotation",
-      "name": "account_rotation",
-      "path": "skills/account-rotation/SKILL.md",
-      "type": "skill"
-    },
-    {
-      "driven_by_skills": [
-        "agent-mail"
-      ],
-      "id": "skill:agent-mail:agent_mail",
-      "name": "agent_mail",
-      "path": "skills/agent-mail/SKILL.md",
-      "type": "skill"
-    },
-    {
-      "driven_by_skills": [
         "agent-native"
       ],
       "id": "skill:agent-native:role_dispatch",
@@ -71,15 +53,6 @@
       "id": "skill:agy-native:provide_fresh_context",
       "name": "provide_fresh_context",
       "path": "skills/agy-native/SKILL.md",
-      "type": "skill"
-    },
-    {
-      "driven_by_skills": [
-        "cass"
-      ],
-      "id": "skill:cass:cass",
-      "name": "cass",
-      "path": "skills/cass/SKILL.md",
       "type": "skill"
     },
     {
@@ -161,15 +134,6 @@
       "id": "skill:craft-goal:goal_prompt_lint",
       "name": "goal_prompt_lint",
       "path": "skills/craft-goal/SKILL.md",
-      "type": "skill"
-    },
-    {
-      "driven_by_skills": [
-        "dcg"
-      ],
-      "id": "skill:dcg:dcg",
-      "name": "dcg",
-      "path": "skills/dcg/SKILL.md",
       "type": "skill"
     },
     {
@@ -336,15 +300,6 @@
     },
     {
       "driven_by_skills": [
-        "ms"
-      ],
-      "id": "skill:ms:ms",
-      "name": "ms",
-      "path": "skills/ms/SKILL.md",
-      "type": "skill"
-    },
-    {
-      "driven_by_skills": [
         "navigate"
       ],
       "id": "skill:navigate:observe_work_graph",
@@ -377,15 +332,6 @@
       "id": "skill:navigate:report_graph_hygiene",
       "name": "report_graph_hygiene",
       "path": "skills/navigate/SKILL.md",
-      "type": "skill"
-    },
-    {
-      "driven_by_skills": [
-        "ntm"
-      ],
-      "id": "skill:ntm:ntm",
-      "name": "ntm",
-      "path": "skills/ntm/SKILL.md",
       "type": "skill"
     },
     {
@@ -467,15 +413,6 @@
       "id": "skill:premortem:challenge_plan",
       "name": "challenge_plan",
       "path": "skills/premortem/SKILL.md",
-      "type": "skill"
-    },
-    {
-      "driven_by_skills": [
-        "rch"
-      ],
-      "id": "skill:rch:rch",
-      "name": "rch",
-      "path": "skills/rch/SKILL.md",
       "type": "skill"
     },
     {
@@ -597,15 +534,6 @@
     },
     {
       "driven_by_skills": [
-        "sbh"
-      ],
-      "id": "skill:sbh:sbh",
-      "name": "sbh",
-      "path": "skills/sbh/SKILL.md",
-      "type": "skill"
-    },
-    {
-      "driven_by_skills": [
         "security"
       ],
       "id": "skill:security:security",
@@ -687,33 +615,6 @@
     },
     {
       "driven_by_skills": [
-        "using-flywheel"
-      ],
-      "id": "skill:using-flywheel:route_to_native_flywheel_workflow",
-      "name": "route_to_native_flywheel_workflow",
-      "path": "skills/using-flywheel/SKILL.md",
-      "type": "skill"
-    },
-    {
-      "driven_by_skills": [
-        "using-flywheel"
-      ],
-      "id": "skill:using-flywheel:expose_agentops_skills",
-      "name": "expose_agentops_skills",
-      "path": "skills/using-flywheel/SKILL.md",
-      "type": "skill"
-    },
-    {
-      "driven_by_skills": [
-        "using-flywheel"
-      ],
-      "id": "skill:using-flywheel:observe_flywheel_runtime",
-      "name": "observe_flywheel_runtime",
-      "path": "skills/using-flywheel/SKILL.md",
-      "type": "skill"
-    },
-    {
-      "driven_by_skills": [
         "using-gc"
       ],
       "id": "skill:using-gc:dispatch_explicit_packet",
@@ -789,19 +690,19 @@
     "cli_commands": 0,
     "gates": 0,
     "reference_impls": 0,
-    "skills": 87,
-    "total": 87
+    "skills": 76,
+    "total": 76
   },
   "cli_top_level_commands": [],
   "schema_version": 3,
   "summary": {
-    "capabilities": 87,
+    "capabilities": 76,
     "cli_commands": 0,
     "eval_files": 0,
     "hooks": 0,
     "job_types": 0,
     "knowledge_stores": 0,
-    "skills": 38,
+    "skills": 29,
     "workflows": 0
   },
   "surfaces": {
@@ -812,38 +713,6 @@
     "knowledge_stores": [],
     "schedules": [],
     "skills": [
-      {
-        "capabilities": [
-          "account_rotation"
-        ],
-        "disposition": "keep_optional_adapter",
-        "effects": [
-          "rotate_agent_account"
-        ],
-        "has_references": false,
-        "has_skill_md": true,
-        "name": "account-rotation",
-        "path": "skills/account-rotation/",
-        "reference_count": 0,
-        "tier": "execution"
-      },
-      {
-        "capabilities": [
-          "agent_mail"
-        ],
-        "disposition": "keep_optional_adapter",
-        "effects": [
-          "write_agent_mail_records",
-          "install_precommit_guard",
-          "authorized_destructive_reset"
-        ],
-        "has_references": true,
-        "has_skill_md": true,
-        "name": "agent-mail",
-        "path": "skills/agent-mail/",
-        "reference_count": 3,
-        "tier": "execution"
-      },
       {
         "capabilities": [
           "role_dispatch",
@@ -860,7 +729,7 @@
         "has_skill_md": true,
         "name": "agent-native",
         "path": "skills/agent-native/",
-        "reference_count": 3,
+        "reference_count": 5,
         "tier": "meta"
       },
       {
@@ -881,23 +750,6 @@
       },
       {
         "capabilities": [
-          "cass"
-        ],
-        "disposition": "keep_optional_adapter",
-        "effects": [
-          "rebuild_local_index",
-          "sync_remote_sources",
-          "download_semantic_model"
-        ],
-        "has_references": true,
-        "has_skill_md": true,
-        "name": "cass",
-        "path": "skills/cass/",
-        "reference_count": 17,
-        "tier": "execution"
-      },
-      {
-        "capabilities": [
           "cc_hooks"
         ],
         "disposition": "keep_optional_adapter",
@@ -910,7 +762,7 @@
         "has_skill_md": true,
         "name": "cc-hooks",
         "path": "skills/cc-hooks/",
-        "reference_count": 8,
+        "reference_count": 6,
         "tier": "execution"
       },
       {
@@ -961,21 +813,6 @@
         "path": "skills/craft-goal/",
         "reference_count": 1,
         "tier": "judgment"
-      },
-      {
-        "capabilities": [
-          "dcg"
-        ],
-        "disposition": "keep_optional_adapter",
-        "effects": [
-          "write_dcg_config"
-        ],
-        "has_references": true,
-        "has_skill_md": true,
-        "name": "dcg",
-        "path": "skills/dcg/",
-        "reference_count": 6,
-        "tier": "execution"
       },
       {
         "capabilities": [
@@ -1086,23 +923,6 @@
       },
       {
         "capabilities": [
-          "ms"
-        ],
-        "disposition": "keep_optional_adapter",
-        "effects": [
-          "spawn_search_server",
-          "write_feedback_outcomes",
-          "rebuild_search_index"
-        ],
-        "has_references": false,
-        "has_skill_md": true,
-        "name": "ms",
-        "path": "skills/ms/",
-        "reference_count": 0,
-        "tier": "execution"
-      },
-      {
-        "capabilities": [
           "observe_work_graph",
           "select_next_wave",
           "ratchet_work_graph",
@@ -1116,22 +936,6 @@
         "has_skill_md": true,
         "name": "navigate",
         "path": "skills/navigate/",
-        "reference_count": 0,
-        "tier": "execution"
-      },
-      {
-        "capabilities": [
-          "ntm"
-        ],
-        "disposition": "keep_optional_adapter",
-        "effects": [
-          "manage_ntm_panes",
-          "dispatch_pane_commands"
-        ],
-        "has_references": false,
-        "has_skill_md": true,
-        "name": "ntm",
-        "path": "skills/ntm/",
         "reference_count": 0,
         "tier": "execution"
       },
@@ -1200,22 +1004,6 @@
         "path": "skills/premortem/",
         "reference_count": 1,
         "tier": "judgment"
-      },
-      {
-        "capabilities": [
-          "rch"
-        ],
-        "disposition": "keep_optional_adapter",
-        "effects": [
-          "remote_compilation_offload",
-          "authorized_remote_daemon_worker_mutation"
-        ],
-        "has_references": true,
-        "has_skill_md": true,
-        "name": "rch",
-        "path": "skills/rch/",
-        "reference_count": 7,
-        "tier": "execution"
       },
       {
         "capabilities": [
@@ -1320,23 +1108,6 @@
       },
       {
         "capabilities": [
-          "sbh"
-        ],
-        "disposition": "keep_optional_adapter",
-        "effects": [
-          "delete_reclaimable_files",
-          "release_disk_ballast",
-          "modify_host_storage_config"
-        ],
-        "has_references": false,
-        "has_skill_md": true,
-        "name": "sbh",
-        "path": "skills/sbh/",
-        "reference_count": 0,
-        "tier": "execution"
-      },
-      {
-        "capabilities": [
           "security"
         ],
         "disposition": "keep_specialist",
@@ -1406,21 +1177,6 @@
         "name": "test",
         "path": "skills/test/",
         "reference_count": 7,
-        "tier": "execution"
-      },
-      {
-        "capabilities": [
-          "route_to_native_flywheel_workflow",
-          "expose_agentops_skills",
-          "observe_flywheel_runtime"
-        ],
-        "disposition": "keep_optional_adapter",
-        "effects": [],
-        "has_references": false,
-        "has_skill_md": true,
-        "name": "using-flywheel",
-        "path": "skills/using-flywheel/",
-        "reference_count": 0,
         "tier": "execution"
       },
       {

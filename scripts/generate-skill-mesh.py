@@ -141,7 +141,7 @@ def router(entries: list[dict[str, Any]]) -> str:
             continue
         groups.setdefault(entry["disposition"], []).append(entry)
     lines = ["<!-- generated from skills/*/SKILL.md metadata -->", "", "# Skill Router", "",
-             f"{len(entries)} live skills. Choose guidance for a concrete task need; no skill is mandatory.",
+             "Choose guidance for a concrete task need; no skill is mandatory.",
              "A clear task can proceed in the native agent. Read a skill only when its description fits.",
              "Names and descriptions below come from each source SKILL.md; explicit invocation remains available.", ""]
     lines += ["## Primary entrypoints", "", "These are independent choices, not a required sequence.",
