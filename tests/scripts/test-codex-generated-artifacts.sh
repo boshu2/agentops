@@ -179,10 +179,12 @@ test_fails_on_codex_twin_content_divergence() {
   echo "NEW_SOURCE_ONLY_TOKEN" >> "$repo/skills/example/references/guide.md"
   regen_example_hashes "$repo"   # twin references/guide.md left stale on purpose
 
-  if (cd "$repo" && bash scripts/validate-codex-generated-artifacts.sh --scope worktree >/dev/null 2>&1); then
-    fail "should fail when source references diverge from a stale codex twin (regen hash bump only)"
-  else
+  local status=0 output
+  output="$(cd "$repo" && bash scripts/validate-codex-generated-artifacts.sh --scope worktree 2>&1)" || status=$?
+  if [ "$status" -eq 1 ] && [[ "$output" == *"Codex twin content divergence: skills/example/references/"* ]]; then
     pass "fails on codex-twin references content divergence (regen hash bump does not mask it)"
+  else
+    fail "should fail when source references diverge from a stale codex twin (regen hash bump only; exit $status)"
   fi
 }
 
