@@ -1,3 +1,7 @@
+---
+status: historical
+---
+
 # Effective Feedback Compute (EFC) — the harness's scaling coordinate
 
 > **Historical doctrine note (2026-06-16 import).** This page predates the

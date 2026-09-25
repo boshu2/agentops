@@ -1,3 +1,7 @@
+---
+status: historical
+---
+
 # AgentOps Effectiveness — Evidence Audit
 
 > **HISTORICAL:** Point-in-time audit from 2026-06-16; cited command surfaces are not current.
