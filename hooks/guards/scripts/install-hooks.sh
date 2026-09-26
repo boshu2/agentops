@@ -2,16 +2,11 @@
 # install-hooks.sh — wire the AgentOps policy dispatcher into Claude settings,
 # from ANY install shape (epic age-4qw1: hooks ship by default).
 #
-# This copy lives INSIDE the cc-hooks skill package so every distribution path
-# carries its own wiring:
-#   - npx skills / skills.sh copy  -> ~/.claude/skills/cc-hooks/scripts/install-hooks.sh
-#   - git clone / brew checkout    -> skills/cc-hooks/scripts/install-hooks.sh
-#     (scripts/install-policy-dispatch.sh at the repo root delegates here)
-#   - Claude Code PLUGIN installs need NO installer at all: the plugin bundles
-#     hooks/hooks.json and Claude wires it automatically.
-#
-# Everything resolves relative to THIS script's skill dir, so it works from a
-# copied skill directory with no repo present. Idempotent; backs up settings.
+# AgentOps-native guards live outside the skill library. The Claude plugin
+# activates hooks/hooks.json automatically. A source checkout can opt in via
+# scripts/install-policy-dispatch.sh; copying this complete guards directory
+# also preserves the installer's relative assets. Skill-only installs carry
+# no hook package. Idempotent; backs up settings before changing them.
 #
 # Usage:
 #   install-hooks.sh            # user settings (~/.claude/settings.json)

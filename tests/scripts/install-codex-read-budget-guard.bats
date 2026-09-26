@@ -24,7 +24,7 @@ teardown() { rm -rf "$TMPDIR"; }
   for name in read-budget-guard.sh codex-read-budget-guard.sh; do
     dst="$CODEX_HOME/hooks/agentops-read-budget/$name"
     [ -x "$dst" ]
-    cmp -s "$REPO/skills/cc-hooks/hooks/$name" "$dst"
+    cmp -s "$REPO/hooks/guards/hooks/$name" "$dst"
   done
 }
 

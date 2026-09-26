@@ -113,7 +113,7 @@ Source guidance is shared, so the existing parity_only catalog treatment is
 retained rather than inventing an override or editing generated twins.
 
 Enforcement: `scripts/install-codex-read-budget-guard.sh` and the
-opt-in `skills/cc-hooks/hooks/codex-read-budget-guard.sh` adapter reuse the same
+opt-in `hooks/guards/hooks/codex-read-budget-guard.sh` adapter reuse the same
 read-budget predicate, waiver controls, sentinel behavior and hashed telemetry.
 The installer leaves hook trust to Codex. Only verified canonical Bash input is
 wired; no invented Read/read_file mapping. Rule scope and known fail-open cases

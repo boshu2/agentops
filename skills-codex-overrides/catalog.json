@@ -21,12 +21,6 @@
       "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
     },
     {
-      "name": "cc-hooks",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
-    },
-    {
       "name": "codex-exec",
       "treatment": "parity_only",
       "wave": "catalog-parity",

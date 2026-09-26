@@ -9,11 +9,11 @@
 #
 # Fixture fidelity: every case round-trips the REAL PreToolUse JSON input shape
 # (tool_name / tool_input / session_id) built with jq — never a hand-built
-# string — matching the harness contract in skills/cc-hooks/references/HOOK-EVENTS.md.
+# string — matching the harness contract in https://code.claude.com/docs/en/hooks.
 
-DISPATCH="${DISPATCH:-$BATS_TEST_DIRNAME/../../skills/cc-hooks/hooks/policy-dispatch.sh}"
-LINT="${LINT:-$BATS_TEST_DIRNAME/../../skills/cc-hooks/scripts/lint-policies.sh}"
-REGISTRY="${REGISTRY:-$BATS_TEST_DIRNAME/../../skills/cc-hooks/policies/policies.json}"
+DISPATCH="${DISPATCH:-$BATS_TEST_DIRNAME/../../hooks/guards/hooks/policy-dispatch.sh}"
+LINT="${LINT:-$BATS_TEST_DIRNAME/../../hooks/guards/scripts/lint-policies.sh}"
+REGISTRY="${REGISTRY:-$BATS_TEST_DIRNAME/../../hooks/guards/policies/policies.json}"
 
 setup() {
   export TMPDIR="$(mktemp -d)"
@@ -144,7 +144,7 @@ telemetry_lines() {
 }
 
 @test "SILENT: Edit of a repo skills/ source path does not fire" {
-  run run_dispatch Edit file_path "/Users/dev/agentops/skills/cc-hooks/SKILL.md"
+  run run_dispatch Edit file_path "/Users/dev/agentops/README.md"
   [ "$status" -eq 0 ]
   [ -z "$output" ]
 }
@@ -284,10 +284,10 @@ telemetry_lines() {
 # ---------- plugin layout -----------------------------------------------------
 
 @test "plugin layout: dispatcher resolves ../policies/policies.json without AOP_POLICIES" {
-  plugin="$TMPDIR/plugin/skills/cc-hooks"
+  plugin="$TMPDIR/plugin/hooks/guards"
   mkdir -p "$plugin"
-  cp -R "$BATS_TEST_DIRNAME/../../skills/cc-hooks/hooks" "$plugin/hooks"
-  cp -R "$BATS_TEST_DIRNAME/../../skills/cc-hooks/policies" "$plugin/policies"
+  cp -R "$BATS_TEST_DIRNAME/../../hooks/guards/hooks" "$plugin/hooks"
+  cp -R "$BATS_TEST_DIRNAME/../../hooks/guards/policies" "$plugin/policies"
   run bash -c 'unset AOP_POLICIES; jq -nc "{tool_name:\"Bash\", tool_input:{command:\"git add _beads/x\"}, session_id:\"plugin-sess\"}" | bash "$1/hooks/policy-dispatch.sh"' _ "$plugin"
   [ "$status" -eq 2 ]
   [[ "$output" == *"core.git:add-beads-ledger"* ]]
@@ -380,7 +380,7 @@ telemetry_lines() {
 }
 
 # ---------- plugin hook manifest ----------------------------------------------
-# skills/cc-hooks/SKILL.md: injection hooks (SessionStart/UserPromptSubmit
+# ADR-0002 (no default prompt injection): injection hooks (SessionStart/UserPromptSubmit
 # context stuffing) stay dead; only enforcement events ship. Assert the event
 # keys of the shipped plugin manifest, not doc wording. A denylist, not an exact
 # key set, so a future enforcement event (e.g. PostToolUse) needs no edit here.

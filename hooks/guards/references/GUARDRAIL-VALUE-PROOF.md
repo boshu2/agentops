@@ -26,7 +26,7 @@ telemetry it consumes *is* that evidence pipeline.
 
 ## The sensor: gate-blind per-fire telemetry
 
-The keystone guard (`skills/cc-hooks/hooks/installed-skill-edit-guard.sh`) emits
+The keystone guard (`hooks/guards/hooks/installed-skill-edit-guard.sh`) emits
 **exactly one JSONL line per FIRE** to
 `${AGENTOPS_HOME:-~/.agents/ao}/guardrail-telemetry.jsonl`
 (override with `AGENTOPS_GUARDRAIL_TELEMETRY`):
@@ -146,7 +146,7 @@ privacy-preserving by construction.
 
 ## Read-budget guard (core.context:unbounded-read)
 
-The opt-in read-budget guard (`skills/cc-hooks/hooks/read-budget-guard.sh`,
+The opt-in read-budget guard (`hooks/guards/hooks/read-budget-guard.sh`,
 recipe [READ-BUDGET-GUARD.md](READ-BUDGET-GUARD.md)) reuses this sensor and
 this decision rule. Its `token_class` is the policy id
 `core.context:unbounded-read`; each line carries five extra fields:

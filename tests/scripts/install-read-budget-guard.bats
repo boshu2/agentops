@@ -12,7 +12,7 @@
 # never touched.
 
 INSTALLER="${INSTALLER:-$BATS_TEST_DIRNAME/../../scripts/install-read-budget-guard.sh}"
-SRC="${SRC:-$BATS_TEST_DIRNAME/../../skills/cc-hooks/hooks/read-budget-guard.sh}"
+SRC="${SRC:-$BATS_TEST_DIRNAME/../../hooks/guards/hooks/read-budget-guard.sh}"
 
 setup() {
   export TMPDIR="$(mktemp -d)"
@@ -38,7 +38,7 @@ matcher_count() {
   [ -x "$INSTALLER" ]
   run grep -cF '. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/preamble.sh"' "$INSTALLER"
   [ "$output" = "1" ]
-  run grep -cF '"$REPO_ROOT/skills/cc-hooks/hooks/read-budget-guard.sh"' "$INSTALLER"
+  run grep -cF '"$REPO_ROOT/hooks/guards/hooks/read-budget-guard.sh"' "$INSTALLER"
   [ "$output" = "1" ]
   # It must not also source lib/repo-root.sh (the preamble owns REPO_ROOT).
   run grep -c 'lib/repo-root.sh' "$INSTALLER"

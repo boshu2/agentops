@@ -14,7 +14,7 @@ an unbounded read is re-sent on every later turn for the rest of the session.
 |---|---|---|
 | Advisory | this reference and the `agent-native` Roles note | none; context the agent may ignore |
 | Delegation | `bulk-reader` / `code-writer` subagents (`agents/`), `bulk-read` / `code-write` workflows (`workflows/`) | caller-selected per call |
-| Enforcement | the opt-in read-budget guard: [READ-BUDGET-GUARD.md](../../cc-hooks/references/READ-BUDGET-GUARD.md) | mechanical once installed; inert by default |
+| Enforcement | the opt-in read-budget guard: [READ-BUDGET-GUARD.md](https://github.com/boshu2/agentops/blob/main/hooks/guards/references/READ-BUDGET-GUARD.md) | mechanical once installed; inert by default |
 
 The delegation surfaces live in the AgentOps source checkout: the subagents are
 Claude Code plugin agents and the workflows are Claude-only thin conveyors

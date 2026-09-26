@@ -94,7 +94,7 @@ fi
 # nearest_live_skill SLUG — emit a "; did you mean `/<skill>`?" suggestion when a
 # dead slug has an obvious live successor: the shortest skill that contains the
 # slug (or is contained by it), or that shares the slug's leading token (before
-# the first '-'), e.g. `hooks-authoring` -> `cc-hooks`. Prints the suggestion
+# the first '-'), e.g. `validate-change` -> `validate`. Prints the suggestion
 # suffix (may be empty). No network, no fuzzy scoring.
 nearest_live_skill() {
     local slug="$1"

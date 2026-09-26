@@ -56,7 +56,7 @@ as JSON and breaks the tool call), block via exit 2 + stderr only, fail OPEN.
 
 ## The contract
 
-Ships as `skills/cc-hooks/hooks/read-budget-guard.sh` (inert until the opt-in
+Ships as `hooks/guards/hooks/read-budget-guard.sh` (inert until the opt-in
 installer wires it; `set -uo pipefail`, no `-e`). It reads the real PreToolUse
 JSON on stdin (`{tool_name, tool_input, session_id, cwd}`) with `jq`; a missing
 `session_id` is `nosession`. Policy id and `token_class`:
@@ -226,7 +226,7 @@ Malformed worker replies produce explicit errors. Missing reader receipts leave 
 A receipt or a bullet list is a runtime fact, not validation. Whatever a writer
 lands still gets fresh, author-distinct judgment like any other change. Pattern
 and doctrine in AgentOps terms:
-[context-budget delegation](../../agent-native/references/context-budget-delegation.md);
+[context-budget delegation](../../../skills/agent-native/references/context-budget-delegation.md);
 workflow install and args: `workflows/README.md` in the repository checkout.
 
 ## Opt-in install

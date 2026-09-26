@@ -8,8 +8,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SKILLS_ROOT="${CODEX_SKILLS_ROOT:-$REPO_ROOT/skills-codex}"
 
-# Cross-runtime skills legitimately reference non-Codex runtimes/paths (cc-hooks
-# documents ~/.claude/settings.json). Shared exemption list with codex-sync and
+# Cross-runtime skills legitimately reference non-Codex runtimes/paths (for
+# example ~/.claude/settings.json). Shared exemption list with codex-sync and
 # the other Codex gates.
 CROSS_RUNTIME_FILE="$REPO_ROOT/scripts/lint/codex-cross-runtime-skills.txt"
 is_cross_runtime() {
@@ -247,8 +247,8 @@ while IFS= read -r skill_md; do
   skill_name="$(basename "$(dirname "$skill_md")")"
   is_bespoke "$skill_name" || continue  # parity twins are generator/drift-verified
 
-  # Cross-runtime skills may reference ~/.claude accurately (cc-hooks documents
-  # the Claude Code hook config path); skip this check for them.
+  # Cross-runtime skills may reference ~/.claude accurately; skip this check
+  # for them.
   if is_cross_runtime "$skill_name"; then
     continue
   fi

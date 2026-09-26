@@ -8,7 +8,7 @@
 #   route -> exit 0 + permissionDecision:"ask" JSON on stdout (surfaces a dialog)
 #   audit -> exit 0, silent; the fire is only recorded in telemetry
 # Happy path: exit 0, ZERO output (stray stdout on exit-0 is parsed as JSON by
-# the harness and breaks the tool call — see skills/cc-hooks/SKILL.md).
+# the harness and breaks the tool call — see https://code.claude.com/docs/en/hooks).
 #
 # Predicate discipline (the #511 anti-lesson, schema-enforced by
 # scripts/lint-policies.sh + schemas/hooks-manifest.v2.schema.json): predicates

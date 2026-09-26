@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://agentops.dev/schemas/hooks-manifest.v2.schema.json",
   "title": "hooks-manifest.v2 — policies-as-data admission-control registry",
-  "description": "Registry consumed by skills/cc-hooks/hooks/policy-dispatch.sh (age-bhsz, epic age-4qw1). v2 replaces v1's event->matcher->command wiring with declarative policies evaluated by ONE dispatcher per event slot. The predicate discipline encodes the #511 anti-lesson structurally: only pure syntactic predicates (regex over tool_input.command or tool_input.file_path) may block; lookup/stateful predicates are audit-only until promoted with reviewed-fire evidence.",
+  "description": "Registry consumed by hooks/guards/hooks/policy-dispatch.sh (age-bhsz, epic age-4qw1). v2 replaces v1's event->matcher->command wiring with declarative policies evaluated by ONE dispatcher per event slot. The predicate discipline encodes the #511 anti-lesson structurally: only pure syntactic predicates (regex over tool_input.command or tool_input.file_path) may block; lookup/stateful predicates are audit-only until promoted with reviewed-fire evidence.",
   "type": "object",
   "required": ["schema", "policies"],
   "properties": {

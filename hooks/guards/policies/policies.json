@@ -1,6 +1,6 @@
 {
   "schema": "hooks-manifest.v2",
-  "comment": "Policies-as-data registry for policy-dispatch.sh (age-bhsz, epic age-4qw1). Predicate discipline: only predicate_class 'pure' (syntactic regex over tool_input.command / tool_input.file_path) may carry mode deny|route; lookup/stateful predicates ship audit-only until promoted with reviewed fires. Enforced by skills/cc-hooks/scripts/lint-policies.sh against schemas/hooks-manifest.v2.schema.json. Patterns are POSIX ERE (BSD grep -E compatible: no \\b, no lookaround).",
+  "comment": "Policies-as-data registry for policy-dispatch.sh (age-bhsz, epic age-4qw1). Predicate discipline: only predicate_class 'pure' (syntactic regex over tool_input.command / tool_input.file_path) may carry mode deny|route; lookup/stateful predicates ship audit-only until promoted with reviewed fires. Enforced by hooks/guards/scripts/lint-policies.sh against schemas/hooks-manifest.v2.schema.json. Patterns are POSIX ERE (BSD grep -E compatible: no \\b, no lookaround).",
   "policies": [
     {
       "id": "core.git:add-beads-ledger",

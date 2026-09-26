@@ -18,7 +18,7 @@ umask 022
 # shellcheck disable=SC1007,SC1091
 . "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/repo-root.sh"
 repo_root="$(resolve_repo_root)"
-src="${repo_root}/skills/cc-hooks/hooks/installed-skill-edit-guard.sh"
+src="${repo_root}/hooks/guards/hooks/installed-skill-edit-guard.sh"
 [[ -f "$src" ]] || { echo "ERROR: guard script missing: ${src}" >&2; exit 1; }
 command -v jq >/dev/null || { echo "ERROR: jq required" >&2; exit 1; }
 

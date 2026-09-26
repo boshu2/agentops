@@ -57,15 +57,6 @@
     },
     {
       "driven_by_skills": [
-        "cc-hooks"
-      ],
-      "id": "skill:cc-hooks:cc_hooks",
-      "name": "cc_hooks",
-      "path": "skills/cc-hooks/SKILL.md",
-      "type": "skill"
-    },
-    {
-      "driven_by_skills": [
         "codex-exec"
       ],
       "id": "skill:codex-exec:codex_exec",
@@ -690,19 +681,19 @@
     "cli_commands": 0,
     "gates": 0,
     "reference_impls": 0,
-    "skills": 76,
-    "total": 76
+    "skills": 75,
+    "total": 75
   },
   "cli_top_level_commands": [],
   "schema_version": 3,
   "summary": {
-    "capabilities": 76,
+    "capabilities": 75,
     "cli_commands": 0,
     "eval_files": 0,
     "hooks": 0,
     "job_types": 0,
     "knowledge_stores": 0,
-    "skills": 29,
+    "skills": 28,
     "workflows": 0
   },
   "surfaces": {
@@ -747,23 +738,6 @@
         "path": "skills/agy-native/",
         "reference_count": 0,
         "tier": "cross-vendor"
-      },
-      {
-        "capabilities": [
-          "cc_hooks"
-        ],
-        "disposition": "keep_optional_adapter",
-        "effects": [
-          "write_hook_config",
-          "append_guardrail_telemetry",
-          "write_session_sentinel"
-        ],
-        "has_references": true,
-        "has_skill_md": true,
-        "name": "cc-hooks",
-        "path": "skills/cc-hooks/",
-        "reference_count": 6,
-        "tier": "execution"
       },
       {
         "capabilities": [
