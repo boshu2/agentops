@@ -9,18 +9,6 @@
   ],
   "skills": [
     {
-      "name": "account-rotation",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
-    },
-    {
-      "name": "agent-mail",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
-    },
-    {
       "name": "agent-native",
       "treatment": "parity_only",
       "wave": "catalog-parity",
@@ -28,12 +16,6 @@
     },
     {
       "name": "agy-native",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
-    },
-    {
-      "name": "cass",
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
@@ -52,12 +34,6 @@
     },
     {
       "name": "council",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
-    },
-    {
-      "name": "dcg",
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
@@ -87,18 +63,6 @@
       "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
     },
     {
-      "name": "ms",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
-    },
-    {
-      "name": "ntm",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
-    },
-    {
       "name": "plan",
       "treatment": "parity_only",
       "wave": "catalog-parity",
@@ -112,12 +76,6 @@
     },
     {
       "name": "premortem",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
-    },
-    {
-      "name": "rch",
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
@@ -159,12 +117,6 @@
       "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
     },
     {
-      "name": "sbh",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Live source skill; generate a parity twin and keep runtime-specific behavior in the source contract."
-    },
-    {
       "name": "security",
       "treatment": "parity_only",
       "wave": "catalog-parity",
@@ -199,12 +151,6 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Auto-generated parity twin (codex-sync): skills/craft-goal is the source of truth; no durable Codex-specific divergence yet."
-    },
-    {
-      "name": "using-flywheel",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Auto-generated parity twin (codex-sync): skills/using-flywheel is the source of truth; no durable Codex-specific divergence yet."
     },
     {
       "name": "skill-eval",

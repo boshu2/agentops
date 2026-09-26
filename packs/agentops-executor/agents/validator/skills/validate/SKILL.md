@@ -57,7 +57,7 @@ declared trust fact, not cryptographic proof that contexts were isolated.
 
 A caller may request that the fresh validator run on a different model than
 the author. Dispatch via the controller-session recipe in
-the `agent-native` model-dispatch recipe (`codex-exec` and/or `ntm`,
+the `agent-native` model-dispatch recipe (`codex-exec` and/or NTM panes,
 probed at runtime). Record author and validator `model_identity` in evidence
 refs and freshness attestation notes — do not change `verdict.v2` schema. If
 the requested validator model has no live adapter, disclose the unsatisfied

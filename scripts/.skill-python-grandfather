@@ -19,8 +19,6 @@
 #
 # Enforced by: scripts/check-skill-python-ratchet.sh
 skills/agent-native/scripts/fake_model_runner.py
-skills/cass/scripts/prompt_miner.py
-skills/ms/scripts/mcp-search.py
 skills/reverse-engineer/scripts/binary/extract_embedded_archives.py
 skills/reverse-engineer/scripts/binary/list_embedded_archives.py
 skills/reverse-engineer/scripts/fetch_url.py

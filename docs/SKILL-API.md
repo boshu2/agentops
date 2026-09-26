@@ -226,7 +226,7 @@ machine-readable form (`ao skills list`).
 | Tier | Purpose | Skills that declare it |
 |------|---------|------------------------|
 | `judgment` | Legacy internal tier name for validation and review gates | anti-ceremony, council, craft-goal, one-way-door, postmortem, premortem, reality-check, validate |
-| `execution` | Single-task implementation and runtime adapters | account-rotation, agent-mail, cass, cc-hooks, codebase-recon, dcg, idea-genie, implement, interview, learn, ms, navigate, ntm, pattern-mining, plan, rch, refactor, research, reverse-engineer, sbh, scaffold, swarm, test, using-flywheel, using-gc |
+| `execution` | Single-task implementation and runtime adapters | cc-hooks, codebase-recon, idea-genie, implement, interview, learn, navigate, pattern-mining, plan, refactor, research, reverse-engineer, scaffold, swarm, test, using-gc |
 | `orchestration` | Multi-skill coordination | codex-exec |
 | `session` | Session lifecycle | bootstrap, handoff, status |
 | `knowledge` | Reference corpora loaded on demand | domain, standards |
@@ -249,7 +249,7 @@ output_contract: skills/council/schemas/verdict.json
 ```
 
 Paths are relative to repo root. Several skills instead use it as a prose
-description of their output (`learn`, `using-flywheel`), which the schema
+description of their output (`learn`), which the schema
 allows — it is typed as a plain string.
 
 **v1 status:** Declaration-only. `scripts/validate-skill-schema.sh` allowlists

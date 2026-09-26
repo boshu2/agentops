@@ -71,7 +71,7 @@ A requested handoff records end-state facts another context can verify:
   identities, with separately evidenced parent/resume links and source bounds;
 - caller-supplied continuation, when present.
 
-Follow [session associations](../cass/references/SESSION_FORMATS.md#work-to-session-associations)
+Follow [session associations](../agent-native/references/session-associations.md#work-to-session-associations)
 for those identities. End-state notes cannot replace missing startup evidence.
 Do not invent IDs, infer a paused goal from a report saying HOLD, assign a whole
 multi-work session to one task, or reset budgets and helper incidents through

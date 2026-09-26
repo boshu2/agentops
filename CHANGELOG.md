@@ -18,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Bundled Flywheel tool skills (`account-rotation`, `agent-mail`, `cass`, `dcg`,
+  `ms`, `ntm`, `rch`, `sbh`, `using-flywheel`) and their generated Codex copies.
+  Obtain tools and skills from their upstream authors; see the README
+  recommendations. This changes the available skill names in the next release.
+  Existing personal installations are not automatically removed.
+
 - The 3.x curl and PowerShell skill installer tombstones (`scripts/install.sh`,
   `install-claude.sh`, `install-codex.sh`, `install-agy.sh`,
   `install-opencode.sh`, `install-codex.ps1`). Their raw URLs now 404, so an old

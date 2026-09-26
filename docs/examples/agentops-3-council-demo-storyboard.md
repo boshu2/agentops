@@ -183,7 +183,8 @@ coordinated by Agent Mail (locks, inboxes, handoffs):
 
 ```bash
 # An NTM swarm runs the operating loop over the ready bead queue; Agent Mail
-# coordinates locks and handoffs between panes. See the ntm and agent-mail skills.
+# coordinates locks and handoffs between panes. Both are upstream tools; see the
+# README's recommended tools.
 BEADS_DIR="$(ao beads dir)" br ready          # the queue the swarm pulls from
 ```
 

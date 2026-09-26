@@ -1,1 +1,0 @@
-Use /agentops:agent-mail for the bounded task described by this skill.

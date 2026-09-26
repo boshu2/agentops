@@ -1,1 +1,0 @@
-Use /agentops:account-rotation for the bounded task described by this skill.

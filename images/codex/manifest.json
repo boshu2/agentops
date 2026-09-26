@@ -1,20 +1,8 @@
 {
   "image": "codex",
   "schema_version": "skill-image.v1",
-  "skill_count": 38,
+  "skill_count": 29,
   "skills": [
-    {
-      "disposition": "keep_optional_adapter",
-      "slug": "account-rotation",
-      "source_path": "skills/account-rotation/",
-      "twin_path": "skills-codex/account-rotation/"
-    },
-    {
-      "disposition": "keep_optional_adapter",
-      "slug": "agent-mail",
-      "source_path": "skills/agent-mail/",
-      "twin_path": "skills-codex/agent-mail/"
-    },
     {
       "disposition": "keep_optional_adapter",
       "slug": "agent-native",
@@ -26,12 +14,6 @@
       "slug": "agy-native",
       "source_path": "skills/agy-native/",
       "twin_path": "skills-codex/agy-native/"
-    },
-    {
-      "disposition": "keep_optional_adapter",
-      "slug": "cass",
-      "source_path": "skills/cass/",
-      "twin_path": "skills-codex/cass/"
     },
     {
       "disposition": "keep_optional_adapter",
@@ -56,12 +38,6 @@
       "slug": "craft-goal",
       "source_path": "skills/craft-goal/",
       "twin_path": "skills-codex/craft-goal/"
-    },
-    {
-      "disposition": "keep_optional_adapter",
-      "slug": "dcg",
-      "source_path": "skills/dcg/",
-      "twin_path": "skills-codex/dcg/"
     },
     {
       "disposition": "keep_specialist",
@@ -100,22 +76,10 @@
       "twin_path": "skills-codex/memory/"
     },
     {
-      "disposition": "keep_optional_adapter",
-      "slug": "ms",
-      "source_path": "skills/ms/",
-      "twin_path": "skills-codex/ms/"
-    },
-    {
       "disposition": "keep_strategy",
       "slug": "navigate",
       "source_path": "skills/navigate/",
       "twin_path": "skills-codex/navigate/"
-    },
-    {
-      "disposition": "keep_optional_adapter",
-      "slug": "ntm",
-      "source_path": "skills/ntm/",
-      "twin_path": "skills-codex/ntm/"
     },
     {
       "disposition": "keep",
@@ -140,12 +104,6 @@
       "slug": "premortem",
       "source_path": "skills/premortem/",
       "twin_path": "skills-codex/premortem/"
-    },
-    {
-      "disposition": "keep_optional_adapter",
-      "slug": "rch",
-      "source_path": "skills/rch/",
-      "twin_path": "skills-codex/rch/"
     },
     {
       "disposition": "keep_strategy",
@@ -184,12 +142,6 @@
       "twin_path": "skills-codex/rpi/"
     },
     {
-      "disposition": "keep_optional_adapter",
-      "slug": "sbh",
-      "source_path": "skills/sbh/",
-      "twin_path": "skills-codex/sbh/"
-    },
-    {
       "disposition": "keep_specialist",
       "slug": "security",
       "source_path": "skills/security/",
@@ -212,12 +164,6 @@
       "slug": "test",
       "source_path": "skills/test/",
       "twin_path": "skills-codex/test/"
-    },
-    {
-      "disposition": "keep_optional_adapter",
-      "slug": "using-flywheel",
-      "source_path": "skills/using-flywheel/",
-      "twin_path": "skills-codex/using-flywheel/"
     },
     {
       "disposition": "keep_optional_adapter",

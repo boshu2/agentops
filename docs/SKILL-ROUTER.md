@@ -2,7 +2,7 @@
 
 # Skill Router
 
-38 live skills. Choose guidance for a concrete task need; no skill is mandatory.
+Choose guidance for a concrete task need; no skill is mandatory.
 A clear task can proceed in the native agent. Read a skill only when its description fits.
 Names and descriptions below come from each source SKILL.md; explicit invocation remains available.
 
@@ -52,60 +52,42 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 
 | Skill | Use it for |
 |---|---|
-| [account-rotation](https://github.com/boshu2/agentops/blob/main/skills/account-rotation/SKILL.md) | Switch coding-agent accounts and verify runtime identity. Use when: the caller requests an account change; never rotate automatically to evade a quota. |
-| [agent-mail](https://github.com/boshu2/agentops/blob/main/skills/agent-mail/SKILL.md) | Coordinate selected writers with Agent Mail messages and advisory file reservations. Use when: this adapter is requested; mail does not own tracker status. |
 | [agent-native](https://github.com/boshu2/agentops/blob/main/skills/agent-native/SKILL.md) | Dispatch independent tasks to parallel workers or selected persistent roles. Use when: delegation is authorized with disjoint scopes; execution does not validate output. |
 | [agy-native](https://github.com/boshu2/agentops/blob/main/skills/agy-native/SKILL.md) | Run a supplied task in AGY Antigravity and collect its result. Use when: the caller selects AGY; never a fallback for native coding. |
-| [cass](https://github.com/boshu2/agentops/blob/main/skills/cass/SKILL.md) | Search agent session logs and cited episodes with CASS. Use when: past prompts, decisions or failures may answer a question; repeated text is not a proven lesson. |
 | [cc-hooks](https://github.com/boshu2/agentops/blob/main/skills/cc-hooks/SKILL.md) | Configure Claude Code hooks and narrow enforcement guards. Use when: the caller requests hook installation, repair or policy changes; a hook is not required to use other skills. |
 | [codex-exec](https://github.com/boshu2/agentops/blob/main/skills/codex-exec/SKILL.md) | Run one prompt through headless Codex and capture its result. Use when: requesting a single noninteractive Codex process. Not for worker batches or retries. |
-| [dcg](https://github.com/boshu2/agentops/blob/main/skills/dcg/SKILL.md) | Diagnose a Destructive Command Guard block or configure its rules. Use when: DCG rejected an operation or policy work is requested; never disguise commands to bypass it. |
-| [ms](https://github.com/boshu2/agentops/blob/main/skills/ms/SKILL.md) | Find and load guidance with the meta_skill search engine. Use when: searching a skill corpus; CASS owns past sessions and Skill Builder owns package authoring. |
-| [ntm](https://github.com/boshu2/agentops/blob/main/skills/ntm/SKILL.md) | Operate selected NTM agent panes and inspect native state. Use when: persistent tmux roles are requested; pane liveness and prompt delivery are not validation. |
-| [rch](https://github.com/boshu2/agentops/blob/main/skills/rch/SKILL.md) | Offload one build through RCH or diagnose its remote compiler. Use when: remote compilation is selected; report errors without creating a retry controller. |
-| [sbh](https://github.com/boshu2/agentops/blob/main/skills/sbh/SKILL.md) | Inspect disk pressure with SBH and perform an authorized recovery action. Use when: storage diagnosis or SBH recovery is requested; inspection does not authorize deletion. |
-| [using-flywheel](https://github.com/boshu2/agentops/blob/main/skills/using-flywheel/SKILL.md) | Operate the Agentic Coding Flywheel through its native workflow. Use when: the caller explicitly selects this factory; convergence and closed work do not prove semantic acceptance. |
 | [using-gc](https://github.com/boshu2/agentops/blob/main/skills/using-gc/SKILL.md) | Operate Gas City through its Mayor, registry packs and native run state. Use when: the caller explicitly selects Gas City; factory completion does not replace independent judgment. |
 
 ## Complete inventory
 
 | Skill | Tier | Disposition | Hard dependencies | Capabilities | Effects |
 |---|---|---|---|---|---|
-| `account-rotation` | execution | `keep_optional_adapter` | - | `account_rotation` | `rotate_agent_account` |
-| `agent-mail` | execution | `keep_optional_adapter` | - | `agent_mail` | `write_agent_mail_records`, `install_precommit_guard`, `authorized_destructive_reset` |
 | `agent-native` | meta | `keep_optional_adapter` | - | `role_dispatch`, `observe_workers`, `handoff`, `dispatch_once` | `manage_runtime_sessions`, `invoke_selected_executor` |
 | `agy-native` | cross-vendor | `keep_optional_adapter` | - | `dispatch_explicit_packet`, `provide_fresh_context` | `start_agy_session` |
-| `cass` | execution | `keep_optional_adapter` | - | `cass` | `rebuild_local_index`, `sync_remote_sources`, `download_semantic_model` |
 | `cc-hooks` | execution | `keep_optional_adapter` | - | `cc_hooks` | `write_hook_config`, `append_guardrail_telemetry`, `write_session_sentinel` |
 | `codex-exec` | orchestration | `keep_optional_adapter` | - | `codex_exec` | `run_codex_process`, `sandbox_tiered_workspace_and_network_effects` |
 | `council` | judgment | `keep_strategy` | - | `collect_independent_judgments`, `synthesize_disagreement`, `bounded_deliberation`, `duel_scored_ideas`, `answer_interview_panel` | `write_advisory_council_report` |
 | `craft-goal` | judgment | `keep_strategy` | - | `goal_prompt_design`, `goal_prompt_lint` | - |
-| `dcg` | execution | `keep_optional_adapter` | - | `dcg` | `write_dcg_config` |
 | `doc` | product | `keep_specialist` | - | `doc`, `initialize_missing_docs`, `write_session_handoff` | `write_documentation`, `write_requested_handoff`, `create_requested_evidence_directory` |
 | `domain` | knowledge | `keep_specialist` | - | `domain`, `clarify_domain_language`, `reconcile_domain_names` | `update_existing_domain_contracts` |
 | `idea-genie` | execution | `keep_strategy` | - | `generate_evidenced_options`, `dueling_idea_genies` | `write_idea_portfolio` |
 | `implement` | execution | `keep` | - | `execute_one_experiment`, `collect_factual_evidence` | `modify_declared_subject`, `derive_subject_manifest` |
 | `interview` | execution | `keep_strategy` | - | `interview_caller`, `settle_caller_choices`, `write_acceptance_examples`, `settle_domain_terms` | `update_intent_source` |
 | `memory` | execution | `keep_off_path` | - | `recall_applicable_context`, `mine_supported_observations`, `curate_topic_pages`, `toil_mining` | `write_protected_drafts`, `update_authorized_topic_pages`, `write_requested_toil_report` |
-| `ms` | execution | `keep_optional_adapter` | - | `ms` | `spawn_search_server`, `write_feedback_outcomes`, `rebuild_search_index` |
 | `navigate` | execution | `keep_strategy` | - | `observe_work_graph`, `select_next_wave`, `ratchet_work_graph`, `report_graph_hygiene` | `update_native_graph` |
-| `ntm` | execution | `keep_optional_adapter` | - | `ntm` | `manage_ntm_panes`, `dispatch_pane_commands` |
 | `orchestrate` | execution | `keep` | - | `coordinate_native_work`, `recover_assignments`, `reconcile_feedback` | `dispatch_authorized_workers`, `update_native_handoffs` |
 | `plan` | execution | `keep` | - | `shape_intent`, `define_acceptance`, `bound_write_scope`, `resume_discovery` | `update_intent_source` |
 | `postmortem` | judgment | `keep_strategy` | - | `postmortem` | `write_postmortem_report` |
 | `premortem` | judgment | `keep_strategy` | - | `challenge_plan` | `write_advisory_plan_review` |
-| `rch` | execution | `keep_optional_adapter` | - | `rch` | `remote_compilation_offload`, `authorized_remote_daemon_worker_mutation` |
 | `reality-check` | judgment | `keep_strategy` | - | `compare_claim_to_evidence`, `measure_declared_goals`, `report_native_status` | `write_advisory_gap_report`, `write_goal_snapshot`, `write_requested_rendered_spec` |
 | `refactor` | execution | `keep_specialist` | - | `refactor` | `modify_source_files` |
 | `research` | execution | `keep_specialist` | - | `research`, `codebase_recon`, `pattern_mining` | `write_research_report`, `write_recon_pack`, `write_pattern_evidence` |
 | `reverse-engineer` | execution | `keep_specialist` | - | `reverse_engineer` | `clone_upstream_repo`, `authorized_binary_execution`, `write_teardown_artifacts` |
 | `review` | judgment | `keep` | - | `review_advisory`, `identify_supported_findings`, `report_review_gaps` | - |
 | `rpi` | meta | `keep_strategy` | `plan`, `implement`, `validate` | `own_authorized_outcome`, `report` | `dispatch_core_phases` |
-| `sbh` | execution | `keep_optional_adapter` | - | `sbh` | `delete_reclaimable_files`, `release_disk_ballast`, `modify_host_storage_config` |
 | `security` | product | `keep_specialist` | - | `security` | `write_scan_artifacts` |
 | `skill-builder` | meta | `keep_specialist` | - | `skill_builder`, `heal_skill`, `export_skill`, `distill_expertise` | `write_skill_source`, `write_build_report`, `regenerate_skill_projections`, `repair_skill_projections`, `write_converted_skill_projection`, `write_advisory_proposal` |
 | `skill-eval` | meta | `keep_specialist` | - | `author_seeded_probe`, `run_probe_tier`, `evaluate_skill_decision` | `write_probe_package`, `dispatch_probe_producer` |
 | `test` | execution | `keep_specialist` | - | `test` | `write_test_files`, `write_test_evidence`, `modify_source_files` |
-| `using-flywheel` | execution | `keep_optional_adapter` | - | `route_to_native_flywheel_workflow`, `expose_agentops_skills`, `observe_flywheel_runtime` | - |
 | `using-gc` | execution | `keep_optional_adapter` | - | `dispatch_explicit_packet`, `observe_gc_runtime`, `inspect_pack_registries`, `drive_mayor_door` | `operate_gas_city`, `configure_codex_trust` |
 | `validate` | judgment | `keep` | - | `compute_subject_identity`, `judge_acceptance`, `return_validation_result`, `persist_verdict` | `write_verdict_artifact` |

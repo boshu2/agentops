@@ -99,6 +99,11 @@ aliases. Ordinary native coding requires no replacement invocation.
 
 ## Skills
 
+The current source distribution no longer bundles the Flywheel tool adapters
+(`account-rotation`, `agent-mail`, `cass`, `dcg`, `ms`, `ntm`, `rch`, `sbh`,
+`using-flywheel`). Obtain these tools and skills from their authors. Existing
+installed copies are not automatically deleted.
+
 The 3.7 migration baseline has 34 skills, compared with 52 in 3.6.0. Twenty former roots
 were retired; `memory` and `skill-eval` are new relative to that release. The
 current menu additionally exposes Review, Orchestrate, Interview and Navigate; no baseline skill is retired or
@@ -129,38 +134,38 @@ apply, and host loading is qualified separately from package presence.
 
 | Baseline entrypoint | Disposition | Maintained owner and outcome |
 |---|---|---|
-| `account-rotation` | keep | [Account Rotation](https://github.com/boshu2/agentops/blob/main/skills/account-rotation/SKILL.md): caller-selected account changes and identity checks. |
-| `agent-mail` | keep | [Agent Mail](https://github.com/boshu2/agentops/blob/main/skills/agent-mail/SKILL.md): selected messaging and advisory file reservations; native tracker retains status. |
+| `account-rotation` | external | Obtain the tool and its guidance from its author; see [recommendations](../README.md#recommended-tools-and-skills). |
+| `agent-mail` | external | Obtain the tool and its guidance from its author; see [recommendations](../README.md#recommended-tools-and-skills). |
 | `agent-native` | keep | [Agent Native](https://github.com/boshu2/agentops/blob/main/skills/agent-native/SKILL.md): runtime dispatch, observation, context identity, isolation and native follow-up. Orchestrate links these mechanics. |
 | `agy-native` | keep | [AGY Native](https://github.com/boshu2/agentops/blob/main/skills/agy-native/SKILL.md): explicitly selected Antigravity execution. |
-| `cass` | keep | [CASS](https://github.com/boshu2/agentops/blob/main/skills/cass/SKILL.md): cited session retrieval; Memory owns admission of reusable claims. |
+| `cass` | external | Obtain the tool and its guidance from its author; see [recommendations](../README.md#recommended-tools-and-skills). |
 | `cc-hooks` | keep | [CC Hooks](https://github.com/boshu2/agentops/blob/main/skills/cc-hooks/SKILL.md): authorized Claude hook and guard configuration. |
 | `codex-exec` | keep | [Codex Exec](https://github.com/boshu2/agentops/blob/main/skills/codex-exec/SKILL.md): one selected headless Codex process. |
 | `council` | keep | [Council](https://github.com/boshu2/agentops/blob/main/skills/council/SKILL.md): selected independent perspectives; advice does not supply acceptance. |
 | `craft-goal` | keep | [Craft Goal](https://github.com/boshu2/agentops/blob/main/skills/craft-goal/SKILL.md): explicitly selected persistent-goal guidance; native goals retain continuity. |
-| `dcg` | keep | [DCG](https://github.com/boshu2/agentops/blob/main/skills/dcg/SKILL.md): diagnose guard refusal and authorized policy changes. |
+| `dcg` | external | Obtain the tool and its guidance from its author; see [recommendations](../README.md#recommended-tools-and-skills). |
 | `doc` | keep | [Doc](https://github.com/boshu2/agentops/blob/main/skills/doc/SKILL.md): requested source-grounded documents and continuity handoffs. |
 | `domain` | keep | [Domain](https://github.com/boshu2/agentops/blob/main/skills/domain/SKILL.md): domain vocabulary, rule boundaries and repository conventions. |
 | `idea-genie` | keep | [Idea Genie](https://github.com/boshu2/agentops/blob/main/skills/idea-genie/SKILL.md): evidence-backed options and idea challenge. |
 | `implement` | keep | [Implement](https://github.com/boshu2/agentops/blob/main/skills/implement/SKILL.md): complete accepted changes, direct repair and authorized operations. |
 | `memory` | keep | [Memory](https://github.com/boshu2/agentops/blob/main/skills/memory/SKILL.md): selective find/recall, capture/mine and curate/qualify/retire with support and disclosure review. |
-| `ms` | keep | [MS](https://github.com/boshu2/agentops/blob/main/skills/ms/SKILL.md): selected meta_skill search and loading. |
-| `ntm` | keep | [NTM](https://github.com/boshu2/agentops/blob/main/skills/ntm/SKILL.md): selected persistent panes and native runtime facts. |
+| `ms` | external | Obtain the tool and its guidance from its author; see [recommendations](../README.md#recommended-tools-and-skills). |
+| `ntm` | external | Obtain the tool and its guidance from its author; see [recommendations](../README.md#recommended-tools-and-skills). |
 | `plan` | keep | [Plan](https://github.com/boshu2/agentops/blob/main/skills/plan/SKILL.md): resumable discovery, uncertainty routing, optional challenge and one ready complete slice. |
 | `postmortem` | keep | [Postmortem](https://github.com/boshu2/agentops/blob/main/skills/postmortem/SKILL.md): requested outcome analysis, separate from code acceptance. |
 | `premortem` | keep | [Premortem](https://github.com/boshu2/agentops/blob/main/skills/premortem/SKILL.md): selected fresh plan challenge; Plan owns the shared challenge exchange. |
-| `rch` | keep | [RCH](https://github.com/boshu2/agentops/blob/main/skills/rch/SKILL.md): selected remote compilation and diagnostics. |
+| `rch` | external | Obtain the tool and its guidance from its author; see [recommendations](../README.md#recommended-tools-and-skills). |
 | `reality-check` | keep | [Reality Check](https://github.com/boshu2/agentops/blob/main/skills/reality-check/SKILL.md): compare shipped-feature, repository or goal claims with evidence. |
 | `refactor` | keep | [Refactor](https://github.com/boshu2/agentops/blob/main/skills/refactor/SKILL.md): structural simplification while preserving behavior. |
 | `research` | keep | [Research](https://github.com/boshu2/agentops/blob/main/skills/research/SKILL.md): cited source investigation and pattern evidence. |
 | `reverse-engineer` | keep | [Reverse Engineer](https://github.com/boshu2/agentops/blob/main/skills/reverse-engineer/SKILL.md): authorized external-system teardown and adoption choices. |
 | `rpi` | keep | [RPI](https://github.com/boshu2/agentops/blob/main/skills/rpi/SKILL.md): explicitly selected outcome-to-judgment charter; unchanged hard dependency graph. |
-| `sbh` | keep | [SBH](https://github.com/boshu2/agentops/blob/main/skills/sbh/SKILL.md): disk-pressure diagnosis and authorized recovery. |
+| `sbh` | external | Obtain the tool and its guidance from its author; see [recommendations](../README.md#recommended-tools-and-skills). |
 | `security` | keep | [Security](https://github.com/boshu2/agentops/blob/main/skills/security/SKILL.md): concrete exposure review and selected scans. |
 | `skill-builder` | keep | [Skill Builder](https://github.com/boshu2/agentops/blob/main/skills/skill-builder/SKILL.md): skill authoring, repair, projections and exports. |
 | `skill-eval` | keep | [Skill Eval](https://github.com/boshu2/agentops/blob/main/skills/skill-eval/SKILL.md): bounded behavioral evaluation; structural conformance is not efficacy. |
 | `test` | keep | [Test](https://github.com/boshu2/agentops/blob/main/skills/test/SKILL.md): behavioral test design and consequential coverage gaps. |
-| `using-flywheel` | keep | [Using Flywheel](https://github.com/boshu2/agentops/blob/main/skills/using-flywheel/SKILL.md): selected factory through its native workflow. |
+| `using-flywheel` | external | Obtain the tool and its guidance from its author; see [recommendations](../README.md#recommended-tools-and-skills). |
 | `using-gc` | keep | [Using GC](https://github.com/boshu2/agentops/blob/main/skills/using-gc/SKILL.md): selected Gas City through its Mayor and supported native doors. |
 | `validate` | keep | [Validate](https://github.com/boshu2/agentops/blob/main/skills/validate/SKILL.md): sole skill owner of fresh exact-content acceptance judgment and explicit missing proof. |
 
@@ -350,7 +355,7 @@ untested promise. Every live claim still needs evidence on the final installatio
 | Read-budget and installed-skill edit guards | keep; [Claude read guard](https://github.com/boshu2/agentops/blob/main/scripts/install-read-budget-guard.sh), [Codex read guard](https://github.com/boshu2/agentops/blob/main/scripts/install-codex-read-budget-guard.sh), [edit guard](https://github.com/boshu2/agentops/blob/main/scripts/install-installed-skill-edit-guard.sh) | Preserve separate opt-in installation, Codex trust review, backups and documented enforcement limits. |
 | Claude named workflows | keep; [canonical workflows](../workflows/), [`ao workflows`](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md#ao-workflows), [user-level installer](https://github.com/boshu2/agentops/blob/main/scripts/install-workflows.sh) | Keep project-local owned-link refusal semantics. The user-level installer retains its distinct backed-up replacement semantics; do not assume the two installers are interchangeable. |
 | Optional BD binary installer | keep; [install-bd.sh](https://github.com/boshu2/agentops/blob/main/scripts/install-bd.sh) | Installs selected native BD; does not create or replace the repository's work store. |
-| Optional MS post-merge index hook | keep; [install-ms-reindex-hook.sh](https://github.com/boshu2/agentops/blob/main/scripts/install-ms-reindex-hook.sh) | Retain explicit installation and its canonical-checkout/main/changed-skills guards; no mandatory background indexing. |
+| Optional MS post-merge index hook | retired | Obtain MS maintenance guidance from [upstream](https://github.com/Dicklesworthstone/meta_skill). AgentOps no longer ships an MS index hook installer. |
 | Legacy 3.x skill curl/PowerShell installers | retire; deleted: `install.sh`, `install-claude.sh`, `install-codex.sh`, `install-agy.sh`, `install-opencode.sh`, `install-codex.ps1` | Their raw URLs now 404; see the breaking boundary below. `install-ao.ps1` is a retained CLI installer, not this retired skill installer. |
 
 For a contributor source installation, preserve the same selectors on upgrade:

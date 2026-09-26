@@ -115,30 +115,26 @@ still receives zero reward, but cannot serve as a calibrated semantic negative
 because the fixed endpoint tests did not run. An ambiguous older zero reward
 cannot stand in for a completed rejection.
 
-## Three-shape skill development cases
+## Skill development cases
 
-`cass-source-boundary`, `validator-controls` and `builder-recovery` are exposed
-cases for the CASS adapter, Validate judgment and Skill Builder executable
+`validator-controls` and `builder-recovery` are exposed
+cases for Validate judgment and Skill Builder executable
 workflow. They are not heldouts or evidence of causal benefit from shorter
 prose. The task instructions and skill jointly guide execution. Forced skill
 invocation does not measure normal catalog selection.
 
-The two runtime cases reuse `verify.py`, `calibrate.py`, task-local Go oracles
+The Builder runtime case reuses `verify.py`, `calibrate.py`, task-local Go oracles
 and ordinary `workflow.sh` production overlays. Their fixed setup runs the
-actual AO source-reader or builder against disposable synthetic state; no
+actual AO builder against disposable synthetic state; no
 replacement implementation of those interfaces is supplied. Correct, no-op,
 false-completion and plausible wrong controls are in each task's `controls.json`.
-CASS's wrong control confuses denied disclosure with no match. Builder's wrong
+Builder's wrong
 control overwrites the original failed report after otherwise valid recovery.
-Valid formatting controls include detailed CASS evidence and equivalent Builder
-failure wording. The oracle must not reject correct behavior for an undisclosed
+Valid formatting controls include equivalent Builder failure wording. The oracle must not reject correct behavior for an undisclosed
 output shape or English phrase. Builder's authored adapter semantics require
 independent judgment; mechanical source/projection checks cannot establish them.
 Native loading, resource use and action traces remain separate `not_checked`
 items. A supplied synthetic observation is not host-delivery attestation.
-The CASS verifier supplies shared baseline installed-resource paths for replayed
-code that rechecks them. Worker loading is measured in the native worker trace;
-verifier resource availability is not proof of that loading.
 
 Before calling the existing `prepare.py`, copy each task to protected external
 staging and populate its `environment/runtime/` with the selected current public
@@ -170,9 +166,6 @@ Capture the host's actual resolved skill path and bytes, active invocation
 policy, native reads of required resources and endpoint output. Package staging
 hashes and catalog visibility alone are insufficient. Count descriptions,
 bodies, references, repeated reads and tool output when reporting context cost.
-For CASS the missing-resource case is a deliberately incomplete operation-local
-fixture; the grader checks no third AO call, but only native trace can establish
-that the model stopped the dependent action rather than fabricating a marker.
 The Builder endpoint checks retained contents and reports; native trace must
 establish that recovery did not delete and recreate the source.
 
@@ -182,7 +175,7 @@ Local calibration uses the same actual runtime with no model calls:
 AO_RUNTIME_ROOT=/absolute/frozen/public/runtime \
 AO_SKILL_BUILDER_BIN=/absolute/current/ao \
 python3 evals/skills-rpi/taskbank/calibrate.py \
-  --tasks cass-source-boundary builder-recovery validator-controls \
+  --tasks builder-recovery validator-controls \
   --output /absolute/external/new-calibration
 ```
 

@@ -40,7 +40,6 @@ echo ""
 KEEP_SCRIPTS=(
     "scripts/install-bd.sh"
     "scripts/install-workflows.sh"
-    "scripts/install-ms-reindex-hook.sh"
     "scripts/install-installed-skill-edit-guard.sh"
 )
 
