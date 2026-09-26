@@ -100,7 +100,7 @@ aliases. Ordinary native coding requires no replacement invocation.
 ## Skills
 
 The current source distribution no longer bundles the Flywheel tool adapters
-(`account-rotation`, `agent-mail`, `cass`, `dcg`, `ms`, `ntm`, `rch`, `sbh`,
+(`account-rotation`, `agent-mail`, `cass`, `cc-hooks`, `dcg`, `ms`, `ntm`, `rch`, `sbh`,
 `using-flywheel`). Obtain these tools and skills from their authors. Existing
 installed copies are not automatically deleted.
 
@@ -139,7 +139,7 @@ apply, and host loading is qualified separately from package presence.
 | `agent-native` | keep | [Agent Native](https://github.com/boshu2/agentops/blob/main/skills/agent-native/SKILL.md): runtime dispatch, observation, context identity, isolation and native follow-up. Orchestrate links these mechanics. |
 | `agy-native` | keep | [AGY Native](https://github.com/boshu2/agentops/blob/main/skills/agy-native/SKILL.md): explicitly selected Antigravity execution. |
 | `cass` | external | Obtain the tool and its guidance from its author; see [recommendations](../README.md#recommended-tools-and-skills). |
-| `cc-hooks` | keep | [CC Hooks](https://github.com/boshu2/agentops/blob/main/skills/cc-hooks/SKILL.md): authorized Claude hook and guard configuration. |
+| `cc-hooks` | removed | AgentOps-native guard scripts now live under `hooks/guards/`; the Claude plugin retains its existing guards. No hook-configuration skill is bundled. |
 | `codex-exec` | keep | [Codex Exec](https://github.com/boshu2/agentops/blob/main/skills/codex-exec/SKILL.md): one selected headless Codex process. |
 | `council` | keep | [Council](https://github.com/boshu2/agentops/blob/main/skills/council/SKILL.md): selected independent perspectives; advice does not supply acceptance. |
 | `craft-goal` | keep | [Craft Goal](https://github.com/boshu2/agentops/blob/main/skills/craft-goal/SKILL.md): explicitly selected persistent-goal guidance; native goals retain continuity. |
@@ -351,7 +351,7 @@ untested promise. Every live claim still needs evidence on the final installatio
 | External `npx skills` installer | keep; canonical `skills/` and [install guide](install-day2-ops.md) | The install path for every agent except the two plugin hosts. Name agents with `-a`; never `--all`. It does not install AO, runtime plugins, roles or hooks. |
 | AO source, Go, Homebrew and release-binary installs | keep; [CLI installation](install-day2-ops.md#maintainer-contributor-the-ao-binary), [release build](https://github.com/boshu2/agentops/blob/main/.goreleaser.yml), [Windows AO installer](https://github.com/boshu2/agentops/blob/main/scripts/install-ao.ps1) | Retain source builds and published-binary consumers, including the Windows CLI installer. Skill loading is separate from binary availability. |
 | Claude agent roles and optional Codex context roles | keep; [Claude agents](../agents/), [Codex role sources](../skills/agent-native/agents/) and [role installer](https://github.com/boshu2/agentops/blob/main/scripts/install-codex-context-agents.sh) | Preserve role identity and explicit Codex activation, backups and unrelated configuration. Installing skills does not activate Codex roles. |
-| Claude policy dispatcher | keep; [plugin hooks](https://github.com/boshu2/agentops/blob/main/hooks/hooks.json), [source wrapper](https://github.com/boshu2/agentops/blob/main/scripts/install-policy-dispatch.sh) and [packaged owner](https://github.com/boshu2/agentops/blob/main/skills/cc-hooks/scripts/install-hooks.sh) | The dispatcher is automatically active when installed through the Claude plugin; source/copy installation uses the existing owner-selected installer. Native zero-skill work remains hookless. |
+| Claude policy dispatcher | keep; [plugin hooks](https://github.com/boshu2/agentops/blob/main/hooks/hooks.json), [source wrapper](https://github.com/boshu2/agentops/blob/main/scripts/install-policy-dispatch.sh) and [packaged owner](https://github.com/boshu2/agentops/blob/main/hooks/guards/scripts/install-hooks.sh) | The dispatcher is automatically active when installed through the Claude plugin; source/copy installation uses the existing owner-selected installer. Native zero-skill work remains hookless. |
 | Read-budget and installed-skill edit guards | keep; [Claude read guard](https://github.com/boshu2/agentops/blob/main/scripts/install-read-budget-guard.sh), [Codex read guard](https://github.com/boshu2/agentops/blob/main/scripts/install-codex-read-budget-guard.sh), [edit guard](https://github.com/boshu2/agentops/blob/main/scripts/install-installed-skill-edit-guard.sh) | Preserve separate opt-in installation, Codex trust review, backups and documented enforcement limits. |
 | Claude named workflows | keep; [canonical workflows](../workflows/), [`ao workflows`](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md#ao-workflows), [user-level installer](https://github.com/boshu2/agentops/blob/main/scripts/install-workflows.sh) | Keep project-local owned-link refusal semantics. The user-level installer retains its distinct backed-up replacement semantics; do not assume the two installers are interchangeable. |
 | Optional BD binary installer | keep; [install-bd.sh](https://github.com/boshu2/agentops/blob/main/scripts/install-bd.sh) | Installs selected native BD; does not create or replace the repository's work store. |

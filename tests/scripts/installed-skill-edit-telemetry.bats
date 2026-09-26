@@ -12,7 +12,7 @@
 # point the guard at an isolated telemetry file via AGENTOPS_GUARDRAIL_TELEMETRY,
 # per the guard-test fixture-fidelity rule.
 
-GUARD="${GUARD:-$BATS_TEST_DIRNAME/../../skills/cc-hooks/hooks/installed-skill-edit-guard.sh}"
+GUARD="${GUARD:-$BATS_TEST_DIRNAME/../../hooks/guards/hooks/installed-skill-edit-guard.sh}"
 
 setup() {
   export TMPDIR="$(mktemp -d)"

@@ -1,7 +1,7 @@
 {
   "image": "codex",
   "schema_version": "skill-image.v1",
-  "skill_count": 29,
+  "skill_count": 28,
   "skills": [
     {
       "disposition": "keep_optional_adapter",
@@ -14,12 +14,6 @@
       "slug": "agy-native",
       "source_path": "skills/agy-native/",
       "twin_path": "skills-codex/agy-native/"
-    },
-    {
-      "disposition": "keep_optional_adapter",
-      "slug": "cc-hooks",
-      "source_path": "skills/cc-hooks/",
-      "twin_path": "skills-codex/cc-hooks/"
     },
     {
       "disposition": "keep_optional_adapter",

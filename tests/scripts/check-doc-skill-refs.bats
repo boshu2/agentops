@@ -117,7 +117,7 @@ run_check() {
 
 @test "detection stays slash-only: a bare skill name is never flagged" {
     # Bare `hooks-authoring` (no slash) must NOT trip the gate — false-positive swamp.
-    printf 'Author with the `hooks-authoring` skill and read `skills/cc-hooks/`.\n' > "$DOCS/docs/prose.md"
+    printf 'Author with the `hooks-authoring` skill and read `hooks/guards/`.\n' > "$DOCS/docs/prose.md"
     run_check
     [ "$status" -eq 0 ]
     [[ "$output" != *"NEW-OFFENDER"* ]]

@@ -1,5 +1,5 @@
 #!/usr/bin/env bats
-# Value-proof telemetry contract for skills/cc-hooks/hooks/read-budget-guard.sh.
+# Value-proof telemetry contract for hooks/guards/hooks/read-budget-guard.sh.
 #
 # The guard emits EXACTLY one gate-blind JSONL line per FIRE and per WAIVED
 # call (none on pass / disabled / fail-open):
@@ -14,7 +14,7 @@
 # with jq, with TMPDIR / HOME isolated and the ledger pointed into TMPDIR via
 # AGENTOPS_GUARDRAIL_TELEMETRY.
 
-GUARD="${GUARD:-$BATS_TEST_DIRNAME/../../skills/cc-hooks/hooks/read-budget-guard.sh}"
+GUARD="${GUARD:-$BATS_TEST_DIRNAME/../../hooks/guards/hooks/read-budget-guard.sh}"
 POLICY="core.context:unbounded-read"
 
 setup() {

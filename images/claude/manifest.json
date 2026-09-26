@@ -1,7 +1,7 @@
 {
   "image": "claude",
   "schema_version": "skill-image.v1",
-  "skill_count": 29,
+  "skill_count": 28,
   "skills": [
     {
       "disposition": "keep_optional_adapter",
@@ -12,11 +12,6 @@
       "disposition": "keep_optional_adapter",
       "path": "skills/agy-native/",
       "slug": "agy-native"
-    },
-    {
-      "disposition": "keep_optional_adapter",
-      "path": "skills/cc-hooks/",
-      "slug": "cc-hooks"
     },
     {
       "disposition": "keep_optional_adapter",

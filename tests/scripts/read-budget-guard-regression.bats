@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 # Reproductions from the independent e32e88c review. Stdout and stderr are
 # captured independently so every allow and deny also checks hook silence.
-GUARD="${GUARD:-$BATS_TEST_DIRNAME/../../skills/cc-hooks/hooks/read-budget-guard.sh}"
+GUARD="${GUARD:-$BATS_TEST_DIRNAME/../../hooks/guards/hooks/read-budget-guard.sh}"
 
 setup() {
   export TMPDIR="$(mktemp -d)"

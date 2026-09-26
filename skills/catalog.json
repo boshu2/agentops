@@ -1,6 +1,6 @@
 {
   "schema_version": "3",
-  "skill_count": 29,
+  "skill_count": 28,
   "skills": [
     {
       "canonical_status": "canonical",
@@ -77,33 +77,6 @@
       ],
       "references_count": 0,
       "tier": "cross-vendor",
-      "user_invocable": true
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
-        "cc_hooks"
-      ],
-      "codex_override_present": true,
-      "consumes": [],
-      "context_rel": [],
-      "dependencies": [],
-      "description": "Configure Claude Code hooks and narrow enforcement guards. Use when: the caller requests hook installation, repair or policy changes; a hook is not required to use other skills.",
-      "disposition": "keep_optional_adapter",
-      "effects": [
-        "write_hook_config",
-        "append_guardrail_telemetry",
-        "write_session_sentinel"
-      ],
-      "graph_root": false,
-      "hexagonal_role": "supporting",
-      "name": "cc-hooks",
-      "practices": [
-        "pragmatic-programmer"
-      ],
-      "produces": [],
-      "references_count": 6,
-      "tier": "execution",
       "user_invocable": true
     },
     {

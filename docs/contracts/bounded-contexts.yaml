@@ -33,7 +33,7 @@ bounded_contexts:
     name: Runtime
     product_layer: "Optional runtime specialists"
     responsibility: "Adapt explicit caller requests to local tools without acquiring lifecycle authority."
-    center_of_gravity: [codex-exec, cc-hooks]
+    center_of_gravity: [codex-exec]
     ports: [RuntimePort, DiagnosticPort]
 
   - id: BC6

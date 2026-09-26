@@ -116,7 +116,7 @@ behavior requires a caller decision, not a new caveat in this table.
 
 - [Install and day-2 operations](../install-day2-ops.md) and [migration](../MIGRATION.md).
 - [Runtime neutrality](runtime-neutrality.md) and [Codex skill API](codex-skill-api.md).
-- [Hook event reference](https://github.com/boshu2/agentops/blob/main/skills/cc-hooks/references/HOOK-EVENTS.md) and
+- [Claude Code hooks reference](https://code.claude.com/docs/en/hooks) and
   [Codex context-budget design](../design/codex-context-budget.md).
 - [RPI evidence semantics](../architecture/rpi-traversal.md), when that workflow
   is selected; no runtime has a mandatory RPI invocation.

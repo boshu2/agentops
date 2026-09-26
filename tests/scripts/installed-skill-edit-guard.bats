@@ -9,7 +9,7 @@
 # We round-trip the REAL PreToolUse JSON input shape on stdin (built with jq),
 # never a hand-built fake, per the guard-test fixture-fidelity rule.
 
-GUARD="${GUARD:-$BATS_TEST_DIRNAME/../../skills/cc-hooks/hooks/installed-skill-edit-guard.sh}"
+GUARD="${GUARD:-$BATS_TEST_DIRNAME/../../hooks/guards/hooks/installed-skill-edit-guard.sh}"
 
 setup() { export TMPDIR="$(mktemp -d)"; }
 teardown() { rm -rf "$TMPDIR"; }
@@ -55,7 +55,7 @@ run_guard() {
 }
 
 @test "SILENT: repo relative skills/ path" {
-  run run_guard "skills/cc-hooks/SKILL.md" "s2"
+  run run_guard "README.md" "s2"
   [ "$status" -eq 0 ]
   [ -z "$output" ]
 }

@@ -281,7 +281,6 @@ catalog: **[docs/SKILL-ROUTER.md](docs/SKILL-ROUTER.md)**.
 | Learning | [`memory`](skills/memory/SKILL.md) | Curated `.context/` pages safe to commit |
 | Judgment strategies | [`council`](skills/council/SKILL.md) [`premortem`](skills/premortem/SKILL.md) [`postmortem`](skills/postmortem/SKILL.md) [`reality-check`](skills/reality-check/SKILL.md) [`idea-genie`](skills/idea-genie/SKILL.md) | Multi-model councils (debates, idea duels, interview panels), idea brainstorms, plan challenges, postmortems and claim audits |
 | Runtimes and factories | [`codex-exec`](skills/codex-exec/SKILL.md) [`agy-native`](skills/agy-native/SKILL.md) [`using-gc`](skills/using-gc/SKILL.md) | Selected executors and Gas City integration |
-| Guards and utilities | [`cc-hooks`](skills/cc-hooks/SKILL.md) | Claude Code hook configuration |
 | Skill craft | [`skill-builder`](skills/skill-builder/SKILL.md) [`skill-eval`](skills/skill-eval/SKILL.md) | Author skills and measure whether they help |
 
 ## Where AgentOps fits
@@ -392,7 +391,7 @@ that saved notes improve later work. See [Memory's storage rules](skills/memory/
 
 The Claude Code plugin includes PreToolUse guards for private tracker data in
 commits, manual provenance-ledger edits and installed-skill overwrites. Installing
-only `ao` does not add hooks; other paths can opt in through [CC Hooks](skills/cc-hooks/SKILL.md).
+only `ao` does not add hooks; other paths can opt in through the [native hook installer](scripts/install-policy-dispatch.sh).
 Read-budget guards, Codex roles and trusted Codex hooks have [separate setup](docs/install-day2-ops.md#install-and-update-runtime-plugins).
 
 Disable Claude's plugin with `/plugin disable agentops`. Remove it with

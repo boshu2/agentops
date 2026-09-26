@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/skills/cc-hooks/hooks/policy-dispatch.sh",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/guards/hooks/policy-dispatch.sh",
             "timeout": 10
           }
         ]
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/skills/cc-hooks/hooks/policy-dispatch.sh",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/guards/hooks/policy-dispatch.sh",
             "timeout": 10
           }
         ]

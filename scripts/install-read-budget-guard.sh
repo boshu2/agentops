@@ -24,7 +24,7 @@
 shopt -s lastpipe 2>/dev/null || true
 umask 022
 
-src="$REPO_ROOT/skills/cc-hooks/hooks/read-budget-guard.sh"
+src="$REPO_ROOT/hooks/guards/hooks/read-budget-guard.sh"
 [[ -f "$src" ]] || { echo "ERROR: guard script missing: ${src}" >&2; exit 1; }
 require_cmd jq
 

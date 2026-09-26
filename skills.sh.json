@@ -25,7 +25,7 @@
     {
       "title": "Optional tool adapters",
       "description": "Use these only with the corresponding runtime or tool. They are not prerequisites for the starter skills.",
-      "skills": ["agent-native", "codex-exec", "agy-native", "using-gc", "cc-hooks"]
+      "skills": ["agent-native", "codex-exec", "agy-native", "using-gc"]
     }
   ]
 }
