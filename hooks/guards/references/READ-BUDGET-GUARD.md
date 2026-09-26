@@ -226,7 +226,7 @@ Malformed worker replies produce explicit errors. Missing reader receipts leave 
 A receipt or a bullet list is a runtime fact, not validation. Whatever a writer
 lands still gets fresh, author-distinct judgment like any other change. Pattern
 and doctrine in AgentOps terms:
-[context-budget delegation](../../agent-native/references/context-budget-delegation.md);
+[context-budget delegation](../../../skills/agent-native/references/context-budget-delegation.md);
 workflow install and args: `workflows/README.md` in the repository checkout.
 
 ## Opt-in install

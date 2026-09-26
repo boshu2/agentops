@@ -36,8 +36,6 @@ WARNING -  Doc file 'trust-factory.md' contains a link '../PRODUCT.md', but the 
 WARNING -  Doc file 'wiki-for-agents.md' contains a link '../PRODUCT.md', but the target is not found among documentation files.
 WARNING -  Doc file 'contracts/codex-skill-api.md' contains a link '../../AGENTS.md', but the target '../AGENTS.md' is not found among documentation files.
 WARNING -  Doc file 'releases/2026-07-17-v3.3.0-notes.md' contains a link '../../CHANGELOG.md', but the target '../CHANGELOG.md' is not found among documentation files. Did you mean '../CHANGELOG.md'?
-WARNING -  Doc file 'hooks/guards.md' contains a link 'hooks/policy-dispatch.sh', but the target 'skills/hooks/policy-dispatch.sh' is not found among documentation files.
-WARNING -  Doc file 'hooks/guards.md' contains a link 'policies/policies.json', but the target 'skills/policies/policies.json' is not found among documentation files.
 
 # Verified 2026-09-10: these links deliberately cite canonical source contracts
 # and the strict-build policy outside docs/, rather than generated site pages.

@@ -9,7 +9,7 @@
 #
 # Fixture fidelity: every case round-trips the REAL PreToolUse JSON input shape
 # (tool_name / tool_input / session_id) built with jq — never a hand-built
-# string — matching the harness contract in hooks/guards/references/HOOK-EVENTS.md.
+# string — matching the harness contract in https://code.claude.com/docs/en/hooks.
 
 DISPATCH="${DISPATCH:-$BATS_TEST_DIRNAME/../../hooks/guards/hooks/policy-dispatch.sh}"
 LINT="${LINT:-$BATS_TEST_DIRNAME/../../hooks/guards/scripts/lint-policies.sh}"
@@ -380,7 +380,7 @@ telemetry_lines() {
 }
 
 # ---------- plugin hook manifest ----------------------------------------------
-# README.md: injection hooks (SessionStart/UserPromptSubmit
+# ADR-0002 (no default prompt injection): injection hooks (SessionStart/UserPromptSubmit
 # context stuffing) stay dead; only enforcement events ship. Assert the event
 # keys of the shipped plugin manifest, not doc wording. A denylist, not an exact
 # key set, so a future enforcement event (e.g. PostToolUse) needs no edit here.

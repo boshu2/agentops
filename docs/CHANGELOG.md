@@ -23,7 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Obtain tools and skills from their upstream authors; see the README
   recommendations. This changes the available skill names in the next release.
   Existing personal installations are not automatically removed.
-  AgentOps-native plugin guards remain under `hooks/guards/`, outside the skill library.
+- AgentOps' own guards (policy dispatcher, read-budget, Codex read-budget and
+  installed-skill-edit guards) moved from `skills/cc-hooks/` to `hooks/guards/`.
+  Plugin users and already-installed guards need no action; update any direct
+  call to `skills/cc-hooks/scripts/install-hooks.sh` or `skills/cc-hooks/hooks/*`
+  to `scripts/install-policy-dispatch.sh` or `hooks/guards/`.
 
 - The 3.x curl and PowerShell skill installer tombstones (`scripts/install.sh`,
   `install-claude.sh`, `install-codex.sh`, `install-agy.sh`,
