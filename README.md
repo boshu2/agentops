@@ -10,14 +10,14 @@ and get each change judged by a fresh agent session that didn't write it.**
 [![Validate](https://github.com/boshu2/agentops/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/boshu2/agentops/actions/workflows/validate.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Latest release](https://img.shields.io/github/v/release/boshu2/agentops)](https://github.com/boshu2/agentops/releases/latest)
-[![Skills](https://img.shields.io/badge/skills-38-black.svg)](docs/SKILL-ROUTER.md)
+[![Skills](https://img.shields.io/badge/skills-catalog-black.svg)](docs/SKILL-ROUTER.md)
 
 [Install](#quickstart) · [The loop](#the-operational-loop) ·
 [Goals](#goals) · [Try it](#try-it) · [Skills](#skills-at-a-glance)
 
 </div>
 
-AgentOps is 38 optional skills and a CLI (`ao`). The same `SKILL.md` skills work
+AgentOps provides optional skills and a CLI (`ao`). The same `SKILL.md` skills work
 with coding agents (Claude Code, Codex, Cursor, OpenCode, Gemini CLI, Pi and
 others) and personal assistants (OpenClaw, Grok Bot). You state intent as
 behavior in your domain's words. The skills carry it through one change
@@ -268,7 +268,7 @@ Codex, or `/` and the installed Research entry in Cursor.
 
 ## Skills at a glance
 
-38 skills, all optional. Load one when it answers a specific question. Full
+All skills are optional. Load one when it answers a specific question. Full
 catalog: **[docs/SKILL-ROUTER.md](docs/SKILL-ROUTER.md)**.
 
 | Group | Skills | What it covers |
@@ -278,10 +278,10 @@ catalog: **[docs/SKILL-ROUTER.md](docs/SKILL-ROUTER.md)**.
 | Goals (experimental) | [`interview`](skills/interview/SKILL.md) [`craft-goal`](skills/craft-goal/SKILL.md) [`navigate`](skills/navigate/SKILL.md) | Shape, write and walk a goal over the bead graph |
 | Coordination | [`orchestrate`](skills/orchestrate/SKILL.md) [`agent-native`](skills/agent-native/SKILL.md) | Fresh workers per bead, disjoint scopes, integration |
 | On demand | [`research`](skills/research/SKILL.md) [`domain`](skills/domain/SKILL.md) [`test`](skills/test/SKILL.md) [`refactor`](skills/refactor/SKILL.md) [`review`](skills/review/SKILL.md) [`security`](skills/security/SKILL.md) [`doc`](skills/doc/SKILL.md) [`reverse-engineer`](skills/reverse-engineer/SKILL.md) | Reached for when a specific question comes up |
-| Learning | [`memory`](skills/memory/SKILL.md) [`cass`](skills/cass/SKILL.md) | Curated `.context/` pages safe to commit, and past-session search |
+| Learning | [`memory`](skills/memory/SKILL.md) | Curated `.context/` pages safe to commit |
 | Judgment strategies | [`council`](skills/council/SKILL.md) [`premortem`](skills/premortem/SKILL.md) [`postmortem`](skills/postmortem/SKILL.md) [`reality-check`](skills/reality-check/SKILL.md) [`idea-genie`](skills/idea-genie/SKILL.md) | Multi-model councils (debates, idea duels, interview panels), idea brainstorms, plan challenges, postmortems and claim audits |
-| Runtimes and factories | [`codex-exec`](skills/codex-exec/SKILL.md) [`agy-native`](skills/agy-native/SKILL.md) [`ntm`](skills/ntm/SKILL.md) [`agent-mail`](skills/agent-mail/SKILL.md) [`using-gc`](skills/using-gc/SKILL.md) [`using-flywheel`](skills/using-flywheel/SKILL.md) | Selected executors, panes, mail and factories |
-| Guards and utilities | [`cc-hooks`](skills/cc-hooks/SKILL.md) [`dcg`](skills/dcg/SKILL.md) [`account-rotation`](skills/account-rotation/SKILL.md) [`rch`](skills/rch/SKILL.md) [`sbh`](skills/sbh/SKILL.md) [`ms`](skills/ms/SKILL.md) | Hooks, command guards, accounts, builds, disk, skill search |
+| Runtimes and factories | [`codex-exec`](skills/codex-exec/SKILL.md) [`agy-native`](skills/agy-native/SKILL.md) [`using-gc`](skills/using-gc/SKILL.md) | Selected executors and Gas City integration |
+| Guards and utilities | [`cc-hooks`](skills/cc-hooks/SKILL.md) | Claude Code hook configuration |
 | Skill craft | [`skill-builder`](skills/skill-builder/SKILL.md) [`skill-eval`](skills/skill-eval/SKILL.md) | Author skills and measure whether they help |
 
 ## Where AgentOps fits
@@ -365,10 +365,8 @@ Skill installation does not install tool dependencies:
 | `doc` | `ao`, optional | a requested continuity handoff may use `ao session handoff`/`rehydrate` |
 | `reverse-engineer` | `python3` | Phase 1's mechanical teardown runs `scripts/reverse_engineer.py` |
 | `skill-builder` | `python3`, conditional | Create mode's `build.sh` runs `scripts/generate-skill-mesh.py`; heal/check/audit modes are bash-only |
-| `ms` | `python3`, conditional, plus `ms` binary | the MCP-search fallback runs `python3 skills/ms/scripts/mcp-search.py`; the `ms` binary is required for CLI load, write, and admin operations |
 | `memory` | `python3`, conditional | a selected toil investigation can use the repository helper `scripts/toil-mining/recent_human.py` on cleared Codex sources |
 | `security` | `python3`, conditional | the composable suite and offline redteam surfaces run `security_suite.py` when that scan type is selected |
-| `cass` | `python3`, optional | `scripts/prompt_miner.py` mines repeated prompts; one of several selectable Scripts-table entries |
 
 </details>
 
@@ -412,7 +410,7 @@ connects evidence while Git owns content, the tracker owns work and the coding
 runtime or selected factory owns execution. Your repository owns delivery.
 
 Native execution requires zero AgentOps skills. [RPI](skills/rpi/SKILL.md),
-[Gas City](skills/using-gc/SKILL.md) and [Agentic Coding Flywheel](skills/using-flywheel/SKILL.md)
+[Gas City](skills/using-gc/SKILL.md) and [Agentic Coding Flywheel](https://agent-flywheel.com)
 are optional; their completion reports do not replace independent review.
 
 On request, Validate can save `verdict.v2` with exact content, checked scope and
@@ -472,6 +470,32 @@ No. Keep source in Git, handoffs in your tracker and requested proof in protecte
 external storage, following each owner's access and retention rules.
 
 </details>
+
+## Recommended tools and skills
+
+These independent projects can extend your AgentOps setup. Get their tools and
+skills directly from their authors; they are not bundled with AgentOps.
+
+- **[Gas City](https://github.com/gastownhall/gascity)**, from the organization
+  behind [Beads](https://github.com/gastownhall/beads), provides the building
+  blocks for a software factory. AgentOps includes [Gas City guidance](skills/using-gc/SKILL.md)
+  and an [executor integration pack](packs/agentops-executor/pack.toml).
+- **[Agentic Coding Flywheel](https://agent-flywheel.com)** is Jeffrey Emanuel's
+  ([Dicklesworthstone](https://github.com/Dicklesworthstone)) ecosystem for
+  planning and coordinating coding agents. Follow his site for the tools,
+  methodology and upstream skills.
+- **[Destructive Command Guard (`dcg`)](https://github.com/Dicklesworthstone/destructive_command_guard)**
+  is a strong recommendation for checking agent shell commands and blocking
+  destructive operations covered by its rules.
+- **[Coding Agent Session Search (`cass`)](https://github.com/Dicklesworthstone/coding_agent_session_search)**
+  is a strong recommendation for indexing and searching session histories
+  across coding agents, including finding episodes worth mining for lessons.
+- **[Meta Skill (`ms`)](https://github.com/Dicklesworthstone/meta_skill)**
+  is a strong recommendation for finding, managing and building skills from
+  context, including CASS session mining. Review generated guidance before reuse.
+
+DCG, CASS and MS are Jeffrey Emanuel's projects. Their upstream documentation
+and distribution terms govern their tools and skills.
 
 ## Contributing
 

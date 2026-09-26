@@ -1,18 +1,8 @@
 {
   "image": "claude",
   "schema_version": "skill-image.v1",
-  "skill_count": 38,
+  "skill_count": 29,
   "skills": [
-    {
-      "disposition": "keep_optional_adapter",
-      "path": "skills/account-rotation/",
-      "slug": "account-rotation"
-    },
-    {
-      "disposition": "keep_optional_adapter",
-      "path": "skills/agent-mail/",
-      "slug": "agent-mail"
-    },
     {
       "disposition": "keep_optional_adapter",
       "path": "skills/agent-native/",
@@ -22,11 +12,6 @@
       "disposition": "keep_optional_adapter",
       "path": "skills/agy-native/",
       "slug": "agy-native"
-    },
-    {
-      "disposition": "keep_optional_adapter",
-      "path": "skills/cass/",
-      "slug": "cass"
     },
     {
       "disposition": "keep_optional_adapter",
@@ -47,11 +32,6 @@
       "disposition": "keep_strategy",
       "path": "skills/craft-goal/",
       "slug": "craft-goal"
-    },
-    {
-      "disposition": "keep_optional_adapter",
-      "path": "skills/dcg/",
-      "slug": "dcg"
     },
     {
       "disposition": "keep_specialist",
@@ -84,19 +64,9 @@
       "slug": "memory"
     },
     {
-      "disposition": "keep_optional_adapter",
-      "path": "skills/ms/",
-      "slug": "ms"
-    },
-    {
       "disposition": "keep_strategy",
       "path": "skills/navigate/",
       "slug": "navigate"
-    },
-    {
-      "disposition": "keep_optional_adapter",
-      "path": "skills/ntm/",
-      "slug": "ntm"
     },
     {
       "disposition": "keep",
@@ -117,11 +87,6 @@
       "disposition": "keep_strategy",
       "path": "skills/premortem/",
       "slug": "premortem"
-    },
-    {
-      "disposition": "keep_optional_adapter",
-      "path": "skills/rch/",
-      "slug": "rch"
     },
     {
       "disposition": "keep_strategy",
@@ -154,11 +119,6 @@
       "slug": "rpi"
     },
     {
-      "disposition": "keep_optional_adapter",
-      "path": "skills/sbh/",
-      "slug": "sbh"
-    },
-    {
       "disposition": "keep_specialist",
       "path": "skills/security/",
       "slug": "security"
@@ -177,11 +137,6 @@
       "disposition": "keep_specialist",
       "path": "skills/test/",
       "slug": "test"
-    },
-    {
-      "disposition": "keep_optional_adapter",
-      "path": "skills/using-flywheel/",
-      "slug": "using-flywheel"
     },
     {
       "disposition": "keep_optional_adapter",

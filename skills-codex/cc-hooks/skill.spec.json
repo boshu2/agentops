@@ -11,7 +11,6 @@
     { "id": "exitcodes",   "title": "Exit Codes",            "type": "table",       "priority": "required" },
     { "id": "blocking",    "title": "Blocking a Tool",       "type": "procedure",   "priority": "required" },
     { "id": "modifying",   "title": "Modifying Input",       "type": "procedure",   "priority": "standard" },
-    { "id": "dcgrch",      "title": "Real-World: DCG + RCH",  "type": "examples",    "priority": "standard" },
     { "id": "writing",     "title": "Writing Your Own Hook", "type": "procedure",   "priority": "required" },
     { "id": "envvars",     "title": "Environment Variables", "type": "table",       "priority": "standard" },
     { "id": "stophook",    "title": "Stop Hook (Force Continue)", "type": "procedure", "priority": "standard" },
@@ -21,8 +20,6 @@
   ],
   "references": [
     { "file": "references/HOOK-EVENTS.md", "topic": "all hook events with full input/output schemas" },
-    { "file": "references/DCG-RCH.md",     "topic": "production examples (dcg, rch) wired as PreToolUse hooks" },
-    { "file": "references/SKILL-FIRST-COORDINATION-GUARD.md", "topic": "opt-in skill-first coordination guard recipe + hook context-budget doctrine" },
     { "file": "references/READ-BUDGET-GUARD.md", "topic": "opt-in read-budget guard: blocks unbounded reads over the line budget and routes to slices or cheap-model bulk-read delegation" },
     { "file": "references/PATTERNS.md",    "topic": "auto-format, logging, notification hook patterns" },
     { "file": "references/JSON-OUTPUT.md", "topic": "hook response JSON schemas" }
@@ -30,7 +27,7 @@
   "metadata": {
     "tier": "execution",
     "stability": "stable",
-    "dependencies": ["dcg", "rch"],
+    "dependencies": [],
     "hexagonal_role": "supporting",
     "context_window": "inherit",
     "practices": ["pragmatic-programmer"],
@@ -58,7 +55,6 @@
     "sources": [
       "skills/cc-hooks/SKILL.md",
       "skills/cc-hooks/references/HOOK-EVENTS.md",
-      "skills/cc-hooks/references/DCG-RCH.md",
       "skills/cc-hooks/references/JSON-OUTPUT.md"
     ]
   }

@@ -14,10 +14,7 @@
 
 | Source | Kind | Target |
 |---|---|---|
-| `agent-mail` | `supplier-to` | `agent-native` |
-| `agent-native` | `customer-of` | `agent-mail` |
 | `agent-native` | `customer-of` | `codex-exec` |
-| `agent-native` | `customer-of` | `ntm` |
 | `agy-native` | `separate-ways` | `codex-exec` |
 | `codex-exec` | `supplier-to` | `validate` |
 | `craft-goal` | `supplier-to` | `plan` |
@@ -27,7 +24,6 @@
 | `interview` | `supplier-to` | `craft-goal` |
 | `navigate` | `customer-of` | `craft-goal` |
 | `navigate` | `supplier-to` | `orchestrate` |
-| `ntm` | `supplier-to` | `agent-native` |
 | `premortem` | `supplier-to` | `plan` |
 | `reality-check` | `supplier-to` | `plan` |
 | `rpi` | `customer-of` | `implement` |
@@ -35,7 +31,6 @@
 | `rpi` | `customer-of` | `validate` |
 | `security` | `supplier-to` | `validate` |
 | `skill-eval` | `supplier-to` | `skill-builder` |
-| `using-flywheel` | `partnership` | `using-gc` |
 | `using-gc` | `partnership` | `agent-native` |
 | `validate` | `customer-of` | `implement` |
 | `validate` | `customer-of` | `plan` |
@@ -44,10 +39,6 @@
 
 | Skill | Direction | Artifact |
 |---|---|---|
-| `agent-mail` | consumes | `coordination-request` |
-| `agent-mail` | produces | `agent-identity` |
-| `agent-mail` | produces | `file-reservation` |
-| `agent-mail` | produces | `acknowledged-handoff` |
 | `agent-native` | consumes | `explicit-role-packets` |
 | `agent-native` | produces | `runtime-evidence` |
 | `agent-native` | produces | `worker-handoff` |
@@ -85,9 +76,6 @@
 | `navigate` | consumes | `native-work-state` |
 | `navigate` | consumes | `validation-result` |
 | `navigate` | produces | `native-handoffs` |
-| `ntm` | consumes | `pane-command-request` |
-| `ntm` | produces | `ntm-robot-state` |
-| `ntm` | produces | `agent-worker-transcript` |
 | `orchestrate` | consumes | `accepted-intent` |
 | `orchestrate` | consumes | `native-work-state` |
 | `orchestrate` | consumes | `candidate-evidence` |
@@ -125,8 +113,6 @@
 | `test` | consumes | `standards` |
 | `test` | consumes | `repo-context` |
 | `test` | produces | `test-evidence` |
-| `using-flywheel` | consumes | `explicit-packets` |
-| `using-flywheel` | produces | `flywheel-runtime-evidence` |
 | `using-gc` | consumes | `explicit-packets` |
 | `using-gc` | produces | `gas-city-runtime-evidence` |
 | `validate` | consumes | `subject-manifest.v1` |

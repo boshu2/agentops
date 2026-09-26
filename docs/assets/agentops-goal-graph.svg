@@ -21,7 +21,7 @@
 
   <!-- drawing strip -->
   <g font-family="'JetBrains Mono', ui-monospace, monospace">
-    <text x="30" y="36" font-size="20" letter-spacing="1.5" fill="#b78318">FIG. 04 · GOAL OVER THE BEAD GRAPH</text>
+    <text x="30" y="36" font-size="20" letter-spacing="1.5" fill="#b78318">GOAL OVER THE BEAD GRAPH</text>
     <text x="930" y="36" text-anchor="end" font-size="20" fill="#8a8378">ONE BEAD PER WORKER</text>
   </g>
   <line x1="30" y1="52" x2="930" y2="52" stroke="#f59e0b" stroke-opacity="0.22"/>

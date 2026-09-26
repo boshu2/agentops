@@ -15,7 +15,7 @@
     {
       "title": "Explore and learn",
       "description": "Compare ideas and retrieve relevant context when it can help the current task.",
-      "skills": ["idea-genie", "reverse-engineer", "memory", "cass", "ms"]
+      "skills": ["idea-genie", "reverse-engineer", "memory"]
     },
     {
       "title": "Deliberate workflows",
@@ -25,7 +25,7 @@
     {
       "title": "Optional tool adapters",
       "description": "Use these only with the corresponding runtime or tool. They are not prerequisites for the starter skills.",
-      "skills": ["agent-native", "codex-exec", "agy-native", "ntm", "agent-mail", "using-gc", "using-flywheel", "cc-hooks", "dcg", "rch", "sbh", "account-rotation"]
+      "skills": ["agent-native", "codex-exec", "agy-native", "using-gc", "cc-hooks"]
     }
   ]
 }

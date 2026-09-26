@@ -174,7 +174,7 @@ PY
 }
 
 @test "canonical plan and execution skills keep explicit output contracts" {
-    for skill in plan implement using-flywheel; do
+    for skill in plan implement using-gc; do
         local report="$TMP_DIR/$skill.json"
         run bash "$AUDIT" --legacy "$REPO_ROOT/skills/$skill" --json "$report"
         [ "$status" -eq 0 ]

@@ -46,7 +46,7 @@ to the existing Security owner and service test design to Test.
    and return observed runtime/context identity at startup through the native
    recording channel. Keep unknowns and failures explicit; invent no parentage
    or second tracker. The
-   [session association reference](../cass/references/SESSION_FORMATS.md#work-to-session-associations)
+   [session association reference](../agent-native/references/session-associations.md#work-to-session-associations)
    supplies mechanics for that selected workflow.
 2. Carry the accepted behavior examples forward unchanged. Use repository
    domain names in symbols and tests; check observable outcomes through the
