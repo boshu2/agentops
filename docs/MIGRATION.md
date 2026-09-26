@@ -134,38 +134,38 @@ apply, and host loading is qualified separately from package presence.
 
 | Baseline entrypoint | Disposition | Maintained owner and outcome |
 |---|---|---|
-| `account-rotation` | external | Obtain the tool and its guidance from its author; see [recommendations](../README.md#recommended-tools-and-skills). |
-| `agent-mail` | external | Obtain the tool and its guidance from its author; see [recommendations](../README.md#recommended-tools-and-skills). |
+| `account-rotation` | external | Obtain the tool and its guidance from its author; see [recommendations](https://github.com/boshu2/agentops/blob/main/README.md#recommended-tools-and-skills). |
+| `agent-mail` | external | Obtain the tool and its guidance from its author; see [recommendations](https://github.com/boshu2/agentops/blob/main/README.md#recommended-tools-and-skills). |
 | `agent-native` | keep | [Agent Native](https://github.com/boshu2/agentops/blob/main/skills/agent-native/SKILL.md): runtime dispatch, observation, context identity, isolation and native follow-up. Orchestrate links these mechanics. |
 | `agy-native` | keep | [AGY Native](https://github.com/boshu2/agentops/blob/main/skills/agy-native/SKILL.md): explicitly selected Antigravity execution. |
-| `cass` | external | Obtain the tool and its guidance from its author; see [recommendations](../README.md#recommended-tools-and-skills). |
+| `cass` | external | Obtain the tool and its guidance from its author; see [recommendations](https://github.com/boshu2/agentops/blob/main/README.md#recommended-tools-and-skills). |
 | `cc-hooks` | removed | AgentOps-native guard scripts now live under `hooks/guards/`; the Claude plugin retains its existing guards. No hook-configuration skill is bundled. |
 | `codex-exec` | keep | [Codex Exec](https://github.com/boshu2/agentops/blob/main/skills/codex-exec/SKILL.md): one selected headless Codex process. |
 | `council` | keep | [Council](https://github.com/boshu2/agentops/blob/main/skills/council/SKILL.md): selected independent perspectives; advice does not supply acceptance. |
 | `craft-goal` | keep | [Craft Goal](https://github.com/boshu2/agentops/blob/main/skills/craft-goal/SKILL.md): explicitly selected persistent-goal guidance; native goals retain continuity. |
-| `dcg` | external | Obtain the tool and its guidance from its author; see [recommendations](../README.md#recommended-tools-and-skills). |
+| `dcg` | external | Obtain the tool and its guidance from its author; see [recommendations](https://github.com/boshu2/agentops/blob/main/README.md#recommended-tools-and-skills). |
 | `doc` | keep | [Doc](https://github.com/boshu2/agentops/blob/main/skills/doc/SKILL.md): requested source-grounded documents and continuity handoffs. |
 | `domain` | keep | [Domain](https://github.com/boshu2/agentops/blob/main/skills/domain/SKILL.md): domain vocabulary, rule boundaries and repository conventions. |
 | `idea-genie` | keep | [Idea Genie](https://github.com/boshu2/agentops/blob/main/skills/idea-genie/SKILL.md): evidence-backed options and idea challenge. |
 | `implement` | keep | [Implement](https://github.com/boshu2/agentops/blob/main/skills/implement/SKILL.md): complete accepted changes, direct repair and authorized operations. |
 | `memory` | keep | [Memory](https://github.com/boshu2/agentops/blob/main/skills/memory/SKILL.md): selective find/recall, capture/mine and curate/qualify/retire with support and disclosure review. |
-| `ms` | external | Obtain the tool and its guidance from its author; see [recommendations](../README.md#recommended-tools-and-skills). |
-| `ntm` | external | Obtain the tool and its guidance from its author; see [recommendations](../README.md#recommended-tools-and-skills). |
+| `ms` | external | Obtain the tool and its guidance from its author; see [recommendations](https://github.com/boshu2/agentops/blob/main/README.md#recommended-tools-and-skills). |
+| `ntm` | external | Obtain the tool and its guidance from its author; see [recommendations](https://github.com/boshu2/agentops/blob/main/README.md#recommended-tools-and-skills). |
 | `plan` | keep | [Plan](https://github.com/boshu2/agentops/blob/main/skills/plan/SKILL.md): resumable discovery, uncertainty routing, optional challenge and one ready complete slice. |
 | `postmortem` | keep | [Postmortem](https://github.com/boshu2/agentops/blob/main/skills/postmortem/SKILL.md): requested outcome analysis, separate from code acceptance. |
 | `premortem` | keep | [Premortem](https://github.com/boshu2/agentops/blob/main/skills/premortem/SKILL.md): selected fresh plan challenge; Plan owns the shared challenge exchange. |
-| `rch` | external | Obtain the tool and its guidance from its author; see [recommendations](../README.md#recommended-tools-and-skills). |
+| `rch` | external | Obtain the tool and its guidance from its author; see [recommendations](https://github.com/boshu2/agentops/blob/main/README.md#recommended-tools-and-skills). |
 | `reality-check` | keep | [Reality Check](https://github.com/boshu2/agentops/blob/main/skills/reality-check/SKILL.md): compare shipped-feature, repository or goal claims with evidence. |
 | `refactor` | keep | [Refactor](https://github.com/boshu2/agentops/blob/main/skills/refactor/SKILL.md): structural simplification while preserving behavior. |
 | `research` | keep | [Research](https://github.com/boshu2/agentops/blob/main/skills/research/SKILL.md): cited source investigation and pattern evidence. |
 | `reverse-engineer` | keep | [Reverse Engineer](https://github.com/boshu2/agentops/blob/main/skills/reverse-engineer/SKILL.md): authorized external-system teardown and adoption choices. |
 | `rpi` | keep | [RPI](https://github.com/boshu2/agentops/blob/main/skills/rpi/SKILL.md): explicitly selected outcome-to-judgment charter; unchanged hard dependency graph. |
-| `sbh` | external | Obtain the tool and its guidance from its author; see [recommendations](../README.md#recommended-tools-and-skills). |
+| `sbh` | external | Obtain the tool and its guidance from its author; see [recommendations](https://github.com/boshu2/agentops/blob/main/README.md#recommended-tools-and-skills). |
 | `security` | keep | [Security](https://github.com/boshu2/agentops/blob/main/skills/security/SKILL.md): concrete exposure review and selected scans. |
 | `skill-builder` | keep | [Skill Builder](https://github.com/boshu2/agentops/blob/main/skills/skill-builder/SKILL.md): skill authoring, repair, projections and exports. |
 | `skill-eval` | keep | [Skill Eval](https://github.com/boshu2/agentops/blob/main/skills/skill-eval/SKILL.md): bounded behavioral evaluation; structural conformance is not efficacy. |
 | `test` | keep | [Test](https://github.com/boshu2/agentops/blob/main/skills/test/SKILL.md): behavioral test design and consequential coverage gaps. |
-| `using-flywheel` | external | Obtain the tool and its guidance from its author; see [recommendations](../README.md#recommended-tools-and-skills). |
+| `using-flywheel` | external | Obtain the tool and its guidance from its author; see [recommendations](https://github.com/boshu2/agentops/blob/main/README.md#recommended-tools-and-skills). |
 | `using-gc` | keep | [Using GC](https://github.com/boshu2/agentops/blob/main/skills/using-gc/SKILL.md): selected Gas City through its Mayor and supported native doors. |
 | `validate` | keep | [Validate](https://github.com/boshu2/agentops/blob/main/skills/validate/SKILL.md): sole skill owner of fresh exact-content acceptance judgment and explicit missing proof. |
 
