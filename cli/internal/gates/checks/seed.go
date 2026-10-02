@@ -235,9 +235,6 @@ var (
 		"scripts/**",
 		"tests/**",
 	}
-	// Claude workflows must use `br` (bd/Dolt is retired). operating-loop.js —
-	// the most-viewed content artifact on the public repo — shipped a prompt
-	// telling agents to run `bd ready` with no gate to catch it.
 	// provenance.chain: verify the committed ledger's hash chain at the pre-push
 	// authority boundary (age-gate-the-ungated-egwt.9). Runs on any ledger change
 	// plus self-reference (script + bats) so editing the gate re-runs it.
