@@ -29,7 +29,6 @@ scripts/build-rg.sh
 scripts/capture-repo-metrics.sh
 scripts/check-agents-hash-snapshot.sh
 scripts/check-agents-write-surfaces.sh
-scripts/check-bdd-foundry-markers.sh
 scripts/check-bead-scenario-coverage.sh
 scripts/check-bounded-contexts-drift.sh
 scripts/check-cli-agents-tracker-drift.sh
