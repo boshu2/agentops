@@ -235,8 +235,6 @@ var (
 		"scripts/**",
 		"tests/**",
 	}
-	// Retired Claude workflow names stay as fail-closed tombstones. The
-	// current work tracker is native BD; old br instructions must not run.
 	// provenance.chain: verify the committed ledger's hash chain at the pre-push
 	// authority boundary (age-gate-the-ungated-egwt.9). Runs on any ledger change
 	// plus self-reference (script + bats) so editing the gate re-runs it.

@@ -191,3 +191,32 @@ EOF
   [ "$status" -eq 0 ]
   [ "$output" = "ok" ]
 }
+
+@test "workflow install gate fails on a stale installed copy of a retired workflow" {
+  home="$BATS_TEST_TMPDIR/home"
+  mkdir -p "$home/.claude/workflows"
+
+  # Nothing installed under HOME: every retired name skips there.
+  HOME="$home" run bash "$REPO_ROOT/scripts/validate-workflow-install.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"SKIP: ship-beads.js not installed ($home/.claude/workflows/ship-beads.js absent)"* ]]
+
+  # A faithful copy passes.
+  cp "$REPO_ROOT/workflows/ship-beads.js" "$home/.claude/workflows/ship-beads.js"
+  HOME="$home" run bash "$REPO_ROOT/scripts/validate-workflow-install.sh"
+  [ "$status" -eq 0 ]
+
+  # A copy that still dispatches is the stale install the gate exists to block.
+  printf '%s\n' "export const meta = { name: 'ship-beads' }" "await agent('ship it')" \
+    >"$home/.claude/workflows/ship-beads.js"
+  HOME="$home" run bash "$REPO_ROOT/scripts/validate-workflow-install.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"FAIL: ship-beads.js installed copy bytes differ from the repo canonical"* ]]
+
+  # An active workflow that drifted is reported without failing the gate.
+  cp "$REPO_ROOT/workflows/ship-beads.js" "$home/.claude/workflows/ship-beads.js"
+  printf '%s\n' "// drifted" >"$home/.claude/workflows/bulk-read.js"
+  HOME="$home" run bash "$REPO_ROOT/scripts/validate-workflow-install.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"DRIFT-REPORT: bulk-read.js"* ]]
+}

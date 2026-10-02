@@ -29,6 +29,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   call to `skills/cc-hooks/scripts/install-hooks.sh` or `skills/cc-hooks/hooks/*`
   to `scripts/install-policy-dispatch.sh` or `hooks/guards/`.
 
+- The `bdd-foundry`, `ship-beads` and `bead-crank` Claude workflows. The names stay
+  as tombstones that fail with a migration message before doing any work, like
+  `operating-loop`. Deliver with native Git and BD under your repository's policy,
+  or dispatch to a software factory through its coordinator. An installed copy of
+  the old files now fails the `workflow.install-drift` gate; rerun
+  `ao workflows link`. `scripts/check-bdd-foundry-markers.sh` is removed.
 - The 3.x curl and PowerShell skill installer tombstones (`scripts/install.sh`,
   `install-claude.sh`, `install-codex.sh`, `install-agy.sh`,
   `install-opencode.sh`, `install-codex.ps1`). Their raw URLs now 404, so an old

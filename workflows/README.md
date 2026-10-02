@@ -26,7 +26,7 @@ throw immediately and perform no work.
 |---|---|
 | `bdd-foundry` | State accepted behavior in the conversation or a BD bead; implement and check natively, then obtain fresh independent judgment. Use `bd` directly for work status. |
 | `ship-beads` | Use native Git and BD operations under the caller repository policy, or dispatch to a selected software factory through its coordinator. |
-| `bead-crank` | Same delivery path as `ship-beads`; the alias also fails closed. |
+| `bead-crank` | Former alias of `ship-beads`; it fails closed too. Follow the `ship-beads` migration in the row above. |
 | `operating-loop` | Follow native execution and fresh judgment; use the optional `rpi` skill for one bounded experiment. Delivery follows the `ship-beads` migration above. |
 
 ## Install
