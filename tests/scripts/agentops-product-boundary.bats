@@ -69,10 +69,35 @@ PY
   wf="$REPO_ROOT/workflows/operating-loop.js"
   grep -Fq "throw new Error" "$wf"
   grep -Fq "skills/rpi/SKILL.md" "$wf"
-  grep -Fq "ship-beads.js" "$wf"
+  # ship-beads is retired too; a pointer to it would route into another tombstone.
+  run grep -F "ship-beads.js" "$wf"
+  [ "$status" -eq 1 ]
   # No live seven-move dispatch remains.
   run grep -F "agent(" "$wf"
   [ "$status" -eq 1 ]
+}
+
+@test "retired workflow names are inert tombstones, and code before the throw is rejected" {
+  run bash "$REPO_ROOT/scripts/check-workflow-tombstones.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"OK: retired workflows fail before dispatch"* ]]
+
+  fixture="$BATS_TEST_TMPDIR/workflows"
+  mkdir -p "$fixture"
+  cp "$REPO_ROOT"/workflows/{bdd-foundry,ship-beads,bead-crank,operating-loop}.js "$fixture/"
+  # Plant a dispatch ahead of the retirement throw in one retired name.
+  awk '/^throw new Error\($/ { print "await agent(\"ship it\")" } { print }' \
+    "$REPO_ROOT/workflows/ship-beads.js" >"$fixture/ship-beads.js"
+  grep -Fxq 'await agent("ship it")' "$fixture/ship-beads.js"
+  run bash "$REPO_ROOT/scripts/check-workflow-tombstones.sh" "$fixture"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"FAIL: ship-beads is not an inert retirement tombstone"* ]]
+
+  rm "$fixture/bead-crank.js"
+  cp "$REPO_ROOT/workflows/ship-beads.js" "$fixture/ship-beads.js"
+  run bash "$REPO_ROOT/scripts/check-workflow-tombstones.sh" "$fixture"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"FAIL: retired workflow missing: $fixture/bead-crank.js"* ]]
 }
 
 @test "skill-mesh rejects a second verdict producer, an advisory judge and a non-rpi dependency" {

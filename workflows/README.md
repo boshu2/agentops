@@ -5,7 +5,7 @@ are a **Claude-only runtime adapter** — the same doctrine as `skills-codex/`
 (Codex-only): canonical source lives here, and a runtime link step installs it
 where the one runtime that consumes it resolves names.
 
-Five generic conveyor shapes:
+Five active conveyor shapes:
 
 | Workflow | Shape | Use when |
 |---|---|---|
@@ -15,14 +15,19 @@ Five generic conveyor shapes:
 | `bulk-read` | parallel cheap readers, one per file → line-referenced bullets | answering a question about big files without their bytes entering the caller's context |
 | `code-write` | metadata probe for batches → sequential cheap writers, one per item (spec + reference → target) → receipts | writing patterned or boilerplate files the caller should not read back |
 
-Two repository-delivery conveyors also live here, outside the AgentOps
-semantic core: `bdd-foundry` (behavior-first planning → acceptance-gated
-beads) and `ship-beads` (repository delivery orchestration: drive a list of
-beads to confirmed-merged; `bead-crank` is its deprecated alias). The former
-seven-move `operating-loop` workflow is a retired tombstone that fails with
-replacement pointers — one experiment belongs to the `rpi` skill, multi-bead
-delivery to `ship-beads` or a caller-selected factory. Each workflow documents
-itself in its `meta` header.
+Each active workflow documents itself in its `meta` header.
+
+## Retired names
+
+These names remain as fail-closed tombstones for existing invocations. They
+throw immediately and perform no work.
+
+| Name | Migration |
+|---|---|
+| `bdd-foundry` | State accepted behavior in the conversation or a BD bead; implement and check natively, then obtain fresh independent judgment. Use `bd` directly for work status. |
+| `ship-beads` | Use native Git and BD operations under the caller repository policy, or dispatch to a selected software factory through its coordinator. |
+| `bead-crank` | Same delivery path as `ship-beads`; the alias also fails closed. |
+| `operating-loop` | Follow native execution and fresh judgment; use the optional `rpi` skill for one bounded experiment. Delivery follows the `ship-beads` migration above. |
 
 ## Install
 
@@ -38,6 +43,13 @@ only the runtime links live there — `workflows/` is the tracked source of
 truth. `ao workflows link` mirrors `ao skills link` semantics: idempotent,
 refuses to replace foreign links or real files, and `ao workflows unlink`
 removes only links pointing back into this checkout.
+
+Inspect the `ao workflows link` result for conflicts. A real file or foreign
+symlink under a retired name can keep running the old behavior, so check who
+owns that path and resolve the conflicting copy before using that workflow.
+Do not overwrite an operator-owned path automatically. The workflow drift gate
+checks retired names in both the project-local directory and the legacy global
+`$HOME/.claude/workflows/` directory.
 
 **Session-snapshot caveat:** Claude Code snapshots the named-workflow registry
 at session start. Newly minted links appear in the next session, not the one
