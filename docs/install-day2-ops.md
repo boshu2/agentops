@@ -194,11 +194,13 @@ npx installs:
 npx skills@latest update
 ```
 
-Contributor source links:
+Contributor source links. Upgrade `ao` first when the release changes the CLI
+(3.9 does: a 3.8 `ao` refuses a checkout without `skills-codex/`):
 
 ```bash
 cd ~/.local/share/agentops
 git pull --ff-only
+(cd cli && go install ./cmd/ao)
 ao skills link --skill test --skill refactor
 ```
 

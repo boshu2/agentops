@@ -67,11 +67,10 @@ for upgrade instructions, breaking changes and known limits.
   unchanged. Codex plugin users should refresh the marketplace and re-add the
   plugin. Checked against codex-cli 0.156.1: a plugin install and a linked
   install each load all 28 skills with no load errors.
-- `interview` now carries its Codex invocation policy in
-  `skills/interview/agents/openai.yaml`. The generator used to derive that file
-  from `disable-model-invocation: true`; it is now hand-maintained in each
-  explicit-only skill, and `scripts/validate-codex-api-conformance.sh` fails when
-  one is missing or does not parse.
+- Each explicit-only skill carries its Codex invocation policy in its own
+  `agents/openai.yaml`, hand-maintained in `skills/`; the generator no longer
+  derives it. `scripts/validate-codex-api-conformance.sh` fails when one is
+  missing or does not parse.
 - `scripts/validate-codex-api-conformance.sh` checks `skills/` against what the
   Codex loader enforces (unique frontmatter keys, a non-empty description, a
   name of at most 64 characters, no nested `SKILL.md`) and the explicit-only
