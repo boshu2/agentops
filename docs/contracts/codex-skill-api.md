@@ -99,8 +99,12 @@ Codex reads the invocation policy only from this file. It does not read
 `disable-model-invocation` from `SKILL.md`. A skill marked
 `disable-model-invocation: true` therefore carries the matching policy in its
 own `skills/<name>/agents/openai.yaml`. The file is hand-maintained in the
-source skill; nothing derives it. Without it, or when it does not parse, Codex
-selects the skill implicitly. The conformance check fails on either case.
+source skill; nothing derives it. Without it, or when Codex cannot use it, Codex
+selects the skill implicitly. The conformance check fails when the file is
+missing, is not valid YAML, or lacks `policy.allow_implicit_invocation: false`.
+It does not catch every file Codex drops: a non-object `interface` or
+`dependencies.tools`, or the YAML 1.1 spelling `no` for the boolean, passes the
+check and is ignored by Codex 0.156.1.
 
 ---
 
