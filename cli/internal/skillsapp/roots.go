@@ -11,23 +11,28 @@ import (
 	"strings"
 )
 
-// ResolveSkillsRoots locates the skills/ and skills-codex/ directories relative
-// to the current working directory, walking up the tree until both are found.
-// Falls back to literal "skills" / "skills-codex" if not found, which produces a
-// clear error from os.ReadDir.
-func ResolveSkillsRoots() (string, string) {
+// repoRootMarkers are the distinctive agentops repo-root files that sit beside
+// skills/. Shape is not identity: a bare skills/ directory exists in many
+// places (cli/internal/skills is a Go package, and any repository may keep its
+// own skills/), so the resolver only accepts a directory that also carries
+// these markers.
+var repoRootMarkers = []string{"registry.json", "PRODUCT.md"}
+
+// ResolveSkillsRoot locates the agentops skills/ directory relative to the
+// current working directory, walking up the tree until it finds a directory
+// holding skills/ plus the repo-root markers. It falls back to the literal
+// "skills" when no such root is found, which reads a cwd-local skills/ tree or
+// produces a clear error from os.ReadDir.
+func ResolveSkillsRoot() string {
 	const skills = "skills"
-	const codex = "skills-codex"
 	cwd, err := os.Getwd()
 	if err != nil {
-		return skills, codex
+		return skills
 	}
 	dir := cwd
 	for i := 0; i < 8; i++ {
-		s := filepath.Join(dir, skills)
-		c := filepath.Join(dir, codex)
-		if isDir(s) && isDir(c) {
-			return s, c
+		if s := filepath.Join(dir, skills); isDir(s) && hasRepoRootMarkers(dir) {
+			return s
 		}
 		parent := filepath.Dir(dir)
 		if parent == dir {
@@ -35,7 +40,7 @@ func ResolveSkillsRoots() (string, string) {
 		}
 		dir = parent
 	}
-	return skills, codex
+	return skills
 }
 
 func isDir(p string) bool {
@@ -43,30 +48,30 @@ func isDir(p string) bool {
 	return err == nil && info.IsDir()
 }
 
+// hasRepoRootMarkers reports whether dir carries every agentops repo-root
+// marker as a regular (non-directory) entry.
+func hasRepoRootMarkers(dir string) bool {
+	for _, marker := range repoRootMarkers {
+		if fi, err := os.Stat(filepath.Join(dir, marker)); err != nil || fi.IsDir() {
+			return false
+		}
+	}
+	return true
+}
+
 // ResolveRepoSkillsDir returns the ABSOLUTE agentops repo skills/ directory, or
 // an error if the caller is not inside the repo. It relies on the resolver's
-// real signal: ResolveSkillsRoots returns absolute paths ONLY when it located a
-// directory holding BOTH skills/ and skills-codex/ (the agentops structure)
-// walking up from cwd; its fallback returns the RELATIVE literal "skills". A
-// mere existence check is not enough — running from an unrelated directory that
+// real signal: ResolveSkillsRoot returns an absolute path ONLY when it located
+// a directory holding skills/ AND the agentops repo-root markers walking up
+// from cwd; its fallback returns the RELATIVE literal "skills". A mere
+// existence check is not enough — running from an unrelated directory that
 // happens to contain a stray skills/ subdir would pass os.Stat and scan/link
-// that tree. Requiring an absolute, pair-verified path fails closed instead
-// (cross-family refuter age-u031, codex-fresh-review, two rounds).
+// that tree into ~/.claude/skills. Requiring an absolute, marker-verified path
+// fails closed instead (cross-family refuter age-u031, codex-fresh-review).
 func ResolveRepoSkillsDir() (string, error) {
-	skillsDir, codexDir := ResolveSkillsRoots()
-	if !filepath.IsAbs(skillsDir) || !isDir(skillsDir) || !isDir(codexDir) {
-		return "", fmt.Errorf("could not locate the agentops repo skills/ tree (resolved %q) — run `ao skills link` from inside the agentops repo", skillsDir)
-	}
-	// Shape is not identity: a skills/+skills-codex/ pair could exist outside
-	// agentops. Require distinctive agentops repo-root markers (siblings of
-	// skills/) so the command never scans a look-alike tree into
-	// ~/.claude/skills (cross-family refuter age-u031, codex-fresh-review, 3
-	// rounds — this is the terminal identity check).
-	root := filepath.Dir(skillsDir)
-	for _, marker := range []string{"registry.json", "PRODUCT.md"} {
-		if fi, err := os.Stat(filepath.Join(root, marker)); err != nil || fi.IsDir() {
-			return "", fmt.Errorf("resolved %q is not the agentops repo root (missing %s) — run `ao skills link` from inside the agentops repo", root, marker)
-		}
+	skillsDir := ResolveSkillsRoot()
+	if !filepath.IsAbs(skillsDir) || !isDir(skillsDir) {
+		return "", fmt.Errorf("could not locate the agentops repo skills/ tree (resolved %q; the repo root holds skills/, registry.json and PRODUCT.md) — run `ao skills link` from inside the agentops repo", skillsDir)
 	}
 	return skillsDir, nil
 }

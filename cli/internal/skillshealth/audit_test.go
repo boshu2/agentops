@@ -137,38 +137,11 @@ func TestFindBrokenRefs_RelativeTargets(t *testing.T) {
 	}
 }
 
-func TestCompareCodexParity_Cases(t *testing.T) {
-	tmp := t.TempDir()
-	codex := filepath.Join(tmp, "skills-codex")
-	mustMkdirAll(t, filepath.Join(codex, "matchedone"))
-	mustMkdirAll(t, filepath.Join(codex, "divergedone"))
-	// matchedone has same description.
-	mustWrite(t, filepath.Join(codex, "matchedone", "SKILL.md"),
-		"---\nname: matchedone\ndescription: same intent line\n---\n")
-	mustWrite(t, filepath.Join(codex, "divergedone", "SKILL.md"),
-		"---\nname: divergedone\ndescription: completely unrelated text about widgets\n---\n")
-
-	if got := compareCodexParity(codex, "matchedone", "same intent line"); got != "matched" {
-		t.Errorf("matched: got %q", got)
-	}
-	if got := compareCodexParity(codex, "divergedone", "this is the agentops intent talking about flywheels"); got != "diverged" {
-		t.Errorf("diverged: got %q", got)
-	}
-	if got := compareCodexParity(codex, "absent", "anything"); got != "missing" {
-		t.Errorf("missing: got %q", got)
-	}
-}
-
-// L2 integration: audit the real skills/ + skills-codex/ trees of THIS repo.
+// L2 integration: audit the real skills/ tree of THIS repo.
 func TestAudit_RealRepo_L2(t *testing.T) {
 	repoRoot := findRepoRoot(t)
 	skillsDir := filepath.Join(repoRoot, "skills")
-	codexDir := filepath.Join(repoRoot, "skills-codex")
-	if _, err := os.Stat(skillsDir); err != nil {
-		t.Skipf("skills dir not present: %v", err)
-	}
-
-	report, err := Audit(Options{SkillsDir: skillsDir, CodexDir: codexDir})
+	report, err := Audit(Options{SkillsDir: skillsDir})
 	if err != nil {
 		t.Fatalf("Audit failed: %v", err)
 	}
@@ -212,7 +185,9 @@ func mustWrite(t *testing.T, p, s string) {
 	}
 }
 
-// findRepoRoot walks up from cwd until it finds skills/ + skills-codex/.
+// findRepoRoot walks up from cwd until it finds the agentops repo root
+// (skills/ beside registry.json). It fails rather than skips: a silent skip
+// would turn the L2 audit into a false green.
 func findRepoRoot(t *testing.T) string {
 	t.Helper()
 	cwd, err := os.Getwd()
@@ -222,7 +197,7 @@ func findRepoRoot(t *testing.T) string {
 	dir := cwd
 	for i := 0; i < 8; i++ {
 		_, e1 := os.Stat(filepath.Join(dir, "skills"))
-		_, e2 := os.Stat(filepath.Join(dir, "skills-codex"))
+		_, e2 := os.Stat(filepath.Join(dir, "registry.json"))
 		if e1 == nil && e2 == nil {
 			return dir
 		}
@@ -232,6 +207,6 @@ func findRepoRoot(t *testing.T) string {
 		}
 		dir = parent
 	}
-	t.Skipf("could not find repo root from %s", cwd)
+	t.Fatalf("could not find repo root from %s", cwd)
 	return ""
 }

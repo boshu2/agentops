@@ -24,7 +24,7 @@
   "definitions": {
     "skill": {
       "type": "object",
-      "required": ["name", "description", "hexagonal_role", "consumes", "produces", "dependencies", "capabilities", "effects", "canonical_status", "disposition", "tier", "context_rel", "user_invocable", "graph_root", "references_count", "codex_override_present"],
+      "required": ["name", "description", "hexagonal_role", "consumes", "produces", "dependencies", "capabilities", "effects", "canonical_status", "disposition", "tier", "context_rel", "user_invocable", "graph_root", "references_count"],
       "additionalProperties": false,
       "properties": {
         "name": {
@@ -93,10 +93,6 @@
         "graph_root": {
           "type": "boolean",
           "description": "Explicit zero-inbound graph entry point. User-invocable alone does not make an orphan reachable."
-        },
-        "codex_override_present": {
-          "type": "boolean",
-          "description": "True when skills-codex/<name>/SKILL.md or skills-codex-overrides/<name>/ exists."
         },
         "references_count": {
           "type": "integer",

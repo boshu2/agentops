@@ -309,7 +309,7 @@ under `context` is inert metadata kept so existing skills keep validating.
 |-------|--------------------|-------------|
 | `allowed-tools` | **Active** — narrows tool auto-approval | host agent runtime |
 | `name`, `description` | **Active** — skill discovery and trigger matching | host agent runtime |
-| `disable-model-invocation` | **Active** where honored — strips the description from context and reserves invocation to the person; stripped at projection for runtimes without the switch | host agent runtime |
+| `disable-model-invocation` | **Active** where honored — strips the description from context and reserves invocation to the person; Codex takes the same policy from the skill's `agents/openai.yaml` | host agent runtime |
 | `context.window` | None — declaration-only | — |
 | `context.intent.mode` | None — declaration-only | — |
 | `context.sections` | None — the injection surface was removed | — |

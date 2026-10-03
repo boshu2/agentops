@@ -79,7 +79,7 @@ jq -e '
 
 jq -e '
   .name == "agentops"
-  and .skills == "./skills-codex"
+  and .skills == "./skills"
   and .interface.displayName == "AgentOps"
   and (.interface.shortDescription | type == "string" and length > 0)
   and (.interface.longDescription | type == "string" and length > 0)

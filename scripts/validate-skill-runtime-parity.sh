@@ -5,7 +5,7 @@ set -euo pipefail
 . "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/repo-root.sh"
 ROOT="${1:-$(resolve_repo_root)}"
 DEPRECATED_COMMANDS_GO="$ROOT/cli/internal/quality/stale_refs.go"
-SKILL_ROOTS=("$ROOT/skills" "$ROOT/skills-codex")
+SKILL_ROOTS=("$ROOT/skills")
 
 failures=0
 

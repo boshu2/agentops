@@ -71,7 +71,7 @@ func TestRecoveryTwoSkillFixersRestoreOriginal(t *testing.T) {
 func TestRecoveryHomeBackupsStayInTheirRun(t *testing.T) {
 	home := t.TempDir()
 	repo := filepath.Join(home, "dev", "repo")
-	path := filepath.Join(home, ".codex", ".agentops-codex-install.json")
+	path := filepath.Join(home, ".claude", "settings.json")
 	writeSkillsFile(t, path, "original")
 	var runs []*RunArtifact
 	for i, content := range []string{"first", "second"} {

@@ -113,10 +113,10 @@ func (m *Module) Command() *cobra.Command {
 		Use:     "skills",
 		Short:   "Inspect and validate the skills/ tree",
 		GroupID: "knowledge",
-		Long: `Tooling for the skills/ source-of-truth and its skills-codex/
-parity sibling. Subcommands surface health (frontmatter completeness,
-broken reference links, codex parity drift) without mutating either
-tree.`,
+		Long: `Tooling for the skills/ source-of-truth, the one tree every runtime
+loads. Subcommands surface health (frontmatter completeness, broken
+reference links) and query the catalog without mutating skills/; link
+and unlink change only runtime skill directories.`,
 	}
 	root.AddCommand(m.checkCommand())
 	root.AddCommand(m.buildCommand())
@@ -136,15 +136,13 @@ tree.`,
 func (m *Module) checkCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "check",
-		Short: "Audit skills/ frontmatter, references, and codex parity",
-		Long: `Walk skills/ and skills-codex/, validating each skill's YAML
-frontmatter (name + description present, name matches dir), checking
-that every references/*.md is linked from SKILL.md (and vice versa),
-and reporting parity drift against skills-codex/.
+		Short: "Audit skills/ frontmatter and references",
+		Long: `Walk skills/, validating each skill's YAML frontmatter (name +
+description present, name matches dir) and checking that every
+references/*.md is linked from SKILL.md (and vice versa).
 
 Exits 0 by default. With --strict, exits 1 if any finding (missing
-frontmatter, broken reference, parity drift) is reported, suitable for
-CI gating.`,
+frontmatter, broken reference) is reported, suitable for CI gating.`,
 		RunE: m.runCheck,
 	}
 	cmd.Flags().BoolVar(&m.checkJSON, "json", false, "Emit machine-readable JSON")
@@ -154,10 +152,8 @@ CI gating.`,
 }
 
 func (m *Module) runCheck(cmd *cobra.Command, _ []string) error {
-	skillsDir, codexDir := skillsapp.ResolveSkillsRoots()
 	opts := skillshealth.Options{
-		SkillsDir: skillsDir,
-		CodexDir:  codexDir,
+		SkillsDir: skillsapp.ResolveSkillsRoot(),
 		OnlySkill: m.checkOnly,
 		Strict:    m.checkStrict,
 	}
@@ -175,8 +171,7 @@ func (m *Module) runCheck(cmd *cobra.Command, _ []string) error {
 		fmt.Fprintf(out, "Skills audit (%s)\n", report.Generated)
 		fmt.Fprintf(out, "================\n")
 		fmt.Fprintf(out, "Skills audited: %d\n", len(report.Skills))
-		fmt.Fprintf(out, "Errors:         %d\n", len(report.Errors))
-		fmt.Fprintf(out, "Parity drift:   %d\n\n", len(report.ParityDrift))
+		fmt.Fprintf(out, "Errors:         %d\n\n", len(report.Errors))
 
 		if len(report.Errors) > 0 {
 			fmt.Fprintln(out, "Errors:")
@@ -185,22 +180,15 @@ func (m *Module) runCheck(cmd *cobra.Command, _ []string) error {
 			}
 			fmt.Fprintln(out)
 		}
-		if len(report.ParityDrift) > 0 {
-			fmt.Fprintln(out, "Codex parity drift:")
-			for _, e := range report.ParityDrift {
-				fmt.Fprintf(out, "  - %s\n", e)
-			}
-		}
-		if len(report.Errors) == 0 && len(report.ParityDrift) == 0 {
+		if len(report.Errors) == 0 {
 			fmt.Fprintln(out, "All skills healthy.")
 		}
 	}
 
-	if m.checkStrict && (len(report.Errors) > 0 || len(report.ParityDrift) > 0) {
+	if m.checkStrict && len(report.Errors) > 0 {
 		// Use SilenceUsage to avoid printing usage on this expected non-zero exit.
 		cmd.SilenceUsage = true
-		return fmt.Errorf("skills check failed: %d errors, %d parity-drift",
-			len(report.Errors), len(report.ParityDrift))
+		return fmt.Errorf("skills check failed: %d errors", len(report.Errors))
 	}
 	return nil
 }
@@ -230,7 +218,7 @@ suitable for a CI dedup gate.`,
 }
 
 func (m *Module) runResolve(cmd *cobra.Command, _ []string) error {
-	skillsDir, _ := skillsapp.ResolveSkillsRoots()
+	skillsDir := skillsapp.ResolveSkillsRoot()
 	report, err := skillsresolve.Resolve(skillsresolve.Options{SkillsDir: skillsDir})
 	if err != nil {
 		return err
@@ -313,7 +301,7 @@ func (m *Module) runFind(cmd *cobra.Command, args []string) error {
 	}
 
 	query := joinArgs(args)
-	skillsDir, _ := skillsapp.ResolveSkillsRoots()
+	skillsDir := skillsapp.ResolveSkillsRoot()
 	metas, err := skills.Load(skillsDir)
 	if err != nil {
 		cmd.SilenceUsage = true
@@ -653,7 +641,7 @@ func (m *Module) runUnlink(cmd *cobra.Command, _ []string) error {
 
 // loadCatalogOrErr loads skills/catalog.json with a remediation hint on failure.
 func (m *Module) loadCatalogOrErr(cmd *cobra.Command) (*skills.Catalog, error) {
-	skillsDir, _ := skillsapp.ResolveSkillsRoots()
+	skillsDir := skillsapp.ResolveSkillsRoot()
 	cat, err := skills.LoadCatalog(skillsDir)
 	if err != nil {
 		cmd.SilenceUsage = true

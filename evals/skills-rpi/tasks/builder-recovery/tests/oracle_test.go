@@ -47,12 +47,18 @@ func TestActualBuilderRecovery(t *testing.T) {
 		t.Fatal("original evidence changed")
 	}
 	source := read("repo/skills/recovery-pilot/SKILL.md")
-	projection := read("repo/skills-codex/recovery-pilot/SKILL.md")
 	// Adapter command semantics belong to the independent native review: an
 	// equivalent git -C invocation need not contain one literal command phrase.
 	for _, want := range []string{"Retained caller note: fixture-retained-729."} {
-		if !bytes.Contains(source, []byte(want)) || !bytes.Contains(projection, []byte(want)) {
+		if !bytes.Contains(source, []byte(want)) {
 			t.Fatalf("missing retained behavior %s", want)
+		}
+	}
+	// The recovered package must appear in the regenerated projections, the
+	// obstructed one included.
+	for _, projection := range []string{"repo/skills/catalog.json", "repo/images/codex/manifest.json"} {
+		if !bytes.Contains(read(projection), []byte(`"recovery-pilot"`)) {
+			t.Fatalf("projection %s does not list the recovered skill", projection)
 		}
 	}
 	if bytes.Contains(source, []byte("authoring_state: scaffold")) || bytes.Contains(source, []byte("TODO:")) {
@@ -67,15 +73,10 @@ func TestActualBuilderRecovery(t *testing.T) {
 	if out, e := c.CombinedOutput(); e != nil {
 		t.Fatalf("source check %v %s", e, out)
 	}
-	c = exec.Command("bash", "scripts/codex-sync.sh", "--check", "--only", "recovery-pilot")
+	c = exec.Command("python3", "scripts/generate-skill-mesh.py", "--check")
 	c.Dir = repo
 	if out, e := c.CombinedOutput(); e != nil {
 		t.Fatalf("projection %v %s", e, out)
-	}
-	c = exec.Command("bash", "scripts/regen-codex-hashes.sh", "--check", "--only", "recovery-pilot")
-	c.Dir = repo
-	if out, e := c.CombinedOutput(); e != nil {
-		t.Fatalf("projection hash %v %s", e, out)
 	}
 	var audit map[string]any
 	if e := json.Unmarshal(read("out/audit.json"), &audit); e != nil {
@@ -89,7 +90,7 @@ func TestActualBuilderRecovery(t *testing.T) {
 		t.Fatal(e)
 	}
 	stage := summary["failed_stage"]
-	if summary["source_retained"] != true || (stage != "codex_projection" && stage != "projection") || summary["recovery_complete"] != true || summary["semantics_evaluated"] != false || summary["original_report_preserved"] != true {
+	if summary["source_retained"] != true || (stage != "mesh_projection" && stage != "projection") || summary["recovery_complete"] != true || summary["semantics_evaluated"] != false || summary["original_report_preserved"] != true {
 		t.Fatal("false completion summary")
 	}
 }

@@ -37,9 +37,6 @@ go.home-isolation
 go.test-home-isolation
 go.test-isolation
 skill.cli-snippets
-skill.codex-override-coverage
-skill.codex-parity-drift
-skill.codex-runtime-sections
 skill.runtime-formats
 skill.runtime-parity
 skill.triggers

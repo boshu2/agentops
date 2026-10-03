@@ -176,8 +176,8 @@ python3 scripts/generate-skill-mesh.py --check
 When behavior or metadata changes:
 
 ```bash
-bash scripts/refresh-codex-artifacts.sh --scope worktree
-bash scripts/validate-codex-generated-artifacts.sh --scope worktree
+bash scripts/regen-all.sh
+bash scripts/regen-all.sh --check
 ```
 
 Marketplace export checks apply only when preparing that package. A

@@ -87,17 +87,11 @@ func TestSkillsCommandTreeRegistered(t *testing.T) {
 func TestSkillsCheck_JSONOutputSchema(t *testing.T) {
 	tmp := t.TempDir()
 	skillsDir := filepath.Join(tmp, "skills")
-	codexDir := filepath.Join(tmp, "skills-codex")
 	if err := os.MkdirAll(filepath.Join(skillsDir, "alpha"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.MkdirAll(filepath.Join(codexDir, "alpha"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	skillsTestWrite(t, filepath.Join(skillsDir, "alpha", "SKILL.md"),
 		"---\nname: alpha\ndescription: alpha skill\n---\nbody\n")
-	skillsTestWrite(t, filepath.Join(codexDir, "alpha", "SKILL.md"),
-		"---\nname: alpha\ndescription: alpha skill\n---\n")
 
 	// Run check by chdir-ing into the synthetic root; the module resolves
 	// "skills" relative to cwd.
@@ -107,13 +101,19 @@ func TestSkillsCheck_JSONOutputSchema(t *testing.T) {
 			t.Fatalf("check --json: %v", err)
 		}
 		var report struct {
-			Skills      []map[string]any `json:"skills"`
-			Errors      []string         `json:"errors"`
-			ParityDrift []string         `json:"parity_drift"`
-			Generated   string           `json:"generated_at"`
+			Skills    []map[string]any `json:"skills"`
+			Errors    []string         `json:"errors"`
+			Generated string           `json:"generated_at"`
 		}
 		if err := json.Unmarshal([]byte(stdout), &report); err != nil {
 			t.Fatalf("invalid JSON: %v\noutput: %s", err, stdout)
+		}
+		var top map[string]json.RawMessage
+		if err := json.Unmarshal([]byte(stdout), &top); err != nil {
+			t.Fatalf("invalid JSON object: %v", err)
+		}
+		if _, ok := top["parity_drift"]; ok {
+			t.Error("report still carries the retired parity_drift field")
 		}
 		if len(report.Skills) != 1 {
 			t.Errorf("expected 1 skill, got %d", len(report.Skills))
@@ -122,10 +122,13 @@ func TestSkillsCheck_JSONOutputSchema(t *testing.T) {
 			t.Error("missing generated_at")
 		}
 		got := report.Skills[0]
-		for _, k := range []string{"name", "path", "frontmatter_valid", "codex_parity"} {
+		for _, k := range []string{"name", "path", "frontmatter_valid"} {
 			if _, ok := got[k]; !ok {
 				t.Errorf("missing key %q in skill status: %v", k, got)
 			}
+		}
+		if _, ok := got["codex_parity"]; ok {
+			t.Errorf("skill status still carries the retired codex_parity field: %v", got)
 		}
 		if v, _ := got["name"].(string); v != "alpha" {
 			t.Errorf("name: got %q", v)
@@ -141,11 +144,7 @@ func TestSkillsCheck_JSONOutputSchema(t *testing.T) {
 func TestSkillsCheck_StrictExitsNonZeroOnMissingFrontmatter(t *testing.T) {
 	tmp := t.TempDir()
 	skillsDir := filepath.Join(tmp, "skills")
-	codexDir := filepath.Join(tmp, "skills-codex")
 	if err := os.MkdirAll(filepath.Join(skillsDir, "broken"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.MkdirAll(codexDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	skillsTestWrite(t, filepath.Join(skillsDir, "broken", "SKILL.md"),
@@ -158,21 +157,17 @@ func TestSkillsCheck_StrictExitsNonZeroOnMissingFrontmatter(t *testing.T) {
 	})
 }
 
-// skillsResolveSyntheticTree builds skills/ + skills-codex/ (both required by
-// ResolveSkillsRoots) holding two name-family skills with near-identical
-// descriptions, guaranteeing at least one ME overlap candidate.
+// skillsResolveSyntheticTree builds a skills/ tree holding two name-family
+// skills with near-identical descriptions, guaranteeing at least one ME
+// overlap candidate.
 func skillsResolveSyntheticTree(t *testing.T) string {
 	t.Helper()
 	tmp := t.TempDir()
 	skillsDir := filepath.Join(tmp, "skills")
-	codexDir := filepath.Join(tmp, "skills-codex")
 	for _, name := range []string{"alpha-one", "alpha-two"} {
 		if err := os.MkdirAll(filepath.Join(skillsDir, name), 0o755); err != nil {
 			t.Fatal(err)
 		}
-	}
-	if err := os.MkdirAll(codexDir, 0o755); err != nil {
-		t.Fatal(err)
 	}
 	desc := "audit overlapping skills and flag merge candidates for the corpus resolver"
 	body := "\n# heading\n\nA sufficiently long body so the skill is not flagged as a thin coverage gap. " +

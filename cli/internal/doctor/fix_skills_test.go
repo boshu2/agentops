@@ -52,8 +52,8 @@ func TestSkillsStaleCommandRefsFixer(t *testing.T) {
 	writeSkillsFile(t, skillMD, original)
 	docMD := filepath.Join(repo, "docs", "sample.md")
 	writeSkillsFile(t, docMD, "Use `ao work rpi` to start.\n")
-	codexRefMD := filepath.Join(repo, "skills-codex", "sample", "references", "flow.md")
-	writeSkillsFile(t, codexRefMD, "Use `ao handoff` to pass context.\n")
+	refMD := filepath.Join(repo, "skills", "sample", "references", "flow.md")
+	writeSkillsFile(t, refMD, "Use `ao handoff` to pass context.\n")
 
 	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: home}
 
@@ -91,9 +91,9 @@ func TestSkillsStaleCommandRefsFixer(t *testing.T) {
 	if string(gotDoc) != "Use `ao work rpi` to start.\n" {
 		t.Fatalf("docs/sample.md after fix = %q", gotDoc)
 	}
-	gotCodexRef, _ := os.ReadFile(codexRefMD)
-	if string(gotCodexRef) != "Use `ao session handoff` to pass context.\n" {
-		t.Fatalf("skills-codex reference after fix = %q", gotCodexRef)
+	gotRef, _ := os.ReadFile(refMD)
+	if string(gotRef) != "Use `ao session handoff` to pass context.\n" {
+		t.Fatalf("skills reference after fix = %q", gotRef)
 	}
 
 	// Backup exists, byte-identical to original.
@@ -549,126 +549,6 @@ func TestSkillsIntegrityHygieneReportOnlyNoMutate(t *testing.T) {
 	}
 }
 
-// --- fm-skills-stale-codex-sync --------------------------------------------
-
-// TestSkillsStaleCodexSyncFixer verifies the fixer mirrors drift surfaces into
-// the Codex cache and stamps the install metadata.
-func TestSkillsStaleCodexSyncFixer(t *testing.T) {
-	repo := t.TempDir()
-	home := t.TempDir()
-	writeSkillsFile(t, filepath.Join(repo, "skills-codex", "demo", "SKILL.md"), "codex skill\n")
-	manifestPath := filepath.Join(repo, "skills-codex", ".agentops-manifest.json")
-	writeSkillsFile(t, manifestPath, `{"skills":[{"name":"demo"}]}`)
-
-	// Stale Codex install: wrong manifest_hash + version.
-	metaPath := filepath.Join(home, ".codex", ".agentops-codex-install.json")
-	writeSkillsFile(t, metaPath, `{"install_mode":"native-plugin","manifest_hash":"stale","version":"old"}`)
-
-	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: home, TargetSHA: "newsha1"}
-
-	findings, err := skillsStaleCodexSyncDetector{}.Detect(env)
-	if err != nil {
-		t.Fatalf("Detect: %v", err)
-	}
-	if len(findings) != 1 {
-		t.Fatalf("expected 1 codex-sync finding, got %+v", findings)
-	}
-
-	mctx, _, closer := skillsTestCtx(t, repo, home)
-	defer closer()
-	res, err := skillsStaleCodexSyncFixer{}.Fix(mctx.WithFixer("fm-skills-stale-codex-sync"), env, findings)
-	if err != nil {
-		t.Fatalf("Fix: %v", err)
-	}
-	if !res.Fixed {
-		t.Fatal("Fix not marked Fixed")
-	}
-
-	codexRoot := codexNativeRoot(home)
-	skillGot, _ := os.ReadFile(filepath.Join(codexRoot, "skills-codex", "demo", "SKILL.md"))
-	if string(skillGot) != "codex skill\n" {
-		t.Fatalf("cached skill content = %q", skillGot)
-	}
-	// Install metadata stamped with repo manifest hash + TargetSHA.
-	metaGot, _ := os.ReadFile(metaPath)
-	manifestBytes, _ := os.ReadFile(manifestPath)
-	if !strings.Contains(string(metaGot), hashHex(manifestBytes)) {
-		t.Fatalf("install metadata not stamped with manifest hash: %s", metaGot)
-	}
-	if !strings.Contains(string(metaGot), "newsha1") {
-		t.Fatalf("install metadata version not stamped: %s", metaGot)
-	}
-	if !strings.Contains(string(metaGot), `"install_mode": "native-plugin"`) {
-		t.Fatalf("install metadata lost install_mode key: %s", metaGot)
-	}
-
-	// Detector no longer fires.
-	post, _ := skillsStaleCodexSyncDetector{}.Detect(env)
-	if len(post) != 0 {
-		t.Fatalf("expected no codex-sync finding after fix, got %+v", post)
-	}
-}
-
-func TestSkillsStaleCodexSyncFixerNoDriftNoMutate(t *testing.T) {
-	repo := t.TempDir()
-	home := t.TempDir()
-	manifestPath := filepath.Join(repo, "skills-codex", ".agentops-manifest.json")
-	writeSkillsFile(t, manifestPath, `{"skills":[{"name":"demo"}]}`)
-	manifestBytes, _ := os.ReadFile(manifestPath)
-	writeSkillsFile(t, codexInstallMetaPath(home),
-		`{"install_mode":"native-plugin","manifest_hash":"`+hashHex(manifestBytes)+`","version":"newsha1"}`)
-
-	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: home, TargetSHA: "newsha1"}
-	mctx, ra, closer := skillsTestCtx(t, repo, home)
-	defer closer()
-	res, err := skillsStaleCodexSyncFixer{}.Fix(mctx.WithFixer("fm-skills-stale-codex-sync"), env, nil)
-	if err != nil {
-		t.Fatalf("Fix: %v", err)
-	}
-	if !res.Fixed || res.ActionsTaken != 0 {
-		t.Fatalf("no-drift fix: Fixed=%t ActionsTaken=%d, want true/0", res.Fixed, res.ActionsTaken)
-	}
-	recs, _ := readActions(ra.ActionsPath())
-	if len(recs) != 0 {
-		t.Fatalf("no-drift fix wrote %d action(s), want 0", len(recs))
-	}
-}
-
-func TestSkillsStaleCodexSyncSourcesRejectMissingInputs(t *testing.T) {
-	repo := t.TempDir()
-	home := t.TempDir()
-	mctx, _, closer := skillsTestCtx(t, repo, home)
-	defer closer()
-	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: home}
-
-	_, err := skillsStaleCodexSyncFixer{}.codexSyncSources(mctx, env)
-	if err == nil || !strings.Contains(err.Error(), "no skills-codex/ source") {
-		t.Fatalf("missing skills-codex error = %v, want source refusal", err)
-	}
-
-	writeSkillsFile(t, filepath.Join(repo, "skills-codex", ".agentops-manifest.json"), `{}`)
-	_, err = skillsStaleCodexSyncFixer{}.codexSyncSources(mctx, env)
-	if err == nil || !strings.Contains(err.Error(), "no Codex install present") {
-		t.Fatalf("missing Codex install error = %v, want install refusal", err)
-	}
-}
-
-// TestSkillsStaleCodexSyncNoInstall verifies the detector is silent when there
-// is no Codex install (that is fm-skills-missing's domain, not this FM).
-func TestSkillsStaleCodexSyncNoInstall(t *testing.T) {
-	repo := t.TempDir()
-	home := t.TempDir()
-	writeSkillsFile(t, filepath.Join(repo, "skills-codex", ".agentops-manifest.json"), `{"x":1}`)
-	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: home}
-	findings, err := skillsStaleCodexSyncDetector{}.Detect(env)
-	if err != nil {
-		t.Fatalf("Detect: %v", err)
-	}
-	if len(findings) != 0 {
-		t.Fatalf("no Codex install should yield no findings, got %+v", findings)
-	}
-}
-
 // --- fm-skills-duplicate-install -------------------------------------------
 
 // TestSkillsDuplicateInstallDetectOnly verifies the detector reports the full
@@ -677,7 +557,7 @@ func TestSkillsDuplicateInstallDetectOnly(t *testing.T) {
 	repo := t.TempDir()
 	home := t.TempDir()
 	// Two populated roots with overlapping skills: native plugin cache + legacy.
-	nativeRoot := filepath.Join(codexNativeRoot(home), "skills-codex")
+	nativeRoot := filepath.Join(codexNativeRoot(home), "skills")
 	legacyRoot := filepath.Join(home, ".agents", "skills")
 	for _, name := range []string{"rpi", "evolve"} {
 		writeSkillsFile(t, filepath.Join(nativeRoot, name, "SKILL.md"), "x\n")
@@ -726,7 +606,7 @@ func TestSkillsDuplicateInstallDetectsVersionedNativeCache(t *testing.T) {
 	repo := t.TempDir()
 	home := t.TempDir()
 	versionedRoot := filepath.Join(home, ".codex", "plugins", "cache",
-		"agentops-marketplace", "agentops", "3.2.0", "skills-codex")
+		"agentops-marketplace", "agentops", "3.2.0", "skills")
 	legacyRoot := filepath.Join(home, ".agents", "skills")
 	writeSkillsFile(t, filepath.Join(versionedRoot, "rpi", "SKILL.md"), "native\n")
 	writeSkillsFile(t, filepath.Join(legacyRoot, "rpi", "SKILL.md"), "stale raw\n")
@@ -767,14 +647,13 @@ func TestSkillsDuplicateInstallNoOverlap(t *testing.T) {
 
 // --- registration -----------------------------------------------------------
 
-// TestSkillsRegistration verifies all five detectors and five fixers are
+// TestSkillsRegistration verifies all four detectors and four fixers are
 // registered and that fm-skills-duplicate-install is the only non-auto-fixable.
 func TestSkillsRegistration(t *testing.T) {
 	want := []string{
 		"fm-skills-duplicate-install",
 		"fm-skills-integrity-hygiene",
 		"fm-skills-missing",
-		"fm-skills-stale-codex-sync",
 		"fm-skills-stale-command-refs",
 	}
 	for _, id := range want {
@@ -815,20 +694,20 @@ func TestSkillsRegistration(t *testing.T) {
 	}
 }
 
-// TestSkillsHashDriftDetectorIsRemoved pins age-aau9: the codex hash-drift
-// detector+fixer was REMOVED because its Go re-implementation diverged from the
-// canonical scripts/regen-codex-hashes.sh hash (false-positiving on all skills,
-// and its --fix would corrupt the canonical hashes and red regen-check). Codex
-// hash validation is owned by `make regen-check`. This guard fails if anyone
-// re-registers a divergent reimplementation.
-func TestSkillsHashDriftDetectorIsRemoved(t *testing.T) {
-	const id = "fm-skills-hash-drift"
-	if FixerByID(id) != nil {
-		t.Fatal("fm-skills-hash-drift fixer must NOT be registered (age-aau9: owned by make regen-check)")
-	}
-	for _, d := range Detectors() {
-		if d.ID() == id {
-			t.Fatal("fm-skills-hash-drift detector must NOT be registered (age-aau9: owned by make regen-check)")
+// TestSkillsCodexCopyFailureModesAreRemoved pins the retirement of the two
+// failure modes that policed a generated Codex copy of skills/. Every runtime
+// now loads the one skills/ tree, so there is no copy to hash (age-aau9
+// removed fm-skills-hash-drift earlier) and none to sync into a plugin cache.
+// This guard fails if either is re-registered.
+func TestSkillsCodexCopyFailureModesAreRemoved(t *testing.T) {
+	for _, id := range []string{"fm-skills-hash-drift", "fm-skills-stale-codex-sync"} {
+		if FixerByID(id) != nil {
+			t.Fatalf("%s fixer must NOT be registered: no generated Codex copy exists", id)
+		}
+		for _, d := range Detectors() {
+			if d.ID() == id {
+				t.Fatalf("%s detector must NOT be registered: no generated Codex copy exists", id)
+			}
 		}
 	}
 }

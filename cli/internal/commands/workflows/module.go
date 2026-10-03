@@ -38,9 +38,9 @@ func (m *Module) Command() *cobra.Command {
 		GroupID: "knowledge",
 		Long: `Tooling for the top-level workflows/ source-of-truth: the Claude-harness
 workflow scripts (workflows/*.js). Workflows are a CLAUDE-ONLY runtime
-adapter — the same doctrine as skills-codex/ being Codex-only — installed
-into the project-local .claude/workflows/ directory where the Claude Code
-harness resolves named workflows. There is no multi-runtime fan-out.
+adapter, installed into the project-local .claude/workflows/ directory
+where the Claude Code harness resolves named workflows. There is no
+multi-runtime fan-out.
 
 The repo bans tracked symlinks, so installation is this runtime link step,
 not tracked links: run ` + "`ao workflows link`" + ` from inside the agentops checkout
@@ -62,8 +62,8 @@ that has no entry yet. The SOURCE is the checkout the command runs from
 repo); the TARGET is the current working directory's git root joined with
 .claude/workflows/ (created if absent), or the single dir named by --into.
 
-Workflows are a Claude-only runtime adapter (skills-codex/ is the Codex
-twin doctrine): exactly one destination, no multi-runtime fan-out.
+Workflows are a Claude-only runtime adapter: exactly one destination, no
+multi-runtime fan-out.
 
 Idempotent and non-destructive: a script already linked to this checkout is
 left alone. A pre-existing REAL file, or a symlink pointing anywhere else,

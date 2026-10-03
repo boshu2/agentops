@@ -29,8 +29,8 @@ scripts/regen-all.sh
 scripts/regen-all.sh --check
 ```
 
-Edit `skills/<slug>/SKILL.md` metadata rather than generated registries, maps,
-image copies, or parity twins.
+Edit `skills/<slug>/SKILL.md` metadata rather than generated registries, maps
+or image manifests.
 
 ## A removed command is invoked
 

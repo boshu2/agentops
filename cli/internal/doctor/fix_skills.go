@@ -2,18 +2,16 @@ package doctor
 
 // Skills subsystem detectors and fixers.
 //
-// This file implements the five skills failure modes from the Phase 2 analysis.
-// Four are auto-fixable (one partially), one is detect-only:
+// This file implements the four skills failure modes from the Phase 2 analysis.
+// Three are auto-fixable (one partially), one is detect-only:
 //
 //	fm-skills-missing            (auto)    — mirror repo skills/<name>/** into ~/.claude/skills
-//	fm-skills-stale-codex-sync   (auto)    — re-sync drift surfaces into the Codex native cache
 //	fm-skills-stale-command-refs (auto)    — substitute deprecated `ao` namespace commands
 //	fm-skills-integrity-hygiene  (partial) — append links for unlinked references/ files
 //	fm-skills-duplicate-install  (detect)  — overlapping installs; needs an operator decision
 //
-// Codex hash drift is intentionally NOT a doctor FM: it is owned by the canonical
-// `make regen-check` gate (scripts/regen-codex-hashes.sh), which runs pre-push. A
-// Go re-implementation diverged from the canonical hash (age-aau9) and was removed.
+// Every runtime loads the one skills/ tree, so there is no generated Codex
+// copy to keep in sync and no Codex-specific drift failure mode.
 //
 // Detectors are PURE: they stat and read only. Every fixer disk write flows
 // through Mutate — there is no os.WriteFile/os.Remove/os.Rename/os.Create in
@@ -21,9 +19,6 @@ package doctor
 // MkdirAll's the parent directory, so mirroring into a fresh tree is safe.
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -36,20 +31,14 @@ import (
 // skillsSubsystem is the canonical subsystem name for every skills FM.
 const skillsSubsystem = "skills"
 
-// init registers all five skills detectors and five skills fixers. Codex hash
-// drift is NOT validated here — it is owned by the canonical `make regen-check`
-// gate (scripts/regen-codex-hashes.sh), which runs in the pre-push gate. A Go
-// re-implementation diverged from the canonical hash and false-positived on all
-// skills, so it was removed (age-aau9) rather than maintained in two languages.
+// init registers all four skills detectors and four skills fixers.
 func init() {
 	RegisterDetector(skillsMissingDetector{})
-	RegisterDetector(skillsStaleCodexSyncDetector{})
 	RegisterDetector(skillsStaleCommandRefsDetector{})
 	RegisterDetector(skillsIntegrityHygieneDetector{})
 	RegisterDetector(skillsDuplicateInstallDetector{})
 
 	RegisterFixer(skillsMissingFixer{})
-	RegisterFixer(skillsStaleCodexSyncFixer{})
 	RegisterFixer(skillsStaleCommandRefsFixer{})
 	RegisterFixer(skillsIntegrityHygieneFixer{})
 	RegisterFixer(skillsDuplicateInstallFixer{})
@@ -58,13 +47,6 @@ func init() {
 // ---------------------------------------------------------------------------
 // Shared helpers (pure).
 // ---------------------------------------------------------------------------
-
-// hashHex returns the hex-encoded SHA-256 of b. It is used for codex manifest
-// and metadata hash comparison and stamping.
-func hashHex(b []byte) string {
-	h := sha256.Sum256(b)
-	return hex.EncodeToString(h[:])
-}
 
 // codexNativeRoot returns the live Codex native plugin cache root under home.
 func codexNativeRoot(home string) string {
@@ -75,7 +57,7 @@ func codexNativeRoot(home string) string {
 // order: Codex native plugin cache, raw Codex install, Claude install, legacy.
 func skillInstallDirs(home string) []string {
 	return []string{
-		filepath.Join(codexNativeRoot(home), "skills-codex"),
+		filepath.Join(codexNativeRoot(home), "skills"),
 		filepath.Join(home, ".codex", "skills"),
 		filepath.Join(home, ".claude", "skills"),
 		filepath.Join(home, ".agents", "skills"),
@@ -155,6 +137,18 @@ func fileMode(path string) os.FileMode {
 		return info.Mode().Perm()
 	}
 	return 0o644
+}
+
+// fileExists reports whether path exists as a regular file.
+func fileExists(path string) bool {
+	st, err := os.Stat(path)
+	return err == nil && !st.IsDir()
+}
+
+// dirExists reports whether path exists as a directory.
+func dirExists(path string) bool {
+	st, err := os.Stat(path)
+	return err == nil && st.IsDir()
 }
 
 // remediation builds a Remediation pointing at the doctor for finding id.
@@ -307,276 +301,6 @@ func (f skillsMissingFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []Finding)
 }
 
 // ---------------------------------------------------------------------------
-// FM: fm-skills-stale-codex-sync (auto-fixable)
-// ---------------------------------------------------------------------------
-
-// codexInstallMeta is the minimal projection of ~/.codex/.agentops-codex-install.json.
-type codexInstallMeta struct {
-	ManifestHash string `json:"manifest_hash"`
-	Version      string `json:"version"`
-}
-
-// skillsStaleCodexSyncDetector flags an installed Codex plugin that has drifted
-// from the local repo checkout: manifest-hash mismatch or version mismatch.
-type skillsStaleCodexSyncDetector struct{}
-
-func (skillsStaleCodexSyncDetector) ID() string           { return "fm-skills-stale-codex-sync" }
-func (skillsStaleCodexSyncDetector) Subsystem() string    { return skillsSubsystem }
-func (skillsStaleCodexSyncDetector) Severity() string     { return "P1" }
-func (skillsStaleCodexSyncDetector) EstimatedCostMS() int { return 8 }
-func (skillsStaleCodexSyncDetector) OnlineRequired() bool { return false }
-func (skillsStaleCodexSyncDetector) QuickPath() bool      { return false }
-func (skillsStaleCodexSyncDetector) Describe() string {
-	return "installed Codex plugin drifts from the local repo skills-codex/ checkout"
-}
-
-// codexInstallMetaPath returns ~/.codex/.agentops-codex-install.json.
-func codexInstallMetaPath(home string) string {
-	return filepath.Join(home, ".codex", ".agentops-codex-install.json")
-}
-
-// repoCodexManifestPath returns repo/skills-codex/.agentops-manifest.json.
-func repoCodexManifestPath(repo string) string {
-	return filepath.Join(repo, "skills-codex", ".agentops-manifest.json")
-}
-
-// codexSyncDrift reports the two drift signals (hash, version).
-// It is pure: stat + read only. ok reports whether a comparison was possible.
-func codexSyncDrift(env *DetectEnv) (hashDrift, versionDrift, ok bool) {
-	metaPath := codexInstallMetaPath(env.HomeDir)
-	manifestPath := repoCodexManifestPath(env.RepoRoot)
-	metaRaw, err := os.ReadFile(metaPath)
-	if err != nil {
-		return false, false, false
-	}
-	manifestRaw, err := os.ReadFile(manifestPath)
-	if err != nil {
-		return false, false, false
-	}
-	var meta codexInstallMeta
-	if json.Unmarshal(metaRaw, &meta) != nil {
-		return false, false, false
-	}
-	hashDrift = meta.ManifestHash != hashHex(manifestRaw)
-	versionDrift = env.TargetSHA != "" && meta.Version != env.TargetSHA
-	return hashDrift, versionDrift, true
-}
-
-// fileExists reports whether path exists as a regular file.
-func fileExists(path string) bool {
-	st, err := os.Stat(path)
-	return err == nil && !st.IsDir()
-}
-
-func (d skillsStaleCodexSyncDetector) Detect(env *DetectEnv) ([]Finding, error) {
-	hashDrift, versionDrift, ok := codexSyncDrift(env)
-	if !ok || (!hashDrift && !versionDrift) {
-		return nil, nil
-	}
-	return []Finding{{
-		ID:         d.ID(),
-		Severity:   d.Severity(),
-		Subsystem:  d.Subsystem(),
-		Title:      "installed Codex plugin drifts from the repo checkout",
-		Confidence: 1.0,
-		Evidence: Evidence{
-			File: ".codex/.agentops-codex-install.json",
-			Query: fmt.Sprintf("hash_drift=%t version_drift=%t",
-				hashDrift, versionDrift),
-		},
-		Remediation: remediation(d.ID(), true, 1),
-	}}, nil
-}
-
-// skillsStaleCodexSyncFixer mirrors the drift surfaces (skills-codex/** and the
-// install-metadata JSON) from the repo into the Codex native cache through
-// Mutate. The metadata stamp is written last so a crash leaves the install
-// marked stale (safe) rather than falsely fresh.
-//
-// Symlinked-root audit (age-knowledge-symlink-root-inbpg): the repo-relative
-// symlink class does NOT apply to this fixer's writes — every write target is
-// an absolute home-dir path (~/.codex/**); the repo skills-codex/ tree is only
-// READ as mirror source. No guard is added here.
-type skillsStaleCodexSyncFixer struct{}
-
-func (skillsStaleCodexSyncFixer) ID() string { return "fm-skills-stale-codex-sync" }
-func (skillsStaleCodexSyncFixer) Preconditions() []string {
-	return []string{
-		"repo.root/skills-codex/ exists",
-		"~/.codex/ exists with a valid .agentops-codex-install.json",
-	}
-}
-func (skillsStaleCodexSyncFixer) WritesTo() []string {
-	return []string{
-		"~/.codex/plugins/cache/agentops-marketplace",
-		"~/.codex/.agentops-codex-install.json",
-	}
-}
-func (skillsStaleCodexSyncFixer) Ops() []string     { return []string{"WriteFile"} }
-func (skillsStaleCodexSyncFixer) Reversible() bool  { return true }
-func (skillsStaleCodexSyncFixer) Idempotent() bool  { return true }
-func (skillsStaleCodexSyncFixer) AutoFixable() bool { return true }
-
-// mirrorTree mirrors every file under srcRoot into destRoot through Mutate,
-// adding to res.ActionsTaken. It returns the first error encountered.
-func mirrorTree(ctx *MutateContext, fixerID, srcRoot, destRoot string, res *FixResult) error {
-	for _, rel := range walkRelFiles(srcRoot) {
-		content, err := os.ReadFile(filepath.Join(srcRoot, rel))
-		if err != nil {
-			return fmt.Errorf("doctor: %s: read %s: %w", fixerID, rel, err)
-		}
-		dest := filepath.Join(destRoot, rel)
-		r, err := Mutate(ctx, dest, WriteFile{Content: content, Mode: fileMode(filepath.Join(srcRoot, rel))})
-		if err != nil {
-			return fmt.Errorf("doctor: %s: mirror %s: %w", fixerID, rel, err)
-		}
-		if r.OK {
-			res.ActionsTaken++
-		}
-	}
-	return nil
-}
-
-func (f skillsStaleCodexSyncFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []Finding) (FixResult, error) {
-	res := FixResult{FixerID: f.ID(), FindingIDs: []string{f.ID()}}
-
-	needsFix, err := f.codexSyncNeedsFix(env)
-	if err != nil {
-		res.Err = err
-		return res, err
-	}
-	if !needsFix {
-		res.Fixed = true
-		return res, nil
-	}
-
-	sources, err := f.codexSyncSources(ctx, env)
-	if err != nil {
-		res.Err = err
-		return res, err
-	}
-
-	if err := f.mirrorCodexSyncSources(ctx, sources, &res); err != nil {
-		res.Err = err
-		return res, err
-	}
-
-	if err := f.stampCodexInstallMeta(ctx, env, &res); err != nil {
-		res.Err = err
-		return res, err
-	}
-
-	if err := f.verifyCodexSyncFixed(ctx, env); err != nil {
-		res.Err = err
-		return res, err
-	}
-	res.Fixed = true
-	return res, nil
-}
-
-type codexSyncSources struct {
-	SkillsCodex string
-	CodexRoot   string
-}
-
-func (f skillsStaleCodexSyncFixer) codexSyncNeedsFix(env *DetectEnv) (bool, error) {
-	hashDrift, versionDrift, ok := codexSyncDrift(env)
-	if !ok {
-		return false, fmt.Errorf("doctor: %s: no Codex install / repo manifest to sync (refused_unsafe)", f.ID())
-	}
-	return hashDrift || versionDrift, nil
-}
-
-func (f skillsStaleCodexSyncFixer) codexSyncSources(ctx *MutateContext, env *DetectEnv) (codexSyncSources, error) {
-	sources := codexSyncSources{
-		SkillsCodex: filepath.Join(env.RepoRoot, "skills-codex"),
-		CodexRoot:   codexNativeRoot(ctx.HomeDir),
-	}
-	if !dirExists(sources.SkillsCodex) {
-		return codexSyncSources{}, fmt.Errorf("doctor: %s: no skills-codex/ source (refused_unsafe)", f.ID())
-	}
-	if !dirExists(filepath.Join(ctx.HomeDir, ".codex")) {
-		return codexSyncSources{}, fmt.Errorf("doctor: %s: no Codex install present (refused_unsafe)", f.ID())
-	}
-	return sources, nil
-}
-
-func (f skillsStaleCodexSyncFixer) mirrorCodexSyncSources(ctx *MutateContext, sources codexSyncSources, res *FixResult) error {
-	return mirrorTree(ctx, f.ID(), sources.SkillsCodex, filepath.Join(sources.CodexRoot, "skills-codex"), res)
-}
-
-func (f skillsStaleCodexSyncFixer) stampCodexInstallMeta(ctx *MutateContext, env *DetectEnv, res *FixResult) error {
-	newMeta, err := f.stampInstallMeta(env)
-	if err != nil {
-		return err
-	}
-	r, err := Mutate(ctx, codexInstallMetaPath(ctx.HomeDir), WriteFile{Content: newMeta, Mode: 0o644})
-	if err != nil {
-		return fmt.Errorf("doctor: %s: stamp install metadata: %w", f.ID(), err)
-	}
-	if r.OK {
-		res.ActionsTaken++
-	}
-	return nil
-}
-
-func (f skillsStaleCodexSyncFixer) verifyCodexSyncFixed(ctx *MutateContext, env *DetectEnv) error {
-	if ctx.DryRun {
-		return nil
-	}
-	hashDrift, versionDrift, _ := codexSyncDrift(env)
-	if hashDrift || versionDrift {
-		return fmt.Errorf("doctor: %s: fix did not eliminate the finding", f.ID())
-	}
-	return nil
-}
-
-// stampInstallMeta returns the install-metadata JSON with manifest_hash and
-// version rewritten, preserving every other key verbatim.
-func (f skillsStaleCodexSyncFixer) stampInstallMeta(env *DetectEnv) ([]byte, error) {
-	metaRaw, err := os.ReadFile(codexInstallMetaPath(env.HomeDir))
-	if err != nil {
-		return nil, fmt.Errorf("doctor: %s: read install metadata: %w", f.ID(), err)
-	}
-	manifestRaw, err := os.ReadFile(repoCodexManifestPath(env.RepoRoot))
-	if err != nil {
-		return nil, fmt.Errorf("doctor: %s: read repo manifest: %w", f.ID(), err)
-	}
-	return jsonSetFields(metaRaw, map[string]any{
-		"manifest_hash": hashHex(manifestRaw),
-		"plugin_root":   codexNativeRoot(env.HomeDir),
-		"version":       env.TargetSHA,
-	})
-}
-
-// dirExists reports whether path exists as a directory.
-func dirExists(path string) bool {
-	st, err := os.Stat(path)
-	return err == nil && st.IsDir()
-}
-
-// jsonSetFields parses raw JSON object bytes, sets the given top-level keys,
-// and re-marshals with stable two-space indentation. Other keys are preserved.
-func jsonSetFields(raw []byte, fields map[string]any) ([]byte, error) {
-	var obj map[string]json.RawMessage
-	if err := json.Unmarshal(raw, &obj); err != nil {
-		return nil, fmt.Errorf("doctor: parse JSON object: %w", err)
-	}
-	for k, v := range fields {
-		enc, err := json.Marshal(v)
-		if err != nil {
-			return nil, fmt.Errorf("doctor: marshal field %s: %w", k, err)
-		}
-		obj[k] = enc
-	}
-	out, err := json.MarshalIndent(obj, "", "  ")
-	if err != nil {
-		return nil, fmt.Errorf("doctor: marshal JSON object: %w", err)
-	}
-	return append(out, '\n'), nil
-}
-
-// ---------------------------------------------------------------------------
 // FM: fm-skills-stale-command-refs (auto-fixable)
 // ---------------------------------------------------------------------------
 
@@ -600,7 +324,7 @@ func (skillsStaleCommandRefsDetector) Describe() string {
 // rewrites files found under them via Glob, which follows a symlinked
 // directory, while Mutate's scope check is lexical.
 func staleRefScanRoots() []string {
-	return []string{"skills", "skills-codex", "skills-codex-overrides", "docs", "scripts"}
+	return []string{"skills", "docs", "scripts"}
 }
 
 // staleRefScanGlobs returns the glob set scanned for deprecated command refs,
@@ -609,9 +333,6 @@ func staleRefScanGlobs(repo string) []string {
 	return []string{
 		filepath.Join(repo, "skills", "*", "SKILL.md"),
 		filepath.Join(repo, "skills", "*", "references", "*.md"),
-		filepath.Join(repo, "skills-codex", "*", "SKILL.md"),
-		filepath.Join(repo, "skills-codex", "*", "references", "*.md"),
-		filepath.Join(repo, "skills-codex-overrides", "*", "*.md"),
 		filepath.Join(repo, "docs", "*.md"),
 		filepath.Join(repo, "docs", "*", "*.md"),
 		filepath.Join(repo, "scripts", "*.sh"),
@@ -823,7 +544,7 @@ func (skillsStaleCommandRefsFixer) Preconditions() []string {
 	}
 }
 func (skillsStaleCommandRefsFixer) WritesTo() []string {
-	return []string{"skills", "skills-codex", "docs", "scripts"}
+	return []string{"skills", "docs", "scripts"}
 }
 func (skillsStaleCommandRefsFixer) Ops() []string     { return []string{"WriteFile"} }
 func (skillsStaleCommandRefsFixer) Reversible() bool  { return true }
