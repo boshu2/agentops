@@ -11,7 +11,7 @@ grep -Fq 'Acceptance changes need caller authority.' "$skill_dir/SKILL.md"
 grep -Fq 'at most one bounded' "$skill_dir/SKILL.md"
 grep -Fq 'reviewers remain required.' "$skill_dir/SKILL.md"
 grep -Fq 'author-distinct' "$skill_dir/SKILL.md"
-grep -Fq 'no fixed ten-minute cap' "$skill_dir/SKILL.md"
+grep -Fq 'A repair does not start another' "$skill_dir/SKILL.md"
 grep -Fq 'empty' "$skill_dir/SKILL.md"
 grep -Fq 'When no machine' "$skill_dir/SKILL.md"
 if grep -Eq 'Plan is closed for that intent|dependencies:.*anti-ceremony|plan_packet_digest' "$skill_dir/SKILL.md"; then

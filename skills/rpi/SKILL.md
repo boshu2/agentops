@@ -37,7 +37,8 @@ output_contract: 'concise human-readable result; optional rpi-report.v1 when a c
 
 Own the authorized outcome through finish. Use the native coding agent and
 shell. BD or the caller's tracker owns work and handoffs; Git owns content and
-delivery. AgentOps supplies a small charter and fresh judgment, not a scheduler.
+delivery. AgentOps supplies a small charter and one fresh judgment where a
+mistake is costly, not a scheduler.
 
 ## Operating charter
 
@@ -53,17 +54,27 @@ delivery. AgentOps supplies a small charter and fresh judgment, not a scheduler.
    A known test failure needs a fix and a discriminating check, not another
    planning phase, council or helper.
 4. Use focused checks during edits and complete required integration checks
-   before final judgment. Reuse valid exact-input receipts; rerun affected
-   checks after changes. Reserve capacity for integration, review and repair.
-   Keep the final subject unchanged while it is being judged.
-5. Obtain [Validate](../validate/SKILL.md) from one fresh author-distinct context
-   in the author's model family unless the caller selects required additional
-   legs. There is no fixed ten-minute cap; explicitly required
-   reviewers remain required. Risk deepens evidence, not reviewer multiplication. Repair
-   actionable findings within authority and remaining bounds, then revalidate
-   the changed exact subject. For `NOT_PROVEN` from missing evidence, gather it
-   without changing the subject and obtain fresh judgment again.
-6. Stop at completed acceptance, cancellation, refusal, a spent real bound or
+   before finishing. Reuse valid exact-input receipts; rerun affected checks
+   after changes. Reserve capacity for integration and repair. Keep a subject
+   unchanged while it is being judged.
+5. Spend validation where a mistake is costly. For an ordinary change the
+   checks and CI are the gate: finish. Obtain [Validate](../validate/SKILL.md)
+   from one fresh author-distinct context only when the caller asks, when a
+   mistake cannot be cheaply undone after it lands (a published release or
+   instructions users will follow, a security boundary, destroying data or
+   tracker state, deleting a check that protects the product), or when no
+   deterministic check covers the changed behavior. Use the author's model
+   family unless the caller selects additional legs; explicitly required
+   reviewers remain required.
+6. One round. Give the validator the exact subject and one question written
+   before it starts; it does not re-run the checks. Repair what fails the
+   accepted behavior or would mislead a user, break install or the CLI, or
+   remove protection for the product; treat the rest as optional notes. Confirm
+   each repair with a check and finish. A repair does not start another
+   review, and `NOT_PROVEN` is reported with its gaps, not chased. Keep review
+   cost a fraction of the cost of the work; when it approaches that cost, stop
+   and report what is unchecked.
+7. Stop at completed acceptance, cancellation, refusal, a spent real bound or
    an unresolved causal stall after the help below. Adjacent improvements are
    not permission to expand the goal. Report them briefly only when useful;
    do not turn them into another work batch.
@@ -115,13 +126,15 @@ helper use in the native handoff. Prompt text proves no native enforcement.
 
 ## Evidence and boundaries
 
-Bind accepted intent, complete changed paths, exact subject and factual receipts
-for the fresh validator; disclose affected orphaned acceptance evidence. Use
+When a validator is used, bind accepted intent, complete changed paths, exact
+subject and factual receipts for it; disclose affected orphaned acceptance evidence. Use
 existing provenance helpers rather than a new evidence format. Requested proof
 uses caller-selected protected external non-Git storage; preserve legacy
-`.agents/` evidence. Missing identity, freshness or proof means NOT_PROVEN;
-proven failed acceptance or scope violation means FAIL. PASS needs every
-criterion verified and empty `not_checked`. Authors cannot issue binding PASS.
+`.agents/` evidence. For a requested binding verdict, missing identity,
+freshness or proof means NOT_PROVEN; proven failed acceptance or scope
+violation means FAIL; PASS needs every criterion verified and empty
+`not_checked`. Authors cannot issue binding PASS. Without that request, report
+what was checked and what was not, and finish.
 
 [Memory](../memory/SKILL.md), specialists and runtime adapters are on demand;
 no-match and no-change are valid. Read [boundaries](references/boundaries.md)

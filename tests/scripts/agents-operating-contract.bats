@@ -10,10 +10,11 @@
     "federated integration graph" \
     "zero mandatory AgentOps skills" \
     "Lean RPI operating charter" \
-    "Accepted intent -> native implementation and checks -> fresh independent judgment -> finish" \
+    "Accepted intent -> native implementation and checks -> one fresh read where a mistake is costly -> finish" \
     "Persist machine evidence only for a caller request or declared consumer" \
     "It owns no aggregate retry controller" \
-    "fresh independent judgment" \
+    "Spend validation where a mistake is costly" \
+    "repair does not start another review" \
     "unchanged accepted outcome and scope; acceptance changes need caller authority" \
     "Implement repairs ordinary known defects directly" \
     "use at most one bounded fresh helper" \
