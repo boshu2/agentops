@@ -1,5 +1,10 @@
 # Optional fixed-dispatch reference adapter
 
+Do not select this adapter for ordinary work. The operating charter uses one
+review round with no re-review after a repair; this page describes an older,
+caller-selected policy with repeated review rounds, kept only for callers that
+already depend on it.
+
 The grandfathered `scripts/run_once.py` is a pure developer reference for callers
 that explicitly select fixed dispatch and a finite list of supplied review rounds.
 It invokes an explicit anti-ceremony function, Plan and Implement at most once;

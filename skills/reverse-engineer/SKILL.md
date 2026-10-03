@@ -98,7 +98,7 @@ Verdict rules (hard-won — apply them, do not skip):
 
 - **steal** — we lack it and it advances our core. Steal the *pattern*, not the storage engine: re-express in our primitives, never vendor their runtime.
 - **park** — real, but it's substrate we deliberately delegate (e.g. orchestration per ADR-0009) or downstream of an unproven bet. Name it, don't build it.
-- **reject** — it conflicts with our doctrine (e.g. a self-reported completion edge where we require a verdict — "no verdict = not done").
+- **reject** — it conflicts with our doctrine (e.g. a completion edge with no check behind it, where we require checks and CI, plus one fresh judgment for a costly mistake).
 - **have** — we already do this; confirm it still holds, move on.
 - **gap** — we should have it and don't. These are the steal candidates.
 

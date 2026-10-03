@@ -47,6 +47,22 @@ caller wants advice or an acceptance judgment and wait for the answer. Do not
 issue a verdict, acceptance conclusion or readiness approval while intent is
 unresolved; missing intent is not a `NOT_PROVEN` verdict.
 
+## When a fresh judgment is worth it
+
+Spend validation where a mistake is costly. For an ordinary change the author's
+checks and CI are the gate, and no fresh judgment is owed. Use Validate when:
+
+- the caller asks for an acceptance verdict or independent proof;
+- a mistake cannot be cheaply undone after it lands: a published release or
+  instructions users will follow, a security boundary, destroying data or
+  tracker state, deleting a check that protects the product; or
+- no deterministic check covers the behavior that changed.
+
+Judge once. After the author repairs findings, the affected checks confirm the
+repair; a second judgment happens only when the caller asks for one. Keep the
+judgment's cost a fraction of the cost of the work: when it approaches that
+cost, stop and return what is unchecked.
+
 After acceptance intent is established, freshly judge the exact candidate
 against accepted intent, return `PASS`, `FAIL`, or `NOT_PROVEN`, and stop. The
 author cannot provide binding PASS. Advisory findings cannot substitute for
@@ -118,11 +134,11 @@ ao provenance manifest --root "$REPO_ROOT" --include "$CHANGED_PATH"
    depth: acceptance, permissions, tests/gates, stopping, disclosure, hooks and
    executable controls warrant deeper inspection, including prose policy.
    Unknown risk merits examination, not automatic extra reviewers.
-3. Re-execute discriminating proofs for risk-critical, uncertain or thinly
-   evidenced claims. Valid digest-bound receipts may establish routine facts;
-   do not replay every author command or full suite merely because this is a
-   fresh context. The repository's required integration checks still run on
-   the final subject. A changed subject needs new judgment and affected checks.
+3. Read and reason; do not re-run checks the author ran on this exact subject
+   or that CI will run. Their receipts establish those facts. Re-execute a
+   proof only for a risk-critical claim that has no receipt. A changed subject
+   needs its affected checks rerun by the author; it needs a new judgment only
+   when the caller asks for one.
 4. Classify commands before executing them. Regeneration, synchronization,
    formatting and `--force` are subject-mutating until proven otherwise; run
    them only on a disposable copy or a committed subject, never an uncommitted
@@ -139,6 +155,12 @@ ao provenance manifest --root "$REPO_ROOT" --include "$CHANGED_PATH"
    NOT_PROVEN; proven failed acceptance or scope violation means FAIL.
 
 ## Findings and report
+
+A finding is something that fails an acceptance criterion or would mislead a
+user, break install or the CLI, or remove protection for the product. Report
+anything else as an optional note; notes do not change the verdict and the
+author may ignore them. Report `NOT_PROVEN` with its gaps and stop; do not
+request or wait for another round.
 
 `not_checked` means in-scope acceptance that was not verified. Other limits
 remain in criterion reasoning, declared non-goals or residual-risk prose; never

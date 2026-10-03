@@ -1,7 +1,7 @@
 # Ownership boundaries for the lean RPI core
 
 RPI owns the authorized outcome through implementation, checks, direct repairs
-and fresh final judgment. Plan shapes missing intent and may revise an approach
+and, where a mistake is costly or the caller asks, one fresh judgment. Plan shapes missing intent and may revise an approach
 falsified by evidence within unchanged accepted outcome/scope. Implement edits
 and collects facts. Validate independently judges the exact subject and alone
 authors semantic `verdict.v2` when persistence is selected. Memory is optional;
@@ -53,6 +53,11 @@ fixed-dispatch and finite-round contract in [bounded-adapter.md](bounded-adapter
 It does not restrict native approach revision or implement direct repair for you.
 
 ## Fresh judgment
+
+A fresh judgment is used once, and only when the caller asks, a mistake cannot
+be cheaply undone after it lands, or no deterministic check covers the changed
+behavior. Otherwise the author's checks and CI are the gate. A repair is
+confirmed by a check and does not start another judgment.
 
 The author cannot issue binding PASS. Judge legs read; implementers fix. Default
 to a fresh author-distinct same-family reviewer. Cross-model review is opt-in;

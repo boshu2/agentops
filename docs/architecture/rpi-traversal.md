@@ -15,8 +15,8 @@ accepted intent
   -> Plan only for missing shape or consequential uncertainty
   -> Implement, direct repairs and cheap discriminating checks
   -> required integration checks
-  -> fresh author-distinct Validate over the exact subject
-  -> repair known findings within real bounds and revalidate changed content
+  -> one fresh author-distinct Validate, only where a mistake is costly
+  -> repair known findings and confirm each repair with a check
   -> completed outcome or truthful stopped result
 ```
 
@@ -72,6 +72,13 @@ They add no tracker, queue, Git delivery or runtime authority.
 
 ## Fresh final judgment (optional Validate guidance)
 
+For an ordinary change the author's checks and CI are the gate. A fresh
+judgment is used once, when the caller asks, when a mistake cannot be cheaply
+undone after it lands (a published release or instructions users will follow, a
+security boundary, destroying data or tracker state, deleting a check that
+protects the product), or when no deterministic check covers the changed
+behavior. The rest of this section describes that judgment.
+
 A fresh author-distinct context reads the exact subject, unchanged acceptance
 and authorized evidence independently. A new role in the author's context is
 not fresh. Observe actual runtime/model/context identities; unknown or colliding
@@ -98,8 +105,9 @@ bounded proof in criterion reasoning, and residual risk in the report.
 
 Classify commands before running them. Mutating checks (regeneration, sync,
 formatting) run against a disposable copy or committed subject, never overwrite
-the judged working tree. Rerun acceptance-critical or uncertain checks; a
-receipt is a claim to inspect, and structure alone cannot prove behavior.
+the judged working tree. The reviewer does not re-run checks the author ran on
+the exact subject or that CI will run; rerun a proof only for a risk-critical
+claim that has no receipt. Structure alone cannot prove behavior.
 Changes to checks, fixtures, tolerances or specifications must satisfy original
 intent; weakening the oracle to get green is FAIL.
 
@@ -107,8 +115,8 @@ Keep all necessary findings from selected judges with stable IDs/classes.
 Recurrence or unknown cause calls for causal examination; counts alone cannot
 prove progress, regression or a wrong design. Preserve disagreement; neither
 majority vote nor the author's preferred review certifies PASS. The reviewer reads
-and returns judgment; implementers repair and obtain new fresh judgment over
-changed exact content.
+and returns judgment once; implementers repair and confirm each repair with a
+check. A repair does not start another judgment unless the caller asks for one.
 
 When requested by a caller or declared consumer, the reviewer authors `verdict.v2`
 and uses `ao provenance store-verdict` for structural verification and atomic

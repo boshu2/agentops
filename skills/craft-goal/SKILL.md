@@ -40,9 +40,9 @@ the goal selects the next useful trial, preserves what was learned, and
 ratchets toward a larger outcome.
 
 ```text
-Goal / Mayor: observe graph → choose bounded wave → consume verdicts → ratchet
+Goal / Mayor: observe graph → choose bounded wave → consume results → ratchet
   └─ Bead: durable experiment intent, context, scratch, evidence, and links
-       └─ RPI: plan → implement → fresh validate → bounded repair → verdict → report
+       └─ RPI: plan → implement → checks → one fresh validate where a mistake is costly → report
             └─ Implementation: one RED → GREEN → refactor experiment
 ```
 
@@ -106,10 +106,14 @@ outcome; do not invent one universal budget.
 - **Bead knowledge graph:** Use the tracker as durable memory, not a parallel
   goal ledger. Root epic = outer intent; child bead = one experiment/RPI.
   **Why:** compaction must not erase the scientific record.
-- **RPI membrane:** One candidate gets one bounded RPI and an author-distinct
-  fresh validation result. The goal may request durable verdict evidence but
-  never rewrites it.
-  **Why:** orchestration cannot author its own proof.
+- **RPI membrane:** One candidate gets one bounded RPI. Its checks and CI are
+  the result for an ordinary bead. A bead gets one author-distinct fresh
+  validation only when the caller asks, a mistake cannot be cheaply undone
+  after it lands, or no deterministic check covers the changed behavior; a
+  repair does not start another. The goal may request durable verdict evidence
+  but never rewrites it.
+  **Why:** orchestration cannot author its own proof, and a review per bead
+  multiplies cost across the whole graph.
 - **Brownian ratchet:** Continue only when a result adds non-duplicative,
   decision-relevant knowledge or advances acceptance. **Why:** activity without
   information is churn.

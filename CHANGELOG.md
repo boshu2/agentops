@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Fresh validation is no longer owed on every change. For an ordinary change
+  the author's checks and CI are the gate. RPI, Validate, Implement,
+  Orchestrate, Craft Goal and Navigate call for one fresh read only when the
+  caller asks, a mistake cannot be cheaply undone after it lands (a published
+  release or instructions users will follow, a security boundary, destroying
+  data or tracker state, deleting a check that protects the product), or no
+  deterministic check covers the changed behavior. A review is one round: the
+  reviewer does not re-run checks, reports as defects only what fails accepted
+  behavior or would mislead a user, break install or the CLI, or remove
+  protection for the product, and a repair does not start another review. A
+  requested binding verdict keeps its PASS rule; `NOT_PROVEN` is reported with
+  its gaps instead of being chased.
 - The Codex plugin now loads `skills/` directly. `.codex-plugin/plugin.json`
   ships `./skills`, the same tree `ao skills link` and `npx skills` already
   install, instead of a generated copy. Skill names, descriptions and bodies are
