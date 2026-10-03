@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.9.0] - 2026-10-03
+
+AgentOps 3.9 narrows the product to its own guidance. The ten bundled external
+tool skills are removed, three repository delivery workflows are retired, the
+Codex plugin reads `skills/` directly instead of a generated copy, and
+installation has three supported paths: the Claude Code plugin, the Codex
+plugin, and `npx skills` for every other agent. Validation is now spent where a
+mistake is costly instead of on every change. Interview and Navigate are new,
+and Council gains duel and interview-panel modes. The optional menu goes from
+36 to 28 skills; native work still requires none of them.
+
+See the [curated release notes](https://github.com/boshu2/agentops/blob/main/docs/releases/2026-10-03-v3.9.0-notes.md)
+for upgrade instructions, breaking changes and known limits.
+
+### Added
+
+- Interview shapes a large outcome with the caller one question at a time before
+  agents work alone. Each question carries a recommendation and its main
+  tradeoff; acceptance is recorded as Given/When/Then examples. It creates no
+  goal or bead.
+- Navigate picks the next wave on a bead graph and records results and
+  discoveries on the beads. It never dispatches, judges or closes work. The bead
+  graph contract and wave loop move here from Craft Goal.
+- Council gains two modes. In a duel, members rank their own ideas, score every
+  other member's ideas on a rubric fixed before launch, then concede or defend
+  in one bounded round. In an interview panel, each member answers Interview's
+  questions in a separate context; agreed answers are marked and the caller
+  accepts or amends the result. The caller may give each member its own model,
+  effort and perspective.
+- `ao skills build` creates an explicitly incomplete skill scaffold and its
+  generated projections; its three modes write the same scaffold and import no
+  content. `ao skills audit` reports static conformance, effect observations
+  and unmeasured behavior separately. `ao skills check-source` checks named
+  source packages.
+- A gate checks that each retired workflow file contains only its metadata and
+  an immediate failure. A test requires the checked-in version to have exactly
+  one curated release-notes file.
+
 ### Changed
 
 - Fresh validation is no longer owed on every change. For an ordinary change
@@ -29,11 +67,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   unchanged. Codex plugin users should refresh the marketplace and re-add the
   plugin. Checked against codex-cli 0.156.1: a plugin install and a linked
   install each load all 28 skills with no load errors.
-- `interview` now carries its Codex invocation policy in
-  `skills/interview/agents/openai.yaml`. The generator used to derive that file
-  from `disable-model-invocation: true`; it is now hand-maintained in each
-  explicit-only skill, and `scripts/validate-codex-api-conformance.sh` fails when
-  one is missing or does not parse.
+- Each explicit-only skill carries its Codex invocation policy in its own
+  `agents/openai.yaml`, hand-maintained in `skills/`; the generator no longer
+  derives it. `scripts/validate-codex-api-conformance.sh` fails when one is
+  missing or does not parse.
 - `scripts/validate-codex-api-conformance.sh` checks `skills/` against what the
   Codex loader enforces (unique frontmatter keys, a non-empty description, a
   name of at most 64 characters, no nested `SKILL.md`) and the explicit-only
@@ -44,7 +81,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `skill-eval` fixtures moved from `skills/_fixtures/` to
   `tests/fixtures/skill-eval/`. Codex loads every `SKILL.md` under the plugin's
   skill tree, so the fixtures would have shipped as a skill and a load error.
-
+- Craft Goal's frozen goal prompt states acceptance as Given/When/Then examples
+  and names domain terms once.
+- Skill Builder's build, check, heal and audit scripts run through `ao skills`:
+  outside a source checkout they need `ao` 3.9 or later; inside one they build
+  `ao` with Go. Its audit reports conformance, effect observations, behavioral
+  evidence and review suspicions separately;
+  `skills/skill-builder/scripts/audit.sh --legacy` keeps the earlier format.
+  Build no longer writes a default report under `.agents/scratch/skill-builder/`,
+  and invalid creation inputs exit 1 instead of 2.
+- AgentOps' own guards (policy dispatcher, read-budget, Codex read-budget and
+  installed-skill-edit guards) moved from `skills/cc-hooks/` to `hooks/guards/`.
+  Plugin users and already-installed guards need no action; update any direct
+  call to `skills/cc-hooks/scripts/install-hooks.sh` or `skills/cc-hooks/hooks/*`
+  to `scripts/install-policy-dispatch.sh` or `hooks/guards/`. A skill-only
+  install no longer carries a hook installer.
+- `docs.cli-snippets` is a blocking gate that resolves `ao` commands cited in
+  code spans and fenced blocks of the live docs against the real command tree.
+  It is one of the fact checks that replaced documentation tests which froze
+  wording.
+- The install drift check fails on a stale installed copy of any retired
+  workflow, in `~/.claude/workflows` and in a project's `.claude/workflows`.
+- The release body's header links the update guide instead of a one-line
+  source-checkout update command.
+- The README is rebuilt around the operational loop, with a goals section and a
+  grouped skill chart. It recommends upstream projects for some external tools
+  by link instead of bundling their skills.
 - Install narrowed to three paths: the Claude Code plugin, the Codex plugin, and
   `npx skills@latest add boshu2/agentops` for every other agent (Cursor,
   OpenCode, Gemini CLI/Antigravity, Pi, Grok Build, OpenClaw). Grok Bot takes
@@ -87,38 +149,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   resolving.
 - The Skill Builder converter's Codex target no longer writes `prompt.md`;
   Codex does not read it.
-
 - Bundled Flywheel tool skills (`account-rotation`, `agent-mail`, `cass`, `cc-hooks`, `dcg`,
   `ms`, `ntm`, `rch`, `sbh`, `using-flywheel`) and their generated Codex copies.
-  Obtain tools and skills from their upstream authors; see the README
-  recommendations. This changes the available skill names in the next release.
-  Existing personal installations are not automatically removed.
-- AgentOps' own guards (policy dispatcher, read-budget, Codex read-budget and
-  installed-skill-edit guards) moved from `skills/cc-hooks/` to `hooks/guards/`.
-  Plugin users and already-installed guards need no action; update any direct
-  call to `skills/cc-hooks/scripts/install-hooks.sh` or `skills/cc-hooks/hooks/*`
-  to `scripts/install-policy-dispatch.sh` or `hooks/guards/`.
-
+  AgentOps provides no replacement. The README recommends the upstream projects
+  for DCG, CASS, Meta Skill, the Agentic Coding Flywheel and Gas City; get those
+  tools and any skills for them from their authors. Copies installed earlier
+  with `npx skills` are not removed; a source link to a removed skill is left
+  dangling (see the release notes).
+- The `skill-first-coord-guard.sh` hook and its reference page, and the generic
+  Claude Code hook reference pages that shipped inside `cc-hooks`.
+- `scripts/install-ms-reindex-hook.sh` and `scripts/ms-reindex.sh`.
+- The `ao doctor` check and repository gate that banned running Claude headless
+  in print mode (`claude -p`). Print mode is an ordinary dispatch option again.
 - The `bdd-foundry`, `ship-beads` and `bead-crank` Claude workflows. The names stay
   as tombstones that fail with a migration message before doing any work, like
   `operating-loop`. In place of `bdd-foundry`, state accepted behavior in the
   conversation or a bead. In place of `ship-beads` and `bead-crank`, deliver with
   native Git and BD under your repository's policy, or dispatch to a software
   factory through its coordinator. An installed copy of the old files now fails
-  the `workflow.install-drift` gate. `ao workflows link` does not replace it: for
-  `~/.claude/workflows` run `bash scripts/install-workflows.sh`, which backs up the
-  old file and links the tombstone; for a project's `.claude/workflows`, remove the
-  old file and then run `ao workflows link`.
+  the `workflow.install-drift` gate. `ao workflows link` does not replace a
+  copied file. For `~/.claude/workflows`, run `bash scripts/install-workflows.sh`
+  from the AgentOps checkout and name only the retired files you have (for
+  example `bdd-foundry.js`): each becomes a link to the current file, and a file
+  that differs is backed up first. Without file names the script installs every
+  workflow. For another project's `.claude/workflows`, remove the old file, then
+  run `ao workflows link --into <project>/.claude/workflows` from the checkout.
   `scripts/check-bdd-foundry-markers.sh` is removed.
 - The 3.x curl and PowerShell skill installer tombstones (`scripts/install.sh`,
   `install-claude.sh`, `install-codex.sh`, `install-agy.sh`,
   `install-opencode.sh`, `install-codex.ps1`). Their raw URLs now 404, so an old
-  `curl … | bash` line silently does nothing; switch to a plugin or npx.
+  `curl … | bash` line installs nothing; switch to a plugin or npx.
 - The `images/gemini` package (`agentops-core-gemini`) and its generator branch.
-  Remove an installed copy with `agy plugin uninstall agentops-core-gemini`.
+  Remove an installed copy with `agy plugin disable agentops-core-gemini` and
+  then `agy plugin uninstall agentops-core-gemini`.
 
 ### Fixed
 
+- The repository's skill evaluation suite under `evals/skills-rpi/` checks
+  task-bank controls through the exact packaged verifier and prepares both arms
+  with shared task and image identities before any trial starts, so packaging
+  and identity mismatches are rejected before model resources are spent.
+- The documentation site banner no longer shows the retired 3.3 tagline, and
+  the site build no longer publishes its internal generator scripts.
+- The CI job that syntax-checks workflow scripts parses them the way the harness
+  runs them, so a top-level `return` no longer fails it.
 - `ao skills link`, `unlink` and `ao doctor` use Pi's user skills dir,
   `~/.pi/agent/skills`, and detect Pi by `~/.pi/agent`. Links an earlier version
   made in `~/.pi/skills` are no longer swept by default; remove them with

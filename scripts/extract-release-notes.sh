@@ -337,7 +337,7 @@ echo "Using curated release notes from $NOTES_FILE" >&2
 {
   # Header
   cat <<HEADER
-\`brew update && brew upgrade agentops\` · \`cd ~/.local/share/agentops && git pull --ff-only && ao skills link\` · [checksums](https://github.com/${REPO}/releases/download/${TAG}/checksums.txt) · [verify provenance](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations/using-artifact-attestations-to-establish-provenance-for-builds)
+\`brew update && brew upgrade agentops\` · [update skills](https://github.com/${REPO}/blob/main/docs/install-day2-ops.md#update) · [checksums](https://github.com/${REPO}/releases/download/${TAG}/checksums.txt) · [verify provenance](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations/using-artifact-attestations-to-establish-provenance-for-builds)
 
 ---
 
