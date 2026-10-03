@@ -357,7 +357,7 @@ convert_test() {
   CONVERTED_FILENAME="bundle.md"
 }
 
-# Codex target: SKILL.md + prompt.md
+# Codex target: SKILL.md
 # Codex may load these skills from ~/.codex/skills or from a native plugin cache.
 # Description max 1024 chars, no hooks support, tool names pass through
 convert_codex() {
@@ -440,23 +440,9 @@ convert_codex() {
     fi
   fi
 
-  # ── Build prompt.md ──
-  local prompt_md=""
-  prompt_md+="# ${BUNDLE_NAME}"$'\n\n'
-  prompt_md+="${desc}"$'\n\n'
-  prompt_md+="## Instructions"$'\n\n'
-  prompt_md+="Load and follow the skill instructions from the sibling \`SKILL.md\` file for this skill."$'\n'
-  if [[ "$CODEX_LAYOUT" == "modular" && ( ${#REF_NAMES[@]} -gt 0 || ${#SCRIPT_NAMES[@]} -gt 0 ) ]]; then
-    prompt_md+="Then read local files in \`references/\` and \`scripts/\` when needed."$'\n'
-  fi
-
-  # Set primary output (SKILL.md)
+  # Codex reads SKILL.md only; it has no prompt.md consumer.
   CONVERTED_OUTPUT="$skill_md"
   CONVERTED_FILENAME="SKILL.md"
-
-  # Set secondary output (prompt.md)
-  CONVERTED_OUTPUT_2="$prompt_md"
-  CONVERTED_FILENAME_2="prompt.md"
 }
 
 # Cursor target: .mdc rule file with YAML frontmatter + optional mcp.json

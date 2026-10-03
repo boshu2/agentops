@@ -74,7 +74,8 @@ rpi -> validate
 ```
 
 These are available core operations, not mandatory worksheets or dispatches for
-every edit. RPI uses Plan on demand and requires fresh final Validate.
+every edit. RPI uses Plan on demand and one fresh Validate only where a mistake
+is costly or the caller asks.
 Anti-ceremony and Memory are optional, with no hard edge.
 
 ## Body contract

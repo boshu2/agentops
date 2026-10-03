@@ -8,11 +8,11 @@ and evidence for independently judgeable changes. Its federated integration grap
 connects evidence; tracker, Git and coding agents own work, history and execution. Native execution needs zero mandatory AgentOps skills.
 
 ```text
-Accepted intent -> native implementation and checks -> fresh independent judgment -> finish
+Accepted intent -> native implementation and checks -> one fresh read where a mistake is costly -> finish
 ```
 
 Use the existing issue or conversation and load a skill only for a concrete
-uncertainty or an explicitly selected workflow. Without fresh independent judgment over the exact subject, the experiment remains unproven.
+uncertainty or an explicitly selected workflow. Checks and CI are the gate for an ordinary change; a fresh read is for the costly cases named in the charter below.
 Native goals supply continuity; BD keeps work and handoffs. Neither needs RPI.
 Creating a goal does not reset the conversation or enforce a resource limit.
 Delegate focused intent, scope and evidence; retrieve history only when it can change a decision. Assign final review once, preserving required review legs.
@@ -159,8 +159,7 @@ outcome and judgment; explicit interim analysis names its cutoff and unknowns.
 Neither holds code acceptance open; the overall goal still owes both deliverables.
 
 Use cheap discriminating checks during edits, required integration checks before
-final judgment, and reserve capacity for integration, validation, repair and a
-truthful handoff. On a genuine causal stall (unknown cause, recurrence, no
+finishing, and reserve capacity for integration, repair and a truthful handoff. On a genuine causal stall (unknown cause, recurrence, no
 progress or wrong objective), use at most one bounded fresh helper for that
 incident within authority and real remaining bounds. An unhelpful answer ends
 the attempt; do not build a helper chain. Known failures need direct repair.
@@ -168,17 +167,20 @@ Cancellation, refusal and spent hard time/cost/quota skip help. Retry counts,
 compaction, helpers and new subjects never renew real limits. Preserve compact
 recovery state in native handoff only when needed to prevent evidence loss.
 
-Fresh author-distinct final validation is required over the exact subject,
-unchanged acceptance and all changed paths. Default to a fresh reviewer from
-the author's model family; cross-model review is opt-in and every explicitly
-required leg remains required. No fixed ten-minute cap applies. Risk determines
-evidence depth, not mandatory specialist or model-family multiplication.
-PASS needs distinct identities, attested freshness, nonempty checked scope,
-evidence for every criterion and empty `not_checked`. Missing identity,
-freshness, subject continuity or acceptance proof means `NOT_PROVEN`; proven
-out-of-scope change or failed acceptance means `FAIL`. Repair known findings
-within authority and real bounds, then revalidate the changed exact subject.
-Persist machine evidence only for a caller request or declared consumer.
+Spend validation where a mistake is costly. For an ordinary change the author
+runs the checks and CI is the gate; no fresh review is owed. Obtain one fresh
+author-distinct read only when the caller asks, a mistake cannot be cheaply
+undone after it lands (a published release or instructions users will follow,
+a security boundary, destroying data or tracker state, deleting a check that
+protects the product), or no deterministic check covers the changed behavior.
+One round: the reviewer gets the exact subject and one question and does not
+re-run checks. Defects are only what fails accepted behavior or would mislead a
+user, break install or the CLI, or remove protection for the product; the rest
+are optional notes. Repair defects, confirm each with a check, and finish; a
+repair does not start another review. Keep review cost a fraction of the cost
+of the work. A requested binding verdict keeps the PASS rule in
+[Validate](skills/validate/SKILL.md); report `NOT_PROVEN` with its gaps instead
+of chasing it. Persist machine evidence only for a caller request or declared consumer.
 
 [Memory](skills/memory/SKILL.md) owns optional find/recall, capture/mining and curation:
 support, applicability, invalidation and preservation; no blind TTL/deletion.
@@ -193,15 +195,14 @@ independent support/disclosure review precede Git import (ADR-0016).
 The [RPI skill](skills/rpi/SKILL.md) packages this charter when explicitly selected;
 it is not a prerequisite for native execution or independent review. The
 [architecture reference](docs/architecture/rpi-traversal.md) owns exact evidence
-semantics. Optional outer-goal guidance and the grandfathered fixed-dispatch
-reference adapter stay outside the native core. No scheduler or new AO command
+semantics. Optional outer-goal guidance stays outside the native core. No scheduler or new AO command
 is needed for this harness.
 
 ## Product boundary
 
 AgentOps reads or refines caller-owned intent, implements authorized work and direct repairs,
-establishes exact content identity, and obtains fresh independent judgment. It
-can persist that judgment as standalone evidence when requested. It owns no aggregate retry controller,
+establishes exact content identity, and obtains one fresh judgment where a mistake is
+costly. It can persist that judgment as standalone evidence when requested. It owns no aggregate retry controller,
 budget, queue, work ownership, Git, closure, release, landing, or delivery
 transition. Consumer repositories keep their own direct-push, PR, CI, merge,
 rollback, and release policy.
@@ -243,5 +244,5 @@ AgentOps work ownership.
 ## Closeout
 
 Map each acceptance criterion to evidence and disclose `checked` and
-`not_checked`; any unchecked acceptance means `NOT_PROVEN`. Apply the fresh
-judgment and delivery-authority rules above.
+`not_checked`. An unchecked item is reported, not a reason to keep validating.
+Apply the validation and delivery-authority rules above.

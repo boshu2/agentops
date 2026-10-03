@@ -24,8 +24,8 @@ For a small task this should be one reviewable change and one independent
 judgment. Persist `verdict.v2` only when a caller or declared consumer needs
 machine-readable evidence, using protected external non-Git storage.
 
-Success is fresh independent judgment bound to acceptance and content
-identities. Pushing or releasing that content follows repository policy.
+Success is the accepted behavior, shown by checks bound to acceptance and
+content identities, with one fresh judgment where a mistake would be costly. Pushing or releasing that content follows repository policy.
 The fix and regression check remain available for future changes; preserve
 useful decisions in your existing work record so the next session can continue
 from what was established.

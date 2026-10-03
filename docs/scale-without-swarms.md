@@ -3,12 +3,12 @@
 AgentOps keeps its operating charter small:
 
 ```text
-RPI charter -> on-demand Plan -> Implement and checks -> fresh Validate -> finish
+RPI charter -> on-demand Plan -> Implement and checks -> one fresh Validate where a mistake is costly -> finish
 ```
 
 Plan shapes missing intent or revises a disproved approach within accepted
 scope. Implement makes the change and repairs known defects directly. Validate
-independently judges exact content. RPI owns the authorized outcome through
+independently judges exact content when a mistake would be costly. RPI owns the authorized outcome through
 finish within real bounds; causal stalls admit at most one bounded fresh helper.
 Memory and specialists are optional, and completed acceptance ends the run.
 

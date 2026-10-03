@@ -34,8 +34,9 @@ The caller approved a short RPI charter with on-demand Plan, Implement,
 Validate and Memory. This supersedes the once-only phase lock, mandatory
 anti-ceremony/premortem dispatch, mandatory entry Recall, Learn's verdict-only
 input/scratch-TTL limit, and a default two-round native stop. Those earlier
-prescriptions below are historical; the pure fixed-dispatch reference retains
-its narrower contract only for explicit adapter callers.
+prescriptions below are historical. (2026-10-03: the fixed-dispatch reference
+adapter, `run_once.py`, and its tests were removed; review is now one round with
+no re-review after a repair, per the contract's validation rule.)
 
 Own the authorized outcome through finish. Plan may revise an approach when
 evidence disproves an assumption under unchanged accepted outcome and scope;

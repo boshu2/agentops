@@ -27,10 +27,10 @@ GOALS directive ──► scenario (.feature) ──► test (executing)
 Tag a scenario with the test that covers it using a Gherkin tag:
 
 ```gherkin
-@covered-by:tests/e2e/rpi-phased-domain.sh
-Scenario: Phases run in order and never compress
-  When /rpi executes
-  Then it runs Research, then Plan, then Implement in order
+@covered-by:tests/e2e/goals-trace-chain.sh
+Scenario: A goal traces to its dependencies
+  When the goal is traced
+  Then each dependency appears in the trace
 ```
 
 Rules:
@@ -96,7 +96,7 @@ gated on changes to `skills/**`, `**/*.sh`, or `.github/**`.
 
 | Feature | Covering test |
 |---|---|
-| `skills/rpi/references/rpi.feature` | `tests/e2e/rpi-phased-domain.sh` |
+| ~~`skills/rpi/references/rpi.feature`~~ (removed 2026-10-03 with the fixed-dispatch adapter it described; the tombstone e2e went with it) | ~~`tests/e2e/rpi-phased-domain.sh`~~ |
 | ~~`skills/goals/references/goals.feature`~~ (stale row: the feature file was already absent from the tree before 2026-07-29; the skill is now `fitness`) | `tests/e2e/goals-measure-scenarios.sh`, `goals-trace-chain.sh` still execute against the `ao goals` CLI |
 | ~~`skills/scenario/references/scenario.feature`~~ (removed: `scenario` folded into `eval-outcomes`, 2026-06-12) | `tests/e2e/goals-scenarios-link.sh` |
 

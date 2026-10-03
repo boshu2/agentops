@@ -25,7 +25,6 @@ skills/reverse-engineer/scripts/generate_feature_inventory_md.py
 skills/reverse-engineer/scripts/reverse_engineer.py
 skills/reverse-engineer/scripts/scaffold_feature_registry.py
 skills/reverse-engineer/scripts/validate_feature_registry.py
-skills/rpi/scripts/run_once.py
 skills/security/scripts/prompt_redteam.py
 skills/security/scripts/security_suite.py
 skills/skill-builder/scripts/authoring_scan.py

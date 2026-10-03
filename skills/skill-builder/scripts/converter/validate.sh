@@ -55,7 +55,7 @@ SRC_DIGEST="$(dir_digest "$FIX")"
 # does not touch the source.
 out="$WORK/out"
 if bash "$CONVERT" "$FIX" codex "$out" >/dev/null 2>&1 \
-  && [[ -f "$out/SKILL.md" && -f "$out/prompt.md" && -f "$out/references/note.md" && -f "$out/scripts/tool.sh" ]] \
+  && [[ -f "$out/SKILL.md" && ! -e "$out/prompt.md" && -f "$out/references/note.md" && -f "$out/scripts/tool.sh" ]] \
   && [[ "$(dir_digest "$FIX")" == "$SRC_DIGEST" ]]; then
   pass "happy-path conversion writes target + passthrough files; source intact"
 else

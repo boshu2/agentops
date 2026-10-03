@@ -21,7 +21,8 @@ AgentOps provides optional skills and a CLI (`ao`). The same `SKILL.md` skills w
 with coding agents (Claude Code, Codex, Cursor, OpenCode, Gemini CLI, Pi and
 others) and personal assistants (OpenClaw, Grok Bot). You state intent as
 behavior in your domain's words. The skills carry it through one change
-(Plan → Implement → Validate, an **RPI**) or, for bigger work, a goal made of
+(Plan → Implement → checks, with Validate where a mistake is costly: an **RPI**)
+or, for bigger work, a goal made of
 many RPIs tracked in
 [Beads](https://github.com/gastownhall/beads), a dependency-aware issue tracker.
 
@@ -33,7 +34,7 @@ many RPIs tracked in
 |---|---|
 | Builds something different from what you meant | Given/When/Then examples shared by implementation and review |
 | Uses three names for one concept | One domain term per concept, in intent, code and tests |
-| Says “done” after a green test run | A fresh judge that didn't write the change |
+| Says “done” after a green test run on a change that matters | A fresh judge that didn't write the change |
 | Loses the thread on work bigger than one session | A Beads graph holding intent, dependencies and verdicts |
 | Runs off with a half-formed goal | An interview that settles the goal before agents go autonomous |
 | Gives one model's answer to a hard call | A [council](skills/council/SKILL.md): judges in fresh contexts, each with the model, effort and perspective you assign (one model family or several vendors), compare, duel (score each other's ideas) or debate to your majority, keep dissent, and can answer an interview for you; [Idea Genie](skills/idea-genie/SKILL.md) brainstorms options |
@@ -156,9 +157,10 @@ author never approves its own work. Merging and releasing follow your repo's rul
 
 ## Goals
 
-[`rpi`](skills/rpi/SKILL.md) runs Plan → Implement → Validate for one outcome
+[`rpi`](skills/rpi/SKILL.md) runs Plan → Implement → checks, with Validate where a
+mistake is costly, for one outcome
 without check-ins (your agent's permission prompts still apply) and stops at
-acceptance, a blocker or a spent limit. Bigger work becomes a goal (experimental;
+acceptance, a blocker or a spent limit. Bigger work becomes a goal (it
 needs Beads: `brew install beads`, then `bd init` in your repo):
 
 1. **[Interview](skills/interview/SKILL.md).** One question at a time, each with
@@ -273,9 +275,9 @@ catalog: **[docs/SKILL-ROUTER.md](docs/SKILL-ROUTER.md)**.
 
 | Group | Skills | What it covers |
 |---|---|---|
-| Operational loop | [`plan`](skills/plan/SKILL.md) [`implement`](skills/implement/SKILL.md) [`validate`](skills/validate/SKILL.md) | Shape, build and judge every change |
+| Operational loop | [`plan`](skills/plan/SKILL.md) [`implement`](skills/implement/SKILL.md) [`validate`](skills/validate/SKILL.md) | Shape and build a change; judge it where a mistake is costly |
 | Autonomous | [`rpi`](skills/rpi/SKILL.md) | One outcome, end to end |
-| Goals (experimental) | [`interview`](skills/interview/SKILL.md) [`craft-goal`](skills/craft-goal/SKILL.md) [`navigate`](skills/navigate/SKILL.md) | Shape, write and walk a goal over the bead graph |
+| Goals | [`interview`](skills/interview/SKILL.md) [`craft-goal`](skills/craft-goal/SKILL.md) [`navigate`](skills/navigate/SKILL.md) | Shape, write and walk a goal over the bead graph |
 | Coordination | [`orchestrate`](skills/orchestrate/SKILL.md) [`agent-native`](skills/agent-native/SKILL.md) | Fresh workers per bead, disjoint scopes, integration |
 | On demand | [`research`](skills/research/SKILL.md) [`domain`](skills/domain/SKILL.md) [`test`](skills/test/SKILL.md) [`refactor`](skills/refactor/SKILL.md) [`review`](skills/review/SKILL.md) [`security`](skills/security/SKILL.md) [`doc`](skills/doc/SKILL.md) [`reverse-engineer`](skills/reverse-engineer/SKILL.md) | Reached for when a specific question comes up |
 | Learning | [`memory`](skills/memory/SKILL.md) | Curated `.context/` pages safe to commit |
@@ -300,7 +302,8 @@ lineage; [how it works](docs/how-it-works.md) covers responsibilities.
 | Factories such as [Gas City](skills/using-gc/SKILL.md) | Own agent coordination and execution through their native control plane |
 
 Choose which workflow leads the task. Carry accepted behavior and evidence
-into [independent judgment](skills/validate/SKILL.md). Shared practices are not
+into checks, and into [independent judgment](skills/validate/SKILL.md) where a
+mistake would be costly. Shared practices are not
 proof that every combination has been tested.
 
 </details>
@@ -355,7 +358,7 @@ Skill installation does not install tool dependencies:
 
 | Skill | Needs | Why |
 |---|---|---|
-| `rpi` | `ao`, conditional | delegates exact-subject checks to Validate; only persists `verdict.v2` when requested, with the fixed-dispatch adapter optional |
+| `rpi` | `ao`, conditional | delegates exact-subject checks to Validate; only persists `verdict.v2` when requested |
 | `plan` | `ao`, conditional | runs `ao provenance snapshot-intent` with an explicit evidence root when the intent source is not durable |
 | `implement` | `ao`, conditional | at an integration boundary whose changed paths affect bound evidence, runs `ao provenance evidence-orphans` |
 | `validate` | `ao` | derives exact subject identity with the helper and uses `ao provenance store-verdict` when persistence is requested; Python/schema checks are developer-only |

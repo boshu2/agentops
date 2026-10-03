@@ -100,5 +100,6 @@ Good test evidence records:
 - environment assumptions that affect reproducibility;
 - what the check did not cover.
 
-Green tests are factual evidence, not a semantic verdict. Validate supplies the
-independent judgment against the exact candidate.
+Green tests are factual evidence, not a semantic verdict. For an ordinary change
+they and CI are the gate. Validate supplies an independent judgment against the
+exact candidate when the caller asks for one or a mistake would be costly.

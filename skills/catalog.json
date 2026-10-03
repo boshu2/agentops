@@ -772,7 +772,7 @@
       "produces": [
         "rpi-report.v1"
       ],
-      "references_count": 4,
+      "references_count": 2,
       "tier": "meta",
       "user_invocable": true
     },

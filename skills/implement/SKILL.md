@@ -64,7 +64,8 @@ to the existing Security owner and service test design to Test.
    Check a representative change against existing constraints before bulk
    propagation; check the authored source set before broad regeneration.
    Repair known failures directly and verify the exact result (such as a cited
-   file, assertion or returned record) before another review. A disproved assumption
+   file, assertion or returned record) with a check. A repair does not start
+   another review. A disproved assumption
    may change the approach within scope; use Plan only for consequential uncertainty.
 4. Use targeted tests and applicable repository lint/static checks before
    broad integration. Read the repository's actual check recipe, including
@@ -137,7 +138,9 @@ Respect remaining caller/native bounds and reserve finishing capacity; retries r
 
 Return facts, not semantic PASS. An implement-only handoff does not authorize
 Git, tracker or delivery transitions; existing caller authority remains usable.
-A full outcome request continues through fresh independent final judgment;
+A full outcome request finishes on its checks and CI. It continues to one fresh
+independent judgment only when the caller asks, a mistake cannot be cheaply
+undone after it lands, or no deterministic check covers the changed behavior.
 RPI is optional and explicitly selected. Success is working behavior with usable
 evidence, not volume of logs or process artifacts.
 

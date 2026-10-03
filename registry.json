@@ -1077,7 +1077,7 @@
         "has_skill_md": true,
         "name": "rpi",
         "path": "skills/rpi/",
-        "reference_count": 4,
+        "reference_count": 2,
         "tier": "meta"
       },
       {
