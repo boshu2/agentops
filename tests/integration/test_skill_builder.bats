@@ -16,8 +16,6 @@ setup_file() {
   cp -R "$REAL_REPO_ROOT/skills" "$SCRATCH_ROOT/skills"
   cp -R "$REAL_REPO_ROOT/scripts" "$SCRATCH_ROOT/scripts"
   cp -R "$REAL_REPO_ROOT/docs" "$SCRATCH_ROOT/docs"
-  cp -R "$REAL_REPO_ROOT/skills-codex" "$SCRATCH_ROOT/skills-codex"
-  cp -R "$REAL_REPO_ROOT/skills-codex-overrides" "$SCRATCH_ROOT/skills-codex-overrides"
   cp -R "$REAL_REPO_ROOT/images" "$SCRATCH_ROOT/images"
   cp -R "$REAL_REPO_ROOT/.claude-plugin" "$SCRATCH_ROOT/.claude-plugin"
   cp "$REAL_REPO_ROOT/registry.json" "$SCRATCH_ROOT/registry.json"
@@ -59,9 +57,8 @@ setup_file() {
   grep -q '^practices: \[\]$' "$source"
   grep -q '^user-invocable: true$' "$source"
 
-  [ -f "$SCRATCH_ROOT/skills-codex/$name/SKILL.md" ]
-  [ -f "$SCRATCH_ROOT/skills-codex/$name/prompt.md" ]
   grep -q "\"name\": \"$name\"" "$SCRATCH_ROOT/skills/catalog.json"
+  grep -q "\"slug\": \"$name\"" "$SCRATCH_ROOT/images/codex/manifest.json"
   grep -q '"structure_check_pass": true' \
     "$REPORT_DIR/${name}-build.json"
 }
@@ -81,7 +78,6 @@ setup_file() {
 @test "builder does not create lifecycle ledgers or touch the real repository" {
   [ ! -e "$SCRATCH_ROOT/docs/contracts/skill-dispositions.yaml" ]
   [ ! -e "$REAL_REPO_ROOT/skills/builder-contract-test" ]
-  [ ! -e "$REAL_REPO_ROOT/skills-codex/builder-contract-test" ]
   [ ! -e "$REAL_REPO_ROOT/.agents/audits/builder-contract-test-build.json" ]
 }
 
@@ -98,17 +94,17 @@ p.write_text('---'+fm+'---\nFor a request to inspect current Git changes, run `g
 PYCODE
   run env HEAL_REPO_ROOT="$SCRATCH_ROOT" bash "$SCRATCH_ROOT/skills/skill-builder/scripts/heal.sh" --check --strict "$SCRATCH_ROOT/skills/$name"
   [ "$status" -eq 0 ]
-  cp -R "$SCRATCH_ROOT/skills-codex/plan" "$BATS_TEST_TMPDIR/sibling-before"
+  cp -R "$SCRATCH_ROOT/skills/plan" "$BATS_TEST_TMPDIR/sibling-before"
   run env HEAL_REPO_ROOT="$SCRATCH_ROOT" bash "$SCRATCH_ROOT/skills/skill-builder/scripts/heal.sh" --fix "$SCRATCH_ROOT/skills/$name/"
   [ "$status" -eq 0 ]
-  diff -r "$BATS_TEST_TMPDIR/sibling-before" "$SCRATCH_ROOT/skills-codex/plan"
+  diff -r "$BATS_TEST_TMPDIR/sibling-before" "$SCRATCH_ROOT/skills/plan"
   # Equivalent relative spelling must retain this skill and sibling boundary.
   cd "$SCRATCH_ROOT"
   run env HEAL_REPO_ROOT="$SCRATCH_ROOT" bash "$SCRATCH_ROOT/skills/skill-builder/scripts/heal.sh" --fix "skills/$name/"
   [ "$status" -eq 0 ]
-  diff -r "$BATS_TEST_TMPDIR/sibling-before" "$SCRATCH_ROOT/skills-codex/plan"
-  [ ! -e "$SCRATCH_ROOT/skills-codex/$name/scripts" ]
-  grep -q 'Report changed paths inline' "$SCRATCH_ROOT/skills-codex/$name/SKILL.md"
+  diff -r "$BATS_TEST_TMPDIR/sibling-before" "$SCRATCH_ROOT/skills/plan"
+  [ ! -e "$SCRATCH_ROOT/skills/$name/scripts" ]
+  grep -q 'Inspect current Git changes in the caller-selected repository.' "$SCRATCH_ROOT/skills/catalog.json"
   run bash "$SCRATCH_ROOT/skills/skill-builder/scripts/audit.sh" --strict "$SCRATCH_ROOT/skills/$name"
   [ "$status" -eq 0 ]
   [[ "$output" == *NOT_PROVEN* ]]
@@ -143,8 +139,10 @@ PYCODE
 
 @test "projection failure retains source and failed report for remaining-stage recovery" {
   name=builder-recovery-test
-  obstruction="$SCRATCH_ROOT/skills-codex/$name"
-  printf '%s\n' 'injected projection obstruction' > "$obstruction"
+  # A directory where a projection file belongs makes the generator fail.
+  obstruction="$SCRATCH_ROOT/docs/reference/agentops-skill-graph.md"
+  mv "$obstruction" "$BATS_TEST_TMPDIR/skill-graph.md"
+  mkdir "$obstruction"
   run bash "$BUILD_SH" from-scratch "$name" --report "$REPORT_DIR/${name}-failed.json"
   [ "$status" -eq 1 ]
   [[ "$output" == *"projection incomplete"* ]]
@@ -158,7 +156,8 @@ PYCODE
   grep -q 'Retained caller note' "$source"
 
   # Remove only this test-owned obstruction and complete the retained source.
-  rm -- "$obstruction"
+  rmdir -- "$obstruction"
+  mv "$BATS_TEST_TMPDIR/skill-graph.md" "$obstruction"
   python3 - "$source" <<'PYCODE'
 from pathlib import Path
 import sys
@@ -173,9 +172,9 @@ PYCODE
   [ "$status" -eq 0 ]
   run env HEAL_REPO_ROOT="$SCRATCH_ROOT" bash "$SCRATCH_ROOT/skills/skill-builder/scripts/heal.sh" --fix "$SCRATCH_ROOT/skills/$name"
   [ "$status" -eq 0 ]
-  run bash "$SCRATCH_ROOT/scripts/regen-codex-hashes.sh" --only "$name"
-  [ "$status" -eq 0 ]
-  grep -q 'Retained caller note' "$SCRATCH_ROOT/skills-codex/$name/SKILL.md"
+  grep -q 'Retained caller note' "$source"
+  grep -q "\"name\": \"$name\"" "$SCRATCH_ROOT/skills/catalog.json"
+  grep -q "$name" "$obstruction"
   run bash "$SCRATCH_ROOT/skills/skill-builder/scripts/audit.sh" --strict "$SCRATCH_ROOT/skills/$name"
   [ "$status" -eq 0 ]
   [[ "$output" == *NOT_PROVEN* ]]

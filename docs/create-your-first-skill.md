@@ -139,11 +139,13 @@ python3 scripts/generate-skill-mesh.py
 ao gate check --fast --scope worktree
 ```
 
-If your change affects Codex behavior or the checked-in Codex bundle, also run:
+Codex loads the same `skills/your-skill-name/` package; nothing is generated
+for it. If your skill is explicit-only (`disable-model-invocation: true`), give
+it an `agents/openai.yaml` with `policy.allow_implicit_invocation: false`, then
+run:
 
 ```bash
-bash scripts/audit-codex-parity.sh --skill your-skill-name
-bash scripts/validate-codex-generated-artifacts.sh --scope worktree
+bash scripts/validate-codex-api-conformance.sh
 ```
 
 ## Where To Look For Good Examples

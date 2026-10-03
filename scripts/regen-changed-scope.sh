@@ -115,32 +115,19 @@ if [[ "${#FILES[@]}" -eq 0 ]]; then
   exit 0
 fi
 
-NEED_CODEX=false
-NEED_CODEX_ALL=false
 NEED_SKILL_MESH=false
 NEED_CLI_REFERENCE=false
 NEED_COMMAND_SURFACES=false
 NEED_CONTRACT_COMPAT=false
-CODEX_SKILLS=()
 SOURCE_SKILLS=()
 STEPS=()
-
-add_unique_codex_skill() {
-  local skill="$1"
-  local existing
-  [[ -n "$skill" ]] || return 0
-  for existing in "${CODEX_SKILLS[@]}"; do
-    [[ "$existing" == "$skill" ]] && return 0
-  done
-  CODEX_SKILLS+=("$skill")
-}
 
 add_unique_source_skill() {
   local skill="$1"
   local existing skill_md="skills/$1/SKILL.md"
   [[ -n "$skill" ]] || return 0
   # Redirect-only runtime packages are compatibility aliases, not independent
-  # implementations. They still route Codex/registry/context projections below,
+  # implementations. They still route registry/context projections below,
   # but the deep implementation audit would manufacture false output-contract,
   # rubric, and trigger failures for their intentionally tiny pointer bodies.
   if [[ -f "$skill_md" ]] \
@@ -161,36 +148,17 @@ skill_from_path() {
       rest="${path#skills/}"
       printf '%s\n' "${rest%%/*}"
       ;;
-    skills-codex/*/*)
-      rest="${path#skills-codex/}"
-      printf '%s\n' "${rest%%/*}"
-      ;;
-    skills-codex-overrides/*/*)
-      rest="${path#skills-codex-overrides/}"
-      printf '%s\n' "${rest%%/*}"
-      ;;
   esac
 }
 
 for file in "${FILES[@]}"; do
   case "$file" in
     skills/*)
-      NEED_CODEX=true
       source_skill="$(skill_from_path "$file")"
-      add_unique_codex_skill "$source_skill"
       [[ -f "skills/$source_skill/SKILL.md" ]] && add_unique_source_skill "$source_skill"
       NEED_SKILL_MESH=true
       ;;
-    skills-codex/*)
-      NEED_CODEX=true
-      add_unique_codex_skill "$(skill_from_path "$file")"
-      ;;
-    skills-codex-overrides/*)
-      NEED_CODEX=true
-      NEED_CODEX_ALL=true
-      add_unique_codex_skill "$(skill_from_path "$file")"
-      ;;
-    docs/contracts/context-map.md|docs/reference/agentops-skill-domain-map.md|docs/reference/agentops-skill-graph.md|docs/SKILL-ROUTER.md|docs/SKILLS.md|skills/SKILL-TIERS.md|skills/catalog.json|registry.json)
+    docs/contracts/context-map.md|docs/reference/agentops-skill-domain-map.md|docs/reference/agentops-skill-graph.md|docs/SKILL-ROUTER.md|docs/SKILLS.md|registry.json)
       NEED_SKILL_MESH=true
       ;;
     docs/contracts/bounded-contexts.yaml)
@@ -212,19 +180,6 @@ for file in "${FILES[@]}"; do
       ;;
   esac
 done
-
-join_codex_skills() {
-  local joined=""
-  local skill
-  for skill in "${CODEX_SKILLS[@]}"; do
-    if [[ -z "$joined" ]]; then
-      joined="$skill"
-    else
-      joined="$joined,$skill"
-    fi
-  done
-  printf '%s\n' "$joined"
-}
 
 add_step() {
   STEPS+=("$1")
@@ -266,19 +221,6 @@ if $NEED_COMMAND_SURFACES; then
     add_step "command surfaces drift|bash scripts/regen-command-surfaces.sh --check && bash scripts/check-cmdao-surface-parity.sh|bash scripts/generate-cli-reference.sh && bash scripts/regen-command-surfaces.sh && bash scripts/check-cmdao-surface-parity.sh --write-surface"
   else
     add_step "command surfaces|bash scripts/regen-command-surfaces.sh && bash scripts/check-cmdao-surface-parity.sh --write-surface|"
-  fi
-fi
-
-if $NEED_CODEX; then
-  codex_only="$(join_codex_skills)"
-  codex_arg=""
-  if [[ -n "$codex_only" && "$NEED_CODEX_ALL" == false ]]; then
-    codex_arg=" --only $codex_only"
-  fi
-  if [[ "$MODE" == "check" ]]; then
-    add_step "codex artifact drift|bash scripts/codex-sync.sh --check$codex_arg && bash scripts/regen-codex-hashes.sh --check$codex_arg && bash scripts/validate-codex-generated-artifacts.sh --scope $SCOPE && bash scripts/audit-codex-parity.sh|bash scripts/codex-sync.sh$codex_arg && bash scripts/regen-codex-hashes.sh$codex_arg && bash scripts/validate-codex-generated-artifacts.sh --scope $SCOPE"
-  else
-    add_step "codex artifacts|bash scripts/codex-sync.sh$codex_arg && bash scripts/regen-codex-hashes.sh$codex_arg && bash scripts/validate-codex-generated-artifacts.sh --scope $SCOPE|"
   fi
 fi
 

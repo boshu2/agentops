@@ -274,7 +274,7 @@ func TestLinkMissingSkills_EmptySrcFailsClosed(t *testing.T) {
 
 // Cross-family refuter regression, round 2 (codex-fresh-review, age-u031): the
 // identity check must reject a directory that merely CONTAINS a stray skills/
-// subdir but is not the agentops repo (no skills-codex/ sibling).
+// subdir but is not the agentops repo (no repo-root markers beside it).
 func TestResolveRepoSkillsDir_OutsideRepoFailsClosed(t *testing.T) {
 	tmp := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(tmp, "skills"), 0o755); err != nil {
@@ -287,23 +287,80 @@ func TestResolveRepoSkillsDir_OutsideRepoFailsClosed(t *testing.T) {
 }
 
 // Cross-family refuter regression, round 3 (codex-fresh-review, age-u031): a
-// look-alike directory with BOTH skills/ and skills-codex/ but WITHOUT the
-// agentops repo-root markers must still fail closed — shape is not identity.
+// look-alike directory with skills/ and only SOME of the agentops repo-root
+// markers must still fail closed — shape is not identity, and every marker is
+// required. A marker that exists as a directory does not count either.
 func TestResolveRepoSkillsDir_LookAlikeWithoutMarkersFailsClosed(t *testing.T) {
-	tmp := t.TempDir()
-	for _, d := range []string{"skills", "skills-codex"} {
-		if err := os.MkdirAll(filepath.Join(tmp, d), 0o755); err != nil {
+	for _, tc := range []struct {
+		name  string
+		files []string
+		dirs  []string
+	}{
+		{name: "registry only", files: []string{"registry.json"}},
+		{name: "product only", files: []string{"PRODUCT.md"}},
+		{name: "marker is a directory", files: []string{"registry.json"}, dirs: []string{"PRODUCT.md"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			tmp := t.TempDir()
+			for _, d := range append([]string{"skills"}, tc.dirs...) {
+				if err := os.MkdirAll(filepath.Join(tmp, d), 0o755); err != nil {
+					t.Fatalf("mkdir %s: %v", d, err)
+				}
+			}
+			for _, f := range tc.files {
+				if err := os.WriteFile(filepath.Join(tmp, f), []byte("x"), 0o644); err != nil {
+					t.Fatalf("write %s: %v", f, err)
+				}
+			}
+			t.Chdir(tmp)
+			if got, err := ResolveRepoSkillsDir(); err == nil {
+				t.Fatalf("a skills/ look-alike without every agentops root marker must fail closed, got dir=%q nil error", got)
+			}
+		})
+	}
+}
+
+// The walk must skip a nearer directory that merely happens to be named
+// skills/ (cli/internal/skills is a Go package) and keep climbing to the
+// marker-verified repo root.
+func TestResolveSkillsRoot_SkipsUnmarkedNestedSkillsDir(t *testing.T) {
+	root := t.TempDir()
+	nested := filepath.Join(root, "cli", "internal")
+	for _, d := range []string{filepath.Join(root, "skills"), filepath.Join(nested, "skills")} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
 			t.Fatalf("mkdir %s: %v", d, err)
 		}
 	}
-	t.Chdir(tmp)
-	if got, err := ResolveRepoSkillsDir(); err == nil {
-		t.Fatalf("a skills/+skills-codex/ look-alike without agentops root markers must fail closed, got dir=%q nil error", got)
+	for _, f := range []string{"registry.json", "PRODUCT.md"} {
+		if err := os.WriteFile(filepath.Join(root, f), []byte("x"), 0o644); err != nil {
+			t.Fatalf("write %s: %v", f, err)
+		}
+	}
+	t.Chdir(nested)
+	wantRoot, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		t.Fatalf("eval symlinks: %v", err)
+	}
+	got, err := filepath.EvalSymlinks(ResolveSkillsRoot())
+	if err != nil {
+		t.Fatalf("eval resolved root: %v", err)
+	}
+	if want := filepath.Join(wantRoot, "skills"); got != want {
+		t.Fatalf("ResolveSkillsRoot() = %q, want the marker-verified root %q", got, want)
+	}
+}
+
+// Without a marker-verified root the resolver falls back to the RELATIVE
+// literal, which is the signal ResolveRepoSkillsDir fails closed on.
+func TestResolveSkillsRoot_FallsBackToRelativeLiteral(t *testing.T) {
+	t.Chdir(t.TempDir())
+	if got := ResolveSkillsRoot(); got != "skills" {
+		t.Fatalf("ResolveSkillsRoot() = %q, want the relative literal %q", got, "skills")
 	}
 }
 
 // Inside the real repo (the test binary runs under cli/internal/skillsapp), the
-// resolver locates the skills/+skills-codex/ pair and returns an absolute path.
+// resolver locates the marker-verified repo root and returns an absolute path.
 func TestResolveRepoSkillsDir_InsideRepoResolvesAbsolute(t *testing.T) {
 	dir, err := ResolveRepoSkillsDir()
 	if err != nil {
@@ -311,6 +368,9 @@ func TestResolveRepoSkillsDir_InsideRepoResolvesAbsolute(t *testing.T) {
 	}
 	if !filepath.IsAbs(dir) {
 		t.Fatalf("resolved skills dir = %q, want an absolute path", dir)
+	}
+	if filepath.Base(dir) != "skills" || !isDir(filepath.Join(dir, "skill-builder")) {
+		t.Fatalf("resolved skills dir = %q, want the agentops repo skills/ tree", dir)
 	}
 }
 

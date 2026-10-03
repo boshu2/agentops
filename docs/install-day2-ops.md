@@ -21,7 +21,7 @@ and execution evidence.
 
 - Claude Code plugin — managed bundle with skills, four agents and hooks;
   updates with the release ([below](#install-and-update-runtime-plugins)).
-- Codex plugin — managed bundle of the generated Codex skills
+- Codex plugin — managed bundle of the same `skills/` tree
   ([below](#install-and-update-runtime-plugins)).
 - `npx skills@latest add boshu2/agentops` — everything else: the external Skills
   installer puts the same `SKILL.md` skills into the agents you pick.
@@ -303,8 +303,7 @@ your selected-skill list for any subsequent relink.
 The canonical `workflows/` directory (a sibling of `skills/`) holds workflow
 scripts for the Claude Code Workflow tool — multi-agent orchestration conveyors
 such as `implement-wave` and `verify-fixes`. Workflows are a Claude-only
-runtime adapter, the same doctrine as the Codex-only `skills-codex/` tree;
-other runtimes ignore them.
+runtime adapter; other runtimes ignore them.
 
 Install or update the links from the canonical checkout, inside the project
 where you want them available:

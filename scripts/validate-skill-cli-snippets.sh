@@ -40,7 +40,7 @@ sys.path.insert(0, os.environ["AO_SNIPPET_LIB_DIR"])
 from ao_snippet_resolve import iter_snippets, make_resolver_from_env
 
 repo_root = pathlib.Path(os.environ["REPO_ROOT"])
-roots = [repo_root / "skills", repo_root / "skills-codex"]
+roots = [repo_root / "skills"]
 allowed_suffixes = {".md", ".sh"}
 stale_beads_resolver = re.compile(r"BEADS_DIR=\$PWD/_beads|git -C _beads|git add \.beads|git add _beads")
 stale_beads_allowed = re.compile(r"\b(anti-pattern|do not|don't|must not|never|reject|fails?|historical|retired)\b", re.IGNORECASE)

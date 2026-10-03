@@ -79,11 +79,11 @@ python3 scripts/generate-skill-mesh.py
 
 This updates the skill count across `SKILL-TIERS.md`, `PRODUCT.md`, `README.md`, `docs/SKILLS.md`, `docs/ARCHITECTURE.md`, and `using-agentops/SKILL.md`. The `doc-release-gate` CI job fails if counts drift, so skipping this step will block your PR. If you're unsure whether your change affects counts, run the script anyway — it's idempotent when counts are already in sync.
 
-If you touched Codex-facing behavior or checked-in Codex artifacts, also run:
+Codex loads `skills/` directly, so there is no Codex copy to regenerate. If you
+changed a skill's frontmatter or its `agents/openai.yaml`, also run:
 
 ```bash
-bash scripts/audit-codex-parity.sh --skill your-skill-name
-bash scripts/validate-codex-generated-artifacts.sh --scope worktree
+bash scripts/validate-codex-api-conformance.sh
 ```
 
 For a fast changed-surface check, run:

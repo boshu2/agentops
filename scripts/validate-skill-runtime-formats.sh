@@ -7,13 +7,8 @@ cd "$REPO_ROOT"
 
 echo "=== Skill runtime format validation ==="
 
-echo "--- Claude/cloud skill format ---"
+# Every runtime loads the one skills/ tree, so one format lint covers them all.
+echo "--- Skill format ---"
 bash ./tests/skills/lint-skills.sh
-
-echo "--- Codex skill format ---"
-bash ./scripts/lint-codex-native.sh --strict
-
-echo "--- Codex runtime sections ---"
-bash ./scripts/validate-codex-runtime-sections.sh
 
 echo "Skill runtime format validation passed."

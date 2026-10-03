@@ -106,7 +106,7 @@ write_skill() {
     [[ "$output" == *"validation passed"* ]]
 }
 
-@test "the committed skill+codex tree passes the full gate" {
+@test "the committed skill tree passes the full gate" {
     AO_BIN="$(require_ao)"
     run env AGENTOPS_AO_BIN="$AO_BIN" bash "$REPO_ROOT/scripts/validate-skill-body-refs.sh"
     [ "$status" -eq 0 ]

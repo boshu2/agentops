@@ -101,16 +101,15 @@ The catalog itself contains no pricing; no account-specific charge is claimed.
 ## Three layers
 
 Delegation source: `skills/agent-native/agents/bulk-reader.toml` and
-`code-writer.toml`, mirrored by `scripts/regen-all.sh` into the existing Codex
-skill bundle. `.codex/agents/` points to those sources, and `.codex/config.toml`
+`code-writer.toml`, shipped as part of the `skills/` tree the Codex plugin
+loads. `.codex/agents/` points to those sources, and `.codex/config.toml`
 registers both names for checkout use.
-`scripts/install-codex-context-agents.sh` copies the generated templates for
+`scripts/install-codex-context-agents.sh` copies the source templates for
 personal or project use, preserving changed roles and config with unique
 backups. It requires Node and an installed Codex with `config/batchWrite`. The
-plugin manifest continues shipping `./skills-codex`; no new skill or automatic
-hook wiring.
-Source guidance is shared, so the existing parity_only catalog treatment is
-retained rather than inventing an override or editing generated twins.
+plugin manifest ships `./skills`; no new skill or automatic hook wiring.
+Source guidance is shared across runtimes; no Codex-specific copy or override
+exists.
 
 Enforcement: `scripts/install-codex-read-budget-guard.sh` and the
 opt-in `hooks/guards/hooks/codex-read-budget-guard.sh` adapter reuse the same
@@ -365,7 +364,8 @@ it does not establish live Claude integration. The remaining native checks also 
   tests/scripts/install-codex-read-budget-guard.bats`: 223 passed, zero skipped.
 - `bats tests/scripts/check-doc-skill-refs*.bats`: 21 passed;
   `bash scripts/check-doc-skill-refs.sh --all-docs --strict`: passed.
-- `bash scripts/validate-codex-install-bundle.sh`: passed, 34 skill packages.
+- The Codex install-bundle validator of that date (since removed with the
+  generated skill copy): passed, 34 skill packages.
   `cmp CHANGELOG.md docs/CHANGELOG.md` and `git diff --check`: passed.
 
 Logs are external: `native-routed.log`, `native-regen-check.log`,

@@ -42,7 +42,6 @@ check_dir() {
 echo "=== Skill Citation Parity Check ==="
 
 check_dir "skills" "$REPO_ROOT/skills"
-check_dir "skills-codex" "$REPO_ROOT/skills-codex"
 
 if [ "$errors" -gt 0 ]; then
   echo ""

@@ -231,7 +231,7 @@ or proof of installed-host qualification.
 | Acceptance request, including a near-match phrased as review | `validate` retains sole acceptance/verdict ownership and genuinely fresh exact-subject judgment. Review hands off original acceptance and the exact subject; ambiguity is clarified. |
 | Plan challenge, broader selected review or claim audit | Keep `premortem`, `council` and `reality-check`; Review selectively links their existing procedures and Plan's one shared optional challenge owner. |
 | Engineering advice and prior evidence | Keep the relevant engineering specialists and `memory`; references create no compulsory chain, editing authority or curation. |
-| README, skill menu, catalog, registry and runtime projections | Add Review discovery and regenerate from canonical metadata with a declared Codex parity twin. Existing explicit specialist routes remain available. |
+| README, skill menu, catalog, registry and runtime projections | Add Review discovery and regenerate from canonical metadata. Existing explicit specialist routes remain available. |
 
 RPI's hard dependencies remain Plan, Implement and Validate. Review has no hard
 dependency; native clear work still needs zero mandatory skills. No old root is
@@ -330,6 +330,30 @@ canonical checkout with `ao skills link` instead. The [host/install mapping](con
 accounts for the retained runtime, export and package consumers; each host's
 live qualification remains separate from structural checks.
 
+### Codex plugin loads `skills/` directly — 2026-10-03
+
+The Codex plugin used to ship `skills-codex/`, a generated copy of `skills/`
+with the frontmatter cut down to `name` and `description`. That copy, its
+override catalog and its generator are gone. `.codex-plugin/plugin.json` now
+ships `./skills`, the tree `ao skills link` and `npx skills` already install.
+
+- Plugin users: refresh the marketplace and re-add the plugin
+  (`codex plugin marketplace upgrade agentops-marketplace`, then
+  `codex plugin add agentops@agentops-marketplace`). Skill names, descriptions
+  and bodies are unchanged.
+- Each skill's `prompt.md` and `.agentops-generated.json`, and the
+  `.agentops-manifest.json` inventory, are no longer shipped. Codex did not
+  read them.
+- Codex now receives the full AgentOps frontmatter. It ignores the fields it
+  does not know, but the shipped packages are no longer strict portable Agent
+  Skills frontmatter.
+- Scripts that read `skills-codex/`, or ran `scripts/codex-sync.sh`,
+  `scripts/regen-codex-hashes.sh` or a `validate-codex-generated-*` check,
+  should read `skills/` and run `scripts/validate-codex-api-conformance.sh`.
+- `ao skills check --json` no longer reports `parity_drift` or a per-skill
+  `codex_parity`, and `skills/catalog.json` no longer carries
+  `codex_override_present`.
+
 ### Retained package and installation consumers
 
 The [host/install contract](contracts/multi-runtime-tier-charter.md#host-and-install-surface-mapping)
@@ -342,7 +366,7 @@ untested promise. Every live claim still needs evidence on the final installatio
 | Consumer | Disposition and owner | Compatibility treatment |
 |---|---|---|
 | Claude Code plugin and source links | keep; [.claude-plugin](https://github.com/boshu2/agentops/blob/main/.claude-plugin/plugin.json), [marketplace](https://github.com/boshu2/agentops/blob/main/.claude-plugin/marketplace.json), [Claude image](https://github.com/boshu2/agentops/blob/main/images/claude/README.md) and canonical `skills/` | First-class host. Retain qualified plugin names, full bundle, agents and policy dispatcher; source linking keeps selected names. |
-| Codex plugin and source links | keep; [.codex-plugin](https://github.com/boshu2/agentops/blob/main/.codex-plugin/plugin.json), [marketplace](https://github.com/boshu2/agentops/blob/main/plugins/marketplace.json), [Codex image](https://github.com/boshu2/agentops/blob/main/images/codex/README.md) and generated `skills-codex/` | First-class host. Preserve canonical/projection parity and qualified plugin names; source links retain catalog names. |
+| Codex plugin and source links | keep; [.codex-plugin](https://github.com/boshu2/agentops/blob/main/.codex-plugin/plugin.json), [marketplace](https://github.com/boshu2/agentops/blob/main/plugins/marketplace.json), [Codex image](https://github.com/boshu2/agentops/blob/main/images/codex/README.md) and canonical `skills/` | First-class host. The plugin ships the same `skills/` tree every runtime loads and keeps its qualified plugin names; source links retain catalog names. |
 | Cursor rules and source links | keep; npx `-a cursor`, [converter](https://github.com/boshu2/agentops/blob/main/skills/skill-builder/scripts/converter/convert.sh) and [destination resolver](https://github.com/boshu2/agentops/blob/main/cli/internal/skillsapp/roots.go) | Install through npx. Retain `.mdc` export and the contributor-detected Cursor skills root; structural coverage remains distinct from live discovery/execution. |
 | OpenCode portable and explicit source roots | keep; npx `-a opencode`, [OpenCode guide](https://github.com/boshu2/agentops/blob/main/.opencode/INSTALL.md) and [destination resolver](https://github.com/boshu2/agentops/blob/main/cli/internal/skillsapp/roots.go) | Install through npx into the portable root. Contributors retain explicit `--dest` config-root linking; optional hooks stay selectable. |
 | Gemini / Antigravity package and export | retire; the `images/gemini` package and its [bundle generator](https://github.com/boshu2/agentops/blob/main/scripts/generate-skill-mesh.py) branch were deleted | Gemini CLI and Antigravity install through npx (`-a gemini-cli`, `-a antigravity`). Remove an installed package with `agy plugin disable agentops-core-gemini`, then `agy plugin uninstall agentops-core-gemini`. |

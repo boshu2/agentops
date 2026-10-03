@@ -66,7 +66,7 @@ DIGEST_FULL = re.compile(r"\b[0-9a-f]{64}\b")
 
 REPO_PATH = re.compile(
     r"(?<![\w/.-])"
-    r"((?:docs|scripts|skills|skills-codex|tests|cli|schemas|evidence|\.agentops|\.agents)"
+    r"((?:docs|scripts|skills|tests|cli|schemas|evidence|\.agentops|\.agents)"
     r"/[A-Za-z0-9._\-][A-Za-z0-9._/\-]*)"
 )
 

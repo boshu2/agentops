@@ -5,12 +5,10 @@ setup() {
 }
 
 @test "only canonical premortem and postmortem roots exist" {
-  for root in skills skills-codex; do
-    [ -f "$REPO_ROOT/$root/premortem/SKILL.md" ]
-    [ -f "$REPO_ROOT/$root/postmortem/SKILL.md" ]
-    for alias in pre-mortem pre_mortem post-mortem post_mortem; do
-      [ ! -e "$REPO_ROOT/$root/$alias" ]
-    done
+  [ -f "$REPO_ROOT/skills/premortem/SKILL.md" ]
+  [ -f "$REPO_ROOT/skills/postmortem/SKILL.md" ]
+  for alias in pre-mortem pre_mortem post-mortem post_mortem; do
+    [ ! -e "$REPO_ROOT/skills/$alias" ]
   done
 }
 

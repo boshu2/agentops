@@ -27,7 +27,7 @@ on:
       - 'scripts/install*'
       - 'scripts/fresh-install-conformance.sh'
       - 'cli/**'
-      - 'skills-codex/**'
+      - 'skills/**'
       - '.github/workflows/fresh-install-conformance.yml'
   schedule:
     # Nightly at 08:15 UTC (late evening Pacific) — a periodic drift detector.

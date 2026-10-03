@@ -1,59 +1,49 @@
-# Codex Parity Repair
+# Codex parity
 
-Use this workflow when `skills/<name>/SKILL.md` is canonically correct but
-`skills-codex/<name>/SKILL.md` has drifted into bad Codex UX in the checked-in runtime artifact.
+Codex loads the canonical `skills/<name>/` package directly. The Codex plugin
+manifest points at `./skills`, and `ao skills link` links the same directories
+into `~/.codex/skills`. There is no generated Codex copy, no override layer and
+no `prompt.md`, so one source package has to read correctly on every host.
 
-## Principles
+## What Codex reads
 
-1. `skills/<name>/SKILL.md` remains the canonical workflow contract.
-2. `skills-codex/<name>/` is the generated checked-in Codex runtime artifact; repair its owner and regenerate.
-3. Durable Codex-only body edits that should survive broader refactors belong in `skills-codex-overrides/<name>/SKILL.md`.
-4. Codex operator-layer prompt edits belong in `skills-codex-overrides/<name>/prompt.md`.
+- `SKILL.md`. The `name` and `description` drive discovery. Codex ignores the
+  AgentOps host fields. It refuses a skill whose frontmatter repeats a key, has
+  no `description`, or has a `name` longer than 64 characters.
+- `agents/openai.yaml`, when present: display metadata, tool dependencies and
+  the invocation policy. Codex does not read `disable-model-invocation` from
+  `SKILL.md`.
+- Every `SKILL.md` below `skills/`. A nested one is loaded as a skill of its
+  own, so fixtures and scaffolds live outside the tree.
 
-## Audit First
+## Explicit-only skills
 
-Run:
+A skill marked `disable-model-invocation: true` needs the matching Codex policy
+in its own `agents/openai.yaml`:
 
-```bash
-bash scripts/audit-codex-parity.sh
+```yaml
+policy:
+  allow_implicit_invocation: false
 ```
 
-Or target one skill:
+Nothing derives this file. Without it, or when it does not parse, Codex selects
+the skill implicitly.
+
+## One body for every host
+
+- Refer to another skill by name or relative link, not by a host's invocation
+  syntax (`/name`, `$name` or a `Skill(...)` call).
+- Keep host-only tool names and installed-skill paths (`~/.claude/...`,
+  `~/.codex/...`) out of the shared flow. When a step differs by host, say which
+  host the sentence is for.
+- A skill that documents several runtimes names each one plainly.
+
+## Check
 
 ```bash
-bash scripts/audit-codex-parity.sh --skill swarm
+bash scripts/validate-codex-api-conformance.sh
 ```
 
-The audit flags the failure classes that Codex maintenance keeps missing today:
-
-- Claude-era task primitives
-- Claude-only backend reference names and team terminology
-- duplicated runtime phrases created by blind search/replace
-
-## Repair Loop
-
-For each flagged skill:
-
-1. Read `skills/<name>/SKILL.md` to confirm whether the canonical contract is correct.
-2. Read `skills-codex/<name>/SKILL.md` to see the broken checked-in Codex body.
-3. Read `skills-codex-overrides/<name>/prompt.md` and `skills-codex-overrides/catalog.json`.
-4. If the source contract is wrong, fix `skills/<name>/SKILL.md` first.
-5. If the shipped Codex artifact is wrong, repair canonical source or the owning generator, then run `scripts/regen-all.sh`. Do not hand-edit the projection.
-6. If the source is correct but Codex needs a durable tailoring layer, create or update `skills-codex-overrides/<name>/SKILL.md`.
-7. Re-run validation:
-   - `bash scripts/audit-codex-parity.sh`
-   - `bash scripts/validate-codex-generated-artifacts.sh --scope worktree`
-   - `bash scripts/validate-codex-override-coverage.sh`
-
-## LLM Repair Guidance
-
-When doing the actual rewrite, the LLM should:
-
-- preserve the behavior contract from `skills/<name>/SKILL.md`
-- remove Claude-only primitive/tool names from the Codex body
-- replace mechanical rewrites with real Codex-native instructions
-- keep durable Codex-only delta in `skills-codex-overrides/<name>/SKILL.md` when it should remain distinct from the checked-in artifact
-
-If a skill keeps needing Codex-only body surgery, update
-`skills-codex-overrides/catalog.json` so the treatment matches reality instead
-of pretending the skill is still parity-only.
+It checks the loader facts above and the explicit-only policy. It does not
+prove that Codex selected or followed the skill; that needs a session on the
+host.

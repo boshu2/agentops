@@ -47,7 +47,7 @@ write_legacy_codex_metadata() {
 {
   "name": "agentops",
   "description": "Legacy thin Codex plugin manifest.",
-  "skills": "./skills-codex"
+  "skills": "./skills"
 }
 EOF
 
@@ -75,7 +75,7 @@ write_plugin_creator_metadata() {
   "name": "agentops",
   "version": "0.0.0",
   "description": "Modern Codex plugin manifest.",
-  "skills": "./skills-codex",
+  "skills": "./skills",
   "mcpServers": "./mcp",
   "interface": {
     "displayName": "AgentOps",

@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Retained source plus a real failed Codex projection, not a fake builder."""
+"""Retained source plus a real failed skill-mesh projection, not a fake builder."""
 import hashlib,json,os,pathlib,shutil,subprocess,sys
 r=pathlib.Path(sys.argv[1]).resolve();r.mkdir(parents=True,exist_ok=False)
 runtime=pathlib.Path(os.environ.get('AO_RUNTIME_ROOT','/opt/agentops')).resolve()
 repo=r/'repo';repo.mkdir()
 # Public runtime source only. The fixture never copies operator state or .git.
-for name in ('skills','scripts','skills-codex','skills-codex-overrides','docs','images','.claude-plugin'):
+for name in ('skills','scripts','docs','images','.claude-plugin'):
  shutil.copytree(runtime/name,repo/name)
 shutil.copy2(runtime/'registry.json',repo/'registry.json')
 (r/'out').mkdir();(r/'evidence').mkdir()
 # Exact authorized obstruction: a regular file where the generator needs a directory.
-obstruction=repo/'skills-codex/recovery-pilot';obstruction.write_text('INJECTED_PROJECTION_OBSTRUCTION\n')
+obstruction=repo/'images/codex';shutil.rmtree(obstruction);obstruction.write_text('INJECTED_PROJECTION_OBSTRUCTION\n')
 ao=os.environ.get('AO_SKILL_BUILDER_BIN','/usr/local/bin/ao')
 cmd=[ao,'skills','build','from-scratch','recovery-pilot','--repo',str(repo),'--report',str(r/'evidence/failed-build.json')]
 result=subprocess.run(cmd,capture_output=True)

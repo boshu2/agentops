@@ -29,12 +29,12 @@ for name in ('bulk-reader', 'code-writer'):
 PY
 }
 
-@test "personal installation copies generated roles and does not enable hooks" {
+@test "personal installation copies source roles and does not enable hooks" {
   require_codex
   run bash "$ROOT/scripts/install-codex-context-agents.sh"
   [ "$status" -eq 0 ]
-  cmp "$CODEX_HOME/agents/bulk-reader.toml" "$ROOT/skills-codex/agent-native/agents/bulk-reader.toml"
-  cmp "$CODEX_HOME/agents/code-writer.toml" "$ROOT/skills-codex/agent-native/agents/code-writer.toml"
+  cmp "$CODEX_HOME/agents/bulk-reader.toml" "$ROOT/skills/agent-native/agents/bulk-reader.toml"
+  cmp "$CODEX_HOME/agents/code-writer.toml" "$ROOT/skills/agent-native/agents/code-writer.toml"
   [ ! -e "$CODEX_HOME/hooks.json" ]
   [ -f "$CODEX_HOME/config.toml" ]
   python3 - "$CODEX_HOME/config.toml" <<'PY'

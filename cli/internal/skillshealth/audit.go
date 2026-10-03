@@ -1,10 +1,10 @@
-// Package skillshealth audits the skills/ tree and its codex parity sibling.
+// Package skillshealth audits the skills/ tree.
 //
 // It validates each skill's YAML frontmatter (name + description present,
-// name matches the directory), verifies that every references/*.md file is
-// linked from SKILL.md, and reports parity drift against skills-codex/.
+// name matches the directory) and verifies that every references/*.md file is
+// linked from SKILL.md.
 //
-// The audit is read-only: it never mutates skills/ or skills-codex/.
+// The audit is read-only: it never mutates skills/.
 package skillshealth
 
 import (
@@ -19,10 +19,9 @@ import (
 
 // Report is the top-level audit result.
 type Report struct {
-	Skills      []SkillStatus `json:"skills"`
-	Errors      []string      `json:"errors"`
-	ParityDrift []string      `json:"parity_drift"`
-	Generated   string        `json:"generated_at"`
+	Skills    []SkillStatus `json:"skills"`
+	Errors    []string      `json:"errors"`
+	Generated string        `json:"generated_at"`
 }
 
 // SkillStatus captures per-skill audit state.
@@ -32,14 +31,13 @@ type SkillStatus struct {
 	FrontmatterValid   bool     `json:"frontmatter_valid"`
 	MissingFrontmatter []string `json:"missing_frontmatter,omitempty"`
 	BrokenRefs         []string `json:"broken_refs,omitempty"`
-	CodexParity        string   `json:"codex_parity"` // "matched" | "missing" | "diverged" | "n/a"
 }
 
 // Options controls Audit behaviour.
 type Options struct {
-	SkillsDir, CodexDir string
-	OnlySkill           string
-	Strict              bool
+	SkillsDir string
+	OnlySkill string
+	Strict    bool
 }
 
 // referenceLinkPattern preserves explicit ./ and ../ targets, including
@@ -47,20 +45,16 @@ type Options struct {
 // mentions (also used inside repo-qualified shell examples) remain local refs.
 var referenceLinkPattern = regexp.MustCompile(`((?:\.\.?/[A-Za-z0-9_./-]*)?references/[A-Za-z0-9_./-]+\.md)`)
 
-// Audit walks SkillsDir and CodexDir and produces a Report.
+// Audit walks SkillsDir and produces a Report.
 func Audit(opts Options) (*Report, error) {
 	if strings.TrimSpace(opts.SkillsDir) == "" {
 		opts.SkillsDir = "skills"
 	}
-	if strings.TrimSpace(opts.CodexDir) == "" {
-		opts.CodexDir = "skills-codex"
-	}
 
 	report := &Report{
-		Skills:      []SkillStatus{},
-		Errors:      []string{},
-		ParityDrift: []string{},
-		Generated:   time.Now().UTC().Format(time.RFC3339),
+		Skills:    []SkillStatus{},
+		Errors:    []string{},
+		Generated: time.Now().UTC().Format(time.RFC3339),
 	}
 
 	entries, err := os.ReadDir(opts.SkillsDir)
@@ -83,7 +77,7 @@ func Audit(opts Options) (*Report, error) {
 	sort.Strings(names)
 
 	for _, name := range names {
-		status := auditOneSkill(opts.SkillsDir, opts.CodexDir, name)
+		status := auditOneSkill(opts.SkillsDir, name)
 		report.Skills = append(report.Skills, status)
 
 		if !status.FrontmatterValid {
@@ -95,21 +89,16 @@ func Audit(opts Options) (*Report, error) {
 			report.Errors = append(report.Errors,
 				fmt.Sprintf("%s: broken reference: %s", name, br))
 		}
-		if status.CodexParity == "missing" || status.CodexParity == "diverged" {
-			report.ParityDrift = append(report.ParityDrift,
-				fmt.Sprintf("%s: %s", name, status.CodexParity))
-		}
 	}
 
 	return report, nil
 }
 
-func auditOneSkill(skillsDir, codexDir, name string) SkillStatus {
+func auditOneSkill(skillsDir, name string) SkillStatus {
 	skillPath := filepath.Join(skillsDir, name, "SKILL.md")
 	status := SkillStatus{
-		Name:        name,
-		Path:        skillPath,
-		CodexParity: "n/a",
+		Name: name,
+		Path: skillPath,
 	}
 
 	data, err := os.ReadFile(skillPath)
@@ -131,9 +120,6 @@ func auditOneSkill(skillsDir, codexDir, name string) SkillStatus {
 	// at a file that exists.
 	skillDir := filepath.Join(skillsDir, name)
 	status.BrokenRefs = findBrokenRefs(skillDir, body)
-
-	// Codex parity.
-	status.CodexParity = compareCodexParity(codexDir, name, fm["description"])
 	return status
 }
 
@@ -281,84 +267,4 @@ func findBrokenRefs(skillDir, body string) []string {
 
 	sort.Strings(broken)
 	return broken
-}
-
-// compareCodexParity returns "matched", "missing", or "diverged" based on
-// presence and description-similarity of the codex sibling.
-func compareCodexParity(codexDir, name, sourceDesc string) string {
-	codexPath := filepath.Join(codexDir, name, "SKILL.md")
-	data, err := os.ReadFile(codexPath)
-	if err != nil {
-		return "missing"
-	}
-	codexFM := ParseFrontmatter(string(data))
-	codexDesc := strings.TrimSpace(codexFM["description"])
-	srcDesc := strings.TrimSpace(sourceDesc)
-	// Empty descriptions on either side: cannot compare meaningfully.
-	if srcDesc == "" || codexDesc == "" {
-		if srcDesc == "" && codexDesc == "" {
-			return "matched"
-		}
-		return "diverged"
-	}
-	if descriptionsClose(srcDesc, codexDesc) {
-		return "matched"
-	}
-	return "diverged"
-}
-
-// descriptionsClose returns true if two descriptions are likely the same
-// intent. We consider them close when one is a prefix of the other (modulo
-// whitespace/punctuation) or they share most content tokens. The codex
-// converter may rewrap text or substitute Codex-specific tool names, so
-// strict equality is too brittle for parity drift detection.
-func descriptionsClose(a, b string) bool {
-	la, lb := strings.ToLower(a), strings.ToLower(b)
-	if la == lb {
-		return true
-	}
-	// Normalize whitespace and punctuation.
-	norm := func(s string) string {
-		s = strings.ToLower(s)
-		var sb strings.Builder
-		prevSpace := false
-		for _, r := range s {
-			if r >= 'a' && r <= 'z' || r >= '0' && r <= '9' {
-				sb.WriteRune(r)
-				prevSpace = false
-			} else if !prevSpace {
-				sb.WriteRune(' ')
-				prevSpace = true
-			}
-		}
-		return strings.TrimSpace(sb.String())
-	}
-	na, nb := norm(la), norm(lb)
-	if na == nb {
-		return true
-	}
-	if strings.HasPrefix(na, nb) || strings.HasPrefix(nb, na) {
-		return true
-	}
-	// Token overlap: >=60% of the shorter side's tokens appear in the longer.
-	ta := strings.Fields(na)
-	tb := strings.Fields(nb)
-	if len(ta) == 0 || len(tb) == 0 {
-		return false
-	}
-	short, long := ta, tb
-	if len(tb) < len(ta) {
-		short, long = tb, ta
-	}
-	longSet := map[string]bool{}
-	for _, t := range long {
-		longSet[t] = true
-	}
-	hits := 0
-	for _, t := range short {
-		if longSet[t] {
-			hits++
-		}
-	}
-	return float64(hits)/float64(len(short)) >= 0.60
 }

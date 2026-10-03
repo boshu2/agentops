@@ -26,7 +26,7 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 
 setup_fixture() {
   local fixture="$1"
-  mkdir -p "$fixture/scripts" "$fixture/skills/fixture" "$fixture/skills-codex/fixture" "$fixture/cli/cmd/ao" "$fixture/cli/docs"
+  mkdir -p "$fixture/scripts" "$fixture/skills/fixture" "$fixture/skills/other" "$fixture/cli/cmd/ao" "$fixture/cli/docs"
   cp "$SCRIPT" "$fixture/scripts/check-skill-flag-refs.sh"
   cp "$TARGET_SCRIPT" "$fixture/scripts/validate-skill-cli-snippets.sh"
   chmod +x "$fixture/scripts/check-skill-flag-refs.sh" "$fixture/scripts/validate-skill-cli-snippets.sh"
@@ -121,7 +121,7 @@ test_passes_with_valid_examples() {
   local fixture="$TMP_DIR/pass"
   setup_fixture "$fixture"
   write_doc "$fixture/skills/fixture/SKILL.md" "Use \`ao goals measure --json\` and \`ao lookup --query \"x\"\`."
-  write_doc "$fixture/skills-codex/fixture/SKILL.md" "Install hooks with \`ao hooks install --full\`."
+  write_doc "$fixture/skills/other/SKILL.md" "Install hooks with \`ao hooks install --full\`."
 
   if (cd "$fixture" && AGENTOPS_AO_BIN="$fixture/fake-ao" bash ./scripts/check-skill-flag-refs.sh >/dev/null); then
     pass "passes with valid command and flag examples"
@@ -134,7 +134,7 @@ test_fails_on_unknown_command() {
   local fixture="$TMP_DIR/fail-command"
   setup_fixture "$fixture"
   write_doc "$fixture/skills/fixture/SKILL.md" "Run \`ao madeup command --json\`."
-  write_doc "$fixture/skills-codex/fixture/SKILL.md" "Use \`ao lookup --query \"x\"\`."
+  write_doc "$fixture/skills/other/SKILL.md" "Use \`ao lookup --query \"x\"\`."
 
   if (cd "$fixture" && AGENTOPS_AO_BIN="$fixture/fake-ao" bash ./scripts/check-skill-flag-refs.sh >/dev/null 2>&1); then
     fail "should fail on unknown command"
@@ -147,7 +147,7 @@ test_fails_on_unknown_flag() {
   local fixture="$TMP_DIR/fail-flag"
   setup_fixture "$fixture"
   write_doc "$fixture/skills/fixture/SKILL.md" "Use \`ao goals measure --bogus\`."
-  write_doc "$fixture/skills-codex/fixture/SKILL.md" "Use \`ao lookup --query \"x\"\`."
+  write_doc "$fixture/skills/other/SKILL.md" "Use \`ao lookup --query \"x\"\`."
 
   if (cd "$fixture" && AGENTOPS_AO_BIN="$fixture/fake-ao" bash ./scripts/check-skill-flag-refs.sh >/dev/null 2>&1); then
     fail "should fail on unknown flag"

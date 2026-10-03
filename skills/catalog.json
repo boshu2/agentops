@@ -10,7 +10,6 @@
         "handoff",
         "dispatch_once"
       ],
-      "codex_override_present": true,
       "consumes": [
         "explicit-role-packets"
       ],
@@ -49,7 +48,6 @@
         "dispatch_explicit_packet",
         "provide_fresh_context"
       ],
-      "codex_override_present": true,
       "consumes": [
         "explicit-packet"
       ],
@@ -84,7 +82,6 @@
       "capabilities": [
         "codex_exec"
       ],
-      "codex_override_present": true,
       "consumes": [
         "codex-command-packet"
       ],
@@ -123,7 +120,6 @@
         "duel_scored_ideas",
         "answer_interview_panel"
       ],
-      "codex_override_present": true,
       "consumes": [
         "explicit-question",
         "evidence"
@@ -155,7 +151,6 @@
         "goal_prompt_design",
         "goal_prompt_lint"
       ],
-      "codex_override_present": true,
       "consumes": [
         "caller-outcome",
         "goal-acceptance"
@@ -192,7 +187,6 @@
         "initialize_missing_docs",
         "write_session_handoff"
       ],
-      "codex_override_present": true,
       "consumes": [
         "repo-context"
       ],
@@ -228,7 +222,6 @@
         "clarify_domain_language",
         "reconcile_domain_names"
       ],
-      "codex_override_present": true,
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
@@ -257,7 +250,6 @@
         "generate_evidenced_options",
         "dueling_idea_genies"
       ],
-      "codex_override_present": true,
       "consumes": [
         "repo-context",
         "task-question",
@@ -303,7 +295,6 @@
         "execute_one_experiment",
         "collect_factual_evidence"
       ],
-      "codex_override_present": true,
       "consumes": [],
       "context_rel": [
         {
@@ -341,7 +332,6 @@
         "write_acceptance_examples",
         "settle_domain_terms"
       ],
-      "codex_override_present": true,
       "consumes": [
         "repo-context",
         "native-work-state"
@@ -382,7 +372,6 @@
         "curate_topic_pages",
         "toil_mining"
       ],
-      "codex_override_present": true,
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
@@ -417,7 +406,6 @@
         "ratchet_work_graph",
         "report_graph_hygiene"
       ],
-      "codex_override_present": true,
       "consumes": [
         "outer-goal-prompt",
         "goal-acceptance",
@@ -462,7 +450,6 @@
         "recover_assignments",
         "reconcile_feedback"
       ],
-      "codex_override_present": true,
       "consumes": [
         "accepted-intent",
         "native-work-state",
@@ -499,7 +486,6 @@
         "bound_write_scope",
         "resume_discovery"
       ],
-      "codex_override_present": true,
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
@@ -526,7 +512,6 @@
       "capabilities": [
         "postmortem"
       ],
-      "codex_override_present": true,
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
@@ -554,7 +539,6 @@
       "capabilities": [
         "challenge_plan"
       ],
-      "codex_override_present": true,
       "consumes": [],
       "context_rel": [
         {
@@ -589,7 +573,6 @@
         "measure_declared_goals",
         "report_native_status"
       ],
-      "codex_override_present": true,
       "consumes": [
         "caller-question",
         "native-source-evidence"
@@ -629,7 +612,6 @@
       "capabilities": [
         "refactor"
       ],
-      "codex_override_present": true,
       "consumes": [
         "repo-context"
       ],
@@ -662,7 +644,6 @@
         "codebase_recon",
         "pattern_mining"
       ],
-      "codex_override_present": true,
       "consumes": [
         "research-question"
       ],
@@ -696,7 +677,6 @@
       "capabilities": [
         "reverse_engineer"
       ],
-      "codex_override_present": true,
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
@@ -729,7 +709,6 @@
         "identify_supported_findings",
         "report_review_gaps"
       ],
-      "codex_override_present": true,
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
@@ -753,7 +732,6 @@
         "own_authorized_outcome",
         "report"
       ],
-      "codex_override_present": true,
       "consumes": [
         "plan",
         "implement",
@@ -803,7 +781,6 @@
       "capabilities": [
         "security"
       ],
-      "codex_override_present": true,
       "consumes": [
         "repo-context"
       ],
@@ -844,7 +821,6 @@
         "export_skill",
         "distill_expertise"
       ],
-      "codex_override_present": true,
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
@@ -882,7 +858,6 @@
         "run_probe_tier",
         "evaluate_skill_decision"
       ],
-      "codex_override_present": true,
       "consumes": [
         "skill-source-package"
       ],
@@ -919,7 +894,6 @@
       "capabilities": [
         "test"
       ],
-      "codex_override_present": true,
       "consumes": [
         "standards",
         "repo-context"
@@ -956,7 +930,6 @@
         "inspect_pack_registries",
         "drive_mayor_door"
       ],
-      "codex_override_present": true,
       "consumes": [
         "explicit-packets"
       ],
@@ -995,7 +968,6 @@
         "return_validation_result",
         "persist_verdict"
       ],
-      "codex_override_present": true,
       "consumes": [
         "subject-manifest.v1"
       ],

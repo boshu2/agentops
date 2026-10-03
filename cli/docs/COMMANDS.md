@@ -1005,7 +1005,7 @@ ao provenance verify-verdict [flags]
 
 ### `ao skills`
 
-Tooling for the skills/ source-of-truth and its skills-codex/
+Tooling for the skills/ source-of-truth, the one tree every runtime
 
 ```
 ao skills [command]
@@ -1051,7 +1051,7 @@ ao skills build <from-scratch|from-template|absorb-external> <slug> [flags]
 
 #### `ao skills check`
 
-Walk skills/ and skills-codex/, validating each skill's YAML
+Walk skills/, validating each skill's YAML frontmatter (name +
 
 ```
 ao skills check [flags]

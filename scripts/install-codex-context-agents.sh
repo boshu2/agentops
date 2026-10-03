@@ -17,12 +17,12 @@ case "${1:-}" in
 esac
 [ "$#" -eq 0 ] || { echo 'Unexpected arguments' >&2; exit 2; }
 
-# Consume the same generated bundle shipped by the Codex plugin. Source owners
-# are skills/agent-native/agents/*.toml; scripts/regen-all.sh owns this projection.
-source_dir="$REPO_ROOT/skills-codex/agent-native/agents"
+# Install the source-owned role templates, the same files the Codex plugin
+# ships: skills/agent-native/agents/*.toml.
+source_dir="$REPO_ROOT/skills/agent-native/agents"
 for role in bulk-reader code-writer; do
   [ -f "$source_dir/$role.toml" ] || {
-    echo "Missing generated role $role; run bash scripts/regen-all.sh" >&2; exit 1;
+    echo "Missing role template $source_dir/$role.toml" >&2; exit 1;
   }
 done
 require_cmd node

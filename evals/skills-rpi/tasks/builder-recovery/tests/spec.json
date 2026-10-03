@@ -7,7 +7,7 @@
     "workflow.sh"
   ],
   "checked": [
-    "actual source creation followed by Codex projection failure",
+    "actual source creation followed by skill-mesh projection failure",
     "retained caller content and failed report",
     "remaining source check and projection recovery",
     "honest static audit and partial failure summary"

@@ -24,7 +24,7 @@ const (
 // Check audiences. Every doctor check declares who it is for:
 //   - AudienceInstalledUser: relevant to anyone who installed AgentOps.
 //   - AudienceRepoDev: only meaningful inside an agentops repo clone (skill
-//     hygiene, codex-sync internals, plugin-manifest internals, stale in-repo
+//     hygiene, plugin-manifest internals, stale in-repo
 //     references, binary freshness). Collapsed to a single info line outside a
 //     clone so a pristine install never sees repo-internal warnings.
 const (

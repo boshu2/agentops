@@ -1,6 +1,6 @@
 # Codex Tests
 
-This directory contains static Codex artifact tests and three live CLI primitive
+This directory contains a static cross-runtime skill test and three live CLI primitive
 probes: `codex review --uncommitted`, read-only sandbox with final-message capture,
 and `codex exec --output-schema` using a small test-owned JSON schema. These do
 not prove AgentOps skill discovery, workflow execution or independent judgment.

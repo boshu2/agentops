@@ -23,8 +23,7 @@ See [the skill menu](docs/SKILL-ROUTER.md) for optional guidance. Plan states ob
 | Path | What it is |
 |---|---|
 | `cli/` | the Go `ao` tool |
-| `skills/` | the shipped product; one `SKILL.md` contract per skill |
-| `skills-codex/` | a generated projection of `skills/` — never hand-edit |
+| `skills/` | the shipped product; one `SKILL.md` contract per skill, loaded directly by every runtime |
 | `workflows/` | Claude Code workflow scripts |
 | `scripts/check-*.sh` | the deterministic gates |
 | `tests/` | bats suites |
@@ -41,7 +40,7 @@ cd cli && go build ./... && go vet ./... && go test ./...
 During Go edits, run focused package tests and `bash scripts/check-go-lint.sh`
 from the repository root before broad integration and final review. A passing Go test does not establish the repository's lint contract.
 
-Run the gates with `ao gate check` (`--full` for the whole registry). Regenerate every metadata-owned projection — `skills-codex/` included — with
+Run the gates with `ao gate check` (`--full` for the whole registry). Regenerate every metadata-owned projection with
 `scripts/regen-all.sh` (`--check` to verify without writing); edit `skills/`, then regenerate. `tests/run-all.sh` is the local aggregate runner and must be green.
 CI is authoritative (`.github/workflows/validate.yml`) and runs the bats suites as
 `bats --jobs 4 --no-parallelize-within-files --print-output-on-failure tests/scripts/*.bats`, plus the Go bar above with `go test -race -shuffle=on ./...`.
@@ -238,7 +237,7 @@ AgentOps work ownership.
 | RPI traversal or evidence-contract change | `docs/architecture/rpi-traversal.md`, `schemas/*.schema.json` |
 | CLI command or flag | `cli/cmd/ao/` composition, `cli/internal/commands/<family>/` implementation, then generated `cli/docs/COMMANDS.md` |
 | Skill behavior or inventory | `skills/<slug>/SKILL.md`, generated `docs/SKILL-ROUTER.md` |
-| Codex projection | `docs/contracts/codex-skill-api.md`, `skills-codex-overrides/catalog.json` |
+| Codex skill loading or invocation policy | `docs/contracts/codex-skill-api.md`, `skills/<slug>/agents/openai.yaml` |
 | Deterministic checks | `docs/CI-CD.md`, `cli/internal/gates/` |
 
 ## Closeout

@@ -4,9 +4,8 @@
 // internal/commands/workflows owns Cobra presentation and delegates every
 // direct filesystem effect here, mirroring the skills / skillsapp split.
 //
-// Workflows are a CLAUDE-ONLY runtime adapter (the same doctrine as
-// skills-codex/ being Codex-only): the canonical source is the checkout's
-// top-level workflows/*.js scripts, and the install target is the
+// Workflows are a CLAUDE-ONLY runtime adapter: the canonical source is the
+// checkout's top-level workflows/*.js scripts, and the install target is the
 // project-local .claude/workflows/ directory where the Claude Code harness
 // resolves named workflows. There is deliberately NO multi-runtime fan-out.
 package workflowsapp
@@ -21,9 +20,9 @@ import (
 
 // resolveCheckoutRoot locates the agentops checkout root by walking up from
 // the current working directory, using the same identity discipline as
-// skillsapp.ResolveRepoSkillsDir: the root must hold BOTH skills/ and
-// skills-codex/ directories AND the distinctive agentops repo-root marker
-// files (registry.json, PRODUCT.md). Shape is not identity — requiring the
+// skillsapp.ResolveRepoSkillsDir: the root must hold the skills/ directory
+// AND the distinctive agentops repo-root marker files (registry.json,
+// PRODUCT.md). Shape is not identity — requiring the
 // full marker set means the command never treats a look-alike tree as the
 // canonical checkout (cross-family refuter age-u031 lineage).
 func resolveCheckoutRoot() (string, error) {
@@ -34,7 +33,6 @@ func resolveCheckoutRoot() (string, error) {
 	dir := cwd
 	for i := 0; i < 8; i++ {
 		if isDir(filepath.Join(dir, "skills")) &&
-			isDir(filepath.Join(dir, "skills-codex")) &&
 			isFile(filepath.Join(dir, "registry.json")) &&
 			isFile(filepath.Join(dir, "PRODUCT.md")) {
 			return dir, nil
@@ -45,7 +43,7 @@ func resolveCheckoutRoot() (string, error) {
 		}
 		dir = parent
 	}
-	return "", fmt.Errorf("could not locate the agentops checkout walking up from %q (need skills/, skills-codex/, registry.json, PRODUCT.md at the root) — run `ao workflows link` from inside the agentops repo", cwd)
+	return "", fmt.Errorf("could not locate the agentops checkout walking up from %q (need skills/, registry.json, PRODUCT.md at the root) — run `ao workflows link` from inside the agentops repo", cwd)
 }
 
 // ResolveRepoWorkflowsDir returns the ABSOLUTE workflows/ directory of the

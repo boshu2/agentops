@@ -1,9 +1,9 @@
 # Workflows
 
 Reusable orchestration conveyors for the Claude Code Workflow tool. Workflows
-are a **Claude-only runtime adapter** — the same doctrine as `skills-codex/`
-(Codex-only): canonical source lives here, and a runtime link step installs it
-where the one runtime that consumes it resolves names.
+are a **Claude-only runtime adapter**: canonical source lives here, and a
+runtime link step installs it where the one runtime that consumes it resolves
+names.
 
 Five active conveyor shapes:
 

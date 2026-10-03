@@ -21,7 +21,7 @@ func TestCodexNativePluginRootPathFindsVersionedCacheWhenLocalIsAbsent(t *testin
 	t.Setenv("HOME", home)
 	versioned := filepath.Join(home, ".codex", "plugins", "cache",
 		CodexAgentOpsMarketplaceName, CodexAgentOpsPluginName, "3.2.0")
-	if err := os.MkdirAll(filepath.Join(versioned, "skills-codex"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(versioned, "skills"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	// Stale metadata from the former local-cache layout must not hide the live

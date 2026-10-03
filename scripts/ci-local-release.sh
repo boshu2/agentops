@@ -878,12 +878,7 @@ run_step_bg "CI policy/docs parity" ./scripts/validate-ci-policy-parity.sh
 # LOCAL_CI_STRICT_LOCAL_ENV=1; otherwise it runs advisory after collect_parallel.
 run_step_bg "Skill integrity" bash ./skills/skill-builder/scripts/heal.sh --strict
 run_step_bg "Skill runtime parity" bash ./scripts/validate-skill-runtime-parity.sh
-run_step_bg "Codex runtime sections" bash ./scripts/validate-codex-runtime-sections.sh
-# Codex skill parity removed — skills-codex/ is manually maintained
-# run_step_bg "Codex skill parity" bash ./scripts/validate-codex-skill-parity.sh
-# run_step_bg "Codex install bundle parity" bash ./scripts/validate-codex-install-bundle.sh
-run_step_bg "Codex artifact manifest" bash ./scripts/validate-codex-generated-manifest.sh
-run_step_bg "Codex artifact metadata" bash ./scripts/validate-codex-generated-artifacts.sh --scope worktree
+run_step_bg "Codex skill conformance" bash ./scripts/validate-codex-api-conformance.sh
 run_step_bg "Skill runtime formats" bash ./scripts/validate-skill-runtime-formats.sh
 run_step_bg "Contract compatibility gate" ./scripts/check-contract-compatibility.sh
 run_step_bg "Secret pattern scan" run_security_scan_patterns
@@ -903,8 +898,6 @@ run_step_bg "Command/test pairing gate tests" ./tests/scripts/test-go-command-te
 run_step_bg "Go fast scope tests" bats ./tests/scripts/validate-go-fast.bats
 run_step_bg "Skill runtime parity tests" bash ./tests/scripts/test-skill-runtime-parity.sh
 run_step_bg "Skill CLI snippet tests" bash ./tests/scripts/test-skill-cli-snippets.sh
-run_step_bg "Codex artifact manifest tests" bash ./tests/scripts/test-codex-generated-manifest.sh
-run_step_bg "Codex artifact metadata tests" bash ./tests/scripts/test-codex-generated-artifacts.sh
 run_step_bg "Validate-local tests" bash ./tests/scripts/test-validate-local.sh
 
 collect_parallel

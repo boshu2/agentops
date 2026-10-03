@@ -23,15 +23,11 @@ FILES=(
   "AGENTS.md"
   "docs/architecture/primitive-chains.md"
   "skills/reality-check/SKILL.md"
-  "skills-codex/reality-check/SKILL.md"
   # Requested documentation setup and handoffs now belong to doc; ordinary
   # sessions have no mandatory bootstrap or context-loading command.
   "skills/doc/SKILL.md"
-  "skills-codex/doc/SKILL.md"
   "skills/memory/SKILL.md"
-  "skills-codex/memory/SKILL.md"
   "skills/validate/SKILL.md"
-  "skills-codex/validate/SKILL.md"
   "docs/newcomer-guide.md"
   # Workflow-discipline surfaces: must never present the removed
   # session-pr-counter hook as an active surface.

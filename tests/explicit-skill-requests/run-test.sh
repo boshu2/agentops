@@ -19,16 +19,14 @@ if ! grep -oE "/agentops:[a-z][a-z0-9-]*" "$PROMPT_FILE" | grep -Fx "/agentops:$
     echo "FAIL: prompt does not explicitly address /agentops:$SKILL_NAME" >&2
     exit 1
 fi
-for surface in skills skills-codex; do
-    target="$REPO_ROOT/$surface/$SKILL_NAME/SKILL.md"
-    if [[ ! -s "$target" ]]; then
-        echo "FAIL: canonical target missing or empty: $target" >&2
-        exit 1
-    fi
-    name=$(awk '/^---/{if(++c==1) next; exit} /^name:/{sub(/^name:[[:space:]]*/, ""); gsub(/^["\047]|["\047]$/, ""); print}' "$target")
-    if [[ "$name" != "$SKILL_NAME" ]]; then
-        echo "FAIL: $surface/$SKILL_NAME name '$name' differs from requested slug" >&2
-        exit 1
-    fi
-done
-echo "PASS: /agentops:$SKILL_NAME resolves structurally to canonical and Codex artifacts"
+target="$REPO_ROOT/skills/$SKILL_NAME/SKILL.md"
+if [[ ! -s "$target" ]]; then
+    echo "FAIL: canonical target missing or empty: $target" >&2
+    exit 1
+fi
+name=$(awk '/^---/{if(++c==1) next; exit} /^name:/{sub(/^name:[[:space:]]*/, ""); gsub(/^["\047]|["\047]$/, ""); print}' "$target")
+if [[ "$name" != "$SKILL_NAME" ]]; then
+    echo "FAIL: skills/$SKILL_NAME name '$name' differs from requested slug" >&2
+    exit 1
+fi
+echo "PASS: /agentops:$SKILL_NAME resolves structurally to the canonical skill"

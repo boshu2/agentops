@@ -28,7 +28,7 @@ authority. Repository Git and release procedures remain separate.
 
 - product and doctrine: `README.md`, `PRODUCT.md`, `GOALS.md`, `PROGRAM.md`, `AGENTS.md`;
 - implementation: `cli/**`, `skills/**`, `schemas/**`, `scripts/**`, `tests/**`;
-- generated projections: `skills-codex/**`, registries, routers, maps, CLI docs;
+- generated projections: registries, routers, maps, CLI docs;
 - repository checks and docs: `.github/workflows/**`, `docs/**`, `evals/**`.
 
 Secrets, credentials, user configuration outside the repository, production

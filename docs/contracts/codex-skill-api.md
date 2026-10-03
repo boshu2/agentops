@@ -1,6 +1,6 @@
 # Codex Skill API Contract
 
-> Source of truth for what the Codex runtime actually supports. All converter output and validation must conform to this contract.
+> Source of truth for what the Codex runtime reads from an AgentOps skill.
 > Orientation contract: [`AGENTS.md`](../../AGENTS.md).
 
 **Official docs:**
@@ -11,10 +11,24 @@
 
 ---
 
+## One skills tree
+
+Codex loads the canonical `skills/<name>/` packages directly. The plugin
+manifest, [.codex-plugin/plugin.json](https://github.com/boshu2/agentops/blob/main/.codex-plugin/plugin.json),
+ships `./skills`, and `ao skills link` links the same directories into
+`~/.codex/skills`. No Codex copy of the skills is generated, and nothing under
+`skills/` is rewritten for Codex.
+
+The facts below were observed from the Codex loader (`skills/list` on
+codex-cli 0.156.1) and are held by
+[validate-codex-api-conformance.sh](https://github.com/boshu2/agentops/blob/main/scripts/validate-codex-api-conformance.sh),
+which runs in `scripts/regen-all.sh --check`.
+
+---
+
 ## SKILL.md Frontmatter
 
-Every generated AgentOps Codex projection emits only the two fields Codex uses
-for discovery:
+Codex uses two fields for discovery:
 
 ```yaml
 ---
@@ -23,18 +37,31 @@ description: 'Explain when this skill triggers and when it does not.'
 ---
 ```
 
-The portable Agent Skills specification requires `name` and `description`
-and also permits `license`, `compatibility`, string-to-string `metadata`,
-and the experimental space-separated `allowed-tools` field. The AgentOps
-generator does not currently emit those optional fields. AgentOps-only fields
-such as `skill_api_version`, `context`, `model`, `user-invocable`, and
-`output_contract` must be stripped from Codex output.
+Canonical `skills/` frontmatter is host-extended: it also carries AgentOps
+fields such as `skill_api_version`, `metadata`, `practices`, `user-invocable`
+and `disable-model-invocation`. Codex ignores every field it does not know, so
+they load without change. They are not portable Agent Skills frontmatter, and
+this repository does not claim they are.
+
+Codex refuses to load a skill when:
+
+- the frontmatter is not a YAML mapping, or repeats a key;
+- `description` is missing or empty;
+- `name` is longer than 64 characters.
+
+A missing `name` falls back to the directory name. The loader does not bound
+the description length, but it may shorten the discovery list to fit its
+context budget, so keep descriptions concise and front-load the key use case.
+
+Codex walks the whole tree under a skill root. A `SKILL.md` nested below
+`skills/<name>/` is loaded as a skill of its own, so fixtures and scaffolds
+live outside `skills/`.
 
 ---
 
 ## Optional: agents/openai.yaml
 
-Codex skills may include `agents/openai.yaml` for display metadata and policy:
+A skill may include `agents/openai.yaml` for display metadata and policy:
 
 ```yaml
 interface:
@@ -66,18 +93,18 @@ dependencies:
 
 The Codex default for `policy.allow_implicit_invocation` is `true`. Setting it
 to `false` prevents implicit activation while preserving explicit `$skill`
-invocation. For parity projections, `scripts/codex-sync.sh` maps canonical
-`disable-model-invocation: true` to this policy. It merges that field into the
-projected copy of source `agents/openai.yaml`, preserving its UI metadata,
-dependencies and other policy fields. If no source file exists, it generates
-the policy file alone.
+invocation.
 
-The generator always derives metadata from canonical source files. Removing
-the frontmatter flag, or setting it to `false`, restores source YAML verbatim
-or removes a generated-only policy file. A caller-authored source policy is
-still respected; with no explicit source policy, Codex's default applies.
-For development installs linked directly to `skills/<name>/`, set the matching
-policy in canonical `agents/openai.yaml`; those installs bypass projection.
+Codex reads the invocation policy only from this file. It does not read
+`disable-model-invocation` from `SKILL.md`. A skill marked
+`disable-model-invocation: true` therefore carries the matching policy in its
+own `skills/<name>/agents/openai.yaml`. The file is hand-maintained in the
+source skill; nothing derives it. Without it, or when Codex cannot use it, Codex
+selects the skill implicitly. The conformance check fails when the file is
+missing, is not valid YAML, or lacks `policy.allow_implicit_invocation: false`.
+It does not catch every file Codex drops: a non-object `interface` or
+`dependencies.tools`, or the YAML 1.1 spelling `no` for the boolean, passes the
+check and is ignored by Codex 0.156.1.
 
 ---
 
@@ -86,8 +113,8 @@ policy in canonical `agents/openai.yaml`; those installs bypass projection.
 The portable Codex skill root is `.agents/skills/` at repository or parent
 scope and `$HOME/.agents/skills/` at user scope. Current Codex desktop installs
 may also index `$HOME/.codex/skills/`. Inspect the actual package at each root:
-a development symlink, a copied package and a generated release package can
-coexist. A root name alone does not establish which bytes the host loaded.
+a development symlink, a copied package and a plugin cache can coexist. A root
+name alone does not establish which bytes the host loaded.
 
 | Scope | Path | Use Case |
 |-------|------|----------|
@@ -99,21 +126,14 @@ coexist. A root name alone does not establish which bytes the host loaded.
 | Admin | `/etc/codex/skills/` | System-wide defaults |
 | System | Bundled with Codex | Built-in skills |
 
-Development symlinks may point directly at `skills/<name>/`; checked-in
-`skills-codex/` packages are the portable Agent Skills release projection.
-Host checks must record the resolved loaded path, exact root/reference bytes,
-invocation policy and native resource-read evidence for each tested installation.
-A development symlink check and a generated-package check are distinct claims;
-regeneration equality or a catalog listing alone proves neither invocation nor
-required-resource use. Separate explicit invocation from normal catalog selection
-and leave unobserved routing or loading unproven.
-Canonical `skills/` frontmatter is intentionally host-extended and is evaluated
-against the AgentOps profile, not mislabeled as portable. The release gate
-`scripts/validate-codex-api-conformance.sh` validates every projected package
-against the portable field, type, identity, body, and relative-resource-link
-contract before applying Codex-specific checks. Plugin caches are neither
-source nor an installation target and may be deleted without affecting the
-canonical repository skills.
+A plugin install and a source link both resolve to the same `skills/<name>/`
+content, but they are distinct installations. Host checks must record the
+resolved loaded path, exact root/reference bytes, invocation policy and native
+resource-read evidence for each tested installation. A catalog listing alone
+proves neither invocation nor required-resource use. Separate explicit
+invocation from normal catalog selection and leave unobserved routing or
+loading unproven. Plugin caches are neither source nor an installation target
+and may be deleted without affecting the canonical repository skills.
 
 ---
 
@@ -125,14 +145,8 @@ canonical repository skills.
 | Implicit | Automatic | Codex matches task to skill description |
 
 Skills are loaded via **progressive disclosure**: metadata first (name,
-description), full SKILL.md only when activated. Because the description is
-the implicit-routing surface, a projection must preserve the complete source
-description, including use cases, preconditions, exclusions and any `Triggers:`
-clause. Only whitespace is normalized. Keep source descriptions concise and
-front-load their key use case: Codex may shorten the initial discovery list to
-fit its context budget, but the generated package must not silently discard
-routing meaning. A dropped sentence is a behavioral defect even when the body
-remains byte-complete.
+description), full SKILL.md only when activated. The description is the
+implicit-routing surface, and Codex reads the source description as written.
 
 ---
 
@@ -212,60 +226,26 @@ Tools available inside a Codex agent session:
 | `wait_agent` | Wait for one or more sub-agents |
 | `close_agent` | Stop a stuck or no-longer-needed sub-agent |
 
-### Claude → Codex Primitive Mapping
+### Claude and Codex primitives
 
-| Claude Code | Codex Equivalent | Converter Action |
-|-------------|-----------------|------------------|
-| `Read` tool | `read_file` | Map |
-| `Edit` tool | `apply_patch` | Map |
-| `Grep` tool | `rg` | Map |
-| `Glob` tool | `glob_file_search` | Map |
-| `Agent(subagent_type="Explore")` | Explorer agent role | Map |
-| `Skill(skill="name")` | `$name` invocation | Map |
-| `TaskCreate` / `TaskList` / `TaskUpdate` | No equivalent (`todo_write`/`update_plan` not available — empirically verified) | Strip |
-| `TeamCreate` / `TeamDelete` | No equivalent | Strip |
-| `SendMessage` | `send_input` for brief follow-up only | Rewrite or strip |
-| `EnterPlanMode` / `ExitPlanMode` | No equivalent | Strip |
-| `EnterWorktree` | No equivalent | Strip |
-| `context.window` | No equivalent | Strip from frontmatter |
-| `context.sections.exclude` | No equivalent | Strip from frontmatter |
-| `context.intel_scope` | Deprecated — ignored, no reader | Does not exist |
-| `disable-model-invocation: true` | `agents/openai.yaml` → `policy.allow_implicit_invocation: false` | Map policy; strip from frontmatter |
+One skill body serves both hosts, so a body that depends on one host's
+primitives is broken on the other. This table is for authors deciding how to
+word a step.
 
-Unmapped Claude-only primitives produce **broken instructions** in Codex.
-
-`disable-model-invocation` controls automatic skill selection. Stripping it
-without mapping the invocation policy changes behavior. Codex supports the
-equivalent explicit-only policy while keeping the field out of portable
-`SKILL.md` frontmatter.
-
----
-
-## Converter Requirements
-
-When generating Codex skills from source skills:
-
-1. **Strip all non-Codex frontmatter** — emit only `name` + `description`,
-   preserving the complete source description as the activation catalog signal
-   and mapping `disable-model-invocation: true` into `agents/openai.yaml` policy
-2. **Map Claude tools to Codex tools** — Read→read_file, Edit→apply_patch, Grep→rg, Glob→glob_file_search
-3. **Rewrite `Skill(skill="X")` to `$X`** — Codex uses dollar-prefix invocation
-4. **Strip ALL task/team primitives** — TaskCreate, TaskList, TeamCreate, SendMessage (none have working Codex equivalents as direct tool calls — `todo_write`/`update_plan` empirically unavailable, and `send_input` is follow-up-only)
-5. **Fix paths** — avoid host-specific installed-skill paths; use repository-relative links in shipped instructions
-6. **Rewrite reference files** — `.md` files in references/ pass through `codex_rewrite_text()` during copy
-7. **Preserve skill body** — the SKILL.md body (instructions) is the skill's value; keep it functional
-
----
-
-## Validation Criteria
-
-A Codex-conformant skill must:
-
-1. Have frontmatter with only `name` and `description`
-2. Contain no Claude-only primitive names (TaskCreate, TeamCreate, SendMessage, etc.)
-3. Contain no Claude-specific paths and no dependency on one host's installed-skill root
-4. Have valid `agents/openai.yaml` if present
-5. Not reference non-existent Codex features (context controls, plan mode, etc.)
+| Claude Code | Codex | Write it as |
+|-------------|-------|-------------|
+| `Read` tool | `read_file` | "read the file" |
+| `Edit` tool | `apply_patch` | "edit the file" |
+| `Grep` tool | `rg` | "search for" |
+| `Glob` tool | `glob_file_search` | "find files matching" |
+| `Agent(subagent_type="Explore")` | Explorer agent role | "use a read-only helper" |
+| `Skill(skill="name")` or `/name` | `$name` | the skill's name or a link to it |
+| `TaskCreate` / `TaskList` / `TaskUpdate` | No equivalent (`todo_write`/`update_plan` not available, empirically verified) | native work tracking, named generically |
+| `TeamCreate` / `TeamDelete` | No equivalent | omit |
+| `SendMessage` | `send_input` for brief follow-up only | "send a follow-up" |
+| `EnterPlanMode` / `ExitPlanMode` | No equivalent | omit |
+| `EnterWorktree` | No equivalent | omit |
+| `disable-model-invocation: true` | `agents/openai.yaml` with `policy.allow_implicit_invocation: false` | set both |
 
 ---
 
@@ -282,52 +262,26 @@ map is maintained.
 
 Codex is a first-class runtime in this repo.
 
-- `skills/<name>/SKILL.md` is the canonical behavior contract.
-- `skills-codex-overrides/<name>/` is the Codex-specific tailoring layer.
-- `skills-codex-overrides/catalog.json` is the machine-readable treatment map for the full catalog.
-- `skills-codex/<name>/` is the generated checked-in Codex runtime artifact.
-
-**Editing an EXISTING parity skill regenerates its Codex twin — not just hashes.**
-`make regen-all` / `scripts/codex-sync.sh` refresh parity-only twins from
-`skills/<name>/` whenever their generated body, prompt, or mirrored references
-drift. `scripts/regen-codex-hashes.sh` remains the bookkeeping step after
-content is current. Manual edits under `skills-codex/<name>/` are reserved for
-bespoke skills or deliberate Codex-only divergence recorded in
-`skills-codex-overrides/catalog.json`; otherwise fix the source skill or the
-codex-sync transform/template and regenerate.
-
-The current catalog has no bespoke twins. Every live Codex package is
-a generated parity projection of `skills/<name>/SKILL.md` plus its linked local
-files. `scripts/codex-sync.sh` owns those packages; manual edits under
-`skills-codex/<name>/` are drift and will be overwritten.
-
-`skills-codex-overrides/catalog.json` remains the explicit treatment registry.
-If a future runtime-specific implementation is genuinely necessary, declare it
-there before editing a twin and add focused parity tests in the same change.
-Do not create an undocumented exception or a second skill inventory.
+- `skills/<name>/SKILL.md` is the behavior contract for every runtime.
+- `skills/<name>/agents/openai.yaml` holds the Codex-only display metadata and
+  invocation policy.
+- There is no Codex-specific copy, override layer or treatment catalog.
 
 When a skill change affects Codex behavior, phrasing, orchestration, or UX:
 
-1. Update the source skill under `skills/` when the shared contract changes.
-2. For parity-only skills, update source or the codex-sync transform/template and regenerate. Update `skills-codex/<name>/SKILL.md` directly only when the Codex runtime copy is bespoke, or update `skills-codex-overrides/<name>/` when the Codex experience should differ from Claude.
-   - Prompt/operator-layer changes belong in `skills-codex-overrides/<name>/prompt.md`.
-   - Durable Codex-only body rewrites belong in `skills-codex-overrides/<name>/SKILL.md`.
-3. Run the semantic audit if the checked-in Codex body looks suspicious:
+1. Change the source skill under `skills/`. Word the body so it holds on both
+   hosts; see [Codex parity](https://github.com/boshu2/agentops/blob/main/skills/skill-builder/references/codex-parity.md).
+2. If the skill is explicit-only, keep its `agents/openai.yaml` policy in step
+   with `disable-model-invocation`.
+3. Validate:
 
    ```bash
-   bash scripts/audit-codex-parity.sh
-   # or target one skill
-   bash scripts/audit-codex-parity.sh --skill <name>
+   bash scripts/validate-codex-api-conformance.sh
+   bash scripts/regen-all.sh --check
    ```
 
-4. Validate the checked-in Codex artifacts:
-
-   ```bash
-   bash scripts/audit-codex-parity.sh
-   bash scripts/validate-codex-override-coverage.sh
-   bash scripts/validate-codex-generated-artifacts.sh --scope worktree
-   bash scripts/validate-headless-runtime-skills.sh
-   python3 scripts/check-cathedral-cut-conformance.py
-   ```
-
-Think of `skills/` as the shared contract, `skills-codex-overrides/` as the durable Codex-only tailoring layer, and `skills-codex/` as the checked-in Codex artifact shipped to users.
+These checks establish that Codex can load the package and that the invocation
+policy is declared. They do not establish that Codex selected or followed the
+skill. That needs a session on the host, such as
+`bash scripts/validate-headless-runtime-skills.sh`, which makes live model
+requests.

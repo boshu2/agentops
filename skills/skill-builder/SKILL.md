@@ -93,9 +93,8 @@ a fresh reviewer must judge the actual behavior.
 Edit `skills/<slug>/` as the source owner. Check the completed source with
 `scripts/heal.sh --check --strict skills/<slug>`, then regenerate its owned
 projections through the repository's owning commands. `scripts/regen-all.sh`
-is the integrated projection recipe; `scripts/generate-skill-mesh.py`,
-`scripts/codex-sync.sh --only <slug>` and
-`scripts/regen-codex-hashes.sh --only <slug>` are the existing scoped surfaces.
+is the integrated projection recipe; `scripts/generate-skill-mesh.py` is the
+existing scoped surface.
 Do not repeat work already performed by `build.sh` unless source changes
 require it. Inspect the generated diff; hand-edit no projection.
 
@@ -165,8 +164,8 @@ The exporter clean-writes its output directory, so use only the explicit derived
 target: refuse a source package, its ancestor, or the repository root. Preserve
 the source unchanged and fix the source or adapter instead of editing output.
 A parse, write, format or required-resource failure leaves an incomplete export.
-The shipped `skills-codex/**` remains owned by `scripts/codex-sync.sh` through
-`scripts/regen-all.sh`; this ad-hoc exporter never replaces that authority.
+Every runtime, Codex included, loads `skills/` directly; this ad-hoc exporter
+never produces a shipped tree.
 
 ## Distill expertise
 

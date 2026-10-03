@@ -26,7 +26,7 @@
 #
 # Usage:
 #   scripts/skill-eval.sh <skill-id>            # skills/<skill-id>/SKILL.md
-#   scripts/skill-eval.sh _fixtures/bad-skill   # nested id under skills/
+#   scripts/skill-eval.sh group/skill-id        # nested id under the skills root
 #   scripts/skill-eval.sh path/to/SKILL.md      # explicit path
 #   scripts/skill-eval.sh --help
 #
@@ -103,7 +103,7 @@ $PROG — gate one skill's SKILL.md through \`ms lint\` + \`ms validate\`
 
 Usage:
   $PROG <skill-id>            evaluate skills/<skill-id>/SKILL.md
-  $PROG <nested/id>           nested id (e.g. _fixtures/bad-skill)
+  $PROG <nested/id>           nested id under the skills root
   $PROG <path/to/SKILL.md>    evaluate an explicit SKILL.md path
   $PROG --help
 

@@ -20,7 +20,7 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 
 setup_fixture() {
   local repo="$1"
-  mkdir -p "$repo/scripts/lib" "$repo/skills/example" "$repo/skills-codex/example" "$repo/cli"
+  mkdir -p "$repo/scripts/lib" "$repo/skills/example" "$repo/skills/other" "$repo/cli"
   cp "$SCRIPT" "$repo/scripts/validate-skill-cli-snippets.sh"
   chmod +x "$repo/scripts/validate-skill-cli-snippets.sh"
   # The validator sources scripts/lib/ao-snippet-resolve.sh and its inline
@@ -100,7 +100,7 @@ test_passes_for_current_commands() {
   cat > "$repo/skills/example/SKILL.md" <<'EOF'
 Use `ao lookup --query "topic" --json`.
 EOF
-  cat > "$repo/skills-codex/example/SKILL.md" <<'EOF'
+  cat > "$repo/skills/other/SKILL.md" <<'EOF'
 Use `ao goals measure --json`.
 EOF
 
@@ -118,7 +118,7 @@ test_fails_for_unknown_command() {
   cat > "$repo/skills/example/SKILL.md" <<'EOF'
 Use `ao work goals`.
 EOF
-  cat > "$repo/skills-codex/example/SKILL.md" <<'EOF'
+  cat > "$repo/skills/other/SKILL.md" <<'EOF'
 Use `ao lookup --query "topic"`.
 EOF
 
@@ -136,7 +136,7 @@ test_fails_for_unknown_flag() {
   cat > "$repo/skills/example/SKILL.md" <<'EOF'
 Use `ao lookup --badflag`.
 EOF
-  cat > "$repo/skills-codex/example/SKILL.md" <<'EOF'
+  cat > "$repo/skills/other/SKILL.md" <<'EOF'
 Use `ao goals measure --json`.
 EOF
 
@@ -154,7 +154,7 @@ test_passes_for_pipeline_and_placeholder_flags() {
   cat > "$repo/skills/example/SKILL.md" <<'EOF'
 Use `ao lookup --query="topic" --json | head -20`.
 EOF
-  cat > "$repo/skills-codex/example/SKILL.md" <<'EOF'
+  cat > "$repo/skills/other/SKILL.md" <<'EOF'
 Use `ao --help` and `ao goals measure --json`.
 EOF
 
@@ -172,7 +172,7 @@ test_fails_for_stale_beads_resolver() {
   cat > "$repo/skills/example/SKILL.md" <<'EOF'
 Read the bead with `BEADS_DIR=$PWD/_beads br show ag-123`.
 EOF
-  cat > "$repo/skills-codex/example/SKILL.md" <<'EOF'
+  cat > "$repo/skills/other/SKILL.md" <<'EOF'
 Use `ao lookup --query "topic"`.
 EOF
 

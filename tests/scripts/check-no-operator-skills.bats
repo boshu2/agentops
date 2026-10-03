@@ -32,13 +32,6 @@ teardown() {
   [[ "$output" == *"athena"* ]]
 }
 
-@test "a personal-identity twin (skills-codex/wealth-mentor) fails" {
-  mkdir -p "$ROOT/skills/research" "$ROOT/skills-codex/wealth-mentor"
-  run bash "$SCRIPT" "$ROOT"
-  [ "$status" -eq 1 ]
-  [[ "$output" == *"wealth-mentor"* ]]
-}
-
 @test "a published-catalog reference (registry.json) to a denied slug fails" {
   mkdir -p "$ROOT/skills/research"
   printf '{ "skills": [ { "name": "bo-voice" } ] }\n' > "$ROOT/registry.json"

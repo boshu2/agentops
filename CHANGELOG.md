@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The Codex plugin now loads `skills/` directly. `.codex-plugin/plugin.json`
+  ships `./skills`, the same tree `ao skills link` and `npx skills` already
+  install, instead of a generated copy. Skill names, descriptions and bodies are
+  unchanged. Codex plugin users should refresh the marketplace and re-add the
+  plugin. Checked against codex-cli 0.156.1: a plugin install and a linked
+  install each load all 28 skills with no load errors.
+- `interview` now carries its Codex invocation policy in
+  `skills/interview/agents/openai.yaml`. The generator used to derive that file
+  from `disable-model-invocation: true`; it is now hand-maintained in each
+  explicit-only skill, and `scripts/validate-codex-api-conformance.sh` fails when
+  one is missing or does not parse.
+- `scripts/validate-codex-api-conformance.sh` checks `skills/` against what the
+  Codex loader enforces (unique frontmatter keys, a non-empty description, a
+  name of at most 64 characters, no nested `SKILL.md`) and the explicit-only
+  policy. It no longer enforces the portable Agent Skills field allowlist.
+- `ao skills check` audits `skills/` only. Its JSON no longer has `parity_drift`
+  or a per-skill `codex_parity`, and `--strict` fails on errors alone.
+  `skills/catalog.json` no longer has `codex_override_present`.
+- The `skill-eval` fixtures moved from `skills/_fixtures/` to
+  `tests/fixtures/skill-eval/`. Codex loads every `SKILL.md` under the plugin's
+  skill tree, so the fixtures would have shipped as a skill and a load error.
+
 - Install narrowed to three paths: the Claude Code plugin, the Codex plugin, and
   `npx skills@latest add boshu2/agentops` for every other agent (Cursor,
   OpenCode, Gemini CLI/Antigravity, Pi, Grok Build, OpenClaw). Grok Bot takes
@@ -17,6 +39,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   which creates config directories for agents you don't have.
 
 ### Removed
+
+- The generated Codex copy of the skills: `skills-codex/` (278 files) and
+  `skills-codex-overrides/catalog.json`, with the generator and everything that
+  only policed the copy. Gone: `scripts/codex-sync.sh`, `regen-codex-hashes.sh`,
+  `register-new-codex-skill.sh`, `append-codex-override-entry.sh`,
+  `mirror-codex-references.sh`, `refresh-codex-artifacts.sh`,
+  `audit-codex-parity.{py,sh}`, `check-codex-parity-drift.sh`,
+  `lint-codex-native.sh`, `smoke-test-codex-skills.sh`,
+  `export-claude-skills-to-codex.sh`, the `validate-codex-generated-*`,
+  `-install-bundle`, `-override-coverage`, `-runtime-sections` and
+  `-skill-parity` validators, `scripts/lint/`, their tests, and the gates
+  `skill.codex-parity-drift`, `skill.codex-runtime-sections`,
+  `skill.codex-override-coverage` and `skill.codex-generated-artifacts`.
+  `scripts/regen-all.sh` no longer takes `--skills`, and
+  `scripts/test-ci-deterministic-gates.sh` no longer takes `--skip-codex`.
+- What Codex plugin users lose with the copy. Each skill's `prompt.md`,
+  `.agentops-generated.json` and the `.agentops-manifest.json` inventory are no
+  longer shipped; Codex did not read them (the string `prompt.md` does not occur
+  in the codex-cli 0.156.1 binary, and skills load without it). The plugin now
+  ships the full AgentOps frontmatter instead of only `name` and `description`;
+  Codex ignores the extra fields, but the packages are no longer strict portable
+  Agent Skills frontmatter. Skill text is shipped as written: the generator's
+  rewrites (`Claude Code` to `Codex`, `~/.claude` to `~/.codex`, `/skill` to
+  `$skill`) no longer run. They changed nothing in the current 28 bodies.
+- `ao doctor` no longer has the `fm-skills-stale-codex-sync` failure mode, and
+  its fixers can no longer write to `~/.codex/plugins/cache/agentops-marketplace`
+  or `~/.codex/.agentops-codex-install.json`.
 
 - Bundled Flywheel tool skills (`account-rotation`, `agent-mail`, `cass`, `cc-hooks`, `dcg`,
   `ms`, `ntm`, `rch`, `sbh`, `using-flywheel`) and their generated Codex copies.

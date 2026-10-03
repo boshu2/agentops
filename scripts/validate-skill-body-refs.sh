@@ -8,7 +8,7 @@
 # inline `code span` mid-sentence (e.g. "use `ao context assemble`" or "`ao
 # schedule` runs nightly") slips through. After every CLI rename those prose
 # refs regenerate. This gate scans every inline-code span in the prose of
-# SKILL.md + references/*.md across skills/ and skills-codex/ for `ao <command>`
+# SKILL.md + references/*.md across skills/ for `ao <command>`
 # and `ao <command> --<flag>` tokens and validates each against the live `ao`
 # help tree.
 #
@@ -67,14 +67,14 @@ import sys
 repo_root = pathlib.Path(os.environ["REPO_ROOT"])
 ao_bin = os.environ["AO_BIN"]
 
-# Scan roots default to skills/ + skills-codex/. AGENTOPS_SKILL_BODY_ROOTS
+# The scan root defaults to skills/. AGENTOPS_SKILL_BODY_ROOTS
 # (colon-separated absolute paths) overrides them — used by the bats fixture to
 # point the gate at a throwaway tree without mutating tracked skills.
 roots_override = os.environ.get("AGENTOPS_SKILL_BODY_ROOTS", "").strip()
 if roots_override:
     roots = [pathlib.Path(p) for p in roots_override.split(":") if p]
 else:
-    roots = [repo_root / "skills", repo_root / "skills-codex"]
+    roots = [repo_root / "skills"]
 
 HISTORICAL_MARKERS = (
     "superseded",

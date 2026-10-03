@@ -86,10 +86,8 @@ def property_names(value: object) -> set[str]:
 def check_removed_skills() -> None:
     for name in REMOVED_SKILLS:
         assert not (ROOT / "skills" / name / "SKILL.md").exists(), f"removed skill is live: {name}"
-        assert not (ROOT / "skills-codex" / name / "SKILL.md").exists(), f"removed Codex skill is live: {name}"
     for name in REMOVED_MORTEM_ALIASES:
         assert not (ROOT / "skills" / name).exists(), f"removed skill alias is live: {name}"
-        assert not (ROOT / "skills-codex" / name).exists(), f"removed Codex alias is live: {name}"
 
 
 def check_core_schemas() -> None:

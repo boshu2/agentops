@@ -1,21 +1,21 @@
 # Codex compatibility image
 
-Codex release twins are generated under `skills-codex/` from the canonical
-`skills/` tree. Metadata declares whether a twin is parity-generated or has a
-cataloged Codex-specific override; generated hashes bind every twin to its
-source.
+This directory declares the generated AgentOps skill inventory for Codex. The
+canonical source is `skills/<slug>/`, and it is also what Codex loads; no skill
+implementation is owned here and no second copy of the skills is generated.
 
-Codex users install the AgentOps Codex plugin (see the README Quickstart), which
-ships these twins. Contributors working from a checkout can run `ao skills link`
-instead. The twins are a generated projection, not a second source of truth.
+Codex users install the AgentOps Codex plugin (see the README Quickstart). Its
+manifest, `.codex-plugin/plugin.json`, ships `./skills`. Contributors working
+from a checkout can run `ao skills link` instead, which links each canonical
+skill into `~/.agents/skills` and `~/.codex/skills`.
 
-Verify the generated image and source hashes with:
+`manifest.json` is generated from canonical skill metadata. `verify.sh` checks
+that every declared skill exists, that the plugin manifest ships `./skills`,
+and that the tree passes the Codex loader checks:
 
 ```bash
 bash images/codex/verify.sh
-bash scripts/regen-codex-hashes.sh --check
 ```
 
-The authoritative conversion contract is
-`docs/contracts/codex-skill-api.md`; the generated inventory is
-`skills-codex/.agentops-manifest.json`.
+What Codex reads from a skill, and how to keep an explicit-only skill explicit
+there, is in [the Codex skill contract](../../docs/contracts/codex-skill-api.md).

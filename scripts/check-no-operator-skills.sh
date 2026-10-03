@@ -13,8 +13,7 @@
 #
 # WHAT it checks (fail-closed on any hit):
 #   1. No skills/<denylisted-slug>/ directory exists.
-#   2. No skills-codex/<denylisted-slug>/ twin exists.
-#   3. The denylisted slug is not referenced as a skill in the published
+#   2. The denylisted slug is not referenced as a skill in the published
 #      catalog surfaces (docs/SKILLS.md, registry.json).
 #
 # SCOPE: only unambiguous operator-personal-IDENTITY slugs are denied. General
@@ -75,10 +74,6 @@ run_audit() {
   for slug in "${DENYLIST[@]}"; do
     if [ -d "$root/skills/$slug" ]; then
       log "LEAK: skills/$slug/ is an operator/personal-identity skill — must not be in the product catalog"
-      hits=$((hits + 1))
-    fi
-    if [ -d "$root/skills-codex/$slug" ]; then
-      log "LEAK: skills-codex/$slug/ — operator/personal-identity twin must not ship"
       hits=$((hits + 1))
     fi
     # Published narrative + generated registry: deny a markdown/skill reference

@@ -9,15 +9,15 @@
 #   (3) With `ms` renamed off PATH the script HARD-FAILS (loud ::error::,
 #       non-zero) — it never skips-and-passes.
 #
-# The bad/good fixtures are committed under skills/_fixtures/ (planted, not
+# The bad/good fixtures are committed under tests/fixtures/skill-eval/ (planted, not
 # real skills). Tests requiring `ms` skip cleanly when ms is unavailable, but
 # the ms-absent hard-fail test (3) runs unconditionally — it is the whole point.
 
 setup() {
 	REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
 	SCRIPT="$REPO_ROOT/scripts/skill-eval.sh"
-	BAD="$REPO_ROOT/skills/_fixtures/bad-skill/SKILL.md"
-	GOOD="$REPO_ROOT/skills/_fixtures/good-skill/SKILL.md"
+	BAD="$REPO_ROOT/tests/fixtures/skill-eval/bad-skill/SKILL.md"
+	GOOD="$REPO_ROOT/tests/fixtures/skill-eval/good-skill/SKILL.md"
 }
 
 # Skip a test when the real `ms` binary is not installed.
@@ -67,10 +67,10 @@ require_ms() {
 	[[ "$output" == *"BLOCKING findings"* ]]
 }
 
-# bad fixture is also resolvable by skill-id (nested under skills/).
+# bad fixture is also resolvable by a nested skill id under the skills root.
 @test "bad fixture resolves by nested skill id and still fails" {
 	require_ms
-	run bash "$SCRIPT" _fixtures/bad-skill
+	run env SKILL_EVAL_SKILLS_ROOT="$REPO_ROOT/tests/fixtures" bash "$SCRIPT" skill-eval/bad-skill
 	[ "$status" -ne 0 ]
 	[[ "$output" == *"BLOCKING findings"* ]]
 }
@@ -86,7 +86,7 @@ require_ms() {
 
 @test "good fixture resolves by nested skill id and passes" {
 	require_ms
-	run bash "$SCRIPT" _fixtures/good-skill
+	run env SKILL_EVAL_SKILLS_ROOT="$REPO_ROOT/tests/fixtures" bash "$SCRIPT" skill-eval/good-skill
 	[ "$status" -eq 0 ]
 }
 

@@ -120,14 +120,12 @@ Static checks do not establish semantic completeness or effectiveness.
 		if len(findings) > 0 {
 			return report, fmt.Errorf("source structure: %v", findings)
 		}
-		for _, args := range [][]string{{"python3", "scripts/generate-skill-mesh.py"}, {"bash", "scripts/codex-sync.sh", "--only", opts.Slug}, {"bash", "scripts/regen-codex-hashes.sh", "--only", opts.Slug}} {
-			cmd := exec.Command(args[0], args[1:]...)
-			cmd.Dir = root
-			cmd.Stdout = out
-			cmd.Stderr = out
-			if err = cmd.Run(); err != nil {
-				return report, fmt.Errorf("projection incomplete: %w", err)
-			}
+		cmd := exec.Command("python3", "scripts/generate-skill-mesh.py")
+		cmd.Dir = root
+		cmd.Stdout = out
+		cmd.Stderr = out
+		if err = cmd.Run(); err != nil {
+			return report, fmt.Errorf("projection incomplete: %w", err)
 		}
 		report.StructureCheckPass = true
 		if err = writeBuildReport(reportFile, report); err != nil {

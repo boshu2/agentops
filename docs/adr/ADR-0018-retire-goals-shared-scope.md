@@ -10,7 +10,8 @@
 Add the optional `memory` root and its operation references under ADR-0017's
 lean amendment. Do not restore `goals`, `shared`, `scope`, `recall` or `evolve`
 roots. Recall and curation are Memory operations, not new hard core edges.
-Generate catalog/count/Codex projections from `skills/` through regen-all.
+Generate catalog/count projections from `skills/` through regen-all. (The
+generated Codex copy this line once named was removed on 2026-10-03.)
 The earlier T14/T25 inventory expectations below remain historical.
 
 ## Active disposition — 2026-09-06 CDLC adoption
@@ -21,7 +22,7 @@ selected Discovery is a delivery phase, not another root. T14's Recall and
 T25's evolve root change generated counts only when their owning implementations
 land. T04 neither changes the current 54-skill inventory nor removes evolve
 from `REMOVED_SKILLS`. Canonical `skills/` and declared metadata owners generate
-catalogs and Codex projections through `scripts/regen-all.sh`; never hand-edit
+catalogs through `scripts/regen-all.sh`; never hand-edit
 companions. Preserve one owner per behavior and the core/specialist dependency
 invariants. Historical count changes below describe the retirement, not a
 promise of new runnable CDLC roots.

@@ -24,7 +24,7 @@ verdict and does not authorize delivery.
 
 `tests/explicit-skill-requests/` holds one explicit qualified request per current
 canonical skill (`prompts/<skill>.txt`). `run-all.sh` checks manifest validity,
-canonical and Codex artifact existence, and matching skill names. It is Tier S
+canonical skill existence, and matching skill names. It is Tier S
 structural proof, with negative regression fixtures for broken resolution. It
 launches no runtime and does not establish live selection or first-tool ordering.
 See the [suite contract](https://github.com/boshu2/agentops/blob/main/tests/explicit-skill-requests/README.md).

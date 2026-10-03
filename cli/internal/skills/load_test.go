@@ -94,7 +94,7 @@ func TestLoad_MissingDirErrors(t *testing.T) {
 func TestLoad_LiveTreeNonEmpty(t *testing.T) {
 	root := repoSkillsDir(t)
 	if root == "" {
-		t.Skip("skills/ not found relative to test working dir")
+		t.Fatal("repo-root skills/ not found relative to test working dir")
 	}
 	metas, err := Load(root)
 	if err != nil {
@@ -119,9 +119,10 @@ func repoSkillsDir(t *testing.T) string {
 	}
 	for i := 0; i < 8; i++ {
 		cand := filepath.Join(dir, "skills")
-		// Require a skills-codex sibling to disambiguate the repo-root skills/
-		// tree from this Go package directory (cli/internal/skills).
-		if isDirTest(cand) && isDirTest(filepath.Join(dir, "skills-codex")) {
+		// Require the registry.json repo-root marker to disambiguate the
+		// repo-root skills/ tree from this Go package directory
+		// (cli/internal/skills).
+		if _, err := os.Stat(filepath.Join(dir, "registry.json")); isDirTest(cand) && err == nil {
 			return cand
 		}
 		parent := filepath.Dir(dir)

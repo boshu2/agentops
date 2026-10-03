@@ -138,8 +138,8 @@ items. A supplied synthetic observation is not host-delivery attestation.
 
 Before calling the existing `prepare.py`, copy each task to protected external
 staging and populate its `environment/runtime/` with the selected current public
-snapshot. Copy only `cli/`, `scripts/`, `skills/`, `skills-codex/`,
-`skills-codex-overrides/`, `docs/`, `images/`, `.claude-plugin/` and `registry.json`;
+snapshot. Copy only `cli/`, `scripts/`, `skills/`, `docs/`, `images/`,
+`.claude-plugin/` and `registry.json`;
 reject symlinks and record relative paths and SHA-256 of every copied file.
 Never copy repository state, tracker routing/data, operator home, native sessions,
 prior output or evaluator tests/solutions into that runtime. Use current bytes,
@@ -148,7 +148,7 @@ builds AO from that frozen `cli/` and sets `AO_RUNTIME_ROOT=/opt/agentops` and
 `AO_SKILL_BUILDER_BIN=/usr/local/bin/ao`. The Dockerfile never supplies evaluator
 controls to the worker. In an old/new installed-package comparison, keep executable
 owners identical across arms and use the same baseline instruction prose in any
-runtime source or dormant projections accessible to both. Otherwise a control can
+runtime source accessible to both. Otherwise a control can
 read the revised skill through the runtime tree. Record this deliberate runtime
 composition separately from each installed package identity. Freeze the staged
 task/runtime/package before admission.
@@ -156,7 +156,7 @@ task/runtime/package before admission.
 For an isolated canonical development host, append image setup that symlinks
 each selected complete canonical package from `/opt/agentops/skills/<slug>` into
 `/root/.agents/skills/<slug>`; include the required sibling-resource closure.
-Supply no Harbor skill bundle for this arm. For the generated host, use the
+Supply no Harbor skill bundle for this arm. For the copied-bundle host, use the
 existing Harbor Codex adapter's skill-bundle upload/copy into
 `$HOME/.agents/skills`, and do not also install canonical symlinks. These are
 separate task/config identities, not two aliases for the same installation.

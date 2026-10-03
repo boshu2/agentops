@@ -24,9 +24,9 @@ permissions and disclosure controls remain limitations. No count, absence of
 matches or inventory certifies full reachability or safety. Effect status remains
 `NOT_PROVEN` even when selected static conformance is `PASS`.
 
-Canonical source and portable projections are distinct subjects. The existing
-complete-bundle portable release gate and host checks remain necessary; this
-bounded audit does not attest installed invocation policy or host execution.
+Canonical source and exported portable packages are distinct subjects. Host
+checks remain necessary; this bounded audit does not attest installed
+invocation policy or host execution.
 
 Exit 0 means only no selected static conformance failure; exit 1 means a concrete
 conformance defect; exit 2 means invalid inputs or destination. `--strict` is

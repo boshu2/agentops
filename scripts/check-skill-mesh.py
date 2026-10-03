@@ -117,13 +117,6 @@ def main() -> int:
     if registry_names != names:
         fail("registry.json skill inventory does not equal source metadata", failures)
 
-    overrides = json.loads(
-        (ROOT / "skills-codex-overrides/catalog.json").read_text(encoding="utf-8")
-    )
-    override_names = {entry.get("name") for entry in overrides.get("skills", [])}
-    if override_names != names:
-        fail("Codex override catalog does not equal source metadata", failures)
-
     generated = subprocess.run(
         [sys.executable, str(ROOT / "scripts/generate-skill-mesh.py"), "--check"],
         cwd=ROOT,

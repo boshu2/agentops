@@ -64,7 +64,7 @@ func TestCommandTreeShape(t *testing.T) {
 func mkFixtureCheckout(t *testing.T, scripts ...string) string {
 	t.Helper()
 	root := t.TempDir()
-	for _, d := range []string{"skills", "skills-codex", "workflows"} {
+	for _, d := range []string{"skills", "workflows"} {
 		if err := os.MkdirAll(filepath.Join(root, d), 0o755); err != nil {
 			t.Fatal(err)
 		}

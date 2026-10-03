@@ -209,7 +209,6 @@ func TestLoadCatalog_RoundTrip(t *testing.T) {
       "practices": ["tdd"],
       "user_invocable": true,
       "graph_root": true,
-      "codex_override_present": false,
       "references_count": 2
     }
   ]

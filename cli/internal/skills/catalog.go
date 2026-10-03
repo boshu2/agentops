@@ -29,18 +29,17 @@ type Catalog struct {
 // CatalogEntry is one skill's generated metadata. Field tags mirror
 // schemas/skill-catalog.schema.json exactly.
 type CatalogEntry struct {
-	Name                 string       `json:"name"`
-	Description          string       `json:"description"`
-	HexagonalRole        string       `json:"hexagonal_role"`
-	Consumes             []string     `json:"consumes"`
-	Produces             []string     `json:"produces"`
-	Dependencies         []string     `json:"dependencies"`
-	ContextRel           []ContextRel `json:"context_rel"`
-	Practices            []string     `json:"practices"`
-	UserInvocable        bool         `json:"user_invocable"`
-	GraphRoot            bool         `json:"graph_root"`
-	CodexOverridePresent bool         `json:"codex_override_present"`
-	ReferencesCount      int          `json:"references_count"`
+	Name            string       `json:"name"`
+	Description     string       `json:"description"`
+	HexagonalRole   string       `json:"hexagonal_role"`
+	Consumes        []string     `json:"consumes"`
+	Produces        []string     `json:"produces"`
+	Dependencies    []string     `json:"dependencies"`
+	ContextRel      []ContextRel `json:"context_rel"`
+	Practices       []string     `json:"practices"`
+	UserInvocable   bool         `json:"user_invocable"`
+	GraphRoot       bool         `json:"graph_root"`
+	ReferencesCount int          `json:"references_count"`
 }
 
 // ContextRel is one hex relationship (customer-of, shared-kernel, alias-of).
