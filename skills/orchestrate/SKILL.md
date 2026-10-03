@@ -84,21 +84,29 @@ engagement nor acceptance.
 
 ## Integrate and obtain judgment
 
-Name the integration and final-validation responsibility before launch. Follow
-the consumer repository's integration policy, include all changed paths and
-generated companions, and run affected checks on the actual integrated subject.
+Name the integration responsibility before launch, and decide then whether the
+integrated candidate needs a fresh judgment at all. Follow the consumer
+repository's integration policy, include all changed paths and generated
+companions, and run affected checks on the actual integrated subject.
 Acceptance of a leaf does not establish the combined release.
 
-Assign fresh author-distinct judgment of the exact candidate against unchanged
-acceptance through [Validate](../validate/SKILL.md), the sole skill owner of
-acceptance semantics. Its identity, freshness, complete checked scope and
-evidence requirements remain authoritative; preserve every explicitly required
-review leg. Advisory Review, Plan challenge and Council advice are not binding
-acceptance, and must be refused when offered in place of that judgment.
-Changed candidate bytes invalidate the old subject binding and require judgment
-of the new exact subject. Deterministic green or convincing author rationale
-cannot fill missing proof. No report format or persisted artifact is mandatory
-unless the caller or an existing consumer requires one.
+For an ordinary candidate the integrated checks and CI are the gate. Assign one
+fresh author-distinct judgment through [Validate](../validate/SKILL.md), the
+sole skill owner of acceptance semantics, only when the caller asks, when a
+mistake cannot be cheaply undone after it lands (a published release or
+instructions users will follow, a security boundary, destroying data or tracker
+state, deleting a check that protects the product), or when no deterministic
+check covers the changed behavior. Preserve every explicitly required review
+leg. Advisory Review, Plan challenge and Council advice are not binding
+acceptance and cannot stand in for a judgment the caller requested.
+
+One round. The validator does not re-run the integrated checks. Route back as
+repairs only what fails the accepted behavior or would mislead a user, break
+install or the CLI, or remove protection for the product; confirm each repair
+with a check. Changed candidate bytes need their affected checks rerun; they
+need a new judgment only when the caller asks for one. Keep review cost a
+fraction of the cost of the work. No report format or persisted artifact is
+mandatory unless the caller or an existing consumer requires one.
 
 ## Reconcile feedback and resume
 

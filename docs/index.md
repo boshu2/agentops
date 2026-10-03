@@ -15,12 +15,12 @@ examples. Given/When/Then expresses the starting situation, action, and expected
 result. Plain text in an issue or conversation is enough.
 
 Domain-driven design (DDD) keeps the domain's terms and rule ownership
-consistent across those examples, implementation, and review. A fresh reviewer
-checks the exact change against the original request; passing tests supply
-evidence for that judgment.
+consistent across those examples, implementation, and review. Passing tests and
+CI check the change; where a mistake would be costly, a fresh reviewer also
+checks the exact change against the original request.
 
 ```text
-Accepted intent -> native implementation and checks -> fresh independent judgment -> finish
+Accepted intent -> native implementation and checks -> one fresh read where a mistake is costly -> finish
 ```
 
 ## Leave useful improvements behind

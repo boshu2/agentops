@@ -14,7 +14,7 @@ wave. The goal still selects work, and neither adds a scheduler or a ledger.
 Carry accepted terminal outcome and scope, measured remaining allowance and the
 current causal incident in the native work/handoff source. Choose the smallest
 acceptance-advancing action or consequential uncertainty. Reserve capacity for
-integration, final fresh judgment, required repairs and a useful handoff before
+integration, required repairs, a fresh judgment where one is warranted and a useful handoff before
 spending the whole allowance on discovery or reviews.
 
 Apply the charter's at-most-one bounded helper to a genuine causal stall. Known

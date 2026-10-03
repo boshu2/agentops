@@ -10,13 +10,19 @@ shell; the tracker, Git and runtime keep their existing authority.
    revise an approach when evidence disproves its assumption within unchanged
    outcome and scope. Changing acceptance needs caller authority.
 3. Run cheap discriminating checks while editing, then required integration
-   checks. Reserve capacity for finishing, final judgment and needed repairs.
-4. Obtain fresh author-distinct final judgment over the exact subject. Same-family
-   is default; cross-model is opt-in, with no fixed ten-minute cap. PASS requires
-   all acceptance and empty `not_checked`; evidence gaps remain visible.
-5. Repair known findings within real bounds and revalidate the changed subject.
-   A genuine causal stall admits at most one bounded helper, never a chain.
-   Report the outcome and evidence truthfully when complete or actually stopped.
+   checks. For an ordinary change these and CI are the gate: finish.
+4. Obtain one fresh author-distinct read only when the caller asks, a mistake
+   cannot be cheaply undone after it lands (a published release or instructions
+   users will follow, a security boundary, destroying data or tracker state,
+   deleting a check that protects the product), or no deterministic check
+   covers the changed behavior. Same-family is default; cross-model is opt-in.
+   The reviewer answers one question written in advance and does not re-run
+   the checks.
+5. Repair what fails the accepted behavior or would mislead a user, break
+   install or the CLI, or remove protection for the product. Confirm each
+   repair with a check; a repair does not start another review. A genuine
+   causal stall admits at most one bounded helper, never a chain. Report the
+   outcome, what was checked and what was not when complete or actually stopped.
 
 [Memory](../skills/memory/SKILL.md) owns on-demand find/recall, capture/mine/learn
 and curate operations over caller-selected reviewed project `.context/` or
@@ -32,8 +38,7 @@ Specialists, anti-ceremony audits, factories and outer-goal guidance are optiona
 The [RPI charter](../skills/rpi/SKILL.md) is an explicitly selected workflow;
 native goals and direct coding do not require it. A skill earns its context
 cost by resolving a task-specific need, not by occupying a phase in a sequence.
-No new scheduler, command or process ledger is needed. The grandfathered pure
-fixed-dispatch adapter is separately described in its own reference.
+No new scheduler, command or process ledger is needed.
 Optional context-budget tooling (an opt-in read-budget hook plus bulk-read /
 code-write delegation) is described in
 [context-budget delegation](https://github.com/boshu2/agentops/blob/main/skills/agent-native/references/context-budget-delegation.md).

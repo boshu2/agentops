@@ -18,7 +18,7 @@ metadata:
   effects: [update_intent_source]
   canonical_status: canonical
   disposition: keep_strategy
-  stability: experimental
+  stability: stable
 output_contract: 'one question per turn with a labeled recommendation and tradeoff; decided, terms, open and deferred lists the caller can see; settled decisions appended to the existing intent source within authority; a handoff to Craft Goal, RPI or Plan'
 ---
 

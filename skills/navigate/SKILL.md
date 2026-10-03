@@ -15,7 +15,7 @@ metadata:
   effects: [update_native_graph]
   canonical_status: canonical
   disposition: keep_strategy
-  stability: experimental
+  stability: stable
 output_contract: 'wave checkpoint in the existing handoff or root epic: acceptance matrix, frontier, wave and reasons, ratchets and churn, budget, helper use and native state, next thesis, open decisions; a single pass returns it with hygiene findings and writes nothing'
 ---
 
@@ -84,12 +84,16 @@ means one bead. Prefer an early falsifier.
 
 Hand each bead to one RPI. When delegation is authorized, hand it to
 Orchestrate or Agent Native to dispatch, one bead per worker; otherwise the
-caller's runtime runs it. Each candidate gets one fresh, author-distinct Validate.
+caller's runtime runs it. A candidate's checks and CI are its result. A
+candidate gets one fresh, author-distinct Validate only when the caller asks, a
+mistake cannot be cheaply undone after it lands, or no deterministic check
+covers the changed behavior; a repair does not start another.
 Done when each picked bead has a one-line reason and a named handoff.
 
 ## 3. Ratchet the graph
 
-Record each verdict unchanged on its bead, for example
+Record each result unchanged on its bead: the check facts, and the verdict when
+one was obtained. For example
 `bd update <id> --append-notes "verdict: FAIL; evidence: <refs>; learned: <decision it changes>"`.
 Update its matrix row, then classify each discovery:
 
@@ -107,7 +111,7 @@ from regressions by before/after reproduction or equivalent causal evidence
 under the same acceptance; counts, timestamps and new ids prove no cause.
 Unknown cause, a reopened finding or recurrence of a closed finding class is
 HOLD, not proof the design is wrong. Keep necessary findings necessary; nothing
-resets a total. Done when every verdict sits on its bead and every discovery
+resets a total. Done when every result sits on its bead and every discovery
 has a class.
 
 ## 4. Checkpoint

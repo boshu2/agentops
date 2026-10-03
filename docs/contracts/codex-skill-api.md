@@ -102,9 +102,9 @@ own `skills/<name>/agents/openai.yaml`. The file is hand-maintained in the
 source skill; nothing derives it. Without it, or when Codex cannot use it, Codex
 selects the skill implicitly. The conformance check fails when the file is
 missing, is not valid YAML, or lacks `policy.allow_implicit_invocation: false`.
-It does not catch every file Codex drops: a non-object `interface` or
-`dependencies.tools`, or the YAML 1.1 spelling `no` for the boolean, passes the
-check and is ignored by Codex 0.156.1.
+It also fails on the shapes Codex 0.156.1 drops silently: a non-object
+`interface`, `dependencies` that is not a mapping with a `tools` list, and a
+boolean spelled other than `true` or `false` (for example the YAML 1.1 `no`).
 
 ---
 

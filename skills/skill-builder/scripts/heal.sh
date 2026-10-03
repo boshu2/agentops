@@ -40,6 +40,11 @@ bash "$SCRIPT_DIR/run-ao.sh" skills check-source --repo "$REPO_ROOT" --strict "$
 rc=$?
 set -e
 [[ $rc -ne 2 ]] || exit 2
+# 126/127 mean ao could not run at all; that is not an advisory finding.
+if [[ $rc -eq 126 || $rc -eq 127 ]]; then
+  echo "heal.sh: could not run 'ao skills check-source'; install ao 3.9 or later, or run from a source checkout with Go" >&2
+  exit 2
+fi
 
 if [[ "$MODE" == fix && $rc -eq 0 ]]; then
   # Source behavior remains human-authored. Repair only owned projections.
