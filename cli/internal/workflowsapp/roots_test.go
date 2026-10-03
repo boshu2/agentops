@@ -10,16 +10,14 @@ import (
 )
 
 // mkCheckout builds an agentops-shaped checkout fixture: the identity markers
-// (skills/, skills-codex/, registry.json, PRODUCT.md) plus, when withWorkflows
+// (skills/, registry.json, PRODUCT.md) plus, when withWorkflows
 // is set, a workflows/ dir carrying the named scripts. Tests never depend on
 // the real repo's workflows/ content.
 func mkCheckout(t *testing.T, withWorkflows bool, scripts ...string) string {
 	t.Helper()
 	root := t.TempDir()
-	for _, d := range []string{"skills", "skills-codex"} {
-		if err := os.MkdirAll(filepath.Join(root, d), 0o755); err != nil {
-			t.Fatalf("mkdir %s: %v", d, err)
-		}
+	if err := os.MkdirAll(filepath.Join(root, "skills"), 0o755); err != nil {
+		t.Fatalf("mkdir skills: %v", err)
 	}
 	for _, f := range []string{"registry.json", "PRODUCT.md"} {
 		if err := os.WriteFile(filepath.Join(root, f), []byte("marker"), 0o644); err != nil {

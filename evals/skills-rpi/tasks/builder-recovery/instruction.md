@@ -6,13 +6,13 @@ AO_RUNTIME_ROOT selects a frozen public AgentOps runtime and AO_SKILL_BUILDER_BI
 selects its actual built AO. No operator home, tracker or sessions are inputs.
 
 Setup ran actual creation of recovery-pilot: canonical source was created, then
-Codex projection failed on a named injected obstruction. Inspect evidence/ and
+the skill-mesh projection failed on a named injected obstruction. Inspect evidence/ and
 repo/ to identify the completed and failed stages. Keep the failed report and
 all existing evidence. Preserve the created source and its retained caller note;
 finish that same package, do not delete it and rerun creation.
 
 You are authorized to remove only the injected regular-file obstruction at
-repo/skills-codex/recovery-pilot, after checking its identity. Complete the retained
+repo/images/codex, after checking its identity. Complete the retained
 scaffold as a read-only adapter: on a caller request to inspect current Git
 changes, run git status --short in the caller-selected repository, report changed
 paths inline, and stop with the actual error if Git fails. It must not alter Git
@@ -23,7 +23,7 @@ and actual audit JSON as out/audit.json. Keep audit static facts separate from
 behavioral proof. Save out/summary.json with source_retained, failed_stage,
 recovery_complete, semantics_evaluated and original_report_preserved.
 Use booleans for those four state flags; failed_stage may be "projection" or
-"codex_projection" for this fixture. Equivalent Git status invocations, such as
+"mesh_projection" for this fixture. Equivalent Git status invocations, such as
 using git -C for the selected repository, satisfy the adapter behavior.
 
 Only workflow.sh and optional review.md may change in /app/work; fixture output

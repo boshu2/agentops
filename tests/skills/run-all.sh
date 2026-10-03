@@ -170,7 +170,6 @@ echo -e "${BLUE}━━━ Additional Skill Tests ━━━${NC}"
 for extra_test in \
     "$SCRIPT_DIR/test-tuning-defaults.sh" \
     "$SCRIPT_DIR/test-first-smoke.sh" \
-    "$SCRIPT_DIR/test-codex-override-coverage.sh" \
     "$SCRIPT_DIR/test-repo-native-orchestration.sh"; do
     if [ -f "$extra_test" ]; then
         test_name=$(basename "$extra_test" .sh)

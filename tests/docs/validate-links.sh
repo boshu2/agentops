@@ -42,13 +42,11 @@ while IFS= read -r rel; do
   [[ -n "$rel" && -f "$REPO_ROOT/docs/$rel" ]] && md_files+=("$REPO_ROOT/docs/$rel")
 done < <(sed -nE 's/^[[:space:]]*-[[:space:]]+([^:]+:[[:space:]]+)?"?([^"[:space:]]+\.md)"?[[:space:]]*$/\2/p' "$REPO_ROOT/mkdocs.yml" | sort -u)
 
-for dir in skills skills-codex; do
-  if [[ -d "$REPO_ROOT/$dir" ]]; then
-    while IFS= read -r f; do
-      md_files+=("$f")
-    done < <(find "$REPO_ROOT/$dir" -name '*.md' -type f -not -path '*/.agents/*')
-  fi
-done
+if [[ -d "$REPO_ROOT/skills" ]]; then
+  while IFS= read -r f; do
+    md_files+=("$f")
+  done < <(find "$REPO_ROOT/skills" -name '*.md' -type f -not -path '*/.agents/*')
+fi
 
 for file in "${md_files[@]}"; do
   rel_file="${file#"$REPO_ROOT"/}"

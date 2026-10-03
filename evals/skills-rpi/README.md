@@ -19,7 +19,7 @@ older Codex versions may be rejected by the selected model. Check Docker's
 health and native authentication before spending a live trial.
 
 Choose a protected external, non-Git output directory and a frozen complete
-`skills-codex/` projection. Do not pass operator home, production work trackers,
+copy of the `skills/` tree. Do not pass operator home, production work trackers,
 private repositories, transcripts, or a solution archive as task input.
 Authentication uses an explicit native runtime file locator; its content is not
 copied into a public fixture or staging manifest.
@@ -28,7 +28,7 @@ copied into a public fixture or staging manifest.
 python evals/skills-rpi/prepare.py \
   --task evals/skills-rpi/tasks/input-scope \
   --output /absolute/protected/cohort/input-scope \
-  --skills /absolute/frozen/skills-codex \
+  --skills /absolute/frozen/skills \
   --auth-file /absolute/native/codex/auth.json --reps 2
 ```
 
@@ -43,7 +43,7 @@ Calibration failure publishes no launch configs. `calibration.json` binds those
 results to the oracle and image for the pre-launch check; retain it with the
 prepared comparison rather than rewriting it after an unfavorable result.
 
-For an old/new package comparison, add `--control-skills /absolute/frozen/old-skills-codex`.
+For an old/new package comparison, add `--control-skills /absolute/frozen/old-skills`.
 Both complete packages and both arms' configs are frozen in this single preparation,
 sharing one task, oracle and pair of images. Do not prepare and launch each arm
 separately. Without this option, the control has no installed skill bundle.

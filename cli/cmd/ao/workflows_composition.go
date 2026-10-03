@@ -15,8 +15,8 @@ func init() {
 // newWorkflowsCommand wires the workflows command module to its host seams.
 // The global --dry-run flag drives link/unlink; checkout resolution, target
 // resolution, and the link/unlink filesystem sweeps are host effects delegated
-// to internal/workflowsapp. Workflows are a Claude-only runtime adapter (the
-// skills-codex doctrine, Claude-side), grouped under Knowledge next to skills.
+// to internal/workflowsapp. Workflows are a Claude-only runtime adapter,
+// grouped under Knowledge next to skills.
 // Like skills, the family attaches no capabilities contract.
 func newWorkflowsCommand() *cobra.Command {
 	module := workflowscommands.NewModule(clicontract.HostOptions{

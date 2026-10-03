@@ -2,8 +2,8 @@
 
 Choose the smallest shape that communicates the actual behavior. No heading,
 helper, reference directory, role, output file or scoring target is mandatory.
-Canonical source uses AgentOps host metadata; generated Codex packages use the
-portable contract. See [Codex parity](codex-parity.md).
+Canonical source uses AgentOps host metadata, which every runtime loads
+directly. See [Codex parity](codex-parity.md).
 
 A completed skill must make these meanings unambiguous, in prose or examples:
 

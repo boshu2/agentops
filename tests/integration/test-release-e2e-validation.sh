@@ -6,7 +6,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 verify_release_output() {
     local output_file="$1" marker failed=0
-    for marker in "Codex runtime sections" "Codex artifact metadata" \
+    for marker in "Codex skill conformance" \
         "Install surface smoke" "ao init + live-waist smoke"; do
         # The check's success line is required; a section header is not proof.
         if sed -E $'s/\033\\[[0-9;]*m//g' "$output_file" | grep -Fx "  ✓ $marker" >/dev/null; then

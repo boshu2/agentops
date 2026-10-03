@@ -421,32 +421,6 @@ run_recon_race() {
   git -C "$target" reset --soft "$commit"
 }
 
-# B3.6
-@test "Codex projection executes the hardened recon validator contract" {
-  canonical="$REPO_ROOT/skills/research/scripts/codebase-recon/validate-output.sh"
-  projected="$REPO_ROOT/skills-codex/research/scripts/codebase-recon/validate-output.sh"
-  [ -x "$projected" ]
-  cmp -s "$canonical" "$projected"
-
-  target="$BATS_TEST_TMPDIR/recon-projection"
-  commit="$(init_recon_repo "$target")"
-  pack="$target/.agents/recon/projected/codebase-recon.json"
-  write_valid_recon_baseline "$pack" "$commit"
-  run "$projected" --repo-root "$target" --discover-priors
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"$pack"* ]]
-
-  short_pack="$BATS_TEST_TMPDIR/projected-short/codebase-recon.json"
-  write_valid_recon_baseline "$short_pack" "${commit:0:7}"
-  run "$projected" --repo-root "$target" "$short_pack"
-  [ "$status" -ne 0 ]
-
-  printf 'dirty\n' > "$target/untracked.txt"
-  run "$projected" --repo-root "$target" "$pack"
-  [ "$status" -ne 0 ]
-  [[ "$output" == *"source changes not bound"* ]]
-}
-
 # B4.1
 @test "pattern-mining promotes only a three-exemplar holdout-proven pattern" {
   v="$REPO_ROOT/skills/research/scripts/pattern-mining/validate-output.sh"

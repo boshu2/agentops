@@ -20,7 +20,7 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 
 setup_fixture() {
   local fixture="$1"
-  mkdir -p "$fixture/scripts/lib" "$fixture/cli/internal/quality" "$fixture/skills/fixture" "$fixture/skills-codex/fixture"
+  mkdir -p "$fixture/scripts/lib" "$fixture/cli/internal/quality" "$fixture/skills/fixture" "$fixture/skills/other"
   cp "$SCRIPT" "$fixture/scripts/validate-skill-runtime-parity.sh"
   cp "$ROOT/scripts/lib/repo-root.sh" "$fixture/scripts/lib/repo-root.sh"
 
@@ -64,7 +64,7 @@ test_pass_with_current_commands() {
 
   setup_fixture "$fixture"
   write_skill "$fixture/skills/fixture/SKILL.md" "Use \`ao goals measure --json\` and \`ao lookup --query \\\"topic\\\"\`."
-  write_skill "$fixture/skills-codex/fixture/SKILL.md" "Use \`ao metrics flywheel status\` after \`ao init --hooks --minimal-hooks\`."
+  write_skill "$fixture/skills/other/SKILL.md" "Use \`ao metrics flywheel status\` after \`ao init --hooks --minimal-hooks\`."
 
   if run_fixture "$fixture" "$out"; then
     pass "passes when skill docs use current ao commands and hook claims"
@@ -80,7 +80,7 @@ test_fail_on_deprecated_ao_command() {
 
   setup_fixture "$fixture"
   write_skill "$fixture/skills/fixture/SKILL.md" "Run \`ao work goals measure\` before continuing."
-  write_skill "$fixture/skills-codex/fixture/SKILL.md" "Current command is \`ao goals measure\`."
+  write_skill "$fixture/skills/other/SKILL.md" "Current command is \`ao goals measure\`."
 
   if run_fixture "$fixture" "$out"; then
     fail "should fail on deprecated ao command reference"
@@ -100,7 +100,7 @@ test_fail_on_stale_hook_claim() {
 
   setup_fixture "$fixture"
   write_skill "$fixture/skills/fixture/SKILL.md" "Use \`ao init --hooks --full\` for all 8 events."
-  write_skill "$fixture/skills-codex/fixture/SKILL.md" "Minimal mode is SessionStart + Stop."
+  write_skill "$fixture/skills/other/SKILL.md" "Minimal mode is SessionStart + Stop."
 
   if run_fixture "$fixture" "$out"; then
     fail "should fail on stale hook-install claims"

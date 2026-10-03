@@ -5,7 +5,7 @@ setup() {
 }
 
 @test "current successful release check lines pass with ANSI colors" {
-    for label in 'Codex runtime sections' 'Codex artifact metadata' 'Install surface smoke' 'ao init + live-waist smoke'; do
+    for label in 'Codex skill conformance' 'Install surface smoke' 'ao init + live-waist smoke'; do
         printf '\033[0;32m  ✓\033[0m %s\n' "$label" >> "$LOG"
     done
     run bash -c 'source "$1"; verify_release_output "$2"' _ "$CHECK" "$LOG"
@@ -13,7 +13,7 @@ setup() {
 }
 
 @test "headers or failed release checks cannot count as successful evidence" {
-    for label in 'Codex runtime sections' 'Codex artifact metadata' 'Install surface smoke' 'ao init + live-waist smoke'; do
+    for label in 'Codex skill conformance' 'Install surface smoke' 'ao init + live-waist smoke'; do
         printf '== %s ==\n  ✗ %s\n' "$label" "$label" >> "$LOG"
     done
     run bash -c 'source "$1"; verify_release_output "$2"' _ "$CHECK" "$LOG"
@@ -28,7 +28,7 @@ setup() {
 }
 
 @test "large trailing output does not turn an earlier successful marker into SIGPIPE failure" {
-    for label in 'Codex runtime sections' 'Codex artifact metadata' 'Install surface smoke' 'ao init + live-waist smoke'; do
+    for label in 'Codex skill conformance' 'Install surface smoke' 'ao init + live-waist smoke'; do
         printf '  ✓ %s\n' "$label" >> "$LOG"
     done
     awk 'BEGIN {for (i=0; i<10000; i++) print "remaining diagnostic line"}' >> "$LOG"

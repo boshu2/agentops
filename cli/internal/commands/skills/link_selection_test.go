@@ -14,7 +14,7 @@ import (
 func selectionFixture(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
-	for _, dir := range []string{"skills/alpha", "skills/beta", "skills/not-a-skill", "skills-codex"} {
+	for _, dir := range []string{"skills/alpha", "skills/beta", "skills/not-a-skill"} {
 		if err := os.MkdirAll(filepath.Join(root, dir), 0o755); err != nil {
 			t.Fatal(err)
 		}

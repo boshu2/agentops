@@ -4,9 +4,9 @@ r="$1"
 repo="$r/repo"
 ao="${AO_SKILL_BUILDER_BIN:-/usr/local/bin/ao}"
 [[ -f "$repo/skills/recovery-pilot/SKILL.md" ]]
-[[ -f "$repo/skills-codex/recovery-pilot" ]]
-[[ "$(cat "$repo/skills-codex/recovery-pilot")" = INJECTED_PROJECTION_OBSTRUCTION ]]
-rm -- "$repo/skills-codex/recovery-pilot"
+[[ -f "$repo/images/codex" ]]
+[[ "$(cat "$repo/images/codex")" = INJECTED_PROJECTION_OBSTRUCTION ]]
+rm -- "$repo/images/codex"
 python3 - "$repo/skills/recovery-pilot/SKILL.md" <<'PYCODE'
 from pathlib import Path
 import sys
@@ -20,9 +20,9 @@ s=s[:a]+"""For a request to inspect current Git changes, run `git status --short
 p.write_text(s)
 PYCODE
 "$ao" skills check-source --repo "$repo" --strict skills/recovery-pilot > "$r/out/check.txt" 2>&1
-(cd "$repo"; python3 scripts/generate-skill-mesh.py; bash scripts/codex-sync.sh --only recovery-pilot; bash scripts/regen-codex-hashes.sh --only recovery-pilot) > "$r/out/projection.txt" 2>&1
+(cd "$repo"; python3 scripts/generate-skill-mesh.py) > "$r/out/projection.txt" 2>&1
 "$ao" skills audit --repo "$repo" --strict "$repo/skills/recovery-pilot" > "$r/out/audit.json"
-printf '%s\n' '{"source_retained":true,"failed_stage":"codex_projection","recovery_complete":true,"semantics_evaluated":false,"original_report_preserved":true}' > "$r/out/summary.json"
+printf '%s\n' '{"source_retained":true,"failed_stage":"mesh_projection","recovery_complete":true,"semantics_evaluated":false,"original_report_preserved":true}' > "$r/out/summary.json"
 
 python3 - "$r/evidence/failed-build.json" <<'PYCODE'
 import json,pathlib,sys

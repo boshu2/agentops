@@ -25,13 +25,13 @@ var (
 		"scripts/check-go-lint.sh",
 		"tests/scripts/check-go-lint.bats",
 	}
-	skillPaths = []string{"skills/**", "skills-codex/**", "tests/skills/**"}
+	skillPaths = []string{"skills/**", "tests/skills/**"}
 	// skill.scenario-test-linkage routes on the scenario corpus PLUS its own
 	// surfaces — the script, allowlist, bats twin, and shared ratchet lib were
 	// previously un-routed (self-routing repair, premortem FM3,
 	// age-ratchet-lib-extraction-bv7d.7).
 	scenarioLinkagePaths = []string{
-		"skills/**", "skills-codex/**", "tests/skills/**",
+		"skills/**", "tests/skills/**",
 		"scripts/check-scenario-test-linkage.sh",
 		"scripts/.scenario-linkage-allow",
 		"tests/scripts/check-scenario-test-linkage.bats",
@@ -96,7 +96,7 @@ var (
 		"scripts/lib/preamble.sh",
 		"tests/scripts/check-evidence-grounding.bats",
 	}
-	operatorLeakPaths = []string{"skills/**", "skills-codex/**", "docs/SKILLS.md", "registry.json", "tests/scripts/check-no-operator-skills.bats", "scripts/check-no-operator-skills.sh"}
+	operatorLeakPaths = []string{"skills/**", "docs/SKILLS.md", "registry.json", "tests/scripts/check-no-operator-skills.bats", "scripts/check-no-operator-skills.sh"}
 	contractPaths     = []string{"docs/contracts/**", "schemas/**"}
 	ciPolicyPaths     = []string{".github/workflows/validate.yml", "docs/CI-CD.md", "AGENTS.md"}
 	agentsDocPaths    = []string{"AGENTS.md", "docs/agent-workflow-reference.md", "docs/CI-CD.md", "docs/contracts/codex-skill-api.md", ".github/workflows/validate.yml"}
@@ -138,14 +138,14 @@ var (
 		"tests/scripts/check-doc-skill-refs.bats",
 	}
 	// contract.skill-mesh reads every SKILL.md plus the projections it compares
-	// (catalog, registry, Codex override catalog) and runs the generator's check.
+	// (catalog, registry) and runs the generator's check.
 	skillMeshPaths = []string{
-		"skills/**", "skills-codex/**", "tests/skills/**",
+		"skills/**", "tests/skills/**",
 		"scripts/check-skill-mesh.py", "scripts/generate-skill-mesh.py",
-		"registry.json", "skills-codex-overrides/catalog.json",
+		"registry.json",
 	}
 	cathedralCutPaths = []string{
-		"skills/**", "skills-codex/**", "schemas/**", "docs/SCHEMAS.md", "docs/contracts/index.md",
+		"skills/**", "schemas/**", "docs/SCHEMAS.md", "docs/contracts/index.md",
 		"scripts/swarm/**",
 		"scripts/check-cathedral-cut-conformance.py",
 	}
@@ -245,8 +245,6 @@ var (
 	}
 	regenScopePaths = []string{
 		"skills/**",
-		"skills-codex/**",
-		"skills-codex-overrides/**",
 		"docs/contracts/**",
 		"docs/reference/agentops-skill-domain-map.md",
 		"docs/reference/agentops-hexagonal-architecture-map.md",
@@ -366,16 +364,6 @@ func init() {
 		{ID: "skill.runtime-parity", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-runtime-parity.sh"},
 		{ID: "skill.cli-snippets", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-cli-snippets.sh"},
 		{ID: "skill.manifests", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-manifests.sh", Args: []string{"--repo-root", "."}},
-		{ID: "skill.codex-parity-drift", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "check-codex-parity-drift.sh"},
-		{ID: "skill.codex-runtime-sections", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-codex-runtime-sections.sh"},
-		{ID: "skill.codex-override-coverage", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-codex-override-coverage.sh"},
-		// age-2s5k: always-run (no Match) — these validators assert whole-twin
-		// contract invariants over hardcoded file lists, so latent drift in a twin
-		// must fail the NEXT push regardless of scope, not lie invisible on green
-		// main until an unrelated skills-codex touch triggers a scope-gated run and
-		// ambushes it (the age-huim / age-3pdt failure mode). Cheap (string greps),
-		// so the per-push cost is negligible against the anti-ambush guarantee.
-		{ID: "skill.codex-generated-artifacts", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-codex-generated-artifacts.sh"},
 		// skill.probe-coverage (ADVISORY): a product-/judgment-tier skill whose
 		// tier badge carries no BEHAVIORAL-probe result is unmeasured — the badge
 		// is editorial, not proven. This NAMES the unmeasured ones. Advisory-first
