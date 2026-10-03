@@ -78,13 +78,13 @@ The [implementation contract](https://github.com/boshu2/agentops/blob/main/skill
 **Before**
 
 - The agent edits the skill text and says it is done
-- It skips the mirrored Codex artifact or does not validate it
+- It skips the generated inventories or does not validate them
 - The repo gets instruction drift
 
 **After**
 
-- The agent updates the shared skill contract and the checked-in Codex copy
-- It regenerates the affected hash metadata when needed
+- The agent updates the shared skill contract, the one source every runtime loads
+- It regenerates the affected inventories when metadata changed
 - It runs the relevant validation commands before claiming completion
 
 **Why this is better:** completion is defined by evidence, not by the existence of an edit.

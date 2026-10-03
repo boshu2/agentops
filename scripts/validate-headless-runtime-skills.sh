@@ -332,7 +332,7 @@ PY
 
 CODEX_PROMPT="List the available AgentOps skills in this session. Return ONLY a compact JSON array of skill names. Use the exact visible AgentOps skill names and exclude built-in OpenAI system skills such as skill-creator, skill-installer, slides, and spreadsheets."
 
-build_expected_inventory "$REPO_ROOT/skills-codex" "$EXPECTED_CODEX_JSON"
+build_expected_inventory "$REPO_ROOT/skills" "$EXPECTED_CODEX_JSON"
 
 run_claude_cli_smoke() {
     if timeout 20 "$CLAUDE_BIN" --plugin-dir "$REPO_ROOT" --help >/dev/null 2>&1; then

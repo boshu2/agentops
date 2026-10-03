@@ -361,9 +361,10 @@ lives as an unstated exception.
   but it is recorded here precisely because an unwritten carve-out would decay
   into the same inert-prose failure. Anything that migrates from `tests/` into
   the execution path loses the exemption at that moment.
-- **Generated projections are governed at their source.** `skills-codex/**` is
-  regenerated from `skills/**`; it is never independently governed, per this
-  ADR's own title.
+- **Generated projections are governed at their source.** The generated Codex
+  copy of `skills/**` that this bullet once named was removed on 2026-10-03;
+  every runtime now loads `skills/**`, the governed tree, so no second skill
+  tree exists to govern.
 - **Un-promotable code is an amendment, not an allowlist entry.** If a file
   genuinely cannot become an `ao` subcommand, that case is made per file, here,
   with its rationale. Widening the snapshot is rejected mechanically.

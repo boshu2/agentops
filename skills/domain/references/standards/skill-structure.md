@@ -1,8 +1,8 @@
 # AgentOps Skill Structure
 
-`skills/<slug>/SKILL.md` is the source of truth for one AgentOps skill. Generated
-catalogs, graphs, routers, counts, and Codex projections derive from its
-metadata. Do not maintain a second inventory by hand.
+`skills/<slug>/SKILL.md` is the source of truth for one AgentOps skill, and the
+file every runtime loads. Generated catalogs, graphs, routers and counts derive
+from its metadata. Do not maintain a second inventory by hand.
 
 ## Package shape
 
@@ -138,8 +138,8 @@ When metadata or behavior changes, regenerate the declared projections and
 then validate them:
 
 ```bash
-bash scripts/refresh-codex-artifacts.sh --scope worktree
-bash scripts/validate-codex-generated-artifacts.sh --scope worktree
+bash scripts/regen-all.sh
+bash scripts/regen-all.sh --check
 ```
 
 Add a focused test when the skill contains a parser, script, schema, or other

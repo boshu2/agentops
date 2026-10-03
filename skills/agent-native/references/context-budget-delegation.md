@@ -92,9 +92,9 @@ command words remain outside the predicate. This is a scoped guardrail, not a
 complete boundary against all ways to read a file.
 
 The role templates are canonical source files under this skill's `agents/`
-directory, mirrored into `skills-codex/agent-native/agents/` by regeneration.
+directory; the Codex plugin ships them from there.
 The checkout exposes them at `.codex/agents/` using relative symlinks; the
-installer copies the generated templates to the runtime's personal or project
+installer copies the source templates to the runtime's personal or project
 agent directory and registers `agents.<name>.description` and `config_file`
 using the installed Codex config editor. The checkout has equivalent explicit
 registrations in `.codex/config.toml`; standalone file discovery did not work

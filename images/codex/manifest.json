@@ -5,171 +5,143 @@
   "skills": [
     {
       "disposition": "keep_optional_adapter",
-      "slug": "agent-native",
-      "source_path": "skills/agent-native/",
-      "twin_path": "skills-codex/agent-native/"
+      "path": "skills/agent-native/",
+      "slug": "agent-native"
     },
     {
       "disposition": "keep_optional_adapter",
-      "slug": "agy-native",
-      "source_path": "skills/agy-native/",
-      "twin_path": "skills-codex/agy-native/"
+      "path": "skills/agy-native/",
+      "slug": "agy-native"
     },
     {
       "disposition": "keep_optional_adapter",
-      "slug": "codex-exec",
-      "source_path": "skills/codex-exec/",
-      "twin_path": "skills-codex/codex-exec/"
+      "path": "skills/codex-exec/",
+      "slug": "codex-exec"
     },
     {
       "disposition": "keep_strategy",
-      "slug": "council",
-      "source_path": "skills/council/",
-      "twin_path": "skills-codex/council/"
+      "path": "skills/council/",
+      "slug": "council"
     },
     {
       "disposition": "keep_strategy",
-      "slug": "craft-goal",
-      "source_path": "skills/craft-goal/",
-      "twin_path": "skills-codex/craft-goal/"
+      "path": "skills/craft-goal/",
+      "slug": "craft-goal"
     },
     {
       "disposition": "keep_specialist",
-      "slug": "doc",
-      "source_path": "skills/doc/",
-      "twin_path": "skills-codex/doc/"
+      "path": "skills/doc/",
+      "slug": "doc"
     },
     {
       "disposition": "keep_specialist",
-      "slug": "domain",
-      "source_path": "skills/domain/",
-      "twin_path": "skills-codex/domain/"
+      "path": "skills/domain/",
+      "slug": "domain"
     },
     {
       "disposition": "keep_strategy",
-      "slug": "idea-genie",
-      "source_path": "skills/idea-genie/",
-      "twin_path": "skills-codex/idea-genie/"
+      "path": "skills/idea-genie/",
+      "slug": "idea-genie"
     },
     {
       "disposition": "keep",
-      "slug": "implement",
-      "source_path": "skills/implement/",
-      "twin_path": "skills-codex/implement/"
+      "path": "skills/implement/",
+      "slug": "implement"
     },
     {
       "disposition": "keep_strategy",
-      "slug": "interview",
-      "source_path": "skills/interview/",
-      "twin_path": "skills-codex/interview/"
+      "path": "skills/interview/",
+      "slug": "interview"
     },
     {
       "disposition": "keep_off_path",
-      "slug": "memory",
-      "source_path": "skills/memory/",
-      "twin_path": "skills-codex/memory/"
+      "path": "skills/memory/",
+      "slug": "memory"
     },
     {
       "disposition": "keep_strategy",
-      "slug": "navigate",
-      "source_path": "skills/navigate/",
-      "twin_path": "skills-codex/navigate/"
+      "path": "skills/navigate/",
+      "slug": "navigate"
     },
     {
       "disposition": "keep",
-      "slug": "orchestrate",
-      "source_path": "skills/orchestrate/",
-      "twin_path": "skills-codex/orchestrate/"
+      "path": "skills/orchestrate/",
+      "slug": "orchestrate"
     },
     {
       "disposition": "keep",
-      "slug": "plan",
-      "source_path": "skills/plan/",
-      "twin_path": "skills-codex/plan/"
+      "path": "skills/plan/",
+      "slug": "plan"
     },
     {
       "disposition": "keep_strategy",
-      "slug": "postmortem",
-      "source_path": "skills/postmortem/",
-      "twin_path": "skills-codex/postmortem/"
+      "path": "skills/postmortem/",
+      "slug": "postmortem"
     },
     {
       "disposition": "keep_strategy",
-      "slug": "premortem",
-      "source_path": "skills/premortem/",
-      "twin_path": "skills-codex/premortem/"
+      "path": "skills/premortem/",
+      "slug": "premortem"
     },
     {
       "disposition": "keep_strategy",
-      "slug": "reality-check",
-      "source_path": "skills/reality-check/",
-      "twin_path": "skills-codex/reality-check/"
+      "path": "skills/reality-check/",
+      "slug": "reality-check"
     },
     {
       "disposition": "keep_specialist",
-      "slug": "refactor",
-      "source_path": "skills/refactor/",
-      "twin_path": "skills-codex/refactor/"
+      "path": "skills/refactor/",
+      "slug": "refactor"
     },
     {
       "disposition": "keep_specialist",
-      "slug": "research",
-      "source_path": "skills/research/",
-      "twin_path": "skills-codex/research/"
+      "path": "skills/research/",
+      "slug": "research"
     },
     {
       "disposition": "keep_specialist",
-      "slug": "reverse-engineer",
-      "source_path": "skills/reverse-engineer/",
-      "twin_path": "skills-codex/reverse-engineer/"
+      "path": "skills/reverse-engineer/",
+      "slug": "reverse-engineer"
     },
     {
       "disposition": "keep",
-      "slug": "review",
-      "source_path": "skills/review/",
-      "twin_path": "skills-codex/review/"
+      "path": "skills/review/",
+      "slug": "review"
     },
     {
       "disposition": "keep_strategy",
-      "slug": "rpi",
-      "source_path": "skills/rpi/",
-      "twin_path": "skills-codex/rpi/"
+      "path": "skills/rpi/",
+      "slug": "rpi"
     },
     {
       "disposition": "keep_specialist",
-      "slug": "security",
-      "source_path": "skills/security/",
-      "twin_path": "skills-codex/security/"
+      "path": "skills/security/",
+      "slug": "security"
     },
     {
       "disposition": "keep_specialist",
-      "slug": "skill-builder",
-      "source_path": "skills/skill-builder/",
-      "twin_path": "skills-codex/skill-builder/"
+      "path": "skills/skill-builder/",
+      "slug": "skill-builder"
     },
     {
       "disposition": "keep_specialist",
-      "slug": "skill-eval",
-      "source_path": "skills/skill-eval/",
-      "twin_path": "skills-codex/skill-eval/"
+      "path": "skills/skill-eval/",
+      "slug": "skill-eval"
     },
     {
       "disposition": "keep_specialist",
-      "slug": "test",
-      "source_path": "skills/test/",
-      "twin_path": "skills-codex/test/"
+      "path": "skills/test/",
+      "slug": "test"
     },
     {
       "disposition": "keep_optional_adapter",
-      "slug": "using-gc",
-      "source_path": "skills/using-gc/",
-      "twin_path": "skills-codex/using-gc/"
+      "path": "skills/using-gc/",
+      "slug": "using-gc"
     },
     {
       "disposition": "keep",
-      "slug": "validate",
-      "source_path": "skills/validate/",
-      "twin_path": "skills-codex/validate/"
+      "path": "skills/validate/",
+      "slug": "validate"
     }
   ],
   "source": "skills/*/SKILL.md metadata"

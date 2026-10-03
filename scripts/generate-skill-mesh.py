@@ -58,7 +58,6 @@ def load_entries() -> list[dict[str, Any]]:
             "user_invocable": bool(data.get("user-invocable", False)),
             "graph_root": bool(metadata.get("graph_root", False)),
             "references_count": len(list((path.parent / "references").glob("*"))) if (path.parent / "references").is_dir() else 0,
-            "codex_override_present": (ROOT / "skills-codex" / name / "SKILL.md").exists(),
         }
         entries.append(entry)
     validate_graph(entries)
@@ -247,12 +246,7 @@ def codex_image(entries: list[dict[str, Any]]) -> dict[str, Any]:
         "source": "skills/*/SKILL.md metadata",
         "skill_count": len(entries),
         "skills": [
-            {
-                "slug": entry["name"],
-                "source_path": f"skills/{entry['name']}/",
-                "twin_path": f"skills-codex/{entry['name']}/",
-                "disposition": entry["disposition"],
-            }
+            {"slug": entry["name"], "path": f"skills/{entry['name']}/", "disposition": entry["disposition"]}
             for entry in entries
         ],
     }

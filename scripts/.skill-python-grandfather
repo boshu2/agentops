@@ -14,8 +14,6 @@
 # SCOPE: the user EXECUTION path only. `skills/*/tests/**` never runs on a
 # user's machine and is exempt as a class by ADR-0016's recorded amendment
 # (docs/adr/ADR-0016-state-tiers.md, "Amendment 2026-07-25"), not by omission.
-# `skills-codex/**` is a generated projection of this tree and is governed at
-# its source, never twice.
 #
 # Enforced by: scripts/check-skill-python-ratchet.sh
 skills/agent-native/scripts/fake_model_runner.py

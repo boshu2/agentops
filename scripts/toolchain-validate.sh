@@ -471,7 +471,7 @@ run_radon() {
     fi
 
     # Run radon for cyclomatic complexity (min E = 26+, aligns with Go hard-fail at 25)
-    radon cc "$REPO_ROOT" -a -s --min E --exclude ".tmp/*,.claude/worktrees/*,skills-codex/*,*/reverse_engineer_rpi.py" > "$output_file" 2>&1 || true
+    radon cc "$REPO_ROOT" -a -s --min E --exclude ".tmp/*,.claude/worktrees/*,*/reverse_engineer_rpi.py" > "$output_file" 2>&1 || true
 
     if [[ ! -s "$output_file" ]]; then
         echo "CLEAN" > "$output_file"

@@ -57,7 +57,7 @@ Use the existing source/host invocation fields, including Codex
 `agents/openai.yaml` policy where needed; see [Codex parity](codex-parity.md).
 Explicit-only policy does not prove zero catalog context cost or prohibit
 composition. Verify loaded bytes and policy on each claimed host. Canonical
-source and generated portable packages have separate profiles.
+source and exported portable packages have separate profiles.
 
 Measure actual descriptions, bodies, references, repeated reads and tool output
 on the task path. A shorter root can cost more overall. Split only when a

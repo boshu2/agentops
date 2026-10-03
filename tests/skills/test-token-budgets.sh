@@ -14,10 +14,10 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# BUDGET_REPO_ROOT overrides for fixture tests
-# (tests/scripts/codex-desc-avg-budget.bats); production derives from script location.
+# BUDGET_REPO_ROOT overrides for fixture tests; production derives from script
+# location.
 REPO_ROOT="${BUDGET_REPO_ROOT:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
-SKILL_ROOTS=("$REPO_ROOT/skills" "$REPO_ROOT/skills-codex")
+SKILL_ROOTS=("$REPO_ROOT/skills")
 
 # Colors
 RED='\033[0;31m'
@@ -31,45 +31,6 @@ SKILL_FAIL_LIMIT=10000
 SKILL_WARN_LIMIT=8000
 SESSION_FAIL_LIMIT=8000
 DESC_FAIL_CHARS=180
-# Always-loaded codex skill catalog. The budget is a PER-SKILL AVERAGE, not a hard
-# aggregate (ag-vzbt): a hard total (raised 2600→2700→2800 as skills landed) walls
-# off the Nth+ skill and forced /burndown into a 17-char stub. An average scales
-# with the catalog — each terse description keeps the avg low; the gate fails only
-# if descriptions are bloated on average.
-#
-# THE RULE (live, measured at run time, no stored constant):
-#
-#   the Codex catalog's prose average may not exceed the CLAUDE catalog's
-#   prose average
-#
-# Both sides are measured by the same awk extraction below, which strips the
-# `Triggers:` clause, so both are prose-only. The Codex catalog is a projection
-# of the Claude one, so the runtime already carrying these descriptions is the
-# honest ceiling — and because it is recomputed from skills/*/SKILL.md on every
-# run, it cannot go stale the way a written-down number does.
-#
-# The comparison is done in integers WITHOUT dividing:
-#
-#   fail when  codex_total * claude_count  >  claude_total * codex_count
-#
-# Integer division floors, so comparing floored averages let a true Codex
-# average of 96.9 slip past a Claude average of 96.0. Cross-multiplying compares
-# the exact rationals.
-#
-# History: this replaced CODEX_DESC_AVG_FAIL_CHARS, which was 45 and was met by
-# scripts/codex-sync.sh cutting source prose at 44 chars on a word boundary —
-# shipping 51 of 56 catalog entries as fragments ("Freshly judge whether a
-# finished change is Triggers: ..."). The budget's purpose is a small
-# always-loaded catalog that can still ROUTE; a fragment cannot route, so the
-# cheap number was bought by destroying the thing it protected.
-#
-# CODEX_DESC_AVG_HARD_CEILING is KEPT, as an absolute backstop only: it bounds
-# the Codex average even if the Claude catalog itself bloats, so the relative
-# rule can never license an unbounded always-loaded catalog. It is set to the
-# per-entry DESC_FAIL_CHARS limit — no average may exceed what a single entry
-# may be.
-CODEX_DESC_AVG_HARD_CEILING=180
-
 # Token estimation: bytes / 4
 estimate_tokens() {
     local bytes="$1"
@@ -179,11 +140,6 @@ echo -e "${BLUE}--- Skill Description Budget ---${NC}"
 echo ""
 
 desc_failures=0
-desc_quality_failures=0
-codex_desc_total=0
-codex_desc_count=0
-claude_desc_total=0
-claude_desc_count=0
 while IFS= read -r skill_md; do
     desc_text=$(awk '
         function normalize_desc(s) {
@@ -229,23 +185,6 @@ while IFS= read -r skill_md; do
         echo -e "  ${RED}[FAIL]${NC} ${skill_md#"$REPO_ROOT"/}: ${desc_chars} chars > ${DESC_FAIL_CHARS} description limit"
         ((desc_failures++)) || true
     fi
-    case "${skill_md#"$REPO_ROOT"/}" in
-        skills-codex/*)
-            skill_slug="$(basename "$(dirname "$skill_md")")"
-            generic_desc="Run ${skill_slug//-/ }."
-            if [[ "$desc_text" == "$generic_desc" ]]; then
-                echo -e "  ${RED}[FAIL]${NC} ${skill_md#"$REPO_ROOT"/}: generic Codex description loses activation signal: ${desc_text}"
-                ((desc_quality_failures++)) || true
-            fi
-            codex_desc_total=$((codex_desc_total + desc_chars))
-            codex_desc_count=$((codex_desc_count + 1))
-            ;;
-        skills/*)
-            # The live bound: the Claude catalog measured the same way.
-            claude_desc_total=$((claude_desc_total + desc_chars))
-            claude_desc_count=$((claude_desc_count + 1))
-            ;;
-    esac
 done < <(find "${SKILL_ROOTS[@]}" -maxdepth 2 -name SKILL.md -type f | sort)
 
 if [[ "$desc_failures" -eq 0 ]]; then
@@ -253,38 +192,6 @@ if [[ "$desc_failures" -eq 0 ]]; then
     ((passed++)) || true
 else
     failed=$((failed + desc_failures))
-fi
-
-if [[ "$desc_quality_failures" -eq 0 ]]; then
-    echo -e "  ${GREEN}[PASS]${NC} skills-codex descriptions avoid exact generic Run <skill>. stubs"
-    ((passed++)) || true
-else
-    failed=$((failed + desc_quality_failures))
-fi
-
-if [[ "$codex_desc_count" -eq 0 ]]; then
-    echo -e "  ${YELLOW}[SKIP]${NC} no skills-codex descriptions found"
-    ((warned++)) || true
-elif [[ "$claude_desc_count" -eq 0 ]]; then
-    echo -e "  ${RED}[FAIL]${NC} skills-codex description catalog: no skills/ descriptions to bound it against"
-    ((failed++)) || true
-else
-    # Averages are printed to two decimals for the human; every COMPARISON below
-    # is done on integers without dividing, so nothing is floored away.
-    codex_avg="$(awk -v t="$codex_desc_total" -v n="$codex_desc_count" 'BEGIN{printf "%.2f", t/n}')"
-    claude_avg="$(awk -v t="$claude_desc_total" -v n="$claude_desc_count" 'BEGIN{printf "%.2f", t/n}')"
-    catalog_line="Codex avg ${codex_avg} chars/skill (${codex_desc_total} over ${codex_desc_count}) vs Claude avg ${claude_avg} (${claude_desc_total} over ${claude_desc_count})"
-
-    if [[ $((codex_desc_total * claude_desc_count)) -gt $((claude_desc_total * codex_desc_count)) ]]; then
-        echo -e "  ${RED}[FAIL]${NC} skills-codex description catalog exceeds the Claude catalog average: ${catalog_line}"
-        ((failed++)) || true
-    elif [[ "$codex_desc_total" -gt $((CODEX_DESC_AVG_HARD_CEILING * codex_desc_count)) ]]; then
-        echo -e "  ${RED}[FAIL]${NC} skills-codex description catalog exceeds the ${CODEX_DESC_AVG_HARD_CEILING}-char hard ceiling: ${catalog_line}"
-        ((failed++)) || true
-    else
-        echo -e "  ${GREEN}[PASS]${NC} skills-codex description catalog within the Claude catalog average: ${catalog_line}"
-        ((passed++)) || true
-    fi
 fi
 
 # ─────────────────────────────────────────────────────────

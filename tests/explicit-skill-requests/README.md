@@ -1,8 +1,8 @@
 # Explicit Skill Request Structure
 
-This suite checks explicit `/agentops:<name>` fixture addresses against current
-canonical `skills/<name>/SKILL.md` and projected `skills-codex/<name>/SKILL.md`
-artifacts, including matching frontmatter names and manifest validation. Every
+This suite checks explicit `/agentops:<name>` fixture addresses against the
+current canonical `skills/<name>/SKILL.md`, the one package every runtime
+loads, including the matching frontmatter name and manifest validation. Every
 current canonical skill has a fixture. Removed names are not runtime aliases and
 have been replaced by fixtures for the current inventory.
 

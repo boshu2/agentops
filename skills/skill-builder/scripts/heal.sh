@@ -44,8 +44,6 @@ set -e
 if [[ "$MODE" == fix && $rc -eq 0 ]]; then
   # Source behavior remains human-authored. Repair only owned projections.
   python3 "$REPO_ROOT/scripts/generate-skill-mesh.py"
-  names="$(printf '%s\n' "${TARGETS[@]}" | sed 's#/*$##; s#.*/##' | sort -u | paste -sd, -)"
-  bash "$REPO_ROOT/scripts/codex-sync.sh" --force --only "$names"
 fi
 
 if [[ $rc -ne 0 && ( $STRICT -eq 1 || "$MODE" == fix ) ]]; then

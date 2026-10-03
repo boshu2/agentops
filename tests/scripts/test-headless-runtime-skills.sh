@@ -28,9 +28,7 @@ make_fixture() {
         "$root/scripts" \
         "$root/cli/bin" \
         "$root/skills/compile" \
-        "$root/skills/research" \
-        "$root/skills-codex/compile" \
-        "$root/skills-codex/research"
+        "$root/skills/research"
 
     # Stub ao that implements skills link for the headless Codex setup path.
     cat > "$root/cli/bin/ao" <<'EOF'
@@ -73,21 +71,6 @@ skill_api_version: 1
 ---
 EOF
 
-    cat > "$root/skills-codex/compile/SKILL.md" <<'EOF'
----
-name: compile
-description: 'Active knowledge intelligence. Runs Mine → Grow → Defrag cycle.'
-skill_api_version: 1
----
-EOF
-
-    cat > "$root/skills-codex/research/SKILL.md" <<'EOF'
----
-name: research
-description: 'Deep codebase exploration.'
-skill_api_version: 1
----
-EOF
 }
 
 make_mock_claude() {

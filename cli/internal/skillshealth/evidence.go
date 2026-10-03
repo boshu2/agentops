@@ -141,12 +141,9 @@ func auditTarget(repo, target, profile string) (string, string, string, error) {
 		return "", "", "", fmt.Errorf("target must be a real package directory: %s", path)
 	}
 	if profile == "" {
-		switch filepath.Dir(path) {
-		case filepath.Join(root, "skills"):
+		if filepath.Dir(path) == filepath.Join(root, "skills") {
 			profile = "canonical"
-		case filepath.Join(root, "skills-codex"):
-			profile = "portable"
-		default:
+		} else {
 			profile = "external-observation"
 		}
 	}

@@ -61,7 +61,7 @@ map_path_to_area() {
     scripts/install*|.goreleaser*|.github/workflows/release.yml|packs/*install*) echo "Install, Upgrade, and Distribution" ;;
     cli/cmd/ao/*|cli/docs/COMMANDS.md) echo "CLI and Operator Commands" ;;
     cli/internal/daemon/*|cli/internal/schedule/*|cli/internal/agentworker/*|cli/internal/gascity/*) echo "Daemon, Scheduling, and Factory" ;;
-    skills/*|skills-codex*) echo "Skills and Workflows" ;;
+    skills/*) echo "Skills and Workflows" ;;
     hooks/*|cli/embedded/hooks/*) echo "Hooks and Lifecycle" ;;
     cli/internal/eval/*|evals/*|tests/*|.github/workflows/validate.yml) echo "Eval, Validation, and Release Gates" ;;
     scripts/security*|scripts/toolchain-validate*|*sbom*) echo "Security, Privacy, and Supply Chain" ;;
