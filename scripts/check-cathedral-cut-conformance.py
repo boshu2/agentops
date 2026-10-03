@@ -191,110 +191,6 @@ def check_schema_index_docs() -> None:
                 )
 
 
-def check_bounded_repair_contract() -> None:
-    """RPI's reference adapter stops under the convergence law (ADR-0017).
-
-    Behavior probes only: fixture validation rounds in, stop reason out. Every
-    stop reason `run_once.py` declares must be reached by a probe, a round past
-    the caller's bound is never consumed, and the one bounded experiment
-    dispatches each phase once, on FAIL as on PASS.
-    """
-    runner = ROOT / "skills" / "rpi" / "scripts" / "run_once.py"
-    assert runner.is_file(), "RPI has no executable reference behavior"
-    spec = importlib.util.spec_from_file_location("rpi_run_once_canary", runner)
-    assert spec and spec.loader
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    dg = lambda ch: ch * 64  # noqa: E731
-    def leg(status, ids, digest, evidence=("acceptance-receipt",), classes=None):
-        classes = classes or {}
-        return {
-            "status": status,
-            "findings": [
-                {"id": i, "summary": i, **({"class": classes[i]} if i in classes else {})}
-                for i in ids
-            ],
-            "subject_digest": digest,
-            "evidence_refs": list(evidence),
-            "validator_family": "fresh",
-            "checked": ["acceptance"],
-            "not_checked": [],
-        }
-    fixed_a = {"ref": "fixed-a", "subject_digest": dg("b"), "resolves": ["a"]}
-    progressing = [leg("FAIL", ["a", "b"], dg("a")), leg("FAIL", ["b"], dg("b"), [fixed_a])]
-    canaries = {
-        "repair_budget_exhausted": (progressing + [leg("FAIL", ["b"], dg("c"))], {"repair_rounds": 1}),
-        "new_finding_requires_causal_review": (
-            [leg("FAIL", ["a"], dg("a")), leg("FAIL", ["b"], dg("b"), [fixed_a])], {"repair_rounds": 2}),
-        "reopened_finding": (progressing + [leg("FAIL", ["a"], dg("c"))], {"repair_rounds": 3}),
-        "recurring_finding_class": ([
-            leg("FAIL", ["a", "b"], dg("a"), classes={"a": "race", "b": "docs"}),
-            leg("FAIL", ["b"], dg("b"), [fixed_a], classes={"b": "docs"}),
-            leg("FAIL", ["c"], dg("c"), classes={"c": "race"}),
-        ], {"repair_rounds": 3}),
-        "no_acceptance_progress": ([leg("FAIL", ["a"], dg("a")), leg("PASS", [], dg("b"))], {"repair_rounds": 2}),
-        "introduced_regression": ([leg("FAIL", ["a"], dg("a")), leg("FAIL", ["b"], dg("b"), [
-            fixed_a, {"ref": "comparison", "subject_digest": dg("b"), "introduced": ["b"]}])], {"repair_rounds": 2}),
-        "not_converged": ([leg("FAIL", ["a"], dg("a")), leg("FAIL", ["b", "c"], dg("b"), [
-            fixed_a, {"ref": "prior-reproduction", "subject_digest": dg("a"), "preexisting": ["b", "c"]}])],
-            {"repair_rounds": 2}),
-        # A selected cross-family leg that is missing cannot converge.
-        "diversity_unsatisfied": ([leg("PASS", [], dg("a"))], {"cross_model": True}),
-        "converged": ([leg("FAIL", ["a"], dg("a")), leg("PASS", [], dg("b"), [fixed_a])], {"repair_rounds": 2}),
-    }
-    unprobed = set(module.STOP_REASONS) - set(canaries)
-    assert not unprobed, f"declared stop reasons without a behavior probe: {sorted(unprobed)}"
-    for expected, (rounds, options) in canaries.items():
-        outcome = module.run_repair_phase(rounds, **options)
-        assert outcome["stop_reason"] == expected, (
-            f"law canary {expected}: reference behavior stopped with {outcome['stop_reason']!r}"
-        )
-    diverse = module.run_repair_phase(canaries["diversity_unsatisfied"][0], cross_model=True)
-    assert diverse["report"]["status"] == "NOT_PROVEN", "a single-family PASS certified a cross-family selection"
-    for digest in (dg("a"), dg("b")):
-        flip = module.run_repair_phase([leg("FAIL", ["a"], dg("a")), leg("PASS", [], digest)])
-        assert flip["report"]["status"] == "NOT_PROVEN", "byte or verdict movement alone must not certify progress"
-    # A poison round beyond the caller's bound must never be normalized.
-    poison = module.run_repair_phase(progressing + [{"status": "poison-not-a-round"}], repair_rounds=1)
-    assert poison["stop_reason"] == "repair_budget_exhausted" and poison["rounds_used"] == 1, (
-        "the repair phase consumed a round past the caller's bound"
-    )
-    assert module.run_repair_phase([leg("FAIL", ["a"], dg("a"))], repair_rounds=0)["stop_reason"] == "repair_budget_exhausted"
-
-    # The one bounded experiment never re-dispatches a phase after FAIL.
-    calls: list[str] = []
-
-    def phase(name: str, result: dict):
-        def run(*_args: object) -> dict:
-            calls.append(name)
-            return result
-        return run
-
-    failed = module.invoke_once(
-        "fail-path probe",
-        phase("anti-ceremony", {
-            "decision": "CONTINUE",
-            "reason": "The probe needs one failing traversal.",
-            "frozen_outcome": "Observe one FAIL traversal",
-            "parked_process_work": [],
-            "remaining_proof": ["fresh validation"],
-            "stop_condition": "Stop after one fresh validation result.",
-        }),
-        phase("plan", {"intent_ref": "probe", "acceptance_digest": dg("d")}),
-        phase("implement", {"subject_manifest_digest": dg("e")}),
-        phase("validate", {
-            "verdict": "FAIL",
-            "acceptance_digest": dg("d"),
-            "subject_manifest_digest": dg("e"),
-            "author_context_id": "probe-author",
-            "validator_context_id": "probe-validator",
-            "freshness_attestation": {"source": "runtime", "attester_identity": "probe"},
-        }),
-    )
-    assert calls == ["anti-ceremony", "plan", "implement", "validate"], f"FAIL dispatch trace is {calls}"
-    assert failed["status"] == "FAIL", f"FAIL traversal reported {failed['status']!r}"
-
-
 def check_validate_helper() -> None:
     path = ROOT / "skills" / "validate" / "tests" / "validate.py"
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
@@ -367,7 +263,6 @@ def check_dispatch_once() -> None:
 
 def probe_no_substrate_calls() -> None:
     helper = ROOT / "skills" / "validate" / "tests" / "validate.py"
-    rpi_runner = ROOT / "skills" / "rpi" / "scripts" / "run_once.py"
     with tempfile.TemporaryDirectory() as raw:
         temp = Path(raw)
         subject = temp / "subject"
@@ -393,34 +288,13 @@ def probe_no_substrate_calls() -> None:
         assert spec and spec.loader
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        rpi_spec = importlib.util.spec_from_file_location("cathedral_rpi", rpi_runner)
-        assert rpi_spec and rpi_spec.loader
-        rpi = importlib.util.module_from_spec(rpi_spec)
-        rpi_spec.loader.exec_module(rpi)
-        # The intent SOURCE is bytes; the acceptance identity is sha256 of those
-        # bytes; the resolved mapping carries that identity as a declared fact.
-        # Deriving the bytes from the mapping that already contains the digest
-        # would be circular, and folding the two together is what let the
-        # RPI/Validate digest disagreement hide: this probe used to set
-        # `intent_bytes = canonical_bytes(resolved_intent)`, which is precisely
-        # the one input where a canonical-JSON digest of the mapping and a byte
-        # digest of the source coincide. Keeping them separate means the probe
-        # exercises the identity rather than a coincidence.
+        # Validate's acceptance identity is the sha256 of the intent source bytes.
         intent_source = {
             "intent_ref": "conversation:cathedral-probe",
             "acceptance": ["value.txt contains candidate"],
             "write_scope": {"include": ["value.txt"], "exclude": []},
         }
         intent_bytes = module.canonical_bytes(intent_source)
-        resolved_intent = {
-            **intent_source,
-            "acceptance_digest": hashlib.sha256(intent_bytes).hexdigest(),
-        }
-        subject_facts = {
-            "subject_manifest_digest": payload["canonical_manifest_digest"],
-            "subject_manifest": payload,
-            "checks": ["manifest"],
-        }
         draft = {
             "acceptance_digest": "a" * 64,
             "subject_manifest_digest": payload["canonical_manifest_digest"],
@@ -436,32 +310,12 @@ def probe_no_substrate_calls() -> None:
             "validated_at": "2026-07-14T00:00:00Z",
         }
         verdict_dir = temp / ".agents" / "ao" / "verdicts" / "sha256"
-        calls: list[str] = []
 
-        def anti_ceremony_guard(_intent: object) -> dict:
-            calls.append("anti-ceremony")
-            return {
-                "decision": "CONTINUE",
-                "reason": "The frozen outcome still requires implementation proof.",
-                "frozen_outcome": "Write and prove the non-Git candidate",
-                "parked_process_work": [],
-                "remaining_proof": ["manifest", "fresh validation"],
-                "stop_condition": "Stop after one fresh validation result.",
-            }
-
-        def plan_phase(_intent: object) -> dict:
-            calls.append("plan")
-            return resolved_intent
-
-        def implement_phase(received_intent: dict) -> dict:
-            calls.append("implement")
-            assert received_intent == resolved_intent
-            return subject_facts
-
-        def validate_phase(received_intent: dict, received_subject: dict) -> dict:
-            calls.append("validate")
-            assert received_intent == resolved_intent
-            assert received_subject == subject_facts
+        # The in-process call must see the fake executables too, or a Git or
+        # tracker call from the helper would reach the real binary unnoticed.
+        saved_path = os.environ.get("PATH", "")
+        os.environ["PATH"] = env["PATH"]
+        try:
             artifact, verdict_path, existed = module.store_verdict(
                 draft,
                 verdict_dir,
@@ -473,30 +327,10 @@ def probe_no_substrate_calls() -> None:
                 "runtime",
                 "non-git-validator",
             )
-            assert not existed
-            return {
-                "verdict": artifact["verdict"],
-                "acceptance_digest": artifact["acceptance_digest"],
-                "subject_manifest_digest": artifact["subject_manifest_digest"],
-                "verdict_digest": artifact["artifact_digest"],
-                "verdict_ref": str(verdict_path),
-                "author_context_id": artifact["author_context_id"],
-                "validator_context_id": artifact["validator_context_id"],
-                "freshness_attestation": artifact["freshness_attestation"],
-                "checked": artifact["checked"],
-                "not_checked": artifact["not_checked"],
-            }
-
-        rpi_report = rpi.invoke_once(
-            "temporary non-Git experiment",
-            anti_ceremony_guard,
-            plan_phase,
-            implement_phase,
-            validate_phase,
-        )
-        verdict_path = Path(rpi_report["verdict_ref"])
-        assert calls == ["anti-ceremony", "plan", "implement", "validate"], f"RPI dispatch trace is {calls}"
-        assert rpi_report["status"] == "PASS" and verdict_path.is_file()
+        finally:
+            os.environ["PATH"] = saved_path
+        assert not existed
+        assert artifact["verdict"] == "PASS" and verdict_path.is_file()
         assert verdict_path.parent == verdict_dir
         assert not called.exists(), "Validate helper invoked a Git, tracker, push, or delivery executable"
 
@@ -506,7 +340,6 @@ def main() -> int:
         check_removed_skills,
         check_core_schemas,
         check_schema_index_docs,
-        check_bounded_repair_contract,
         check_validate_helper,
         check_dispatch_once,
         probe_no_substrate_calls,

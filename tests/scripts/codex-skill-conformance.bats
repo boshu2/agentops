@@ -142,7 +142,23 @@ run_gate() {
   write_policy $'policy:\n  allow_implicit_invocation: maybe\n'
   run_gate
   [ "$status" -ne 0 ]
-  [[ "$output" == *"policy.allow_implicit_invocation must be a boolean"* ]]
+  [[ "$output" == *"policy.allow_implicit_invocation must be spelled true or false"* ]]
+
+  # Shapes Codex 0.156.1 drops silently, policy included.
+  write_policy $'policy:\n  allow_implicit_invocation: no\n'
+  run_gate
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"Codex reads 'no' as a string"* ]]
+
+  write_policy $'interface: nope\npolicy:\n  allow_implicit_invocation: false\n'
+  run_gate
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"interface must be a mapping"* ]]
+
+  write_policy $'dependencies:\n  tools: nope\npolicy:\n  allow_implicit_invocation: false\n'
+  run_gate
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"dependencies must be a mapping with a tools list"* ]]
 }
 
 @test "every explicit-only source skill carries the Codex policy" {

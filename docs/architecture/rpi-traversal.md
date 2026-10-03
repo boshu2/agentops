@@ -144,9 +144,6 @@ Keep recovery state in the native handoff only when needed to protect evidence.
 Optional [outer-goal guidance](../../skills/rpi/references/outer-goal.md) stays
 outside the core. The native controller owns aggregate enforcement and selected
 future outcomes. Objective text is no proof of stop or budget enforcement.
-The grandfathered pure Python [fixed-dispatch adapter](../../skills/rpi/references/bounded-adapter.md)
-retains its optional once-only dispatch and finite review-round contract; it is
-not a native execution engine or the authority for the lean charter's repairs.
 
 Return the outcome, exact changed subject, strongest checks and material unchecked
 acceptance. `NOT_PLANNED` and `NOT_BUILT` are progress statuses, not verdicts.

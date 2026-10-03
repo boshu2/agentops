@@ -195,8 +195,7 @@ independent support/disclosure review precede Git import (ADR-0016).
 The [RPI skill](skills/rpi/SKILL.md) packages this charter when explicitly selected;
 it is not a prerequisite for native execution or independent review. The
 [architecture reference](docs/architecture/rpi-traversal.md) owns exact evidence
-semantics. Optional outer-goal guidance and the grandfathered fixed-dispatch
-reference adapter stay outside the native core. No scheduler or new AO command
+semantics. Optional outer-goal guidance stays outside the native core. No scheduler or new AO command
 is needed for this harness.
 
 ## Product boundary

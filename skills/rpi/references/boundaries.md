@@ -48,9 +48,8 @@ and repairs sessions. Concurrent writers require authorized disjoint source and
 regeneration scope and isolation. Pass bounded task evidence, not the author's
 desired verdict. Do not start another runtime merely because it exists.
 
-The optional `run_once.py` developer adapter retains its explicitly selected
-fixed-dispatch and finite-round contract in [bounded-adapter.md](bounded-adapter.md).
-It does not restrict native approach revision or implement direct repair for you.
+Nothing in this reference restricts native approach revision or implements
+direct repair for you.
 
 ## Fresh judgment
 

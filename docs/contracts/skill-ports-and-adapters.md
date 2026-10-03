@@ -85,8 +85,7 @@ is optional unless a caller or declared consumer requires it.
 
 A genuine causal stall admits at most one authorized bounded helper per incident;
 known failures get direct repair. Optional outer-goal guidance does not create a
-scheduler, budget account or new command. The pure fixed-dispatch reference
-adapter has its own narrower explicit contract and is not the native charter.
+scheduler, budget account or new command.
 
 Every verdict binds the validator implementation and the verdict, report, and
 subject-manifest schema digests. Proof contracts advance through an explicit

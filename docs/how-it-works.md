@@ -1,12 +1,12 @@
 # How it works
 
-AgentOps connects a requested behavior to implementation and independent
-validation. Your native coding agent owns the authorized change; optional
+AgentOps connects a requested behavior to implementation, checks and, where a
+mistake would be costly, independent validation. Your native coding agent owns the authorized change; optional
 skills provide engineering guidance and `ao` supplies deterministic tools.
 No RPI invocation or skill installation is required for the native path.
 
 ```text
-Accepted intent -> native implementation and checks -> fresh independent judgment -> finish
+Accepted intent -> native implementation and checks -> one fresh read where a mistake is costly -> finish
 ```
 
 ## Agree on observable behavior

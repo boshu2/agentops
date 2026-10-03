@@ -26,6 +26,13 @@ setup_file() {
   export BUILD_SH INIT_SH
 }
 
+@test "heal check fails instead of passing when ao cannot run" {
+  run env AO_SKILL_BUILDER_BIN="$BATS_FILE_TMPDIR/no-such-ao" HEAL_REPO_ROOT="$SCRATCH_ROOT" \
+    bash "$REAL_REPO_ROOT/skills/skill-builder/scripts/heal.sh" --check "$SCRATCH_ROOT/skills/rpi"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"could not run 'ao skills check-source'"* ]]
+}
+
 @test "builder rejects missing and unknown modes" {
   run bash "$BUILD_SH"
   [ "$status" -eq 2 ]

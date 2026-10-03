@@ -25,7 +25,7 @@ coding agents, checks, and independent judgment while existing tools retain
 work, execution, and delivery. The standard path is:
 
 ```text
-Accepted intent -> native implementation and checks -> fresh independent judgment -> finish
+Accepted intent -> native implementation and checks -> one fresh read where a mistake is costly -> finish
 ```
 
 ## Engineering practices in the workflow
@@ -177,7 +177,7 @@ outcomes remain visible. Positive usefulness needs later task evidence. These
 skills maintain external context; they do not train weights or promise
 deterministic inference. [RPI traversal](docs/architecture/rpi-traversal.md) and
 [ADR-0017](docs/adr/ADR-0017-loop-as-control-flow-not-knowledge.md) own the amended
-behavior and the explicitly optional fixed-dispatch reference adapter.
+behavior.
 
 ## Evidence and claim limits
 

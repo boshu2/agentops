@@ -3,11 +3,12 @@
 AgentOps now owns one small product boundary:
 
 ```text
-Accepted intent -> native implementation and checks -> fresh independent judgment -> finish
+Accepted intent -> native implementation and checks -> one fresh read where a mistake is costly -> finish
 ```
 
-(The 3.0 through 3.6 releases stopped after one validation; ADR-0017 added the
-bounded repair phase.)
+(The 3.0 through 3.6 releases stopped after one validation; ADR-0017 added a
+bounded repair phase; 3.9 makes the fresh read conditional, with one round and
+no re-review after a repair.)
 
 Known defects can be repaired directly and an approach can change within the
 accepted outcome, scope and real allowance. The caller owns changes to that

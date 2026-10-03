@@ -18,7 +18,7 @@ if grep -Eq 'Plan is closed for that intent|dependencies:.*anti-ceremony|plan_pa
   echo 'rpi retains a retired phase lock, mandatory specialist or planning packet' >&2
   exit 1
 fi
-for ref in boundaries bounded-adapter outer-goal; do
+for ref in boundaries outer-goal; do
   test -s "$skill_dir/references/$ref.md"
 done
 echo 'rpi lean skill contract: PASS'

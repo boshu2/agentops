@@ -23,10 +23,9 @@ against one isolated sandbox each:
 ```bash
 bash tests/e2e/goals-measure-scenarios.sh
 bash tests/e2e/goals-trace-chain.sh
-bash tests/e2e/rpi-phased-domain.sh
 ```
 
-Other scripts (`goals-*.sh`, `rpi-phased-domain.sh`,
+Other scripts (`goals-*.sh`,
 …) follow the same harness contract and can be run the same way.
 
 ---
@@ -84,7 +83,6 @@ The agentops snapshot (audited 2026-05-18):
 | Feedback rewarding | 5 | 2 | 10 | ✅ mock-free (`proof-run.sh` Phase 5) |
 | Nightly dream cycle | 4 | 2 | 8 | ✅ mock-free (`proof-run.sh` Phase 6) |
 | Goals scenarios link + lint | 4 | 2 | 8 | ✅ mock-free (`goals-scenarios-link.sh`) |
-| RPI phased domain dispatch | 4 | 3 | 12 | ✅ mock-free (`rpi-phased-domain.sh`) |
 | `ao skills link` fresh-HOME install | 5 | 3 | 15 | ✅ mock-free (`.github/workflows/install-e2e.yml`) |
 | openclaw daemon API | 2 | 2 | 4 | ⚠️ httptest fixture — acceptable, internal-only |
 | Claude CLI skill invocation | 3 | 4 | 12 | ⚠️ real Claude, non-deterministic — acceptable as advisory |
@@ -153,7 +151,6 @@ prints a `[e2e-guard] WARNING:` line to stderr.
 | `proof-run.sh` | forge → pool-ingest → cite-promote → lookup → feedback → nightly | 5 of the top-10 highest-risk paths in one suite |
 | `goals-scenarios-link.sh` | create → verify-bidirectional → lint-clean → break → lint-fails | F1 of the goals epic |
 | `goals-measure-scenarios.sh` | measure → assert satisfaction | F2 |
-| `rpi-phased-domain.sh` | dispatch → phase trace | F3 |
 | `goals-trace-chain.sh` | trace → dependency assert | F4 |
 | `goals-steer-auto.sh` | steer → re-prioritize | F5 |
 | `factory-operator-canary.sh` | factory admission → operator action | factory pipeline contract |

@@ -35,6 +35,7 @@ if [[ ! -d "$SKILLS_ROOT" ]]; then
 fi
 
 python3 - "$SKILLS_ROOT" <<'PY'
+import re
 import sys
 from pathlib import Path
 
@@ -116,6 +117,22 @@ def invocation_policy(skill: str, skill_dir: Path) -> tuple[bool, object]:
         return True, None
     if not isinstance(data, dict):
         fail(skill, "agents/openai.yaml must be a mapping")
+        return False, None
+    # Codex 0.156.1 silently drops the whole file, policy included, when any of
+    # these shapes is wrong, so an explicit-only skill would become implicit.
+    if "interface" in data and not isinstance(data["interface"], dict):
+        fail(skill, "agents/openai.yaml interface must be a mapping; Codex ignores the file otherwise")
+        return False, None
+    deps = data.get("dependencies")
+    if deps is not None and (
+        not isinstance(deps, dict) or ("tools" in deps and not isinstance(deps["tools"], list))
+    ):
+        fail(skill, "agents/openai.yaml dependencies must be a mapping with a tools list; Codex ignores the file otherwise")
+        return False, None
+    raw_allow = re.search(r"^\s*allow_implicit_invocation:\s*([^\s#]+)", path.read_text(encoding="utf-8"), re.M)
+    if raw_allow and raw_allow.group(1) not in {"true", "false", "True", "False", "TRUE", "FALSE"}:
+        fail(skill, "agents/openai.yaml policy.allow_implicit_invocation must be spelled true or false; "
+                    f"Codex reads {raw_allow.group(1)!r} as a string and ignores the file")
         return False, None
     policy = data.get("policy")
     if policy is None:

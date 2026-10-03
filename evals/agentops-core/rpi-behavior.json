@@ -69,29 +69,6 @@
   },
   "cases": [
     {
-      "id": "bounded-repair-reference-tests",
-      "title": "Optional fixed-dispatch reference preserves finite supplied-round evaluation",
-      "kind": "command",
-      "objective": "Prove PASS converges, FAIL/NOT_PROVEN repair under the law, and evidence of acceptance progress and defect cause gates bounded repair (ADR-0017).",
-      "runtime": "shell",
-      "inputs": {
-        "cwd": "../..",
-        "shell": "python3 skills/rpi/tests/test_run_once.py && python3 scripts/check-cathedral-cut-conformance.py"
-      },
-      "expectations": [
-        {
-          "type": "exit_code",
-          "value": 0
-        }
-      ],
-      "dimensions": [
-        "correctness",
-        "process_adherence",
-        "safety"
-      ],
-      "critical": true
-    },
-    {
       "id": "rpi-skill-stop-contract",
       "title": "Lean RPI owns authorized outcome through checks and fresh judgment",
       "kind": "artifact_check",

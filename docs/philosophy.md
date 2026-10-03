@@ -10,7 +10,8 @@ own work. AgentOps therefore provides a small evidence protocol:
 
 ```text
 intent -> one bounded experiment -> exact subject identity
-       -> fresh independent judgment -> bounded repair -> report
+       -> checks, plus one fresh judgment where a mistake is costly
+       -> repair confirmed by a check -> report
 ```
 
 The protocol is behavior-first. Plan expresses one behavior as normal and edge

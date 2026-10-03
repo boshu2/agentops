@@ -78,6 +78,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ao doctor` no longer has the `fm-skills-stale-codex-sync` failure mode, and
   its fixers can no longer write to `~/.codex/plugins/cache/agentops-marketplace`
   or `~/.codex/.agentops-codex-install.json`.
+- The fixed-dispatch RPI reference adapter, which modelled repeated review
+  rounds: `skills/rpi/scripts/run_once.py`, its tests, its reference page and
+  `skills/rpi/references/rpi.feature`, plus `tests/e2e/rpi-phased-domain.sh`, a
+  no-op tombstone that existed only to keep that feature file's scenario link
+  resolving.
+- The Skill Builder converter's Codex target no longer writes `prompt.md`;
+  Codex does not read it.
 
 - Bundled Flywheel tool skills (`account-rotation`, `agent-mail`, `cass`, `cc-hooks`, `dcg`,
   `ms`, `ntm`, `rch`, `sbh`, `using-flywheel`) and their generated Codex copies.
@@ -114,6 +121,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `~/.pi/agent/skills`, and detect Pi by `~/.pi/agent`. Links an earlier version
   made in `~/.pi/skills` are no longer swept by default; remove them with
   `ao skills unlink --dest ~/.pi/skills`.
+- Skill Builder's `heal.sh --check` exits 2 with a message when `ao` cannot run.
+  It used to report a pass in non-strict mode.
+- The Codex policy check also fails on `agents/openai.yaml` shapes Codex
+  silently ignores: a non-object `interface`, `dependencies` that is not a
+  mapping with a `tools` list, and a boolean spelled other than `true` or
+  `false`. Any of these made an explicit-only skill implicitly selectable.
+- The conformance probe that checks the Validate helper makes no Git, tracker or
+  delivery calls now also intercepts calls made in-process; before, those
+  reached the real binaries unnoticed.
+- The user-facing docs (`PRODUCT.md`, the docs index, how-it-works, architecture,
+  philosophy, migration and CI pages) describe validation as checks and CI plus
+  one fresh read where a mistake is costly, matching the skills.
 
 ## [3.8.0] - 2026-09-22
 

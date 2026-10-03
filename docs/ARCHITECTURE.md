@@ -1,16 +1,16 @@
 # Architecture
 
 AgentOps defaults to native execution with zero mandatory skills. Its small
-semantic core binds acceptance to exact content and fresh independent judgment;
+semantic core binds acceptance to exact content and, where a mistake is costly, one fresh independent judgment;
 optional skills and adapters package guidance around that boundary.
 
 ```text
 existing bead or caller intent
   -> on-demand planning and bounded implementation
   -> runtime-derived subject-manifest.v1 + check receipts
-  -> fresh independent judgment
-  -> PASS | FAIL | NOT_PROVEN
-  -> direct repair and fresh revalidation within real bounds when needed
+  -> checks and CI as the gate for an ordinary change
+  -> one fresh judgment where a mistake is costly: PASS | FAIL | NOT_PROVEN
+  -> direct repair, confirmed by a check rather than another judgment
   -> completed acceptance or truthful unfinished result
 ```
 
@@ -33,9 +33,7 @@ existing bead or caller intent
 Known findings are repaired within authority and real remaining bounds. A
 genuine causal stall admits at most one bounded fresh helper; an unhelpful
 answer, cancellation, refusal or a spent real bound ends the attempt. Explicit
-repair-round bounds still apply, and no invocation renews an allowance. The
-[fixed-dispatch adapter](../skills/rpi/references/bounded-adapter.md) keeps its
-narrower optional contract; it does not govern direct native execution.
+repair-round bounds still apply, and no invocation renews an allowance.
 
 ## Hexagonal boundary
 

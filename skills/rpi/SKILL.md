@@ -138,9 +138,7 @@ what was checked and what was not, and finish.
 
 [Memory](../memory/SKILL.md), specialists and runtime adapters are on demand;
 no-match and no-change are valid. Read [boundaries](references/boundaries.md)
-when authority, scope, evidence or delivery is at issue. The optional
-[fixed-dispatch adapter](references/bounded-adapter.md) is not the native
-execution engine. Do not invent a runtime, hidden machine artifact or workflow
+when authority, scope, evidence or delivery is at issue. Do not invent a runtime, hidden machine artifact or workflow
 to finish an ordinary change.
 
 Report the result, strongest checks and material limits. Plans, activity,
