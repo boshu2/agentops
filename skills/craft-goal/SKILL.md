@@ -28,7 +28,7 @@ metadata:
   effects: []
   canonical_status: canonical
   disposition: keep_strategy
-  stability: experimental
+  stability: stable
 output_contract: 'human-readable SAFE_TO_CREATE, USE_RPI, or UNSAFE_GOAL decision; copy-paste outer-goal prompt when safe; exact budgets, assumptions, and lint findings'
 ---
 

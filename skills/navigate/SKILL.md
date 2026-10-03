@@ -15,7 +15,7 @@ metadata:
   effects: [update_native_graph]
   canonical_status: canonical
   disposition: keep_strategy
-  stability: experimental
+  stability: stable
 output_contract: 'wave checkpoint in the existing handoff or root epic: acceptance matrix, frontier, wave and reasons, ratchets and churn, budget, helper use and native state, next thesis, open decisions; a single pass returns it with hygiene findings and writes nothing'
 ---
 

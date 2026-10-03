@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   protection for the product, and a repair does not start another review. A
   requested binding verdict keeps its PASS rule; `NOT_PROVEN` is reported with
   its gaps instead of being chased.
+- Craft Goal, Interview and Navigate are marked stable; the README no longer
+  labels goals experimental.
 - The Codex plugin now loads `skills/` directly. `.codex-plugin/plugin.json`
   ships `./skills`, the same tree `ao skills link` and `npx skills` already
   install, instead of a generated copy. Skill names, descriptions and bodies are
