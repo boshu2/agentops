@@ -133,3 +133,32 @@ func TestVersion_FallbackMatchesReleaseManifests(t *testing.T) {
 		t.Errorf("%s: EXPECTED_VERSION default = %q, want %q (main.go release fallback)", verifyRel, got, version)
 	}
 }
+
+// TestVersion_FallbackHasCuratedReleaseNotes guards the release-cut invariant
+// that the checked-in `version` fallback has a curated release-notes file.
+//
+// `scripts/extract-release-notes.sh` hard-errors without one, and the publisher
+// runs it only after the tag is pushed. `tests/docs/validate-doc-release.sh`
+// surfaces the sibling CHANGELOG.md requirement before the tag; nothing
+// surfaced this one, so a version bump without notes failed only at publish.
+// The publisher takes the first match, so a second file for the same version
+// makes the published body ambiguous and is rejected too.
+func TestVersion_FallbackHasCuratedReleaseNotes(t *testing.T) {
+	if strings.Contains(version, "-g") || strings.HasSuffix(version, "-dirty") {
+		t.Skipf("version %q is an ldflags-injected build-describe string, not the checked-in fallback", version)
+	}
+
+	root := findReleaseManifestRoot(t)
+	if root == "" {
+		t.Skip("not running inside an AgentOps checkout; no release notes to look for")
+	}
+
+	pattern := filepath.Join("docs", "releases", "*-v"+version+"-notes.md")
+	matches, err := filepath.Glob(filepath.Join(root, pattern))
+	if err != nil {
+		t.Fatalf("glob %s: %v", pattern, err)
+	}
+	if len(matches) != 1 {
+		t.Fatalf("found %d curated release-notes files matching %s, want exactly 1: %v", len(matches), pattern, matches)
+	}
+}

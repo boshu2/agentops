@@ -55,7 +55,7 @@ requirements. Most need nothing beyond the coding agent; these need more:
 | `using-gc` | `ao` | rig prep runs `ao gc prepare` and `ao gc check` |
 | `doc` | `ao`, optional | a requested continuity handoff may use `ao session handoff`/`rehydrate` |
 | `reverse-engineer` | `python3` | Phase 1's mechanical teardown runs `scripts/reverse_engineer.py` |
-| `skill-builder` | `python3`, conditional | Create mode's `build.sh` runs `scripts/generate-skill-mesh.py`; heal/check/audit modes are bash-only |
+| `skill-builder` | `ao` 3.9 or later outside a source checkout, Go inside one; `python3`, conditional | build, check, heal and audit run through `ao skills`; build (without `--init-only`) and heal's fix mode also run `scripts/generate-skill-mesh.py`, and `audit.sh --legacy` needs PyYAML |
 | `memory` | `python3`, conditional | a selected toil investigation can use the repository helper `scripts/toil-mining/recent_human.py` on cleared Codex sources |
 | `security` | `python3`, conditional | the composable suite and offline redteam surfaces run `security_suite.py` when that scan type is selected |
 
@@ -194,11 +194,13 @@ npx installs:
 npx skills@latest update
 ```
 
-Contributor source links:
+Contributor source links. Upgrade `ao` first when the release changes the CLI
+(3.9 does: a 3.8 `ao` refuses a checkout without `skills-codex/`):
 
 ```bash
 cd ~/.local/share/agentops
 git pull --ff-only
+(cd cli && go install ./cmd/ao)
 ao skills link --skill test --skill refactor
 ```
 
