@@ -20,12 +20,17 @@ track the work across sessions, and check the result.**
 A request like “make retries safe” leaves the agent room to guess.
 [Plan](skills/plan/SKILL.md) helps you spell out what should happen when the same
 job arrives twice, and [Test](skills/test/SKILL.md) helps turn that behavior into
-a check. For bigger work, [Beads](https://github.com/gastownhall/beads) keeps
-requirements, decisions and dependencies in a work graph;
-[Navigate](skills/navigate/SKILL.md) uses that graph to pick what can start next.
-[Validate](skills/validate/SKILL.md) judges the finished change from a fresh
-session when you request it, a mistake is hard to undo, or checks leave behavior
-uncovered.
+a check. [Validate](skills/validate/SKILL.md) judges the finished change from a
+fresh session when you request it, a mistake is hard to undo, or checks leave
+behavior uncovered.
+
+[Beads](https://github.com/gastownhall/beads) gives that work a memory beyond the
+chat. Keep the accepted intent, decisions, dependencies and result notes together,
+with links to the code and checks that support them. A later session can find
+what was tried, why it changed and what remains open.
+[Navigate](skills/navigate/SKILL.md) reads the graph to choose what can start next;
+[Memory](skills/memory/SKILL.md) helps turn supported findings from that record
+into reports or reviewed project context for future work.
 
 AgentOps provides optional [skills](docs/SKILL-ROUTER.md) and a [CLI](#optional-ao-cli).
 Use the skills with Claude Code, Codex, Cursor, OpenCode, Gemini CLI, Pi and
@@ -48,9 +53,9 @@ settle those expectations before the agent starts editing.
 | When you need to… | AgentOps adds |
 |---|---|
 | Get the agent to build what you meant | [Plan](skills/plan/SKILL.md) makes the expected behavior clear enough to implement and test. [Domain](skills/domain/SKILL.md) keeps the same names for concepts in the request, code and tests. |
-| Keep a project moving after the chat ends | [Interview](skills/interview/SKILL.md) settles a large goal with you. [Beads](https://github.com/gastownhall/beads) records tasks, decisions, dependencies and results; [Navigate](skills/navigate/SKILL.md) reads that graph to identify ready work, blockers and gaps in the goal. |
+| Keep a project moving after the chat ends | [Interview](skills/interview/SKILL.md) settles a large goal with you. [Beads](https://github.com/gastownhall/beads) preserves its intent, decisions and results in a searchable work graph, with persistent project memories for later sessions. [Navigate](skills/navigate/SKILL.md) identifies ready work, blockers and gaps in the goal. |
 | Check whether the finished change meets the request | [Test](skills/test/SKILL.md) helps write checks for the intended behavior. Ordinary changes finish on checks and CI; [Validate](skills/validate/SKILL.md) adds one fresh review when requested, hard to undo, or uncovered by a deterministic check. |
-| Reuse an investigation in a later session | [Research](skills/research/SKILL.md) traces the code and cites what it finds. [Memory](skills/memory/SKILL.md) helps turn supported findings into reviewed project context, so a later agent can find the lesson and check its sources. |
+| Turn earlier work into useful context | [Research](skills/research/SKILL.md) traces the code and cites what it finds. [Memory](skills/memory/SKILL.md) can draw on Beads handoffs, Git changes and check results to explain a decision in a report, or curate supported lessons into reviewed project documents. Later agents can recall the lesson and follow its sources. |
 | Examine a difficult decision from several perspectives | [Council](skills/council/SKILL.md) compares or debates judgments from fresh contexts, with the models and perspectives you choose. [Idea Genie](skills/idea-genie/SKILL.md) develops options when the approach is still open. |
 
 <a id="install"></a>
@@ -195,10 +200,34 @@ needs Beads: `brew install beads`, then `bd init` in your repo):
   <img src="docs/assets/agentops-goal-graph.svg" alt="A goal observes the Beads work graph, picks ready beads, consumes checks and any verdicts, then ratchets or stops. Each bead gets one RPI: Plan when unclear, Implement, and checks. When delegation is authorized, each fresh worker starts with one bead. Validate runs in a separate fresh context only when requested, when a mistake is hard to undo, or when no deterministic check covers the change. Results and notes return to the bead." width="100%">
 </p>
 
-**Beads holds the plan.** [Beads](https://github.com/gastownhall/beads) (`bd`)
-keeps work as a dependency graph outside any conversation, so a goal survives
-compaction and restarts. The root epic holds acceptance; each child bead is one
-RPI with its question, scope, notes, checks and any verdict. `bd ready` lists what can start now.
+**Beads remembers the work.** [Beads](https://github.com/gastownhall/beads) (`bd`)
+keeps the goal and its history outside any conversation. The root epic holds
+acceptance; child beads carry the scoped work, design decisions, handoffs and
+result notes. Record which checks ran and link any review evidence to the same
+bead. That connects the original intent to the checked output, so the next
+session can continue from the record instead of reconstructing the chat.
+`bd ready` finds unblocked work; search and history help explain earlier choices.
+
+Beads also has a [persistent memory store](https://github.com/gastownhall/beads/blob/main/docs/cli-reference/remember.md).
+`bd remember` saves project facts, `bd memories` searches them, `bd recall`
+retrieves one by key, and `bd prime` brings stored memories into session context.
+The work graph and the memory store serve different needs: one preserves what
+happened; the other keeps selected facts easy to find again.
+
+[Memory](skills/memory/SKILL.md) helps you use that material: recall relevant
+context, examine recorded decisions and outcomes, or draft a report with links
+to its evidence. When you want a reusable project document, it curates supported
+findings into reviewed `.context/` pages or an external document bundle. Beads
+keeps the work record; Git and the original evidence locations keep the code and
+check artifacts. Reusable documents link back to those sources.
+
+```bash
+bd search "redelivery" --status all     # include finished work
+bd show <bead-id>                        # intent, notes and relationships
+bd history <bead-id>                     # how the record changed
+bd remember "Redelivery returns the stored Job result" --key job-redelivery
+bd recall job-redelivery                # retrieve the saved project fact
+```
 
 **One bead per worker.** When the goal delegates, the orchestrator holds the
 graph and results, and each worker starts with one bead instead of the
