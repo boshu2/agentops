@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 790" role="img" aria-labelledby="ggTitle ggDesc">
   <title id="ggTitle">AgentOps goal over the bead graph: one bead per worker</title>
-  <desc id="ggDesc">A goal acts as the orchestrator. It observes the Beads work graph, picks a bounded wave of ready beads, consumes their verdicts, and ratchets or stops. The graph holds a root epic for the goal outcome and child beads: bead A is closed with a PASS verdict, bead B was discovered from A and is ready, bead C is ready, and bead D is blocked by C. From the ready frontier, B and C are picked for the wave. Each picked bead gets one RPI: when the goal delegates, a worker that starts with only that bead plans if unclear and implements, then Validate runs in a separate fresh context that is not the author. The verdict and notes are written back to the bead, where the goal reads them on its next pass.</desc>
+  <desc id="ggDesc">A goal acts as the orchestrator. It observes the Beads work graph, picks a bounded wave of ready beads, consumes their check results and any verdicts, and ratchets or stops. The graph holds a root epic for the goal outcome and child beads: bead A is closed with a PASS verdict, bead B was discovered from A and is ready, bead C is ready, and bead D is blocked by C. From the ready frontier, B and C are picked for the wave. Each picked bead gets one RPI: when the goal delegates, a worker that starts with only that bead plans if unclear and implements, runs checks, and uses one fresh author-distinct Validate only when requested, when a mistake cannot be cheaply undone, or when no deterministic check covers the change. Repairs use affected checks without automatic re-review. Check results, any verdict and notes are written back to the bead, where the goal reads them on its next pass.</desc>
 
   <defs>
     <linearGradient id="ggPanel" x1="0" y1="0" x2="0" y2="1">
@@ -40,7 +40,7 @@
     <rect x="285" y="140" width="130" height="40" rx="6" fill="url(#ggPanel)" stroke="#f59e0b" stroke-opacity="0.5"/>
     <text x="350" y="166" fill="#e8e4dd">pick a wave</text>
     <rect x="455" y="140" width="180" height="40" rx="6" fill="url(#ggPanel)" stroke="#f59e0b" stroke-opacity="0.5"/>
-    <text x="545" y="166" fill="#e8e4dd">consume verdicts</text>
+    <text x="545" y="166" fill="#e8e4dd">consume results</text>
     <rect x="675" y="140" width="170" height="40" rx="6" fill="url(#ggPanel)" stroke="#f59e0b" stroke-opacity="0.5"/>
     <text x="760" y="166" fill="#e8e4dd">ratchet or stop</text>
   </g>
@@ -135,23 +135,19 @@
     <rect x="184" y="652" width="118" height="38" rx="6" fill="url(#ggPanel)" stroke="#f59e0b" stroke-opacity="0.5"/>
     <text x="243" y="677" fill="#e8e4dd">Implement</text>
     <rect x="328" y="652" width="108" height="38" rx="6" fill="url(#ggPanel)" stroke="#fbbf24" stroke-opacity="0.95"/>
-    <text x="382" y="677" fill="#fbbf24">Validate</text>
+    <text x="382" y="677" fill="#fbbf24">Checks</text>
 
     <rect x="503" y="652" width="70" height="38" rx="6" fill="url(#ggPanel)" stroke="#f59e0b" stroke-opacity="0.5" stroke-dasharray="6 4"/>
     <text x="538" y="677" fill="#e8e4dd">Plan</text>
     <rect x="599" y="652" width="118" height="38" rx="6" fill="url(#ggPanel)" stroke="#f59e0b" stroke-opacity="0.5"/>
     <text x="658" y="677" fill="#e8e4dd">Implement</text>
     <rect x="743" y="652" width="108" height="38" rx="6" fill="url(#ggPanel)" stroke="#fbbf24" stroke-opacity="0.95"/>
-    <text x="797" y="677" fill="#fbbf24">Validate</text>
+    <text x="797" y="677" fill="#fbbf24">Checks</text>
 
-    <text x="262" y="718" fill="#b78318">Validate: separate fresh context</text>
-    <text x="677" y="718" fill="#b78318">Validate: separate fresh context</text>
+    <text x="262" y="718" fill="#b78318">Validate if needed: fresh context</text>
+    <text x="677" y="718" fill="#b78318">Validate if needed: fresh context</text>
   </g>
-  <!-- worker context | separate validator context -->
-  <g fill="none" stroke="#fbbf24" stroke-opacity="0.6" stroke-width="1.2" stroke-dasharray="2 4">
-    <line x1="315" y1="644" x2="315" y2="698"/>
-    <line x1="730" y1="644" x2="730" y2="698"/>
-  </g>
+  <!-- Review, when needed, runs outside the worker context. -->
   <g fill="none" stroke="#fbbf24" stroke-width="1.4" marker-end="url(#ggArrow)">
     <line x1="158" y1="671" x2="182" y2="671"/>
     <line x1="302" y1="671" x2="326" y2="671"/>
@@ -164,5 +160,5 @@
     <path d="M677 735 V760"/>
     <path d="M262 735 V760 H905 V470 H872" marker-end="url(#ggArrow)"/>
   </g>
-  <text transform="translate(926 615) rotate(-90)" text-anchor="middle" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="17" fill="#b78318">verdict + notes on the bead</text>
+  <text transform="translate(926 615) rotate(-90)" text-anchor="middle" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="17" fill="#b78318">checks / verdict + notes on bead</text>
 </svg>

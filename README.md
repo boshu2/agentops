@@ -4,8 +4,7 @@
 
 # AgentOps
 
-**DevOps discipline for AI coding agents: shape the work, track it as a graph,
-and get each change judged by a fresh agent session that didn't write it.**
+**DevOps discipline for AI coding agents.**
 
 [![Validate](https://github.com/boshu2/agentops/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/boshu2/agentops/actions/workflows/validate.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
@@ -13,33 +12,57 @@ and get each change judged by a fresh agent session that didn't write it.**
 [![Skills](https://img.shields.io/badge/skills-catalog-black.svg)](docs/SKILL-ROUTER.md)
 
 [Install](#quickstart) · [The loop](#the-operational-loop) ·
-[Goals](#goals) · [Try it](#try-it) · [Skills](#skills-at-a-glance)
+[Goals](#goals) · [Try it](#try-it) · [Skills](#skills-at-a-glance) ·
+[Beyond AgentOps](#beyond-agentops)
 
 </div>
 
-AgentOps provides optional skills and a CLI (`ao`). The same `SKILL.md` skills work
-with coding agents (Claude Code, Codex, Cursor, OpenCode, Gemini CLI, Pi and
-others) and personal assistants (OpenClaw, Grok Bot). You state intent as
-behavior in your domain's words. The skills carry it through one change
-(Plan → Implement → checks, with Validate where a mistake is costly: an **RPI**)
-or, for bigger work, a goal made of
-many RPIs tracked in
-[Beads](https://github.com/gastownhall/beads), a dependency-aware issue tracker.
+DevOps makes software delivery repeatable through shared practices, automated
+checks and feedback. AgentOps brings that discipline to agentic coding sessions:
+paved paths your agents can follow from intent to checked results, with memory
+to carry useful context into the next task.
+
+Those paths combine [skills](docs/SKILL-ROUTER.md) with the [`ao` CLI](#optional-ao-cli)
+and your existing engineering tools. [Plan](skills/plan/SKILL.md) clarifies the
+expected behavior; [Test](skills/test/SKILL.md) helps check it;
+[Validate](skills/validate/SKILL.md) adds independent judgment where needed.
+Skills guide the agent's decisions; executable gates check specific contracts.
+[Beads](https://github.com/gastownhall/beads) preserves the work graph, decisions,
+results and project memories. [Memory](skills/memory/SKILL.md) curates supported
+findings into linked project knowledge, connecting lessons to the work and
+sources behind them. The next session can use that record instead of starting over.
+
+Use these paths with Claude Code, Codex, Cursor, OpenCode, Gemini CLI, Pi and
+other coding agents, or personal assistants such as OpenClaw and Grok Bot.
+Start with [one useful task](#try-it); follow the [operational loop](#the-operational-loop)
+for a change or the [goal workflow](#goals) for work across sessions. When you
+need a larger software factory, [extend the same practices](#beyond-agentops)
+with Gas City or tools from the Agentic Coding Flywheel.
 
 <a id="why-these-skills-exist"></a>
 
 ## Why use AgentOps?
 
-| When the agent… | AgentOps adds |
+A [software factory](https://learn.microsoft.com/en-us/archive/msdn-magazine/2006/december/service-station-web-service-software-factory)
+makes engineering practices reusable through tools, guidance and repeatable
+workflows. AgentOps brings that approach into the coding session: clear intent,
+automated checks, recorded decisions and a feedback loop into later work. Pick
+the path your task needs and use the same practices when you change agents.
+
+[Behavior-driven development (BDD)](https://dannorth.net/introducing-bdd/)
+starts by agreeing on what the software should do in a concrete situation.
+For retries, that could mean: “If a completed job arrives again, return its
+result and charge the customer only once.” The same behavior guides the
+implementation, its tests and any review. [Plan](skills/plan/SKILL.md) helps you
+settle those expectations before the agent starts editing.
+
+| When you need to… | AgentOps adds |
 |---|---|
-| Builds something different from what you meant | Given/When/Then examples shared by implementation and review |
-| Uses three names for one concept | One domain term per concept, in intent, code and tests |
-| Says “done” after a green test run on a change that matters | A fresh judge that didn't write the change |
-| Loses the thread on work bigger than one session | A Beads graph holding intent, dependencies and verdicts |
-| Runs off with a half-formed goal | An interview that settles the goal before agents go autonomous |
-| Gives one model's answer to a hard call | A [council](skills/council/SKILL.md): judges in fresh contexts, each with the model, effort and perspective you assign (one model family or several vendors), compare, duel (score each other's ideas) or debate to your majority, keep dissent, and can answer an interview for you; [Idea Genie](skills/idea-genie/SKILL.md) brainstorms options |
-| Loses its plans, research and decisions when the session ends | Plans and decisions saved on the bead or issue (Plan, Interview, Navigate); research and idea reports under `.agents/`; council reports where you choose |
-| Repeats the last session's investigation | [Memory](skills/memory/SKILL.md) turns reviewed, disclosure-checked lessons into `.context/` pages safe to commit |
+| Get the agent to build what you meant | [Plan](skills/plan/SKILL.md) makes the expected behavior clear enough to implement and test. [Domain](skills/domain/SKILL.md) keeps the same names for concepts in the request, code and tests. |
+| Keep a project moving after the chat ends | [Interview](skills/interview/SKILL.md) settles a large goal with you. [Beads](https://github.com/gastownhall/beads) preserves its intent, decisions and results in a searchable work graph, with persistent project memories for later sessions. [Navigate](skills/navigate/SKILL.md) identifies ready work, blockers and gaps in the goal. |
+| Check whether the finished change meets the request | [Test](skills/test/SKILL.md) helps write checks for the intended behavior. Ordinary changes finish on checks and CI; [Validate](skills/validate/SKILL.md) adds one fresh review when requested, hard to undo, or uncovered by a deterministic check. |
+| Turn earlier work into useful context | [Research](skills/research/SKILL.md) traces the code and cites what it finds. [Memory](skills/memory/SKILL.md) can draw on Beads handoffs, Git changes and check results to explain a decision in a report, or curate supported lessons into reviewed project documents. Later agents can recall the lesson and follow its sources. |
+| Make a useful method repeatable | [Skill Builder](skills/skill-builder/SKILL.md) turns supported expertise into guidance with clear inputs, actions and limits. [Skill Eval](skills/skill-eval/SKILL.md) measures whether that guidance helps a named task, so it can be retained, revised or removed. |
 
 <a id="install"></a>
 
@@ -112,7 +135,9 @@ vary by agent: this README shows Claude Code's `/agentops:<skill>`; Codex uses
 
 ## The operational loop
 
-Each change is shaped, built and judged. You (or Plan) write intent as
+Each change is shaped, built and checked. Use one fresh review when requested,
+when a mistake cannot be cheaply undone, or when no deterministic check covers
+the changed behavior. You (or Plan) write intent as
 behavior ([BDD](https://dannorth.net/introducing-bdd/)), using one word per
 concept ([DDD](https://martinfowler.com/bliki/DomainDrivenDesign.html)'s
 [ubiquitous language](https://martinfowler.com/bliki/UbiquitousLanguage.html)).
@@ -140,18 +165,21 @@ action and an observable result. Keep scenarios in the issue or conversation;
 no `.feature` file is required.
 
 <p align="center">
-  <img src="docs/assets/agentops-routes.svg" alt="AgentOps routes: intent goes to Plan when unclear or straight to Implement when clear; Implement runs native checks, then a fresh judgment independent of the author. Accepted work finishes, failed behavior returns to Implement for repair, missing evidence is gathered and judged again. An existing change enters at fresh judgment. An optional learning loop turns results into reviewed .context/ pages that later work queries." width="100%">
+  <img src="docs/assets/agentops-routes.svg" alt="Clear accepted intent goes straight to Implement; unclear intent goes to Plan first. Implement runs native checks and CI. Ordinary changes finish on those checks. Use one fresh author-distinct review when requested, when a mistake cannot be cheaply undone, or when no deterministic check covers the changed behavior. An existing change can enter at review. Repair findings within scope and confirm with affected checks; another review requires a caller request. NOT_PROVEN reports missing evidence without claiming PASS. The optional learning loop sends a result to a protected draft, fresh support and disclosure review, reviewed .context/ pages, and later work." width="100%">
 </p>
 
 | Step | Skill | What it does with the scenarios |
 |---|---|---|
 | Shape | [`plan`](skills/plan/SKILL.md) | Turns the request into scenarios for one small change. Skip it when intent is clear. |
 | Build | [`implement`](skills/implement/SKILL.md) | Makes the change and tests both scenarios. |
-| Judge | [`validate`](skills/validate/SKILL.md) | A new session that didn't write it returns `PASS`, `FAIL` or `NOT_PROVEN` against the same scenarios. |
+| Judge when needed | [`validate`](skills/validate/SKILL.md) | A new session that didn't write it returns `PASS`, `FAIL` or `NOT_PROVEN` against the same scenarios. |
 | Learn | [`memory`](skills/memory/SKILL.md) | Optional: reviewed `.context/` pages that later work can query. |
 
-Enter at the step you need; an existing change goes straight to Validate. The
-author never approves its own work. Merging and releasing follow your repo's rules.
+Enter at the step you need. An existing change can enter at Validate when an
+acceptance judgment is needed. Ordinary changes finish on checks and CI. Review
+is one round: repair findings and confirm with affected checks; review again only
+when you ask. Report `NOT_PROVEN` with its gaps. The author cannot issue its own
+`PASS`. Merging and releasing follow your repo's rules.
 
 <a id="goals-many-rpis-over-a-bead-graph"></a>
 
@@ -170,21 +198,46 @@ needs Beads: `brew install beads`, then `bd init` in your repo):
    prompt to paste into `/goal` (Claude Code or Codex), `USE_RPI` (small enough
    for `rpi`), or `UNSAFE_GOAL` plus what's undecided. It creates nothing itself.
 3. **[Navigate](skills/navigate/SKILL.md) each round.** Picks a few ready work
-   items (beads); each gets one RPI and a fresh Validate. The goal ends
+   items (beads); each gets one RPI, checks and CI, with one fresh Validate
+   when requested, hard to undo, or uncovered by a deterministic check. The goal ends
    `ACHIEVED`, `NOT_ACHIEVED` or `NEEDS_OPERATOR`.
 
 <p align="center">
-  <img src="docs/assets/agentops-goal-graph.svg" alt="A goal acts as orchestrator: it observes the Beads work graph, picks a bounded wave of ready beads, consumes verdicts, then ratchets or stops. The graph holds a root epic and child beads: A closed with PASS, B discovered from A and ready, C ready, D blocked by C. Picked beads B and C each get one RPI: when the goal delegates, a fresh worker that starts with only that bead plans if unclear and implements, and Validate runs in a separate fresh context. Verdicts and notes are written back to the bead." width="100%">
+  <img src="docs/assets/agentops-goal-graph.svg" alt="A goal observes the Beads work graph, picks ready beads, consumes checks and any verdicts, then ratchets or stops. Each bead gets one RPI: Plan when unclear, Implement, and checks. When delegation is authorized, each fresh worker starts with one bead. Validate runs in a separate fresh context only when requested, when a mistake is hard to undo, or when no deterministic check covers the change. Results and notes return to the bead." width="100%">
 </p>
 
-**Beads holds the plan.** [Beads](https://github.com/gastownhall/beads) (`bd`)
-keeps work as a dependency graph outside any conversation, so a goal survives
-compaction and restarts. The root epic holds acceptance; each child bead is one
-RPI with its question, scope, notes and verdict. `bd ready` lists what can start now.
+**Beads remembers the work.** [Beads](https://github.com/gastownhall/beads) (`bd`)
+keeps the goal and its history outside any conversation. The root epic holds
+acceptance; child beads carry the scoped work, design decisions, handoffs and
+result notes. Record which checks ran and link any review evidence to the same
+bead. That connects the original intent to the checked output, so the next
+session can continue from the record instead of reconstructing the chat.
+`bd ready` finds unblocked work; search and history help explain earlier choices.
+
+Beads also has a [persistent memory store](https://github.com/gastownhall/beads/blob/main/docs/cli-reference/remember.md).
+`bd remember` saves project facts, `bd memories` searches them, `bd recall`
+retrieves one by key, and `bd prime` brings stored memories into session context.
+The work graph and the memory store serve different needs: one preserves what
+happened; the other keeps selected facts easy to find again.
+
+[Memory](skills/memory/SKILL.md) helps you use that material: recall relevant
+context, examine recorded decisions and outcomes, or draft a report with links
+to its evidence. When you want a reusable project document, it curates supported
+findings into reviewed `.context/` pages or an external document bundle. Beads
+keeps the work record; Git and the original evidence locations keep the code and
+check artifacts. Reusable documents link back to those sources.
+
+```bash
+bd search "redelivery" --status all     # include finished work
+bd show <bead-id>                        # intent, notes and relationships
+bd history <bead-id>                     # how the record changed
+bd remember "Redelivery returns the stored Job result" --key job-redelivery
+bd recall job-redelivery                # retrieve the saved project fact
+```
 
 **One bead per worker.** When the goal delegates, the orchestrator holds the
-graph and verdicts, and each worker starts with one bead instead of the
-orchestrator's transcript. Validators start fresh.
+graph and results, and each worker starts with one bead instead of the
+orchestrator's transcript. Reviewers, when needed, start fresh.
 
 ```bash
 bd create "Job redelivery is idempotent" -t epic
@@ -207,7 +260,7 @@ Start read-only in any repo, then swap the Job example for your own change.
 # One change
 /agentops:plan make Job redelivery return the completed result without repeating the side effect
 /agentops:implement
-/agentops:validate     # new session: paste the scenarios, the commit, and the authoring session's ID (your name for a hand-written change)
+/agentops:validate     # when requested, hard to undo, or uncovered by checks; use a new session
 
 # One outcome, end to end
 /agentops:rpi make Job redelivery return the completed result without repeating the side effect
@@ -416,7 +469,7 @@ runtime or selected factory owns execution. Your repository owns delivery.
 
 Native execution requires zero AgentOps skills. [RPI](skills/rpi/SKILL.md),
 [Gas City](skills/using-gc/SKILL.md) and [Agentic Coding Flywheel](https://agent-flywheel.com)
-are optional; their completion reports do not replace independent review.
+are optional; their completion reports do not replace required checks or judgment.
 
 On request, Validate can save `verdict.v2` with exact content, checked scope and
 evidence. New proof belongs in selected, protected storage outside Git;
@@ -461,7 +514,8 @@ automatic knowledge compounding. See [product evidence and limits](PRODUCT.md).
 **Do I need the CLI, an orchestrator or several agents?**
 
 No. Start with one coding agent and a skill such as Research, Test or Refactor.
-Obtain fresh, author-distinct judgment when a change is ready. The Validate skill
+Use checks and CI for ordinary changes. Obtain one fresh, author-distinct
+judgment when requested, hard to undo, or uncovered by a deterministic check. The Validate skill
 requires `ao`; native independent review does not.
 
 **Must the reviewer use another model provider?**
@@ -476,31 +530,50 @@ external storage, following each owner's access and retention rules.
 
 </details>
 
-## Recommended tools and skills
+## Beyond AgentOps
 
-These independent projects can extend your AgentOps setup. Get their tools and
-skills directly from their authors; they are not bundled with AgentOps.
+Start with one agent and a paved path. When work needs several agents, a factory
+can add scheduling, coordination and runtime supervision. Install AgentOps
+skills into its agent runtimes to carry the same behavior, testing and review
+practices into each task. The factory runs the agents; your checks and any
+required independent judgment establish what the result proves.
 
-- **[Gas City](https://github.com/gastownhall/gascity)**, from the organization
-  behind [Beads](https://github.com/gastownhall/beads), provides the building
-  blocks for a software factory. AgentOps includes [Gas City guidance](skills/using-gc/SKILL.md)
-  and an [executor integration pack](packs/agentops-executor/pack.toml).
-- **[Agentic Coding Flywheel](https://agent-flywheel.com)** is Jeffrey Emanuel's
-  ([Dicklesworthstone](https://github.com/Dicklesworthstone)) ecosystem for
-  planning and coordinating coding agents. Follow his site for the tools,
-  methodology and upstream skills.
-- **[Destructive Command Guard (`dcg`)](https://github.com/Dicklesworthstone/destructive_command_guard)**
-  is a strong recommendation for checking agent shell commands and blocking
-  destructive operations covered by its rules.
-- **[Coding Agent Session Search (`cass`)](https://github.com/Dicklesworthstone/coding_agent_session_search)**
-  is a strong recommendation for indexing and searching session histories
-  across coding agents, including finding episodes worth mining for lessons.
-- **[Meta Skill (`ms`)](https://github.com/Dicklesworthstone/meta_skill)**
-  is a strong recommendation for finding, managing and building skills from
-  context, including CASS session mining. Review generated guidance before reuse.
+### Gas City
 
-DCG, CASS and MS are Jeffrey Emanuel's projects. Their upstream documentation
-and distribution terms govern their tools and skills.
+[Gas City](https://github.com/gastownhall/gascity), from the organization behind
+[Beads](https://github.com/gastownhall/beads), provides configurable building
+blocks for multi-agent software factories: runtime providers, work routing,
+workflow formulas, packs and supervision. AgentOps ships a
+[Gas City adapter](skills/using-gc/SKILL.md) and an
+[executor integration pack](packs/agentops-executor/pack.toml). Use the adapter
+to work through Gas City's native coordinator and observe its runs; workers can
+use AgentOps skills for implementation, tests and validation.
+
+### Agentic Coding Flywheel
+
+[Agentic Coding Flywheel](https://agent-flywheel.com) is Jeffrey Emanuel's
+([Dicklesworthstone](https://github.com/Dicklesworthstone)) ecosystem of tools
+and workflows for operating coding agents. Its
+[setup project](https://github.com/Dicklesworthstone/agentic_coding_flywheel_setup)
+assembles a multi-agent development environment. You can also adopt individual
+tools alongside AgentOps:
+
+| Need | Upstream tool | How it fits |
+|---|---|---|
+| Block covered destructive shell operations | [Destructive Command Guard (`dcg`)](https://github.com/Dicklesworthstone/destructive_command_guard) | Checks commands before execution through its configured integration. Adds mechanical protection alongside agent guidance. |
+| Find an earlier investigation or solution | [Coding Agent Session Search (`cass`)](https://github.com/Dicklesworthstone/coding_agent_session_search) | Indexes and searches agent session histories. Retrieve relevant episodes as evidence for Memory or a new investigation. |
+| Turn session evidence into reusable skills | [Meta Skill (`ms`)](https://github.com/Dicklesworthstone/meta_skill) | Can mine selected CASS sessions into skill candidates with source links. Review the guidance and test it on another task before relying on it. |
+
+For example, use CASS to find how a recurring migration failure was resolved.
+Use [Memory](skills/memory/SKILL.md) to examine the supported lesson and curate
+project context. If the method belongs in a repeatable path,
+[Skill Builder](skills/skill-builder/SKILL.md) can help package it and
+[Skill Eval](skills/skill-eval/SKILL.md) can measure whether it helps later work.
+This connects session history to guidance you can inspect and improve.
+
+Gas City, the Flywheel and these tools are independent projects. AgentOps ships
+its own Gas City adapter and pack; install external tools and their skills from
+their authors. Follow their native workflows, integrations and distribution terms.
 
 ## Contributing
 
