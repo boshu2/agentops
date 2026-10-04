@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 790" role="img" aria-labelledby="arTitle arDesc">
-  <title id="arTitle">AgentOps 3.8 routes: enter anywhere, repair failures, then a fresh judgment</title>
-  <desc id="arDesc">Engineering workflow. Intent that is clear and accepted goes to Implement; unclear intent goes to Plan, then to Implement once settled. An existing change goes straight to fresh judgment. Implement runs native checks, then fresh judgment, independent of the author. Accepted work finishes. Failed behavior goes back to Implement for repair. Missing evidence is gathered, then the candidate is judged again. Beside it, the optional learning loop: a result becomes a protected draft outside Git, gets a fresh support and disclosure review, lands in reviewed .context/ pages, and later work queries it.</desc>
+  <title id="arTitle">AgentOps workflow: native checks, with one fresh review where a mistake is costly</title>
+  <desc id="arDesc">Clear accepted intent goes straight to Implement; unclear intent goes to Plan first. Implement runs native checks and CI. Ordinary changes finish on those checks. Use one fresh author-distinct review when requested, when a mistake cannot be cheaply undone, or when no deterministic check covers the changed behavior. An existing change can enter at review. Repair findings within scope and confirm with affected checks; another review requires a caller request. NOT_PROVEN reports missing evidence without claiming PASS. The optional learning loop sends a result to a protected draft, fresh support and disclosure review, reviewed .context/ pages, and later work.</desc>
 
   <defs>
     <linearGradient id="arPanel" x1="0" y1="0" x2="0" y2="1">
@@ -21,83 +21,51 @@
 
   <!-- drawing strip -->
   <g font-family="'JetBrains Mono', ui-monospace, monospace">
-    <text x="30" y="36" font-size="20" letter-spacing="1.5" fill="#b78318">AGENTOPS 3.8 ROUTES</text>
+    <text x="30" y="36" font-size="20" letter-spacing="1.5" fill="#b78318">AGENTOPS WORKFLOW</text>
     <text x="930" y="36" text-anchor="end" font-size="20" fill="#8a8378">ENTER ANYWHERE</text>
   </g>
   <line x1="30" y1="52" x2="930" y2="52" stroke="#f59e0b" stroke-opacity="0.22"/>
 
-  <!-- ===== engineering workflow ===== -->
-  <g font-family="'JetBrains Mono', ui-monospace, monospace" text-anchor="middle">
-    <!-- entry points (dashed) -->
-    <rect x="70" y="110" width="240" height="60" rx="7" fill="url(#arPanel)" stroke="#f59e0b" stroke-opacity="0.75" stroke-dasharray="6 4"/>
-    <text x="190" y="148" font-size="24" font-weight="700" fill="#e8e4dd">Intent</text>
-
-    <rect x="350" y="425" width="240" height="60" rx="7" fill="url(#arPanel)" stroke="#f59e0b" stroke-opacity="0.75" stroke-dasharray="6 4"/>
-    <text x="470" y="463" font-size="24" font-weight="700" fill="#e8e4dd">Existing change</text>
-
-    <!-- work -->
-    <rect x="350" y="215" width="240" height="60" rx="7" fill="url(#arPanel)" stroke="#f59e0b" stroke-opacity="0.5"/>
-    <text x="470" y="253" font-size="24" font-weight="700" fill="#e8e4dd">Plan</text>
-
-    <rect x="70" y="320" width="240" height="60" rx="7" fill="url(#arPanel)" stroke="#f59e0b" stroke-opacity="0.5"/>
-    <text x="190" y="358" font-size="24" font-weight="700" fill="#e8e4dd">Implement</text>
-
-    <rect x="70" y="425" width="240" height="60" rx="7" fill="url(#arPanel)" stroke="#f59e0b" stroke-opacity="0.5"/>
-    <text x="190" y="463" font-size="24" font-weight="700" fill="#e8e4dd">Native checks</text>
-
-    <!-- fresh judgment -->
-    <rect x="70" y="535" width="520" height="84" rx="8" fill="none" stroke="#fbbf24" stroke-opacity="0.55" filter="url(#arGlow)"/>
-    <rect x="70" y="535" width="520" height="84" rx="8" fill="url(#arPanel)" stroke="#fbbf24" stroke-opacity="0.95" stroke-width="1.4"/>
-    <text x="330" y="571" font-size="28" font-weight="700" fill="#fbbf24">Fresh judgment</text>
-    <text x="330" y="602" font-size="20" fill="#b78318">independent of the author</text>
-
-    <!-- outcomes -->
-    <rect x="70" y="690" width="240" height="60" rx="7" fill="url(#arPanel)" stroke="#fbbf24" stroke-opacity="0.8"/>
-    <text x="190" y="728" font-size="24" font-weight="700" fill="#fbbf24">Finish</text>
-
-    <rect x="350" y="690" width="240" height="60" rx="7" fill="url(#arPanel)" stroke="#f59e0b" stroke-opacity="0.5"/>
-    <text x="470" y="728" font-size="24" font-weight="700" fill="#e8e4dd">Gather evidence</text>
-  </g>
-
-  <!-- routes -->
+  <rect x="70" y="110" width="240" height="60" rx="7" fill="url(#arPanel)" stroke="#f59e0b" stroke-opacity="0.7"/>
+  <text x="190" y="146" text-anchor="middle" font-family="ui-monospace, monospace" font-size="22" font-weight="700" fill="#e8e4dd">Intent</text>
+  <rect x="350" y="215" width="240" height="60" rx="7" fill="url(#arPanel)" stroke="#f59e0b" stroke-opacity="0.7"/>
+  <text x="470" y="251" text-anchor="middle" font-family="ui-monospace, monospace" font-size="22" font-weight="700" fill="#e8e4dd">Plan</text>
+  <rect x="70" y="320" width="240" height="60" rx="7" fill="url(#arPanel)" stroke="#f59e0b" stroke-opacity="0.7"/>
+  <text x="190" y="356" text-anchor="middle" font-family="ui-monospace, monospace" font-size="22" font-weight="700" fill="#e8e4dd">Implement</text>
+  <rect x="70" y="425" width="240" height="60" rx="7" fill="url(#arPanel)" stroke="#f59e0b" stroke-opacity="0.7"/>
+  <text x="190" y="461" text-anchor="middle" font-family="ui-monospace, monospace" font-size="20" font-weight="700" fill="#e8e4dd">Native checks + CI</text>
+  <rect x="350" y="425" width="240" height="60" rx="7" fill="url(#arPanel)" stroke="#f59e0b" stroke-opacity="0.7"/>
+  <text x="470" y="461" text-anchor="middle" font-family="ui-monospace, monospace" font-size="22" font-weight="700" fill="#e8e4dd">Existing change</text>
+  <rect x="70" y="535" width="520" height="84" rx="7" fill="url(#arPanel)" stroke="#f59e0b" stroke-opacity="0.7"/>
+  <text x="330" y="571" text-anchor="middle" font-family="ui-monospace, monospace" font-size="22" font-weight="700" fill="#fbbf24">One fresh review</text>
+  <text x="330" y="600" text-anchor="middle" font-family="ui-monospace, monospace" font-size="17" fill="#b78318">requested / hard to undo / uncovered</text>
+  <rect x="70" y="690" width="240" height="60" rx="7" fill="url(#arPanel)" stroke="#f59e0b" stroke-opacity="0.7"/>
+  <text x="190" y="726" text-anchor="middle" font-family="ui-monospace, monospace" font-size="22" font-weight="700" fill="#e8e4dd">Repair + checks</text>
+  <rect x="350" y="690" width="240" height="60" rx="7" fill="url(#arPanel)" stroke="#f59e0b" stroke-opacity="0.7"/>
+  <text x="470" y="726" text-anchor="middle" font-family="ui-monospace, monospace" font-size="22" font-weight="700" fill="#fbbf24">Finish</text>
   <g fill="none" stroke="#fbbf24" stroke-width="1.6" marker-end="url(#arArrow)">
-    <!-- clear: intent -> implement -->
-    <line x1="190" y1="170" x2="190" y2="318"/>
-    <!-- unclear: intent -> plan -->
+    <path d="M190 170 V318"/>
     <path d="M310 140 H470 V213"/>
-    <!-- settled: plan -> implement -->
     <path d="M470 275 V350 H312"/>
-    <!-- implement -> checks -> judgment -->
-    <line x1="190" y1="380" x2="190" y2="423"/>
-    <line x1="190" y1="485" x2="190" y2="533"/>
-    <!-- existing change -> judgment -->
-    <line x1="470" y1="485" x2="470" y2="533"/>
-    <!-- accepted -> finish; missing evidence -> gather -->
-    <line x1="190" y1="619" x2="190" y2="688"/>
-    <line x1="470" y1="619" x2="470" y2="688"/>
+    <path d="M190 380 V423"/>
+    <path d="M190 485 V533"/>
+    <path d="M470 485 V533"/>
+    <path d="M310 455 H330 V402 H640 V720 H592"/>
+    <path d="M190 619 V688"/>
+    <path d="M470 619 V688"/>
+    <path d="M310 720 H348"/>
   </g>
-
-  <!-- repair loops (dashed) -->
-  <g fill="none" stroke="#fbbf24" stroke-width="1.6" stroke-dasharray="4 4" marker-end="url(#arArrow)">
-    <!-- failed behavior -> implement -->
-    <path d="M70 577 H46 V350 H68"/>
-    <!-- gather evidence -> judged again -->
-    <path d="M590 720 H614 V577 H592"/>
-  </g>
-
-  <!-- route labels -->
-  <g font-family="'JetBrains Mono', ui-monospace, monospace" font-size="22" fill="#b78318">
+  <g font-family="ui-monospace, monospace" font-size="17" fill="#b78318">
     <text x="202" y="238">clear,</text>
     <text x="202" y="264">accepted</text>
-    <text x="390" y="128" text-anchor="middle">unclear</text>
+    <text x="370" y="128">unclear</text>
     <text x="482" y="318">settled</text>
-    <text x="202" y="662">accepted</text>
-    <text x="482" y="648">missing</text>
-    <text x="482" y="672">evidence</text>
-    <text transform="translate(36 463) rotate(-90)" text-anchor="middle">failed → repair</text>
-    <text transform="translate(634 648) rotate(-90)" text-anchor="middle">again</text>
+    <text x="202" y="517">when costly</text>
+    <text x="202" y="660">findings</text>
+    <text x="482" y="660">accepted</text>
+    <text transform="translate(660 596) rotate(-90)" text-anchor="middle">ordinary: checks + CI</text>
+    <text x="70" y="781" font-size="15">One round. NOT_PROVEN reports gaps; re-review on request.</text>
   </g>
-
   <!-- ===== optional learning loop ===== -->
   <rect x="680" y="66" width="250" height="692" rx="8" fill="none" stroke="#f59e0b" stroke-opacity="0.45" stroke-dasharray="3 5"/>
   <g font-family="'JetBrains Mono', ui-monospace, monospace">
