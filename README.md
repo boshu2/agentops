@@ -5,7 +5,7 @@
 # AgentOps
 
 **DevOps discipline for AI coding agents: shape the work, track it as a graph,
-and get each change judged by a fresh agent session that didn't write it.**
+check each change, and get a fresh review where a mistake is costly.**
 
 [![Validate](https://github.com/boshu2/agentops/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/boshu2/agentops/actions/workflows/validate.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
@@ -112,7 +112,9 @@ vary by agent: this README shows Claude Code's `/agentops:<skill>`; Codex uses
 
 ## The operational loop
 
-Each change is shaped, built and judged. You (or Plan) write intent as
+Each change is shaped, built and checked. Use one fresh review when requested,
+when a mistake cannot be cheaply undone, or when no deterministic check covers
+the changed behavior. You (or Plan) write intent as
 behavior ([BDD](https://dannorth.net/introducing-bdd/)), using one word per
 concept ([DDD](https://martinfowler.com/bliki/DomainDrivenDesign.html)'s
 [ubiquitous language](https://martinfowler.com/bliki/UbiquitousLanguage.html)).
@@ -140,18 +142,21 @@ action and an observable result. Keep scenarios in the issue or conversation;
 no `.feature` file is required.
 
 <p align="center">
-  <img src="docs/assets/agentops-routes.svg" alt="AgentOps routes: intent goes to Plan when unclear or straight to Implement when clear; Implement runs native checks, then a fresh judgment independent of the author. Accepted work finishes, failed behavior returns to Implement for repair, missing evidence is gathered and judged again. An existing change enters at fresh judgment. An optional learning loop turns results into reviewed .context/ pages that later work queries." width="100%">
+  <img src="docs/assets/agentops-routes.svg" alt="Clear accepted intent goes straight to Implement; unclear intent goes to Plan first. Implement runs native checks and CI. Ordinary changes finish on those checks. Use one fresh author-distinct review when requested, when a mistake cannot be cheaply undone, or when no deterministic check covers the changed behavior. An existing change can enter at review. Repair findings within scope and confirm with affected checks; another review requires a caller request. NOT_PROVEN reports missing evidence without claiming PASS. The optional learning loop sends a result to a protected draft, fresh support and disclosure review, reviewed .context/ pages, and later work." width="100%">
 </p>
 
 | Step | Skill | What it does with the scenarios |
 |---|---|---|
 | Shape | [`plan`](skills/plan/SKILL.md) | Turns the request into scenarios for one small change. Skip it when intent is clear. |
 | Build | [`implement`](skills/implement/SKILL.md) | Makes the change and tests both scenarios. |
-| Judge | [`validate`](skills/validate/SKILL.md) | A new session that didn't write it returns `PASS`, `FAIL` or `NOT_PROVEN` against the same scenarios. |
+| Judge when needed | [`validate`](skills/validate/SKILL.md) | A new session that didn't write it returns `PASS`, `FAIL` or `NOT_PROVEN` against the same scenarios. |
 | Learn | [`memory`](skills/memory/SKILL.md) | Optional: reviewed `.context/` pages that later work can query. |
 
-Enter at the step you need; an existing change goes straight to Validate. The
-author never approves its own work. Merging and releasing follow your repo's rules.
+Enter at the step you need. An existing change can enter at Validate when an
+acceptance judgment is needed. Ordinary changes finish on checks and CI. Review
+is one round: repair findings and confirm with affected checks; review again only
+when you ask. Report `NOT_PROVEN` with its gaps. The author cannot issue its own
+`PASS`. Merging and releasing follow your repo's rules.
 
 <a id="goals-many-rpis-over-a-bead-graph"></a>
 
@@ -170,21 +175,22 @@ needs Beads: `brew install beads`, then `bd init` in your repo):
    prompt to paste into `/goal` (Claude Code or Codex), `USE_RPI` (small enough
    for `rpi`), or `UNSAFE_GOAL` plus what's undecided. It creates nothing itself.
 3. **[Navigate](skills/navigate/SKILL.md) each round.** Picks a few ready work
-   items (beads); each gets one RPI and a fresh Validate. The goal ends
+   items (beads); each gets one RPI, checks and CI, with one fresh Validate
+   when requested, hard to undo, or uncovered by a deterministic check. The goal ends
    `ACHIEVED`, `NOT_ACHIEVED` or `NEEDS_OPERATOR`.
 
 <p align="center">
-  <img src="docs/assets/agentops-goal-graph.svg" alt="A goal acts as orchestrator: it observes the Beads work graph, picks a bounded wave of ready beads, consumes verdicts, then ratchets or stops. The graph holds a root epic and child beads: A closed with PASS, B discovered from A and ready, C ready, D blocked by C. Picked beads B and C each get one RPI: when the goal delegates, a fresh worker that starts with only that bead plans if unclear and implements, and Validate runs in a separate fresh context. Verdicts and notes are written back to the bead." width="100%">
+  <img src="docs/assets/agentops-goal-graph.svg" alt="A goal observes the Beads work graph, picks ready beads, consumes checks and any verdicts, then ratchets or stops. Each bead gets one RPI: Plan when unclear, Implement, and checks. When delegation is authorized, each fresh worker starts with one bead. Validate runs in a separate fresh context only when requested, when a mistake is hard to undo, or when no deterministic check covers the change. Results and notes return to the bead." width="100%">
 </p>
 
 **Beads holds the plan.** [Beads](https://github.com/gastownhall/beads) (`bd`)
 keeps work as a dependency graph outside any conversation, so a goal survives
 compaction and restarts. The root epic holds acceptance; each child bead is one
-RPI with its question, scope, notes and verdict. `bd ready` lists what can start now.
+RPI with its question, scope, notes, checks and any verdict. `bd ready` lists what can start now.
 
 **One bead per worker.** When the goal delegates, the orchestrator holds the
-graph and verdicts, and each worker starts with one bead instead of the
-orchestrator's transcript. Validators start fresh.
+graph and results, and each worker starts with one bead instead of the
+orchestrator's transcript. Reviewers, when needed, start fresh.
 
 ```bash
 bd create "Job redelivery is idempotent" -t epic
@@ -207,7 +213,7 @@ Start read-only in any repo, then swap the Job example for your own change.
 # One change
 /agentops:plan make Job redelivery return the completed result without repeating the side effect
 /agentops:implement
-/agentops:validate     # new session: paste the scenarios, the commit, and the authoring session's ID (your name for a hand-written change)
+/agentops:validate     # when requested, hard to undo, or uncovered by checks; use a new session
 
 # One outcome, end to end
 /agentops:rpi make Job redelivery return the completed result without repeating the side effect
@@ -416,7 +422,7 @@ runtime or selected factory owns execution. Your repository owns delivery.
 
 Native execution requires zero AgentOps skills. [RPI](skills/rpi/SKILL.md),
 [Gas City](skills/using-gc/SKILL.md) and [Agentic Coding Flywheel](https://agent-flywheel.com)
-are optional; their completion reports do not replace independent review.
+are optional; their completion reports do not replace required checks or judgment.
 
 On request, Validate can save `verdict.v2` with exact content, checked scope and
 evidence. New proof belongs in selected, protected storage outside Git;
@@ -461,7 +467,8 @@ automatic knowledge compounding. See [product evidence and limits](PRODUCT.md).
 **Do I need the CLI, an orchestrator or several agents?**
 
 No. Start with one coding agent and a skill such as Research, Test or Refactor.
-Obtain fresh, author-distinct judgment when a change is ready. The Validate skill
+Use checks and CI for ordinary changes. Obtain one fresh, author-distinct
+judgment when requested, hard to undo, or uncovered by a deterministic check. The Validate skill
 requires `ao`; native independent review does not.
 
 **Must the reviewer use another model provider?**
