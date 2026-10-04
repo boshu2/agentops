@@ -4,8 +4,8 @@
 
 # AgentOps
 
-**DevOps discipline for AI coding agents: shape the work, track it as a graph,
-check each change, and get a fresh review where a mistake is costly.**
+**DevOps discipline for AI coding agents: define what the software should do,
+track the work across sessions, and check the result.**
 
 [![Validate](https://github.com/boshu2/agentops/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/boshu2/agentops/actions/workflows/validate.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
@@ -17,29 +17,41 @@ check each change, and get a fresh review where a mistake is costly.**
 
 </div>
 
-AgentOps provides optional skills and a CLI (`ao`). The same `SKILL.md` skills work
-with coding agents (Claude Code, Codex, Cursor, OpenCode, Gemini CLI, Pi and
-others) and personal assistants (OpenClaw, Grok Bot). You state intent as
-behavior in your domain's words. The skills carry it through one change
-(Plan → Implement → checks, with Validate where a mistake is costly: an **RPI**)
-or, for bigger work, a goal made of
-many RPIs tracked in
-[Beads](https://github.com/gastownhall/beads), a dependency-aware issue tracker.
+A request like “make retries safe” leaves the agent room to guess.
+[Plan](skills/plan/SKILL.md) helps you spell out what should happen when the same
+job arrives twice, and [Test](skills/test/SKILL.md) helps turn that behavior into
+a check. For bigger work, [Beads](https://github.com/gastownhall/beads) keeps
+requirements, decisions and dependencies in a work graph;
+[Navigate](skills/navigate/SKILL.md) uses that graph to pick what can start next.
+[Validate](skills/validate/SKILL.md) judges the finished change from a fresh
+session when you request it, a mistake is hard to undo, or checks leave behavior
+uncovered.
+
+AgentOps provides optional [skills](docs/SKILL-ROUTER.md) and a [CLI](#optional-ao-cli).
+Use the skills with Claude Code, Codex, Cursor, OpenCode, Gemini CLI, Pi and
+other coding agents, or personal assistants such as OpenClaw and Grok Bot.
+Start with [one useful task](#try-it); the [operational loop](#the-operational-loop)
+connects planning, implementation and checks, and [goals](#goals) carry larger
+work across sessions.
 
 <a id="why-these-skills-exist"></a>
 
 ## Why use AgentOps?
 
-| When the agent… | AgentOps adds |
+[Behavior-driven development (BDD)](https://dannorth.net/introducing-bdd/)
+starts by agreeing on what the software should do in a concrete situation.
+For retries, that could mean: “If a completed job arrives again, return its
+result and charge the customer only once.” The same behavior guides the
+implementation, its tests and any review. [Plan](skills/plan/SKILL.md) helps you
+settle those expectations before the agent starts editing.
+
+| When you need to… | AgentOps adds |
 |---|---|
-| Builds something different from what you meant | Given/When/Then examples shared by implementation and review |
-| Uses three names for one concept | One domain term per concept, in intent, code and tests |
-| Says “done” after a green test run on a change that matters | A fresh judge that didn't write the change |
-| Loses the thread on work bigger than one session | A Beads graph holding intent, dependencies and verdicts |
-| Runs off with a half-formed goal | An interview that settles the goal before agents go autonomous |
-| Gives one model's answer to a hard call | A [council](skills/council/SKILL.md): judges in fresh contexts, each with the model, effort and perspective you assign (one model family or several vendors), compare, duel (score each other's ideas) or debate to your majority, keep dissent, and can answer an interview for you; [Idea Genie](skills/idea-genie/SKILL.md) brainstorms options |
-| Loses its plans, research and decisions when the session ends | Plans and decisions saved on the bead or issue (Plan, Interview, Navigate); research and idea reports under `.agents/`; council reports where you choose |
-| Repeats the last session's investigation | [Memory](skills/memory/SKILL.md) turns reviewed, disclosure-checked lessons into `.context/` pages safe to commit |
+| Get the agent to build what you meant | [Plan](skills/plan/SKILL.md) makes the expected behavior clear enough to implement and test. [Domain](skills/domain/SKILL.md) keeps the same names for concepts in the request, code and tests. |
+| Keep a project moving after the chat ends | [Interview](skills/interview/SKILL.md) settles a large goal with you. [Beads](https://github.com/gastownhall/beads) records tasks, decisions, dependencies and results; [Navigate](skills/navigate/SKILL.md) reads that graph to identify ready work, blockers and gaps in the goal. |
+| Check whether the finished change meets the request | [Test](skills/test/SKILL.md) helps write checks for the intended behavior. Ordinary changes finish on checks and CI; [Validate](skills/validate/SKILL.md) adds one fresh review when requested, hard to undo, or uncovered by a deterministic check. |
+| Reuse an investigation in a later session | [Research](skills/research/SKILL.md) traces the code and cites what it finds. [Memory](skills/memory/SKILL.md) helps turn supported findings into reviewed project context, so a later agent can find the lesson and check its sources. |
+| Examine a difficult decision from several perspectives | [Council](skills/council/SKILL.md) compares or debates judgments from fresh contexts, with the models and perspectives you choose. [Idea Genie](skills/idea-genie/SKILL.md) develops options when the approach is still open. |
 
 <a id="install"></a>
 
