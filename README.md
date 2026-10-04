@@ -4,8 +4,7 @@
 
 # AgentOps
 
-**DevOps discipline for AI coding agents: define what the software should do,
-track the work across sessions, and check the result.**
+**DevOps discipline for AI coding agents.**
 
 [![Validate](https://github.com/boshu2/agentops/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/boshu2/agentops/actions/workflows/validate.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
@@ -13,35 +12,42 @@ track the work across sessions, and check the result.**
 [![Skills](https://img.shields.io/badge/skills-catalog-black.svg)](docs/SKILL-ROUTER.md)
 
 [Install](#quickstart) · [The loop](#the-operational-loop) ·
-[Goals](#goals) · [Try it](#try-it) · [Skills](#skills-at-a-glance)
+[Goals](#goals) · [Try it](#try-it) · [Skills](#skills-at-a-glance) ·
+[Beyond AgentOps](#beyond-agentops)
 
 </div>
 
-A request like “make retries safe” leaves the agent room to guess.
-[Plan](skills/plan/SKILL.md) helps you spell out what should happen when the same
-job arrives twice, and [Test](skills/test/SKILL.md) helps turn that behavior into
-a check. [Validate](skills/validate/SKILL.md) judges the finished change from a
-fresh session when you request it, a mistake is hard to undo, or checks leave
-behavior uncovered.
+DevOps makes software delivery repeatable through shared practices, automated
+checks and feedback. AgentOps brings that discipline to agentic coding sessions:
+paved paths your agents can follow from intent to checked results, with memory
+to carry useful context into the next task.
 
-[Beads](https://github.com/gastownhall/beads) gives that work a memory beyond the
-chat. Keep the accepted intent, decisions, dependencies and result notes together,
-with links to the code and checks that support them. A later session can find
-what was tried, why it changed and what remains open.
-[Navigate](skills/navigate/SKILL.md) reads the graph to choose what can start next;
-[Memory](skills/memory/SKILL.md) helps turn supported findings from that record
-into reports or reviewed project context for future work.
+Those paths combine [skills](docs/SKILL-ROUTER.md) with the [`ao` CLI](#optional-ao-cli)
+and your existing engineering tools. [Plan](skills/plan/SKILL.md) clarifies the
+expected behavior; [Test](skills/test/SKILL.md) helps check it;
+[Validate](skills/validate/SKILL.md) adds independent judgment where needed.
+Skills guide the agent's decisions; executable gates check specific contracts.
+[Beads](https://github.com/gastownhall/beads) preserves the work graph, decisions,
+results and project memories. [Memory](skills/memory/SKILL.md) curates supported
+findings into linked project knowledge, connecting lessons to the work and
+sources behind them. The next session can use that record instead of starting over.
 
-AgentOps provides optional [skills](docs/SKILL-ROUTER.md) and a [CLI](#optional-ao-cli).
-Use the skills with Claude Code, Codex, Cursor, OpenCode, Gemini CLI, Pi and
+Use these paths with Claude Code, Codex, Cursor, OpenCode, Gemini CLI, Pi and
 other coding agents, or personal assistants such as OpenClaw and Grok Bot.
-Start with [one useful task](#try-it); the [operational loop](#the-operational-loop)
-connects planning, implementation and checks, and [goals](#goals) carry larger
-work across sessions.
+Start with [one useful task](#try-it); follow the [operational loop](#the-operational-loop)
+for a change or the [goal workflow](#goals) for work across sessions. When you
+need a larger software factory, [extend the same practices](#beyond-agentops)
+with Gas City or tools from the Agentic Coding Flywheel.
 
 <a id="why-these-skills-exist"></a>
 
 ## Why use AgentOps?
+
+A [software factory](https://learn.microsoft.com/en-us/archive/msdn-magazine/2006/december/service-station-web-service-software-factory)
+makes engineering practices reusable through tools, guidance and repeatable
+workflows. AgentOps brings that approach into the coding session: clear intent,
+automated checks, recorded decisions and a feedback loop into later work. Pick
+the path your task needs and use the same practices when you change agents.
 
 [Behavior-driven development (BDD)](https://dannorth.net/introducing-bdd/)
 starts by agreeing on what the software should do in a concrete situation.
@@ -56,7 +62,7 @@ settle those expectations before the agent starts editing.
 | Keep a project moving after the chat ends | [Interview](skills/interview/SKILL.md) settles a large goal with you. [Beads](https://github.com/gastownhall/beads) preserves its intent, decisions and results in a searchable work graph, with persistent project memories for later sessions. [Navigate](skills/navigate/SKILL.md) identifies ready work, blockers and gaps in the goal. |
 | Check whether the finished change meets the request | [Test](skills/test/SKILL.md) helps write checks for the intended behavior. Ordinary changes finish on checks and CI; [Validate](skills/validate/SKILL.md) adds one fresh review when requested, hard to undo, or uncovered by a deterministic check. |
 | Turn earlier work into useful context | [Research](skills/research/SKILL.md) traces the code and cites what it finds. [Memory](skills/memory/SKILL.md) can draw on Beads handoffs, Git changes and check results to explain a decision in a report, or curate supported lessons into reviewed project documents. Later agents can recall the lesson and follow its sources. |
-| Examine a difficult decision from several perspectives | [Council](skills/council/SKILL.md) compares or debates judgments from fresh contexts, with the models and perspectives you choose. [Idea Genie](skills/idea-genie/SKILL.md) develops options when the approach is still open. |
+| Make a useful method repeatable | [Skill Builder](skills/skill-builder/SKILL.md) turns supported expertise into guidance with clear inputs, actions and limits. [Skill Eval](skills/skill-eval/SKILL.md) measures whether that guidance helps a named task, so it can be retained, revised or removed. |
 
 <a id="install"></a>
 
@@ -524,31 +530,50 @@ external storage, following each owner's access and retention rules.
 
 </details>
 
-## Recommended tools and skills
+## Beyond AgentOps
 
-These independent projects can extend your AgentOps setup. Get their tools and
-skills directly from their authors; they are not bundled with AgentOps.
+Start with one agent and a paved path. When work needs several agents, a factory
+can add scheduling, coordination and runtime supervision. Install AgentOps
+skills into its agent runtimes to carry the same behavior, testing and review
+practices into each task. The factory runs the agents; your checks and any
+required independent judgment establish what the result proves.
 
-- **[Gas City](https://github.com/gastownhall/gascity)**, from the organization
-  behind [Beads](https://github.com/gastownhall/beads), provides the building
-  blocks for a software factory. AgentOps includes [Gas City guidance](skills/using-gc/SKILL.md)
-  and an [executor integration pack](packs/agentops-executor/pack.toml).
-- **[Agentic Coding Flywheel](https://agent-flywheel.com)** is Jeffrey Emanuel's
-  ([Dicklesworthstone](https://github.com/Dicklesworthstone)) ecosystem for
-  planning and coordinating coding agents. Follow his site for the tools,
-  methodology and upstream skills.
-- **[Destructive Command Guard (`dcg`)](https://github.com/Dicklesworthstone/destructive_command_guard)**
-  is a strong recommendation for checking agent shell commands and blocking
-  destructive operations covered by its rules.
-- **[Coding Agent Session Search (`cass`)](https://github.com/Dicklesworthstone/coding_agent_session_search)**
-  is a strong recommendation for indexing and searching session histories
-  across coding agents, including finding episodes worth mining for lessons.
-- **[Meta Skill (`ms`)](https://github.com/Dicklesworthstone/meta_skill)**
-  is a strong recommendation for finding, managing and building skills from
-  context, including CASS session mining. Review generated guidance before reuse.
+### Gas City
 
-DCG, CASS and MS are Jeffrey Emanuel's projects. Their upstream documentation
-and distribution terms govern their tools and skills.
+[Gas City](https://github.com/gastownhall/gascity), from the organization behind
+[Beads](https://github.com/gastownhall/beads), provides configurable building
+blocks for multi-agent software factories: runtime providers, work routing,
+workflow formulas, packs and supervision. AgentOps ships a
+[Gas City adapter](skills/using-gc/SKILL.md) and an
+[executor integration pack](packs/agentops-executor/pack.toml). Use the adapter
+to work through Gas City's native coordinator and observe its runs; workers can
+use AgentOps skills for implementation, tests and validation.
+
+### Agentic Coding Flywheel
+
+[Agentic Coding Flywheel](https://agent-flywheel.com) is Jeffrey Emanuel's
+([Dicklesworthstone](https://github.com/Dicklesworthstone)) ecosystem of tools
+and workflows for operating coding agents. Its
+[setup project](https://github.com/Dicklesworthstone/agentic_coding_flywheel_setup)
+assembles a multi-agent development environment. You can also adopt individual
+tools alongside AgentOps:
+
+| Need | Upstream tool | How it fits |
+|---|---|---|
+| Block covered destructive shell operations | [Destructive Command Guard (`dcg`)](https://github.com/Dicklesworthstone/destructive_command_guard) | Checks commands before execution through its configured integration. Adds mechanical protection alongside agent guidance. |
+| Find an earlier investigation or solution | [Coding Agent Session Search (`cass`)](https://github.com/Dicklesworthstone/coding_agent_session_search) | Indexes and searches agent session histories. Retrieve relevant episodes as evidence for Memory or a new investigation. |
+| Turn session evidence into reusable skills | [Meta Skill (`ms`)](https://github.com/Dicklesworthstone/meta_skill) | Can mine selected CASS sessions into skill candidates with source links. Review the guidance and test it on another task before relying on it. |
+
+For example, use CASS to find how a recurring migration failure was resolved.
+Use [Memory](skills/memory/SKILL.md) to examine the supported lesson and curate
+project context. If the method belongs in a repeatable path,
+[Skill Builder](skills/skill-builder/SKILL.md) can help package it and
+[Skill Eval](skills/skill-eval/SKILL.md) can measure whether it helps later work.
+This connects session history to guidance you can inspect and improve.
+
+Gas City, the Flywheel and these tools are independent projects. AgentOps ships
+its own Gas City adapter and pack; install external tools and their skills from
+their authors. Follow their native workflows, integrations and distribution terms.
 
 ## Contributing
 
