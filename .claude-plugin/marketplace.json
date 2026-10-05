@@ -6,13 +6,13 @@
   },
   "metadata": {
     "description": "Engineering guidance for coding agents: behavior-driven planning, shared domain language, independent validation, and reusable improvements.",
-    "version": "3.9.0"
+    "version": "3.10.0"
   },
   "plugins": [
     {
       "name": "agentops",
       "description": "Engineering guidance for coding agents: behavior-driven planning, shared domain language, independent validation, and reusable improvements.",
-      "version": "3.9.0",
+      "version": "3.10.0",
       "source": "./",
       "author": {
         "name": "Boden Fuller",
