@@ -6,6 +6,7 @@
 graph LR
   agent_native["agent-native"]
   agy_native["agy-native"]
+  claude_exec["claude-exec"]
   codex_exec["codex-exec"]
   council["council"]
   craft_goal["craft-goal"]

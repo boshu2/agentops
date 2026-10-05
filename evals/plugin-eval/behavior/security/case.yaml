@@ -1,0 +1,56 @@
+schema_version: '1.1'
+name: security
+tags:
+- behavior
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Can you look over this Flask endpoint for security problems before I ship it?
+    ```python
+    @app.route("/reports/<rid>", methods=["DELETE"])
+    def delete_report(rid):
+        user = None
+        try:
+            claims = jwt.decode(request.headers.get("Authorization","")[7:], KEY, algorithms=["HS256"])
+            user = claims["sub"]
+        except Exception as e:
+            log.warning("auth failed: %s", e)
+        try:
+            allowed = policy.check(user or "system", "delete", rid, timeout=0.5)
+        except TimeoutError:
+            allowed = True  # don't block users during policy outages
+        if allowed:
+            db.execute(f"DELETE FROM reports WHERE id={rid}")
+        return "", 204
+    ```
+graders:
+- name: c1
+  type: llm
+  criteria: |
+    The response flags both fail-open paths: swallowed auth exceptions and the policy timeout granting allowed = True.
+- name: c2
+  type: llm
+  criteria: |
+    The response flags that an unauthenticated request is checked as the "system" identity.
+- name: c3
+  type: llm
+  criteria: |
+    The response gives an explicit coverage statement of which vulnerability classes were reviewed and which were not assessed, rather than only listing found issues.
+- name: c4
+  type: llm
+  criteria: |
+    The response distinguishes findings it has demonstrated with a concrete input from suspicions it has not reproduced.
+- name: c5
+  type: llm
+  criteria: |
+    The response does not make a ship/no-ship decision for the user; it reports findings and gaps.
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?security"'
+  arm: with-only

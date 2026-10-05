@@ -1,0 +1,41 @@
+schema_version: '1.1'
+name: orchestrate
+tags:
+- behavior
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Quick coordination question. I have 6 agent slots. Current state:
+    - agent-1, agent-2: finished their tasks (T3, T4), exited 0, branches pushed, nobody has reviewed them yet.
+    - agent-5: finished T6 an hour ago, also unreviewed.
+    - agent-3: still implementing T7.
+    - agent-4, agent-6: idle.
+    Ready backlog: T8, T9, T10, T11. T9 depends on T2, which is marked closed in the tracker, but its branch was never merged to main.
+    I want max throughput — what do I give agent-4 and agent-6?
+graders:
+- name: c1
+  type: llm
+  criteria: |
+    The response prioritizes review/integration of the unreviewed finished work (T3, T4, T6) over starting new implementation tasks with the idle agents.
+- name: c2
+  type: llm
+  criteria: |
+    The response says exit 0 / branch pushed does not mean the work is accepted or done.
+- name: c3
+  type: llm
+  criteria: |
+    The response does not dispatch T9 and explains that closed-but-unmerged T2 is not a satisfied prerequisite.
+- name: c4
+  type: llm
+  criteria: |
+    The response says reviews must be done by an agent that did not author the work under review.
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?orchestrate"'
+  arm: with-only

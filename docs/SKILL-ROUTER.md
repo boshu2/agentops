@@ -13,49 +13,50 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 
 | Skill | Use it for |
 |---|---|
-| [plan](https://github.com/boshu2/agentops/blob/main/skills/plan/SKILL.md) | Define intended behavior, review write scope and assess reversible decisions. Use when: discovery needs clarification or resumption before one complete slice; stop once actionable. |
-| [implement](https://github.com/boshu2/agentops/blob/main/skills/implement/SKILL.md) | Implement changes, repairs or waves; return per-lane evidence. Use when: coding, service operations, reliability, delivery, incident recovery, resilience or toil is authorized. |
-| [review](https://github.com/boshu2/agentops/blob/main/skills/review/SKILL.md) | Give advisory feedback on a plan, design or code. Use when: suggestions, tradeoffs or a second look are wanted. Not for acceptance or write scope; use Validate or Plan. |
-| [validate](https://github.com/boshu2/agentops/blob/main/skills/validate/SKILL.md) | Freshly judge a finished change and its claims against original acceptance. Use when: acceptance verdict or independent proof is sought. Clarify generic checks or readiness first. |
-| [orchestrate](https://github.com/boshu2/agentops/blob/main/skills/orchestrate/SKILL.md) | Coordinate authorized workers, prerequisites, isolated scopes and review capacity. Use when: dispatching, recovering or routing feedback. Not for implementation or judgment. |
-| [memory](https://github.com/boshu2/agentops/blob/main/skills/memory/SKILL.md) | Find reviewed context, capture evidence or curate maintained claims. Use when: prior evidence can change an action, or learning is requested; no mandatory recall or lesson. |
+| [plan](https://github.com/boshu2/agentops/blob/main/skills/plan/SKILL.md) | Shape a request into one end-to-end slice with observable behavior; review write scope and reversible decisions. Use when: planning, breaking down or scoping a change. |
+| [implement](https://github.com/boshu2/agentops/blob/main/skills/implement/SKILL.md) | Change or repair code, config or services without weakening tests; report what ran and what did not. Use when: implementing or fixing anything, however small. |
+| [review](https://github.com/boshu2/agentops/blob/main/skills/review/SKILL.md) | Give advisory feedback on a plan, design or code change. Use when: asked for an opinion or a look-over, even informally. Not for acceptance; use Validate. |
+| [validate](https://github.com/boshu2/agentops/blob/main/skills/validate/SKILL.md) | Freshly judge whether a finished change and its claims meet original acceptance: PASS, FAIL or NOT_PROVEN. Use when: asked for a go/no-go, sign-off or independent verdict. |
+| [orchestrate](https://github.com/boshu2/agentops/blob/main/skills/orchestrate/SKILL.md) | Coordinate several workers: what idle agents do next, which finished work gets checked first, how to recover a dead one. Use when: managing multiple agents. |
+| [memory](https://github.com/boshu2/agentops/blob/main/skills/memory/SKILL.md) | Write, find or curate lessons and agent rules with stated evidence and limits. Use when: asked to remember something or write a rule into agent instructions. |
 
 ## Engineering specialists
 
 | Skill | Use it for |
 |---|---|
-| [doc](https://github.com/boshu2/agentops/blob/main/skills/doc/SKILL.md) | Write grounded docs, READMEs, repo instructions or continuity handoffs. Use when: these documents are requested; no reports as a routine completion ritual. |
-| [domain](https://github.com/boshu2/agentops/blob/main/skills/domain/SKILL.md) | Clarify domain terms, bounded contexts and repository conventions. Use when: naming, rule ownership or Go and other language standards are unclear; avoid a broad survey. |
-| [refactor](https://github.com/boshu2/agentops/blob/main/skills/refactor/SKILL.md) | Simplify structure, interfaces or responsibilities while preserving behavior. Use when: a focused refactor is requested; feature changes need their own intent. |
-| [research](https://github.com/boshu2/agentops/blob/main/skills/research/SKILL.md) | Trace code or test a recurring pattern to answer one cited question. Use when: uncertainty needs evidence. Not for external feature teardowns; use reverse-engineer. |
-| [reverse-engineer](https://github.com/boshu2/agentops/blob/main/skills/reverse-engineer/SKILL.md) | Tear down an authorized competitor repo, binary or product into a feature inventory and adoption choices. Use when: comparing an external system; local questions go to Research. |
-| [security](https://github.com/boshu2/agentops/blob/main/skills/security/SKILL.md) | Review code or scan for security vulnerabilities, secrets, dependencies and prompt risks. Use when: concrete exposure needs assessment; never silently change policy. |
-| [skill-builder](https://github.com/boshu2/agentops/blob/main/skills/skill-builder/SKILL.md) | Create, adapt, consolidate or repair skill packages and projections. Use when: authoring guidance, descriptions or structure; Skill Eval measures behavioral benefit. |
-| [skill-eval](https://github.com/boshu2/agentops/blob/main/skills/skill-eval/SKILL.md) | Measure whether a skill helps a named task or needs revision or removal. Use when: a bounded routing or coding evaluation is requested; conformance alone cannot show benefit. |
-| [test](https://github.com/boshu2/agentops/blob/main/skills/test/SKILL.md) | Write behavioral tests, practice TDD or inspect important coverage gaps. Use when: test design or missing proof needs work; running an existing suite needs no skill. |
+| [doc](https://github.com/boshu2/agentops/blob/main/skills/doc/SKILL.md) | Write or update READMEs, docs, repo instructions and handoff notes, checked against source. Use when: documenting something, writing a README or leaving a session handoff. |
+| [domain](https://github.com/boshu2/agentops/blob/main/skills/domain/SKILL.md) | Settle what domain terms mean per context, and which repository conventions or language standards (Go, Python) apply. Use when: names disagree or a rename is proposed. |
+| [refactor](https://github.com/boshu2/agentops/blob/main/skills/refactor/SKILL.md) | Restructure or clean up code with no behavior change, proved by before-and-after checks. Use when: asked to clean up, extract, dedupe or simplify, even one function. |
+| [research](https://github.com/boshu2/agentops/blob/main/skills/research/SKILL.md) | Answer one cited question: how code works, or whether a repeated pattern deserves a rule. Use when: asked how, why, or whether to enforce a pattern. |
+| [reverse-engineer](https://github.com/boshu2/agentops/blob/main/skills/reverse-engineer/SKILL.md) | Tear down a competitor's repo or product into a feature inventory and adoption choices. Use when: comparing us to another tool or asking what to steal. |
+| [security](https://github.com/boshu2/agentops/blob/main/skills/security/SKILL.md) | Review code for security problems; scan for vulnerabilities, secrets, dependency and prompt risks. Use when: asked whether code is safe to ship, even one small handler. |
+| [skill-builder](https://github.com/boshu2/agentops/blob/main/skills/skill-builder/SKILL.md) | Create, repair, audit or consolidate agent skills (SKILL.md packages). Use when: writing or fixing a skill, its description or structure. Not for one-off lessons; use Memory. |
+| [skill-eval](https://github.com/boshu2/agentops/blob/main/skills/skill-eval/SKILL.md) | Measure whether a skill helps by comparing runs with and without it. Use when: reading skill A/B results or deciding to keep, revise or remove one. |
+| [test](https://github.com/boshu2/agentops/blob/main/skills/test/SKILL.md) | Write or assess tests that prove behavior and would fail without the fix. Use when: writing tests, TDD, or asked whether a green test is enough. |
 
 ## Deliberate planning and review strategies
 
 | Skill | Use it for |
 |---|---|
-| [council](https://github.com/boshu2/agentops/blob/main/skills/council/SKILL.md) | Compare model perspectives for brainstorming, planning, validation, idea duels or interviews. Use when: independent proposals or judgments need optional bounded debate. |
-| [craft-goal](https://github.com/boshu2/agentops/blob/main/skills/craft-goal/SKILL.md) | Draft or lint a bounded persistent goal above a bead graph of RPI experiments. Use when: this goal workflow is explicitly selected; shaping a single change belongs to Plan. |
-| [idea-genie](https://github.com/boshu2/agentops/blob/main/skills/idea-genie/SKILL.md) | Generate evidenced options or challenge an idea. Use when: deciding what to build or comparing alternatives; exploration does not authorize implementation. |
-| [interview](https://github.com/boshu2/agentops/blob/main/skills/interview/SKILL.md) | Interview the caller one question at a time to settle a big outcome before agents work alone. Use when: shaping a goal or large RPI. Not for one question on one slice; use Plan. |
-| [navigate](https://github.com/boshu2/agentops/blob/main/skills/navigate/SKILL.md) | Pick the next wave on a bead graph and keep the graph honest toward frozen acceptance. Use when: a goal starts a wave, or you ask what is next on an epic. |
-| [postmortem](https://github.com/boshu2/agentops/blob/main/skills/postmortem/SKILL.md) | Analyze outcomes or an interim cutoff. Use when: a postmortem is explicitly requested; consumes available judgment, never gates code acceptance or requires a lesson. |
-| [premortem](https://github.com/boshu2/agentops/blob/main/skills/premortem/SKILL.md) | Challenge a rollout plan with one fresh judge before implementation; identify what could make it fail. Not for finished-code judgment. Triggers: "one judge", "challenge this plan". |
-| [reality-check](https://github.com/boshu2/agentops/blob/main/skills/reality-check/SKILL.md) | Audit claimed state, goals or native status. Use when: a claim audit or snapshot is requested. Clarify advice versus acceptance for ambiguous checking or readiness requests. |
-| [rpi](https://github.com/boshu2/agentops/blob/main/skills/rpi/SKILL.md) | Apply the outcome-to-judgment charter. Use when: the caller explicitly selects RPI; ordinary coding, delegation and native goals do not require this workflow. |
+| [council](https://github.com/boshu2/agentops/blob/main/skills/council/SKILL.md) | Compare independent opinions from several models or contexts without inflating agreement. Use when: wanting a second opinion, panel or debate, or summarizing reviewers' results. |
+| [craft-goal](https://github.com/boshu2/agentops/blob/main/skills/craft-goal/SKILL.md) | Draft or lint a bounded long-running goal prompt with a finish line and hard limits. Use when: selected by name; one change goes to Plan. |
+| [idea-genie](https://github.com/boshu2/agentops/blob/main/skills/idea-genie/SKILL.md) | Brainstorm evidence-backed options for what to build, or stress-test an idea. Use when: deciding what to build next, comparing options or testing an idea. |
+| [interview](https://github.com/boshu2/agentops/blob/main/skills/interview/SKILL.md) | Interview you one question at a time, each with a recommendation, to settle a big outcome before agents work alone. Use when: selected by name. |
+| [navigate](https://github.com/boshu2/agentops/blob/main/skills/navigate/SKILL.md) | Pick the next work in an epic or bead graph; closed is not proven. Use when: asked what is next or whether an epic is done. |
+| [postmortem](https://github.com/boshu2/agentops/blob/main/skills/postmortem/SKILL.md) | Explain why a change, incident or session went as it did, separating proven causes from coincidence. Use when: a postmortem or retro is selected by name. |
+| [premortem](https://github.com/boshu2/agentops/blob/main/skills/premortem/SKILL.md) | Find how a rollout plan could fail before committing to it. Use when: asked what could go wrong or to poke holes in a plan. |
+| [reality-check](https://github.com/boshu2/agentops/blob/main/skills/reality-check/SKILL.md) | Audit claims that work is done or shipped against the diff or repo. Use when: asked whether something really got done, even if it looks obvious. |
+| [rpi](https://github.com/boshu2/agentops/blob/main/skills/rpi/SKILL.md) | Drive one accepted change through implementation and checks to done, with one fresh review only where a mistake is costly. Use when: selected by name. |
 
 ## Explicit tool and runtime adapters
 
 | Skill | Use it for |
 |---|---|
-| [agent-native](https://github.com/boshu2/agentops/blob/main/skills/agent-native/SKILL.md) | Dispatch independent tasks to parallel workers or selected persistent roles. Use when: delegation is authorized with disjoint scopes; execution does not validate output. |
-| [agy-native](https://github.com/boshu2/agentops/blob/main/skills/agy-native/SKILL.md) | Run a supplied task in AGY Antigravity and collect its result. Use when: the caller selects AGY; never a fallback for native coding. |
-| [codex-exec](https://github.com/boshu2/agentops/blob/main/skills/codex-exec/SKILL.md) | Run one prompt through headless Codex and capture its result. Use when: requesting a single noninteractive Codex process. Not for worker batches or retries. |
-| [using-gc](https://github.com/boshu2/agentops/blob/main/skills/using-gc/SKILL.md) | Operate Gas City through its Mayor, registry packs and native run state. Use when: the caller explicitly selects Gas City; factory completion does not replace independent judgment. |
+| [agent-native](https://github.com/boshu2/agentops/blob/main/skills/agent-native/SKILL.md) | Dispatch independent tasks to parallel workers or subagents without write collisions. Use when: running or planning agents in parallel, even two; check scopes before any launch. |
+| [agy-native](https://github.com/boshu2/agentops/blob/main/skills/agy-native/SKILL.md) | Run a supplied task in headless AGY (Antigravity, Gemini) and collect its result. Use when: AGY, Antigravity or Gemini is requested by name; never a fallback. |
+| [claude-exec](https://github.com/boshu2/agentops/blob/main/skills/claude-exec/SKILL.md) | Run one prompt through headless Claude and capture the result. Use when: wanting a one-shot `claude -p` run or CI step. Not for batches or retries. |
+| [codex-exec](https://github.com/boshu2/agentops/blob/main/skills/codex-exec/SKILL.md) | Run one prompt through headless Codex and capture the result. Use when: wanting a one-shot `codex exec` run or CI step. Not for batches or retries. |
+| [using-gc](https://github.com/boshu2/agentops/blob/main/skills/using-gc/SKILL.md) | Operate Gas City through its own doors: Mayor, doctor and native run state. Use when: Gas City is selected or a gc run looks stuck. |
 
 ## Complete inventory
 
@@ -63,6 +64,7 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 |---|---|---|---|---|---|
 | `agent-native` | meta | `keep_optional_adapter` | - | `role_dispatch`, `observe_workers`, `handoff`, `dispatch_once` | `manage_runtime_sessions`, `invoke_selected_executor` |
 | `agy-native` | cross-vendor | `keep_optional_adapter` | - | `dispatch_explicit_packet`, `provide_fresh_context` | `start_agy_session` |
+| `claude-exec` | orchestration | `keep_optional_adapter` | - | `claude_exec` | `run_claude_process`, `permission_tiered_workspace_effects` |
 | `codex-exec` | orchestration | `keep_optional_adapter` | - | `codex_exec` | `run_codex_process`, `sandbox_tiered_workspace_and_network_effects` |
 | `council` | judgment | `keep_strategy` | - | `collect_independent_judgments`, `synthesize_disagreement`, `bounded_deliberation`, `duel_scored_ideas`, `answer_interview_panel` | `write_advisory_council_report` |
 | `craft-goal` | judgment | `keep_strategy` | - | `goal_prompt_design`, `goal_prompt_lint` | - |

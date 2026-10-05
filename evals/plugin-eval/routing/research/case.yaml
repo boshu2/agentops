@@ -1,0 +1,46 @@
+schema_version: '1.1'
+name: research
+tags:
+- routing
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Trying to answer one thing before I touch anything: when a request comes in without an `X-Request-Id`, does the id we generate actually show up in the logs of the email task it enqueues? Relevant bits:
+
+    ```python
+    # app/middleware.py
+    def request_id_mw(get_response):
+        def mw(request):
+            rid = request.headers.get("X-Request-Id") or uuid4().hex
+            request.request_id = rid
+            structlog.contextvars.bind_contextvars(request_id=rid)
+            return get_response(request)
+        return mw
+
+    # app/views/signup.py
+    def signup(request):
+        user = create_user(request.POST)
+        send_welcome.delay(user.id)
+        return redirect("/welcome")
+
+    # app/tasks.py
+    @shared_task
+    def send_welcome(user_id):
+        log.info("sending welcome", user_id=user_id)
+
+    # app/celery.py
+    app = Celery("app")
+    app.config_from_object("django.conf:settings", namespace="CELERY")
+    ```
+
+    Point me at the exact lines that prove it either way.
+graders:
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?research"'

@@ -1,0 +1,50 @@
+schema_version: '1.1'
+name: research
+tags:
+- behavior
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    I keep seeing this retry-with-jitter block in our services, so I think we should turn it into a CI lint rule that fails any HTTP call not wrapped in it. Here are the three places:
+    ```
+    # billing/client.py  (added 2024-03, author: dana)
+    for i in range(5):
+        try: return session.get(url, timeout=3)
+        except RequestException: time.sleep(2**i + random.random())
+    # invoices/client.py  (added 2024-05, author: sam; commit msg: "copy retry from billing")
+    for i in range(5):
+        try: return session.get(url, timeout=3)
+        except RequestException: time.sleep(2**i + random.random())
+    # search/indexer.py  (added 2025-01, author: lee)
+    for attempt in range(3):
+        try: return es.bulk(body)
+        except ConnectionError: time.sleep(1)
+    ```
+    We've never had an outage traced to a missing retry. Is this a solid pattern to enforce?
+graders:
+- name: c1
+  type: llm
+  criteria: |
+    The response notes that invoices/client.py is a copy of the billing code, so the evidence is effectively two independent instances rather than three.
+- name: c2
+  type: llm
+  criteria: |
+    The response notes that search/indexer.py differs materially (no jitter, fixed sleep, different attempt count or exception) and so does not share the same pattern.
+- name: c3
+  type: llm
+  criteria: |
+    The response argues a failing CI gate is not justified without a demonstrated cost of violation, citing that no outage has been traced to a missing retry.
+- name: c4
+  type: llm
+  criteria: |
+    The response recommends a less-committed alternative (no action, shared helper, doc/checklist) instead of the CI lint rule.
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?research"'
+  arm: with-only

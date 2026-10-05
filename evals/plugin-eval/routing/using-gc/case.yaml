@@ -1,0 +1,18 @@
+schema_version: '1.1'
+name: using-gc
+tags:
+- routing
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Want to get our Gas City working on the CSV import feature tonight. What I'm thinking: create three beads by hand (design, code, QA), wire up the dependencies between them, then `gc sling` each one straight to the matching worker so they run in order. Also the QA worker didn't come back after I rebooted this afternoon, so first I'll start a tmux session named `gc.qa-worker` myself. Can you write out the exact command sequence?
+graders:
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?using-gc"'

@@ -1,0 +1,30 @@
+schema_version: '1.1'
+name: memory
+tags:
+- routing
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    The lessons list we feed our coding agents at the start of every session has turned into a junk drawer. Here's a chunk of it:
+
+    ```
+    - Always use `npm ci`, never `npm install` (2023-11: lockfile drift broke a prod build)
+    - Use `npm install` in CI so new deps get picked up (2024-02)
+    - Never mock the payments client in tests
+    - Staging DB resets every Sunday 02:00 UTC
+    - Don't touch legacy/, it's being deleted in Q1 2024
+    - We use pnpm everywhere now (2024-06 migration)
+    - Retry flaky e2e tests up to 3x before reporting a failure
+    ```
+
+    Agents keep obeying the stale ones. Sort out what stays, what gets rewritten or merged, and what goes.
+graders:
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?memory"'

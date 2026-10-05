@@ -1,0 +1,18 @@
+schema_version: '1.1'
+name: domain
+tags:
+- routing
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Naming question before this spreads any further. In our clinic-scheduling codebase "appointment", "visit" and "booking" get used interchangeably. The front-desk app calls what a patient reserves a "booking"; the billing service calls the same row a "visit" and only invoices when `visit.status == "completed"`; the public API exposes it at `/appointments`. Product says a visit is when the patient actually shows up, so a no-show should never be a visit, but our code creates the visit record at booking time and flips it to `no_show` later. Someone wants one PR that renames everything to `Appointment`, including the `visit_id` foreign key our insurance-claims export reads. Which terms should we settle on, and where?
+graders:
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?domain"'

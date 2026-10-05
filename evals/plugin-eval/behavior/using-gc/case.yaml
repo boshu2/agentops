@@ -1,0 +1,35 @@
+schema_version: '1.1'
+name: using-gc
+tags:
+- behavior
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Our Gas City build for bead ago-7781 looks stuck. `gc bd show` says the implementation bead is in_progress and routed to the implementation worker, but nothing has happened for 40 minutes. I'm thinking I'll just `gc sling` it again, or run `gc session new` for gc.implementation-worker to get a fresh worker going. Which should I do?
+graders:
+- name: c1
+  type: llm
+  criteria: |
+    The response advises against re-slinging the already routed, in-progress bead.
+- name: c2
+  type: llm
+  criteria: |
+    The response advises against creating the worker session by hand with `gc session new`, explaining that a hand-made session can take the canonical name or block the factory's own reconciler.
+- name: c3
+  type: llm
+  criteria: |
+    The response recommends first inspecting state (worker pane output and/or `gc doctor`) or waking the existing worker rather than creating new things.
+- name: c4
+  type: llm
+  criteria: |
+    The response says escalation goes to the Mayor (via gc mail) with the bead id rather than further hand repair.
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?using-gc"'
+  arm: with-only

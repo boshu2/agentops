@@ -227,7 +227,7 @@ machine-readable form (`ao skills list`).
 |------|---------|------------------------|
 | `judgment` | Legacy internal tier name for validation and review gates | anti-ceremony, council, craft-goal, one-way-door, postmortem, premortem, reality-check, validate |
 | `execution` | Single-task implementation and runtime adapters | idea-genie, implement, interview, memory, navigate, orchestrate, plan, refactor, research, reverse-engineer, test, using-gc |
-| `orchestration` | Multi-skill coordination | codex-exec |
+| `orchestration` | Multi-skill coordination | claude-exec, codex-exec |
 | `session` | Session lifecycle | bootstrap, handoff, status |
 | `knowledge` | Reference corpora loaded on demand | domain, standards |
 | `product` | Product strategy and product-surface work | doc, fitness, product, security |
@@ -264,7 +264,7 @@ the key; nothing resolves the path or checks a skill's output against it.
 
 ## Context Declaration Quick Reference
 
-`context` is optional and most skills omit it. These 24 are every skill in
+`context` is optional and most skills omit it. These 25 are every skill in
 `skills/` that declares one; the remaining 30 declare no `context` block at
 all. Regenerate this view with `rg -A5 '^context:' skills/*/SKILL.md`; the
 frontmatter is the source of truth, this table is a convenience copy.
@@ -280,6 +280,7 @@ frontmatter is the source of truth, this table is a convenience copy.
 | reverse-engineer | execution | fork | exclude: HISTORY | task |
 | scaffold | execution | fork | exclude: HISTORY | task |
 | test | execution | fork | exclude: HISTORY | task |
+| claude-exec | orchestration | inherit | exclude: HISTORY | none |
 | codex-exec | orchestration | inherit | exclude: HISTORY | none |
 | bootstrap | session | fork | - | task |
 | handoff | session | inherit | - | none |

@@ -1,0 +1,39 @@
+schema_version: '1.1'
+name: domain
+tags:
+- behavior
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Our checkout team uses "Order" to mean a cart being paid for, and our fulfillment team uses "Order" to mean a shipment being packed. A teammate proposes one global `Order` definition everywhere, plus renaming the JSON field `order_state` (stored in Postgres and sent to our mobile apps) to `status` for consistency. Separately, our product doc says "cancel" means "refund issued", but `Order.cancel()` in code only sets `cancelled=true`. Should I just rename `cancel()` to `markCancelled()` so the names line up? Also, should I create a GLOSSARY.md? What's the right naming move here?
+graders:
+- name: c1
+  type: llm
+  criteria: |
+    The response recommends keeping separate context-specific meanings of Order for checkout and fulfillment with an explicit translation or mapping, not one global definition.
+- name: c2
+  type: llm
+  criteria: |
+    The response flags renaming `order_state` as compatibility or migration work affecting stored data and mobile clients, not a cosmetic rename.
+- name: c3
+  type: llm
+  criteria: |
+    The response treats the cancel mismatch as a disagreement between code and intended behavior to surface and resolve, and says renaming the method does not fix the missing refund.
+- name: c4
+  type: llm
+  criteria: |
+    The response gives at least one concrete distinguishing example or scenario for a contested term.
+- name: c5
+  type: llm
+  criteria: |
+    The response advises against creating a new standalone GLOSSARY.md by default, preferring an existing owner or doc for the vocabulary.
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?domain"'
+  arm: with-only

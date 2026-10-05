@@ -1,0 +1,38 @@
+schema_version: '1.1'
+name: doc
+tags:
+- routing
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    The usage section in our README has rotted. Rewrite it so it matches what the tool actually does now.
+
+    Current README:
+    ```
+    imgshrink [--recursive] [--quality N] PATH
+      --quality    JPEG quality, default 85
+      --recursive  walk subfolders
+    ```
+
+    Current cli.py:
+    ```python
+    p = argparse.ArgumentParser(prog="imgshrink")
+    p.add_argument("paths", nargs="+")
+    p.add_argument("-q", "--quality", type=int, default=80)
+    p.add_argument("--max-width", type=int, default=1600, help="downscale anything wider")
+    p.add_argument("--dry-run", action="store_true")
+    # directories are walked by default since 0.4
+    p.add_argument("--no-recurse", action="store_true")
+    ```
+
+    Keep it short, markdown, one or two example commands.
+graders:
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?doc"'

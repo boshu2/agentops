@@ -1,0 +1,50 @@
+schema_version: '1.1'
+name: plan
+tags:
+- behavior
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Plan out adding retries to our outbound webhooks. Relevant code:
+    ```python
+    # glossary in README: "Delivery = one attempt to POST an Event to a subscriber URL"
+    # webhooks/sender.py
+    def send_delivery(delivery):
+        resp = http.post(delivery.url, json=delivery.event.payload, timeout=5)
+        delivery.status = "sent" if resp.ok else "failed"
+        db.save(delivery)
+
+    # billing/sync.py  (also calls send_delivery for invoice.paid events)
+    ```
+    Subscribers are external customers; some of them charge cards when they receive invoice.paid.
+graders:
+- name: c1
+  type: llm
+  criteria: |
+    The response defines one narrow end-to-end first slice with an observable result, not a multi-phase roadmap.
+- name: c2
+  type: llm
+  criteria: |
+    The response states at least one Given/When/Then example covering the duplicate-side-effect risk (a retried invoice.paid must not cause a double charge, or an idempotency key is sent).
+- name: c3
+  type: llm
+  criteria: |
+    The response lists `billing/sync.py` as an affected consumer in scope.
+- name: c4
+  type: llm
+  criteria: |
+    The response asks at most one question of the user, about a genuine choice rather than a fact visible in the code.
+- name: c5
+  type: llm
+  criteria: |
+    The response names a specific check or test that would discriminate success from failure for the slice.
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?plan"'
+  arm: with-only

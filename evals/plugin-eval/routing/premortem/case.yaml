@@ -1,0 +1,27 @@
+schema_version: '1.1'
+name: premortem
+tags:
+- routing
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Thursday night I'm rotating the JWT signing key for all our services. Steps:
+
+    1. Generate a new RS256 keypair, private key into Vault at `auth/signing/v2`.
+    2. Deploy auth-service so it signs with v2.
+    3. Update the JWKS endpoint to serve only the v2 public key.
+    4. Roll the 11 downstream services so they refetch JWKS (they cache it for 24h).
+    5. Delete v1 from Vault so nobody can mint old tokens.
+    6. Check: log in on staging, hit two APIs, if I get 200s I'm done.
+
+    Access tokens live 1h, refresh tokens 30 days. Before I commit to this, how does it blow up?
+graders:
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?premortem"'
