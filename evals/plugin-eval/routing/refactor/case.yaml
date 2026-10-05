@@ -1,0 +1,34 @@
+schema_version: '1.1'
+name: refactor
+tags:
+- routing
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    This shipping-cost function in our TS checkout is a nested-if nightmare. I'd like it turned into a lookup table or something readable. It has to return exactly the same numbers, finance reconciles against them.
+
+    ```ts
+    export function shippingCents(country: string, weightG: number, express?: boolean): number {
+      if (country === 'US') {
+        if (weightG <= 500) return express ? 1299 : 599;
+        if (weightG <= 2000) return express ? 1899 : 899;
+        return express ? 2999 : 1499;
+      } else if (country === 'CA' || country === 'MX') {
+        if (weightG < 500) return express ? 1999 : 999;
+        if (weightG <= 2000) return express ? 2599 : 1399;
+        return 2999;
+      }
+      if (weightG <= 2000) return 2499;
+      return 3999 + Math.ceil((weightG - 2000) / 1000) * 500;
+    }
+    ```
+graders:
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?refactor"'

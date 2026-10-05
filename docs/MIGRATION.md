@@ -107,7 +107,7 @@ installed copies are not automatically deleted.
 
 The 3.7 migration baseline has 34 skills, compared with 52 in 3.6.0. Twenty former roots
 were retired; `memory` and `skill-eval` are new relative to that release. The
-current menu additionally exposes Review, Orchestrate, Interview and Navigate; no baseline skill is retired or
+current menu additionally exposes Review, Orchestrate, Interview, Navigate and Claude Exec; no baseline skill is retired or
 renamed by that addition. Use
 [the current menu](SKILL-ROUTER.md) to choose guidance for the actual task.
 

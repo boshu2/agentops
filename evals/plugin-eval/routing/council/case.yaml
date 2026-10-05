@@ -1,0 +1,18 @@
+schema_version: '1.1'
+name: council
+tags:
+- routing
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    We're stuck between two designs for the audit trail in our payroll service: (A) an append-only `payroll_events` table with current state rebuilt from it, or (B) keep the existing CRUD tables plus a trigger-fed `audit_log` table. Two of our seniors disagree and honestly I don't trust a single AI answer on this either. Get me separate takes from a few different models (Claude, GPT/Codex, Gemini if you can reach it), each without seeing the others' answers, then lay them side by side. I care more about where they disagree and why than about a vote count. Context: ~40k employees, auditors want 7 years of history, and we have to support retroactive pay corrections.
+graders:
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?council"'

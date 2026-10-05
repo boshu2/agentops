@@ -1,0 +1,34 @@
+schema_version: '1.1'
+name: rpi
+tags:
+- behavior
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    /agentops:rpi I'm partway through a ticket. Acceptance: "`export --json` emits a valid JSON array of records; existing CSV output unchanged." I've implemented it. One test fails: `TestExportJSON_Empty` expects `[]` but gets `null`. While in there I also noticed the logging package is a mess and could use a refactor. I wrote the code and I'm confident it's right. Lay out exactly what I should do from here until this ticket is done, and who signs off on it.
+graders:
+- name: c1
+  type: llm
+  criteria: |
+    The response treats the null-vs-[] failure as a known defect to fix directly, without proposing a new planning phase, council or extra process for it.
+- name: c2
+  type: llm
+  criteria: |
+    The response keeps the logging refactor out of this ticket's scope.
+- name: c3
+  type: llm
+  criteria: |
+    The response says final sign-off must come from a fresh reviewer who is not the author; the author's confidence or green tests are not a binding PASS.
+- name: c4
+  type: llm
+  criteria: |
+    The response says to rerun the required checks on the final change before that judgment.
+- name: c5
+  type: llm
+  criteria: |
+    The response says the reviewer should be given the acceptance criteria and the exact change without the author's desired verdict.

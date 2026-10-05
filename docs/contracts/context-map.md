@@ -14,8 +14,11 @@
 
 | Source | Kind | Target |
 |---|---|---|
+| `agent-native` | `customer-of` | `claude-exec` |
 | `agent-native` | `customer-of` | `codex-exec` |
 | `agy-native` | `separate-ways` | `codex-exec` |
+| `claude-exec` | `separate-ways` | `codex-exec` |
+| `claude-exec` | `supplier-to` | `validate` |
 | `codex-exec` | `supplier-to` | `validate` |
 | `craft-goal` | `supplier-to` | `plan` |
 | `idea-genie` | `customer-of` | `research` |
@@ -45,6 +48,8 @@
 | `agent-native` | produces | `per-packet-results` |
 | `agy-native` | consumes | `explicit-packet` |
 | `agy-native` | produces | `agy-run-evidence` |
+| `claude-exec` | consumes | `claude-command-packet` |
+| `claude-exec` | produces | `claude-run-output` |
 | `codex-exec` | consumes | `codex-command-packet` |
 | `codex-exec` | produces | `codex-run-output` |
 | `council` | consumes | `explicit-question` |

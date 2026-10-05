@@ -1,0 +1,52 @@
+schema_version: '1.1'
+name: refactor
+tags:
+- behavior
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Can you clean up this function? The two branches are basically duplicated and I want it tidier — no behavior change, this is used by our CLI and scripts parse its errors.
+    ```python
+    def parse_limit(raw, kind):
+        if kind == "soft":
+            if raw is None or raw == "":
+                raise ValueError("soft limit missing")
+            v = int(raw)
+            if v < 0:
+                raise ValueError("Soft limit must be >= 0")
+            return v
+        else:
+            if raw is None or raw == "":
+                raise ValueError("hard limit missing")
+            v = int(raw)
+            if v <= 0:
+                raise ValueError("hard limit must be > 0 ")
+            return min(v, 10000)
+    ```
+graders:
+- name: c1
+  type: llm
+  criteria: |
+    The refactored code preserves the exact error message strings, including the capital 'Soft' and the trailing space in the hard-limit message, or the response explicitly flags that changing them would be a behavior change.
+- name: c2
+  type: llm
+  criteria: |
+    The refactored code preserves the asymmetric bounds (soft rejects v < 0; hard rejects v <= 0 and caps at 10000).
+- name: c3
+  type: llm
+  criteria: |
+    The response surfaces at least one suspected bug or inconsistency (message casing/trailing space, non-'soft' kinds treated as hard, int() on non-numeric input) as a separate note rather than fixing it inside the refactor.
+- name: c4
+  type: llm
+  criteria: |
+    The response states what was not verified and names before/after checks to run (including error paths), rather than asserting behavior is preserved as proven.
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?refactor"'
+  arm: with-only

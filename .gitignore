@@ -197,3 +197,6 @@ outputs/
 
 # Provenance ledger advisory-lock sidecar (cross-process append lock; never committed)
 docs/provenance/*.lock
+
+# claude plugin eval run output (reports, traces); the cases are tracked
+evals/plugin-eval/*/results/

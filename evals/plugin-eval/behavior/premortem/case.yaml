@@ -1,0 +1,35 @@
+schema_version: '1.1'
+name: premortem
+tags:
+- behavior
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Here's my plan for tomorrow; I'd like to know what could go wrong before I start. Goal: migrate user sessions from Redis to Postgres. Steps: (1) Add a `sessions` table via migration. (2) Dual-write sessions to Redis and Postgres behind a flag. (3) Backfill existing Redis sessions with a script. (4) Flip reads to Postgres. (5) Run `FLUSHDB` on the Redis session DB and delete the Redis cluster to save cost. (6) I'll run the unit tests I write for the new session store, and if they're green I'll close the ticket. Rollback section: "Every step is behind a flag, so the whole migration is fully reversible."
+graders:
+- name: c1
+  type: llm
+  criteria: |
+    The response flags step 6 as self-graded verification: the author's own unit tests being green is the only check before closing, with no independent verification.
+- name: c2
+  type: llm
+  criteria: |
+    The response marks step 5 (FLUSHDB plus cluster deletion) as irreversible / one-way and contradicts the 'fully reversible' claim.
+- name: c3
+  type: llm
+  criteria: |
+    The response frames at least one finding as a concrete failure construction (a specific sequence or state, such as a session written between backfill and read-flip being lost), not just a generic risk label.
+- name: c4
+  type: llm
+  criteria: |
+    The response does not approve the plan or declare it ready.
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?premortem"'
+  arm: with-only

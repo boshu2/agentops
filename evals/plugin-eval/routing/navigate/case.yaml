@@ -1,0 +1,33 @@
+schema_version: '1.1'
+name: navigate
+tags:
+- routing
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Standup's in 10 min and I need to say what we're pulling in next. Epic SSO-1 "Enterprise SAML login":
+
+    ```
+    AC1 Org admin uploads IdP metadata and it's saved
+    AC2 A user from that org signs in via SAML and lands on their dashboard
+    AC3 Users in SSO-enforced orgs can't log in with a password
+
+    SSO-11 IdP metadata upload form      DONE (merged, no tests)  files: web/settings/sso/*
+    SSO-12 SAML assertion consumer       PR OPEN                  files: auth/saml.py, auth/session.py
+    SSO-13 Block password login for SSO  TODO, blocked by SSO-12  files: auth/session.py, auth/password.py
+    SSO-14 SP metadata endpoint          TODO                     files: auth/saml_meta.py
+    SSO-15 Move marketing site to Astro  TODO                     files: site/*
+    SSO-16 Admin audit log for SSO edits TODO                     files: audit/*
+    ```
+
+    Room for two of these. Which two, and why?
+graders:
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?navigate"'

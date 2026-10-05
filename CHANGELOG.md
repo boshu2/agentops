@@ -7,6 +7,95 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.10.0] - 2026-10-05
+
+AgentOps 3.10 is a release about the skills themselves. All 28 were audited,
+tested with Claude Code's plugin evaluator on Claude Opus 5.5 and edited where
+the test showed a gap: descriptions now use the words a user would type, and
+each skill leads with the rules a model misses unaided. On the same 28 requests
+the agent met 349 of 372 practice criteria with 3.10, 292 with 3.9.0 and 269
+with no plugin. On requests written blind, the matching skill loaded in 29 of 48
+runs against 11 of 48 on 3.9.0; nine skills still did not load there. Claude
+Exec is new, the eval cases ship in the repository, and no command or skill
+name changes.
+
+See the [curated release notes](https://github.com/boshu2/agentops/blob/main/docs/releases/2026-10-05-v3.10.0-notes.md)
+for upgrade notes and known limits, and the
+[evaluation report](https://github.com/boshu2/agentops/blob/main/docs/evals/2026-10-05-plugin-eval-opus-5-5.md)
+for every number.
+
+### Added
+
+- Claude Exec runs one caller-supplied prompt through headless Claude Code
+  (`claude -p`) with tools and permission mode scoped to the task, one time
+  bound that a retry spends instead of renewing, captured output and the exit
+  status reported as a fact. It is caller-selected, like Codex Exec and AGY
+  Native. The menu is now 29 skills.
+- `evals/plugin-eval/` holds two suites for `claude plugin eval`: 29 behavior
+  cases that compare an agent with and without the plugin, and 25 routing cases
+  that check whether the matching skill loads on a request that never names it.
+  `evals/plugin-eval/grade.py` grades a response against all of its criteria in
+  one judge call.
+- The README gains "Make it yours", on cutting, rewriting, adding and measuring
+  skills, and "Evidence", with the evaluation results and their limits.
+- Most skills gain a fixed output shape, such as Plan's one-slice block,
+  Implement's handoff, Validate's verdict skeleton, Doc's handoff template and
+  Memory's entry template.
+
+### Changed
+
+- Every skill description is rewritten in user phrasing, within 26 words and
+  180 characters. In the behavior suite the matching skill loaded in 59 of 72
+  runs on 3.10 against 22 of 72 on 3.9.0. Routing phrases that tests pin moved
+  to frontmatter triggers on Implement and Premortem.
+- Each skill opens with the few rules an unaided model tends to miss. Maintainer
+  detail moved into references: Codex Exec's guarded runner, Council's modes,
+  Using GC's trust pre-seeding, the Research and Reverse Engineer pack and
+  invocation contracts, Skill Builder's build mechanics, Skill Eval's readouts,
+  Memory's toil evidence and Plan's resume and handoff rules.
+- Validate judges from its own text and runs without `ao`. It no longer requires
+  a file in another skill's directory, accepts the commit and changed paths as
+  the subject's identity, and writes out its verdict order.
+- Navigate counts a row as proven by cited evidence: the passing check that
+  exercises the criterion, or a Validate PASS where a fresh review was required.
+- Premortem may run in the context that wrote the plan when no fresh context can
+  be started. It must say the independence check is missing and cannot save the
+  result as a durable review.
+- Using GC sends a ready bead to the Mayor by mail; direct `gc sling` is only
+  for a city with no live Mayor.
+- Security runs a scripted scan once per request and keeps the repeat-until-quiet
+  loop for the manual hunt. A review reports a result for every vulnerability
+  class and names a remediation class, with no plan, owner or ship decision.
+- AGY Native stops and reports when `agy` is missing, with no silent fallback to
+  another runtime. The retired ban on `claude -p` is removed from it and from the
+  dispatch reference.
+- Reverse Engineer gives each row exactly one verdict and treats a capability
+  known only from documentation as unverified.
+- Doc returns a handoff in the response when no location is named and creates no
+  file. New CDLC handoffs still go only to protected non-Git storage.
+- Skill Eval explains how `claude plugin eval` relates to the repository probe
+  runner, and says to confirm a skill loaded before reading a zero delta, to
+  calibrate the judge first and to pass `--no-publish`.
+- The README and the install guide show `ao` as optional for Validate.
+
+### Fixed
+
+- AGY Native claimed a five-minute default for `--print-timeout`. The CLI
+  default is no limit; the skill now requires an explicit timeout.
+- Security's OWASP checklist said the redteam script covered secrets, input
+  validation, SQL injection and XSS automatically. It scans only repository
+  prompt and control surfaces, and the references now name
+  `prompt_redteam.py scan` instead of a subcommand that does not exist.
+- Craft Goal stated its stop condition five times with two different pass
+  counts. Interview said it creates no file while appending notes. Refactor's
+  reference told readers to tidy messages and to self-grade PASS or FAIL. Each
+  now says one thing.
+- Idea Genie's validator paths resolve in an installed copy, and its portfolio
+  shape is shown inline.
+- Codex Exec says that an installed copy has no `scripts/lib/codex-exec.sh` and
+  gives the direct `codex exec` form.
+- Implement lists the evidence-orphan scan as not run when `ao` is absent.
+
 ## [3.9.0] - 2026-10-03
 
 AgentOps 3.9 narrows the product to its own guidance. The ten bundled external

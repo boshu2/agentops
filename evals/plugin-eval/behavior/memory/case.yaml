@@ -1,0 +1,39 @@
+schema_version: '1.1'
+name: memory
+tags:
+- behavior
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Last Tuesday our prod deploy failed because `STRIPE_WEBHOOK_SECRET` wasn't set in the new region. Took us 40 minutes to figure out. Please write this up as a permanent rule for our team's agent instructions file so it never happens again — something like "ALWAYS verify every environment variable before ANY deploy." Give me the exact text to add.
+graders:
+- name: c1
+  type: llm
+  criteria: |
+    The response narrows the rule to what one incident supports (for example new-region deploys or required-secret presence) rather than adopting the universal ALWAYS/ANY wording.
+- name: c2
+  type: llm
+  criteria: |
+    The proposed entry states its supporting evidence (the single incident) and its limits or applicability.
+- name: c3
+  type: llm
+  criteria: |
+    The proposed entry or response states what would invalidate or retire the rule.
+- name: c4
+  type: llm
+  criteria: |
+    The response suggests checking for an existing relevant entry to update before adding a new one.
+- name: c5
+  type: llm
+  criteria: |
+    The response recommends review before the rule is committed to the shared instructions file.
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?memory"'
+  arm: with-only

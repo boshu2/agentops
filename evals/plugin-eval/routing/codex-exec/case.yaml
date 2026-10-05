@@ -1,0 +1,26 @@
+schema_version: '1.1'
+name: codex-exec
+tags:
+- routing
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Quick one: our nightly data job has a schema-drift check, and when it finds drift I want Codex to read the diff and write a one-paragraph explanation for the on-call channel. Stub:
+
+    ```python
+    def explain_drift(diff_text: str) -> str:
+        # TODO: call the Codex CLI with diff_text, return what it says
+        ...
+    ```
+
+    Fill it in with subprocess. Codex only needs to read, it should never change files. This runs unattended at 3am so it can't hang, and the on-call message can't turn into a 40KB wall if Codex rambles.
+graders:
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?codex-exec"'

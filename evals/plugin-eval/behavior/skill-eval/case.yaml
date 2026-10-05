@@ -1,0 +1,39 @@
+schema_version: '1.1'
+name: skill-eval
+tags:
+- behavior
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    I A/B tested my "tdd-first" skill. Five coding tasks, one run each arm. With the skill: 4/5 passed. Without: 3/5 passed. Two of the with-skill runs actually crashed on a sandbox error, so I reran those and kept the reruns. Oh, and in the with-skill arm the task prompt also said "write tests first". Is the skill worth keeping? Give me a yes/no.
+graders:
+- name: c1
+  type: llm
+  criteria: |
+    The response concludes the evidence is insufficient (or gives an explicit retain/revise/remove/insufficient-evidence call) rather than a bare yes.
+- name: c2
+  type: llm
+  criteria: |
+    The response says the crashed attempts must be counted or reported in the denominator, not silently replaced by reruns.
+- name: c3
+  type: llm
+  criteria: |
+    The response says the 'write tests first' text in the with-skill task prompt confounds the comparison.
+- name: c4
+  type: llm
+  criteria: |
+    The response says 4/5 vs 3/5 on one run per arm does not demonstrate a benefit.
+- name: c5
+  type: llm
+  criteria: |
+    The response does not recommend simply rerunning until the result turns positive.
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?skill-eval"'
+  arm: with-only

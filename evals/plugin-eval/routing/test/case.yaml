@@ -1,0 +1,35 @@
+schema_version: '1.1'
+name: test
+tags:
+- routing
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    need pytest coverage on this before I touch it again. it decides whether a restaurant can take orders right now in our delivery app:
+
+    ```python
+    from zoneinfo import ZoneInfo
+
+    def is_open(now_utc, tz, hours):
+        # hours: weekday (0=Mon) -> (open, close); close < open means it runs past midnight
+        local = now_utc.astimezone(ZoneInfo(tz))
+        open_t, close_t = hours.get(local.weekday(), (None, None))
+        if open_t is None:
+            return False
+        t = local.time()
+        if close_t < open_t:
+            return t >= open_t or t < close_t
+        return open_t <= t < close_t
+    ```
+
+    last bug in here sat in prod for two weeks before a restaurant complained.
+graders:
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?test"'

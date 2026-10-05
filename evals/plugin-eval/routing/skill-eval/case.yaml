@@ -1,0 +1,24 @@
+schema_version: '1.1'
+name: skill-eval
+tags:
+- routing
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Keep it or kill it: our `sql-style` skill adds ~900 tokens of context every time it loads. From last month's logs:
+
+    - loaded in 212 sessions; those PRs averaged 0.8 change requests
+    - sessions without it averaged 2.1 change requests
+    - it mostly loads on small migration PRs; big feature PRs rarely trigger it
+
+    My lead says that proves it works. I want an actual answer, and if these numbers can't give one, tell me the cheapest run that would.
+graders:
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?skill-eval"'

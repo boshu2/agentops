@@ -1,0 +1,54 @@
+schema_version: '1.1'
+name: navigate
+tags:
+- behavior
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    What should we pick up next on this epic? Here's the tracker dump:
+    ```
+    EPIC ag-100 "Exactly-once Job redelivery"
+     Acceptance:
+      A1 Given a completed Job, when redelivered, then its side effect runs once.
+      A2 Given a worker crash mid-Job, when restarted, then the Job resumes from its last checkpoint.
+      A3 Given 10k queued Jobs, when drained, then p99 latency < 2s.
+     Terms: Job = one unit of queued work.
+    children:
+     ag-101 "Redelivery dedupe key"      CLOSED  notes: "merged, looks good"  scope: worker/dedupe.go
+     ag-102 "Checkpoint writer"          IN_PROGRESS (agent-3) scope: worker/checkpoint.go, worker/store.go
+     ag-103 "Task resume on boot"        READY   scope: worker/store.go, worker/boot.go
+     ag-104 "Add dark-mode to admin UI"  READY   scope: ui/theme.css
+     ag-105 "Load test harness"          READY   scope: bench/
+    ready list: ag-103, ag-104, ag-105
+    ```
+graders:
+- name: c1
+  type: llm
+  criteria: |
+    The response does not count A1 as proven: ag-101 is closed without cited validation evidence, so A1 is treated as unproven or needing verification.
+- name: c2
+  type: llm
+  criteria: |
+    The response does not pick ag-103 to start now, citing its write-scope overlap (worker/store.go) with in-progress ag-102.
+- name: c3
+  type: llm
+  criteria: |
+    The response flags ag-104 as not tied to any acceptance criterion of the epic and does not pick it.
+- name: c4
+  type: llm
+  criteria: |
+    The response flags the term drift: ag-103 says "Task" while the epic defines "Job".
+- name: c5
+  type: llm
+  criteria: |
+    The response picks ag-105 (or an equally small non-overlapping wave) with a reason tied to an acceptance criterion.
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?navigate"'
+  arm: with-only

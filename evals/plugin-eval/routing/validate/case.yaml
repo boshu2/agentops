@@ -1,0 +1,40 @@
+schema_version: '1.1'
+name: validate
+tags:
+- routing
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Teammate's PR is ready and I'm the one who has to sign off. Ticket AC:
+
+    1. Reset links expire 30 min after they're issued.
+    2. A reset link works only once.
+    3. Requesting a new link makes any older unused links stop working.
+
+    Diff:
+    ```python
+    def create_reset_token(user):
+        tok = secrets.token_urlsafe(32)
+        ResetToken.objects.create(user=user, token=tok, expires_at=now() + timedelta(minutes=30))
+        return tok
+
+    def redeem(tok, new_password):
+        rt = ResetToken.objects.get(token=tok, expires_at__gt=now())
+        rt.user.set_password(new_password)
+        rt.user.save()
+        rt.delete()
+    ```
+
+    CI: `tests/test_reset.py::test_expired_link_rejected PASSED`, `tests/test_reset.py::test_link_single_use PASSED` (2 passed).
+
+    Does it meet the ticket or not?
+graders:
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?validate"'

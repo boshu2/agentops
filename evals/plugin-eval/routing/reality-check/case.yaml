@@ -1,0 +1,36 @@
+schema_version: '1.1'
+name: reality-check
+tags:
+- routing
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Infra lead posted this in #eng-status on Friday afternoon:
+
+    > PG16 upgrade complete. prod + staging on 16.4, replicas in sync, old 13.x cluster decommissioned, backups verified.
+
+    Here's what I pulled just now:
+
+    ```
+    $ psql -h prod-primary -c 'select version()'
+     PostgreSQL 16.4 on x86_64-pc-linux-gnu ...
+    $ psql -h staging-primary -c 'select version()'
+     PostgreSQL 13.14 on x86_64-pc-linux-gnu ...
+    $ psql -h prod-primary -c 'select client_addr, state, replay_lag from pg_stat_replication'
+     10.0.3.12 | streaming | 00:00:00.41
+     10.0.3.13 | catchup   | 02:13:07
+    $ aws rds describe-db-clusters --query 'DBClusters[].DBClusterIdentifier'
+     ["prod-pg16", "staging-pg13", "prod-pg13-old"]
+    ```
+
+    Couldn't find anything about backups. Before I forward his post to our VP: how much of it actually holds up?
+graders:
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?reality-check"'

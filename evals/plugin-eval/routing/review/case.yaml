@@ -1,0 +1,39 @@
+schema_version: '1.1'
+name: review
+tags:
+- routing
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Can you give my PR a once-over before I tag the team? It adds search-as-you-type to the customer list.
+
+    ```tsx
+    export function useCustomerSearch(query: string) {
+      const [results, setResults] = useState<Customer[]>([]);
+      const [loading, setLoading] = useState(false);
+
+      useEffect(() => {
+        if (!query) return;
+        setLoading(true);
+        const t = setTimeout(async () => {
+          const res = await fetch(`/api/customers?q=${query}`);
+          setResults(await res.json());
+          setLoading(false);
+        }, 250);
+      }, [query]);
+
+      return { results, loading };
+    }
+    ```
+
+    Anything you'd push back on?
+graders:
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?review"'

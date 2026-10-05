@@ -1,0 +1,34 @@
+schema_version: '1.1'
+name: reverse-engineer
+tags:
+- routing
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Been going through how Renovate works to figure out what's worth stealing for the dependency-update bot we're writing for our internal Gitea (no Dependabot or Renovate available there). Sample config from a public repo:
+
+    ```json
+    {
+      "extends": ["config:recommended"],
+      "schedule": ["before 5am on monday"],
+      "packageRules": [
+        {"matchUpdateTypes": ["patch"], "automerge": true},
+        {"matchPackagePatterns": ["^@types/"], "groupName": "types"}
+      ],
+      "minimumReleaseAge": "3 days",
+      "dependencyDashboard": true,
+      "rangeStrategy": "bump"
+    }
+    ```
+
+    Their site also says it "automatically rebases stale PRs", and there are "Merge Confidence" badges, which I think come from their hosted app rather than the open-source core. We're 6 people with ~40 repos. Break down what Renovate actually does here and tell me what our bot should copy now, what can wait, and what we should skip.
+graders:
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?reverse-engineer"'

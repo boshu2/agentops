@@ -12,7 +12,7 @@
 
 ## driving-adapter
 
-`agy-native`, `codex-exec`, `implement`, `research`, `review`, `using-gc`, `validate`
+`agy-native`, `claude-exec`, `codex-exec`, `implement`, `research`, `review`, `using-gc`, `validate`
 
 ## supporting
 
@@ -24,6 +24,7 @@
 |---|---|---|---|---|---|
 | `agent-native` | meta | `keep_optional_adapter` | - | `role_dispatch`, `observe_workers`, `handoff`, `dispatch_once` | `manage_runtime_sessions`, `invoke_selected_executor` |
 | `agy-native` | cross-vendor | `keep_optional_adapter` | - | `dispatch_explicit_packet`, `provide_fresh_context` | `start_agy_session` |
+| `claude-exec` | orchestration | `keep_optional_adapter` | - | `claude_exec` | `run_claude_process`, `permission_tiered_workspace_effects` |
 | `codex-exec` | orchestration | `keep_optional_adapter` | - | `codex_exec` | `run_codex_process`, `sandbox_tiered_workspace_and_network_effects` |
 | `council` | judgment | `keep_strategy` | - | `collect_independent_judgments`, `synthesize_disagreement`, `bounded_deliberation`, `duel_scored_ideas`, `answer_interview_panel` | `write_advisory_council_report` |
 | `craft-goal` | judgment | `keep_strategy` | - | `goal_prompt_design`, `goal_prompt_lint` | - |

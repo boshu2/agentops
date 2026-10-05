@@ -57,6 +57,15 @@
     },
     {
       "driven_by_skills": [
+        "claude-exec"
+      ],
+      "id": "skill:claude-exec:claude_exec",
+      "name": "claude_exec",
+      "path": "skills/claude-exec/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
         "codex-exec"
       ],
       "id": "skill:codex-exec:codex_exec",
@@ -681,19 +690,19 @@
     "cli_commands": 0,
     "gates": 0,
     "reference_impls": 0,
-    "skills": 75,
-    "total": 75
+    "skills": 76,
+    "total": 76
   },
   "cli_top_level_commands": [],
   "schema_version": 3,
   "summary": {
-    "capabilities": 75,
+    "capabilities": 76,
     "cli_commands": 0,
     "eval_files": 0,
     "hooks": 0,
     "job_types": 0,
     "knowledge_stores": 0,
-    "skills": 28,
+    "skills": 29,
     "workflows": 0
   },
   "surfaces": {
@@ -741,6 +750,22 @@
       },
       {
         "capabilities": [
+          "claude_exec"
+        ],
+        "disposition": "keep_optional_adapter",
+        "effects": [
+          "run_claude_process",
+          "permission_tiered_workspace_effects"
+        ],
+        "has_references": false,
+        "has_skill_md": true,
+        "name": "claude-exec",
+        "path": "skills/claude-exec/",
+        "reference_count": 0,
+        "tier": "orchestration"
+      },
+      {
+        "capabilities": [
           "codex_exec"
         ],
         "disposition": "keep_optional_adapter",
@@ -748,11 +773,11 @@
           "run_codex_process",
           "sandbox_tiered_workspace_and_network_effects"
         ],
-        "has_references": false,
+        "has_references": true,
         "has_skill_md": true,
         "name": "codex-exec",
         "path": "skills/codex-exec/",
-        "reference_count": 0,
+        "reference_count": 1,
         "tier": "orchestration"
       },
       {
@@ -767,11 +792,11 @@
         "effects": [
           "write_advisory_council_report"
         ],
-        "has_references": false,
+        "has_references": true,
         "has_skill_md": true,
         "name": "council",
         "path": "skills/council/",
-        "reference_count": 0,
+        "reference_count": 4,
         "tier": "judgment"
       },
       {
@@ -804,7 +829,7 @@
         "has_skill_md": true,
         "name": "doc",
         "path": "skills/doc/",
-        "reference_count": 15,
+        "reference_count": 16,
         "tier": "product"
       },
       {
@@ -892,7 +917,7 @@
         "has_skill_md": true,
         "name": "memory",
         "path": "skills/memory/",
-        "reference_count": 4,
+        "reference_count": 5,
         "tier": "execution"
       },
       {
@@ -946,7 +971,7 @@
         "has_skill_md": true,
         "name": "plan",
         "path": "skills/plan/",
-        "reference_count": 3,
+        "reference_count": 4,
         "tier": "execution"
       },
       {
@@ -976,7 +1001,7 @@
         "has_skill_md": true,
         "name": "premortem",
         "path": "skills/premortem/",
-        "reference_count": 1,
+        "reference_count": 2,
         "tier": "judgment"
       },
       {
@@ -991,11 +1016,11 @@
           "write_goal_snapshot",
           "write_requested_rendered_spec"
         ],
-        "has_references": false,
+        "has_references": true,
         "has_skill_md": true,
         "name": "reality-check",
         "path": "skills/reality-check/",
-        "reference_count": 0,
+        "reference_count": 2,
         "tier": "judgment"
       },
       {
@@ -1046,7 +1071,7 @@
         "has_skill_md": true,
         "name": "reverse-engineer",
         "path": "skills/reverse-engineer/",
-        "reference_count": 2,
+        "reference_count": 3,
         "tier": "execution"
       },
       {
@@ -1057,11 +1082,11 @@
         ],
         "disposition": "keep",
         "effects": [],
-        "has_references": false,
+        "has_references": true,
         "has_skill_md": true,
         "name": "review",
         "path": "skills/review/",
-        "reference_count": 0,
+        "reference_count": 1,
         "tier": "judgment"
       },
       {
@@ -1115,7 +1140,7 @@
         "has_skill_md": true,
         "name": "skill-builder",
         "path": "skills/skill-builder/",
-        "reference_count": 10,
+        "reference_count": 11,
         "tier": "meta"
       },
       {
@@ -1133,7 +1158,7 @@
         "has_skill_md": true,
         "name": "skill-eval",
         "path": "skills/skill-eval/",
-        "reference_count": 1,
+        "reference_count": 3,
         "tier": "meta"
       },
       {
@@ -1165,11 +1190,11 @@
           "operate_gas_city",
           "configure_codex_trust"
         ],
-        "has_references": false,
+        "has_references": true,
         "has_skill_md": true,
         "name": "using-gc",
         "path": "skills/using-gc/",
-        "reference_count": 0,
+        "reference_count": 1,
         "tier": "execution"
       },
       {

@@ -1,0 +1,18 @@
+schema_version: '1.1'
+name: agy-native
+tags:
+- routing
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Let's give this one to Gemini through agy instead of you, I want to see how it handles this kind of thing. Task: read the Express routers under services/orders/src/routes and write an OpenAPI 3.1 spec to services/orders/openapi.yaml. It shouldn't change anything else in the repo. Put together the exact agy command I'd run from the repo root, with whatever permission setting fits, and tell me how I'd know afterwards whether it actually finished vs. timed out or died partway.
+graders:
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?agy-native"'

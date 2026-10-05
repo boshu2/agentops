@@ -1,0 +1,18 @@
+schema_version: '1.1'
+name: claude-exec
+tags:
+- routing
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    want a `make release-notes` target that shells out to `claude -p` once: feed it `git log --oneline v2.3.0..HEAD` and have it draft the notes into dist/RELEASE_NOTES.md. runs on my laptop and sometimes on the build box where nobody's watching. what should the recipe look like? it shouldn't be able to touch anything except that one file, and if it falls over I want the build to fail loudly, not ship an empty notes file.
+graders:
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?claude-exec"'
