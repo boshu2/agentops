@@ -1,0 +1,32 @@
+schema_version: '1.1'
+name: skill-builder
+tags:
+- routing
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    I've ended up with two skills in .claude/skills that do nearly the same thing, and the agent picks between them at random. Can you merge them into one?
+
+    ```
+    --- release-notes/SKILL.md
+    name: release-notes
+    description: Write release notes from git history. Use when the user asks for release notes or a changelog entry.
+    (body: git log since last tag, group by conventional-commit type, write to CHANGELOG.md)
+
+    --- changelog-writer/SKILL.md
+    name: changelog-writer
+    description: Generates CHANGELOG entries. Use for changelog, release notes, what changed.
+    (body: read merged PR titles via gh, group by label, prepend to CHANGELOG.md, then bump the version in package.json)
+    ```
+
+    That version bump bit us once when someone only wanted the notes.
+graders:
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?skill-builder"'

@@ -1,0 +1,39 @@
+schema_version: '1.1'
+name: idea-genie
+tags:
+- behavior
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Our team maintains a small CLI called `logship` that tails local log files and forwards them to S3. Current README features: "tail multiple files with glob patterns; gzip batches before upload; retry uploads with exponential backoff; --dry-run prints what would be sent." Recent user issues: (#41) "uploads silently stop after the laptop sleeps and wakes up"; (#44) "would love retries when S3 is down"; (#47) "I need to redact AWS keys from lines before they leave the machine"; (#52) "same as #41, had to restart logship after VPN reconnect". I have a couple of free weeks. What are the strongest things we could build next? Give me the options, don't pick for me.
+graders:
+- name: c1
+  type: llm
+  criteria: |
+    The response keeps observations cited to specific issues or README features separate from stated assumptions.
+- name: c2
+  type: llm
+  criteria: |
+    The response recognizes that #44 (retries) overlaps the existing exponential-backoff retry feature and does not propose it as a plain new feature.
+- name: c3
+  type: llm
+  criteria: |
+    Each candidate cites its supporting issue numbers (for example sleep/VPN reconnect citing #41 and #52).
+- name: c4
+  type: llm
+  criteria: |
+    Each candidate includes a concrete Given/When/Then style scenario.
+- name: c5
+  type: llm
+  criteria: |
+    The response leaves out ideas that no supplied evidence supports, or explicitly labels them as unsupported assumptions, and does not select a winner.
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?idea-genie"'
+  arm: with-only

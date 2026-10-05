@@ -1,0 +1,36 @@
+schema_version: '1.1'
+name: implement
+tags:
+- routing
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Ticket FE-212: "page 2 of product search repeats the last item from page 1." AC: consecutive pages never overlap or skip items. Handler:
+
+    ```go
+    func listProducts(w http.ResponseWriter, r *http.Request) {
+        page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+        if page < 1 {
+            page = 1
+        }
+        const size = 20
+        offset := (page-1)*size - 1
+        if offset < 0 {
+            offset = 0
+        }
+        rows, err := db.Query(`SELECT id, name FROM products ORDER BY created_at DESC LIMIT $1 OFFSET $2`, size, offset)
+        // ... scan rows, write JSON
+    }
+    ```
+
+    Go ahead and fix it.
+graders:
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?implement"'

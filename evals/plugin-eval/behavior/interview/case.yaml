@@ -1,0 +1,30 @@
+schema_version: '1.1'
+name: interview
+tags:
+- behavior
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    /agentops:interview I want our agents to be able to run long migrations overnight without me watching. Before anyone builds anything, help me pin down what we're actually building. Context: we use a Postgres-backed job table today, jobs sometimes run twice after a worker crash, and I'm the only person who approves schema changes.
+graders:
+- name: c1
+  type: llm
+  criteria: |
+    The response asks exactly one question in this turn, not a list of several questions.
+- name: c2
+  type: llm
+  criteria: |
+    The question comes with a recommended answer and a stated tradeoff.
+- name: c3
+  type: llm
+  criteria: |
+    The question does not ask for facts already given in the prompt (Postgres job table, double-runs after crash, sole schema approver).
+- name: c4
+  type: llm
+  criteria: |
+    The response does not produce a design, implementation plan or files; it stays in question mode.

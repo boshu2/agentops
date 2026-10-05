@@ -1,0 +1,25 @@
+schema_version: '1.1'
+name: agent-native
+tags:
+- routing
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Got four chores in our pnpm monorepo and I don't want to grind through them one after another. I'd like a separate subagent on each, all running at the same time:
+
+    1. bump `zod` to v4 in packages/forms and fix the type errors
+    2. bump `zod` to v4 in packages/api-client and fix the type errors
+    3. add the missing Spanish strings to apps/web/locales/es.json
+    4. fix the flaky "retries on 503" test in packages/api-client/test/http.test.ts
+
+    One agent per chore. Write me the brief for each one so I can launch them.
+graders:
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?agent-native"'

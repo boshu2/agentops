@@ -1,0 +1,43 @@
+schema_version: '1.1'
+name: reverse-engineer
+tags:
+- behavior
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    We build an open-source CLI task tracker. A competitor, "Tasklane", is getting buzz. Their README claims: (a) "automatic dependency reconciliation — blocked tasks unblock themselves", (b) "crash-safe storage via an embedded write-ahead log", (c) "a hosted team dashboard with analytics", (d) "agents mark tasks complete themselves, no human review needed". I skimmed their repo and the only reconciliation code I found is this:
+    ```go
+    func (s *Store) OnClose(id string) { for _, d := range s.Dependents(id) { d.Status = "ready"; s.Save(d) } }
+    ```
+    Our tracker currently uses a SQLite file. Which of these should we adopt, and should we switch our storage to a WAL engine like theirs?
+graders:
+- name: c1
+  type: llm
+  criteria: |
+    The response separates what the README claims from what code evidence shows: only (a) has code evidence, while (b), (c) and (d) are documentation claims only.
+- name: c2
+  type: llm
+  criteria: |
+    The response notes the shown reconciliation code marks dependents ready on close without checking their other blockers.
+- name: c3
+  type: llm
+  criteria: |
+    The response gives each of the four capabilities its own differentiated decision rather than adopting all of them.
+- name: c4
+  type: llm
+  criteria: |
+    The response rejects or flags (d), self-reported completion with no review, as a risk rather than a feature to adopt.
+- name: c5
+  type: llm
+  criteria: |
+    The response does not simply endorse switching the storage engine; it treats that as a separate migration decision and/or notes SQLite already supports WAL mode.
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?reverse-engineer"'
+  arm: with-only

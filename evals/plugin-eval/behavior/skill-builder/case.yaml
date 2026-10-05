@@ -1,0 +1,35 @@
+schema_version: '1.1'
+name: skill-builder
+tags:
+- behavior
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Yesterday one of my agents committed Go code without running `go vet` and CI caught it. I want a brand-new skill called `go-vet-guard` that forces agents to always run vet, plus a `vet-guard-stats.md` file where we log every time it fires so we can see how it's going. Draft it for me.
+graders:
+- name: c1
+  type: llm
+  criteria: |
+    The response says a single incident is not enough evidence to justify a new skill and proposes a narrower option (a note or rule in an existing owner such as Go standards or a commit checklist).
+- name: c2
+  type: llm
+  criteria: |
+    The response recommends extending an existing skill or reference over adding a new one, or says doing nothing new is acceptable.
+- name: c3
+  type: llm
+  criteria: |
+    The response rejects or questions the stats file for lacking a consumer or a decision it informs.
+- name: c4
+  type: llm
+  criteria: |
+    The response does not simply deliver the requested go-vet-guard SKILL.md and stats file as asked.
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?skill-builder"'
+  arm: with-only

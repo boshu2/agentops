@@ -188,6 +188,15 @@ experiment did not demonstrate incremental benefit. Those bounded results
 inform selective use of guidance; they establish neither equivalence nor
 general productivity improvement.
 
+The [October plugin evaluation](docs/evals/2026-10-05-plugin-eval-opus-5-5.md)
+ran one request per skill on Claude Opus 5.5, three times with the plugin and
+three times without. With AgentOps 3.10 the agent met 363 of 387 practice
+criteria; with no plugin, 272 of 387. On requests written blind, the matching
+skill loaded in 31 of 50 runs. The criteria come from each skill's own rules,
+and the scored requests were also used to tune the 3.10 descriptions, so the
+result shows that the guidance changes behavior on those requests. It does not
+establish better outcomes on real tasks, results on other models or net cost.
+
 [Independent review caught incomplete acceptance coverage](https://github.com/boshu2/agentops/pull/1129)
 in the trial readout, leading to a repair and regression test. That is a concrete
 example of review producing a reusable check. It does not establish the net
