@@ -23,6 +23,9 @@ func TestSkillsFind_SeparatesHeadlessAdapters(t *testing.T) {
 		{query: "run one prompt through headless claude", want: "claude-exec"},
 		{query: "run one prompt through headless codex", want: "codex-exec"},
 	}
+	// executeCommand leaves --json and --limit set on the shared `skills find`
+	// command; put every flag back to its default so no later test inherits them.
+	t.Cleanup(func() { resetFlagChangesRecursive(rootCmd) })
 	for _, tc := range cases {
 		t.Run(tc.want, func(t *testing.T) {
 			out, err := executeCommand("skills", "find", "--json", "--limit", "1", tc.query)
