@@ -376,10 +376,11 @@ your work.
   not need, reorder them, or write your own. The Claude Code workflow scripts in
   [`workflows/`](workflows/) link into a project with
   [`ao workflows link`](docs/install-day2-ops.md#workflows-claude-code-only).
-- **Measure what you change.** [Skill Eval](skills/skill-eval/SKILL.md) and
-  `claude plugin eval` compare an agent with and without a skill on the same
-  request. [Evidence](#evidence) shows the cases this repository runs; copy them
-  for your own skills.
+- **Measure what you change.** `claude plugin eval` compares an agent with and
+  without a plugin on the same request. To measure one edit, run the old and
+  the new version as two plugins. [Skill Eval](skills/skill-eval/SKILL.md)
+  covers how to read the result, and [Evidence](#evidence) shows the cases this
+  repository runs; copy them for your own skills.
 
 ## Evidence
 
@@ -394,7 +395,7 @@ On Claude Opus 5.5, measured 2026-10-05:
 
 | | No plugin | AgentOps 3.9.0 | AgentOps 3.10 |
 |---|---:|---:|---:|
-| Practice criteria met on 28 requests | 269 of 372 (72%) | 292 of 372 (78%) | 348 of 372 (94%) |
+| Practice criteria met on 28 requests | 269 of 372 (72%) | 292 of 372 (78%) | 349 of 372 (94%) |
 | Matching skill loaded on a blind request | | 11 of 48 runs | 29 of 48 runs |
 
 Fourteen of the 29 skills moved their case by 0.15 or more. Craft Goal, Claude
@@ -482,8 +483,10 @@ Read the [3.10 release notes](docs/releases/2026-10-05-v3.10.0-notes.md). Use th
 [plugin update instructions](docs/install-day2-ops.md#install-and-update-runtime-plugins)
 or, for npx installs, `npx skills@latest update` ([update notes](docs/install-day2-ops.md#update)).
 For Homebrew: `brew update && brew upgrade agentops`. In a source checkout, run
-`git pull --ff-only` and then `ao skills link` to pick up the new skill. Start a
-new session afterward; new installs do not silently remove obsolete copies.
+`git pull --ff-only`, then rerun `ao skills link` with the selectors you used
+before, adding `--skill claude-exec` for the new skill; without selectors it
+links every skill. Start a new session afterward; new installs do not silently
+remove obsolete copies.
 
 **Upgrading from 3.8 or earlier:** version 3.9 removed ten bundled external tool
 skills, retired three delivery workflows, deleted the old curl installers and

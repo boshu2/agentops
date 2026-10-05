@@ -119,17 +119,17 @@
     ],
     "with_3_10": {
      "criteria": 5,
-     "criteria_met": 13,
+     "criteria_met": 14,
      "criteria_total": 15,
      "per_criterion": [
       3,
       3,
-      1,
+      2,
       3,
       3
      ],
      "runs": 3,
-     "score": 0.867,
+     "score": 0.933,
      "skill_loaded_runs": 3
     },
     "with_3_9_0": null,
@@ -1191,17 +1191,17 @@
     ],
     "with_3_10": {
      "criteria": 5,
-     "criteria_met": 12,
+     "criteria_met": 13,
      "criteria_total": 15,
      "per_criterion": [
       3,
       3,
       3,
       3,
-      0
+      1
      ],
      "runs": 3,
-     "score": 0.8,
+     "score": 0.867,
      "skill_loaded_runs": 3
     },
     "with_3_9_0": {
@@ -1493,10 +1493,10 @@
   "totals_all_cases": {
    "with_3_10": {
     "cases": 29,
-    "criteria_met": 361,
-    "criteria_rate": 0.933,
+    "criteria_met": 363,
+    "criteria_rate": 0.938,
     "criteria_total": 387,
-    "mean_case_score": 0.932,
+    "mean_case_score": 0.936,
     "model_invocable_skills": 25,
     "skill_loaded_of": 75,
     "skill_loaded_runs": 62,
@@ -1549,10 +1549,10 @@
    ],
    "with_3_10": {
     "cases": 28,
-    "criteria_met": 348,
-    "criteria_rate": 0.935,
+    "criteria_met": 349,
+    "criteria_rate": 0.938,
     "criteria_total": 372,
-    "mean_case_score": 0.934,
+    "mean_case_score": 0.936,
     "model_invocable_skills": 24,
     "skill_loaded_of": 72,
     "skill_loaded_runs": 59,
@@ -1588,6 +1588,16 @@
  "date": "2026-10-05",
  "evaluator": "claude plugin eval (Claude Code 2.1.282)",
  "grader": "claude-opus-5-5, one call per response (evals/plugin-eval/grade.py)",
+ "grader_agreement": {
+  "agree": 439,
+  "agreement_rate": 0.959,
+  "compared_with": "claude plugin eval --judge-model claude-opus-5-5 (three votes per criterion)",
+  "criteria": 458,
+  "disagree": 19,
+  "grade_py_more_lenient": 4,
+  "grade_py_stricter": 15,
+  "responses": 101
+ },
  "model": "claude-opus-5-5",
  "routing": {
   "runs_per_case": 2,

@@ -11,7 +11,9 @@ Usage:
 
 Each RUN.json is a file written by `claude plugin eval ... --json RUN.json`. The output maps
 "<file>|<case>|<arm>|<run index>" to a list of booleans in criterion order, or to {"error": ...}.
-Existing entries in --out are kept, so an interrupted run can be resumed.
+A run that errored or returned no text cannot be graded: it is recorded as an error too, and the
+script exits nonzero, so a score is never computed over fewer runs unnoticed. Graded entries in
+--out are kept, so an interrupted run can be resumed.
 """
 
 from __future__ import annotations
@@ -51,9 +53,14 @@ def response_text(run: dict[str, Any], names: list[str]) -> str:
 
 def jobs(
     paths: list[str], done: dict[str, Any], arm_filter: str | None = None
-) -> list[tuple[str, list[str], str]]:
-    """List (key, criteria, response) for every gradable run not already in `done`."""
+) -> tuple[list[tuple[str, list[str], str]], dict[str, dict[str, str]]]:
+    """Split runs not already in `done` into gradable jobs and runs that cannot be graded.
+
+    Returns (jobs, skipped). A job is (key, criteria, response). `skipped` maps the key of a run
+    that errored or returned no text to an {"error": ...} entry naming the reason.
+    """
     out = []
+    skipped: dict[str, dict[str, str]] = {}
     for path in paths:
         with open(path, encoding="utf-8") as fh:
             doc = json.load(fh)
@@ -68,11 +75,18 @@ def jobs(
                     continue
                 for index, run in enumerate(runs):
                     key = f"{label}|{case['name']}|{arm}|{index}"
-                    text = response_text(run, names)
-                    if key in done or run.get("error") or not text:
+                    if key in done:
                         continue
-                    out.append((key, [text_ for _, text_ in crit], text))
-    return out
+                    text = response_text(run, names)
+                    if run.get("error"):
+                        skipped[key] = {
+                            "error": f"not graded: run errored ({run['error']})"
+                        }
+                    elif not text:
+                        skipped[key] = {"error": "not graded: run has no response text"}
+                    else:
+                        out.append((key, [text_ for _, text_ in crit], text))
+    return out, skipped
 
 
 def grade(job: tuple[str, list[str], str], model: str, timeout: int) -> tuple[str, Any]:
@@ -109,7 +123,7 @@ def grade(job: tuple[str, list[str], str], model: str, timeout: int) -> tuple[st
 
 
 def main() -> int:
-    """Grade every ungraded run and report how many failed to grade."""
+    """Grade every ungraded run; exit 1 when any run could not be graded."""
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("runs", nargs="+", help="evaluator --json output files")
     parser.add_argument("--out", required=True, help="grades file to write (resumable)")
@@ -127,7 +141,10 @@ def main() -> int:
     if os.path.exists(args.out):
         with open(args.out, encoding="utf-8") as fh:
             done = {k: v for k, v in json.load(fh).items() if isinstance(v, list)}
-    todo = jobs(args.runs, done, args.arm)
+    todo, skipped = jobs(args.runs, done, args.arm)
+    done.update(skipped)
+    with open(args.out, "w", encoding="utf-8") as fh:
+        json.dump(done, fh, indent=1, sort_keys=True)
     with ThreadPoolExecutor(args.concurrency) as pool:
         for key, verdicts in pool.map(
             lambda job: grade(job, args.judge_model, args.timeout), todo
@@ -137,11 +154,11 @@ def main() -> int:
                 json.dump(done, fh, indent=1, sort_keys=True)
     failed = sorted(k for k, v in done.items() if not isinstance(v, list))
     print(
-        f"graded {len(done) - len(failed)} responses, {len(failed)} failed",
+        f"graded {len(done) - len(failed)} responses, {len(failed)} not graded",
         file=sys.stderr,
     )
     for key in failed:
-        print(f"  FAILED {key}: {done[key]['error']}", file=sys.stderr)
+        print(f"  NOT GRADED {key}: {done[key]['error']}", file=sys.stderr)
     return 1 if failed else 0
 
 

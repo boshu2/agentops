@@ -13,7 +13,7 @@ AgentOps 3.10 is a release about the skills themselves. All 28 were audited,
 tested with Claude Code's plugin evaluator on Claude Opus 5.5 and edited where
 the test showed a gap: descriptions now use the words a user would type, and
 each skill leads with the rules a model misses unaided. On the same 28 requests
-the agent met 348 of 372 practice criteria with 3.10, 292 with 3.9.0 and 269
+the agent met 349 of 372 practice criteria with 3.10, 292 with 3.9.0 and 269
 with no plugin. On requests written blind, the matching skill loaded in 29 of 48
 runs against 11 of 48 on 3.9.0; nine skills still did not load there. Claude
 Exec is new, the eval cases ship in the repository, and no command or skill

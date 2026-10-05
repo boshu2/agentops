@@ -190,7 +190,7 @@ general productivity improvement.
 
 The [October plugin evaluation](docs/evals/2026-10-05-plugin-eval-opus-5-5.md)
 ran one request per skill on Claude Opus 5.5, three times with the plugin and
-three times without. With AgentOps 3.10 the agent met 361 of 387 practice
+three times without. With AgentOps 3.10 the agent met 363 of 387 practice
 criteria; with no plugin, 272 of 387. On requests written blind, the matching
 skill loaded in 31 of 50 runs. The criteria come from each skill's own rules,
 and the scored requests were also used to tune the 3.10 descriptions, so the

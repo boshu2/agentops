@@ -5,8 +5,8 @@ differently from one without it? And did the 3.10 skill edits change that?
 
 ## Result
 
-With AgentOps 3.10 installed, Claude Opus 5.5 met 361 of 387 practice criteria
-(93%) across 29 requests, one per skill, three runs each. With no plugin it
+With AgentOps 3.10 installed, Claude Opus 5.5 met 363 of 387 practice criteria
+(94%) across 29 requests, one per skill, three runs each. With no plugin it
 met 272 of 387 (70%).
 
 On the 28 skills that also exist in 3.9.0:
@@ -15,7 +15,7 @@ On the 28 skills that also exist in 3.9.0:
 |---|---:|---:|
 | No plugin | 269 of 372 (72%) | |
 | AgentOps 3.9.0 | 292 of 372 (78%) | 22 of 72 runs |
-| AgentOps 3.10 | 348 of 372 (94%) | 59 of 72 runs |
+| AgentOps 3.10 | 349 of 372 (94%) | 59 of 72 runs |
 
 Loading is counted over the 24 of those skills that the model can load by
 itself. The other four are invoked by name.
@@ -71,14 +71,14 @@ with 3.10 called the Skill tool for that skill.
 | Skill | With 3.10 | Without | Delta | Loaded (of 3) | With 3.9.0 |
 |---|---:|---:|---:|---:|---:|
 | `craft-goal` | 12/12 | 3/12 | +0.75 | by name | 12/12 |
-| `claude-exec` | 13/15 | 3/15 | +0.67 | 3 | new |
+| `claude-exec` | 14/15 | 3/15 | +0.73 | 3 | new |
 | `plan` | 15/15 | 5/15 | +0.67 | 3 | 5/15 |
 | `memory` | 15/15 | 6/15 | +0.60 | 3 | 2/15 |
 | `skill-builder` | 8/12 | 1/12 | +0.58 | 3 | 4/12 |
 | `interview` | 12/12 | 5/12 | +0.58 | by name | 12/12 |
 | `using-gc` | 12/12 | 6/12 | +0.50 | 3 | 12/12 |
 | `idea-genie` | 15/15 | 9/15 | +0.40 | 3 | 4/15 |
-| `security` | 12/15 | 7/15 | +0.33 | 3 | 6/15 |
+| `security` | 13/15 | 7/15 | +0.40 | 3 | 6/15 |
 | `orchestrate` | 10/12 | 7/12 | +0.25 | 3 | 9/12 |
 | `domain` | 15/15 | 12/15 | +0.20 | 3 | 15/15 |
 | `reverse-engineer` | 15/15 | 12/15 | +0.20 | 3 | 13/15 |
@@ -104,14 +104,16 @@ Notes on single rows:
 
 - `agy-native` and `doc` are the two cases below their 3.9.0 score. `doc` is
   one criterion-run lower (10 of 12 against 11 of 12), which is inside the
-  noise. `agy-native`'s second criterion
-  expects a refusal to run `claude -p` when `agy` is missing. 3.10 removed the
-  retired ban on print mode: the skill still forbids a silent fallback, and an
-  explicitly requested Claude run as a separate step is now allowed. The
-  criterion fails by design in every arm and is kept unchanged.
-- `rpi`'s third criterion expects a fresh reviewer for every change. Since
-  3.9.0 the rule is one fresh review only where a mistake is costly, so that
-  criterion also fails by design.
+  noise. `agy-native`'s second criterion expects a refusal to run `claude -p`
+  when `agy` is missing. 3.10 removed the retired ban on print mode from the
+  skill: it still forbids a silent fallback, and an explicitly requested Claude
+  run as a separate step is now allowed. So the criterion fails by design with
+  3.10 (0 of 3 runs). The old ban text in 3.9.0 met it in 2 of 3 runs, and that
+  is the whole of the case's drop. It is kept unchanged.
+- `rpi`'s third criterion expects a fresh reviewer for every change. That
+  contradicts the rule both releases carry, one fresh review only where a
+  mistake is costly, so it fails by design with 3.10 (0 of 3) and mostly with
+  3.9.0 (1 of 3). The agent with no plugin met it in 3 of 3.
 - `council` did not load on its behavior request, so its content was not
   exercised there. It loaded on its blind request.
 - `craft-goal`, `interview`, `postmortem` and `rpi` are user-only and were
@@ -157,7 +159,9 @@ matching skill.
   working directory and at most 12 turns.
 - **Cases:** [`evals/plugin-eval/`](../../evals/plugin-eval/README.md). The 28
   behavior cases and their criteria were written on 2026-10-04 from an audit of
-  the skills as they were, and were not changed afterwards. The `claude-exec`
+  the skills, and were not changed afterwards. The audit read a checkout from
+  just before 3.9.0, which is why two criteria contradict rules that 3.9.0
+  already had. The `claude-exec`
   case was written without sight of the skill's text.
 - **Subjects:** 3.10 is this repository at the release commit, loaded as the
   full plugin. 3.9.0 is the `v3.9.0` skills directory loaded as a plugin without
@@ -167,9 +171,10 @@ matching skill.
   reused. A run with no plugin does not depend on the plugin version. The
   `claude-exec` no-plugin runs are from 2026-10-05.
 - **Grading:** `evals/plugin-eval/grade.py`, one Claude Opus 5.5 call per
-  response covering all of its criteria. On 103 responses also graded by the
+  response covering all of its criteria. On 101 responses also graded by the
   evaluator's three-vote Opus judge, the two agreed on 439 of 458 criteria
-  (95.9%); `grade.py` was the stricter one in 15 of the 19 disagreements.
+  (95.9%); `grade.py` was the stricter one in 15 of the 19 disagreements. The
+  counts are in the scorecard's `grader_agreement` block.
   Loading uses the evaluator's deterministic check on the Skill tool call.
 - **Scorecard:** per-criterion counts for every case and arm are in
   [the scorecard](../../evals/plugin-eval/scorecards/2026-10-05-opus-5-5.json).
@@ -193,10 +198,11 @@ matching skill.
 ## Reproduce
 
 ```bash
+OUT=$(mktemp -d)   # run output holds every prompt and response; keep it out of the repository
 claude plugin eval . --eval-dir evals/plugin-eval/behavior \
-  --model claude-opus-5-5 --no-publish --json behavior.json
-python3 evals/plugin-eval/grade.py behavior.json --out grades.json
+  --model claude-opus-5-5 --no-publish --json "$OUT/behavior.json"
+python3 evals/plugin-eval/grade.py "$OUT/behavior.json" --out "$OUT/grades.json"
 
 claude plugin eval . --eval-dir evals/plugin-eval/routing \
-  --ablation none --model claude-opus-5-5 --runs 2 --no-publish --json routing.json
+  --ablation none --model claude-opus-5-5 --runs 2 --no-publish --json "$OUT/routing.json"
 ```

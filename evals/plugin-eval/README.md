@@ -23,18 +23,21 @@ lives in [`routing-probes/`](../routing-probes/README.md).
 From the repository root:
 
 ```bash
+OUT=$(mktemp -d)   # keep run output out of the repository
+
 # behavior: with the plugin and without it
 claude plugin eval . --eval-dir evals/plugin-eval/behavior \
-  --model claude-opus-5-5 --no-publish --json behavior.json
+  --model claude-opus-5-5 --no-publish --json "$OUT/behavior.json"
 
 # routing: plugin only
 claude plugin eval . --eval-dir evals/plugin-eval/routing \
-  --ablation none --model claude-opus-5-5 --no-publish --json routing.json
+  --ablation none --model claude-opus-5-5 --no-publish --json "$OUT/routing.json"
 ```
 
-Without `--no-publish` the evaluator uploads its HTML report, with every prompt
-and response, to claude.ai. It writes run output to a results directory beside
-the cases, which this repository ignores.
+The JSON files hold every prompt and response, so write them outside the
+repository as shown. Without `--no-publish` the evaluator also uploads its HTML
+report to claude.ai. Its own run directory sits beside the cases and is ignored
+by Git.
 
 Every run is a full Claude Code session on your account. On Claude Opus 5.5 a
 run cost about $0.13 to generate (168 runs for $21.25 on 2026-10-04). The
@@ -54,12 +57,16 @@ So the published numbers use `grade.py`: one Opus call per response, all of its
 criteria at once, about $0.02 per response.
 
 ```bash
-python3 evals/plugin-eval/grade.py behavior.json --out grades.json
+python3 evals/plugin-eval/grade.py "$OUT/behavior.json" --out "$OUT/grades.json"
 ```
 
-On 103 responses graded both ways, `grade.py` agreed with the evaluator's
+A run that errored or returned no text cannot be graded. `grade.py` lists each
+one and exits nonzero, so a score is never computed over fewer runs unnoticed.
+
+On 101 responses graded both ways, `grade.py` agreed with the evaluator's
 three-vote Opus judge on 439 of 458 criteria (95.9%). Where they differed,
-`grade.py` was usually the stricter one (15 of 19). Whichever judge you use,
+`grade.py` was usually the stricter one (15 of 19). The counts are in the
+`grader_agreement` block of the 2026-10-05 scorecard. Whichever judge you use,
 read a few graded responses before you trust a score.
 
 The `skill-loaded` check is deterministic and needs no judge. In a two-arm run
