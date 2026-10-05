@@ -13,12 +13,15 @@ delivery.
 
 ## Destination precedence for handoffs and evidence
 
-1. A location the caller names wins. Write there, read it back and return the
-   exact path.
-2. With no named location, a new CDLC handoff, draft or proof goes to the
-   caller-selected protected external non-Git destination.
-3. When neither exists, report the missing routing, return the handoff in the
-   response and create no fallback file in the checkout.
+1. A new CDLC handoff, draft or proof goes only to the caller-selected
+   protected external non-Git destination (ADR-0016). A named path inside a Git
+   working tree does not replace it. With none selected, report the missing
+   routing, return the handoff in the response and create no fallback file in
+   the checkout.
+2. For any other handoff, a location the caller names wins. Write there, read
+   it back and return the exact path.
+3. With no named location, return the handoff in the response and create no
+   file.
 
 Preserve existing evidence and legacy `.agents/` proof, and use the repository's
 actual source owners. Existing JSON under `.agents/handoff/` remains read-only

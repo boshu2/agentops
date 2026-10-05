@@ -14,7 +14,7 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 | Skill | Use it for |
 |---|---|
 | [plan](https://github.com/boshu2/agentops/blob/main/skills/plan/SKILL.md) | Shape a request into one end-to-end slice with observable behavior; review write scope and reversible decisions. Use when: planning, breaking down or scoping a change. |
-| [implement](https://github.com/boshu2/agentops/blob/main/skills/implement/SKILL.md) | Change or repair code, config or services without weakening tests; report what ran and what did not. Use when: implementing or fixing anything, however small. |
+| [implement](https://github.com/boshu2/agentops/blob/main/skills/implement/SKILL.md) | Change or repair code, config or services without weakening tests; report what ran and what did not. Use when: implementing a change or fixing a defect. |
 | [review](https://github.com/boshu2/agentops/blob/main/skills/review/SKILL.md) | Give advisory feedback on a plan, design or code change. Use when: asked for an opinion or a look-over, even informally. Not for acceptance; use Validate. |
 | [validate](https://github.com/boshu2/agentops/blob/main/skills/validate/SKILL.md) | Freshly judge whether a finished change and its claims meet original acceptance: PASS, FAIL or NOT_PROVEN. Use when: asked for a go/no-go, sign-off or independent verdict. |
 | [orchestrate](https://github.com/boshu2/agentops/blob/main/skills/orchestrate/SKILL.md) | Coordinate several workers: what idle agents do next, which finished work gets checked first, how to recover a dead one. Use when: managing multiple agents. |
@@ -38,7 +38,7 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 
 | Skill | Use it for |
 |---|---|
-| [council](https://github.com/boshu2/agentops/blob/main/skills/council/SKILL.md) | Compare independent opinions from several models or contexts without inflating agreement. Use when: wanting a second opinion, panel or debate, or summarizing reviewers' results. |
+| [council](https://github.com/boshu2/agentops/blob/main/skills/council/SKILL.md) | Compare independent opinions from several models or contexts without inflating agreement. Use when: wanting a second opinion or debate, or summarizing several reviewers' results. |
 | [craft-goal](https://github.com/boshu2/agentops/blob/main/skills/craft-goal/SKILL.md) | Draft or lint a bounded long-running goal prompt with a finish line and hard limits. Use when: selected by name; one change goes to Plan. |
 | [idea-genie](https://github.com/boshu2/agentops/blob/main/skills/idea-genie/SKILL.md) | Brainstorm evidence-backed options for what to build, or stress-test an idea. Use when: deciding what to build next, comparing options or testing an idea. |
 | [interview](https://github.com/boshu2/agentops/blob/main/skills/interview/SKILL.md) | Interview you one question at a time, each with a recommendation, to settle a big outcome before agents work alone. Use when: selected by name. |
@@ -54,7 +54,7 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 |---|---|
 | [agent-native](https://github.com/boshu2/agentops/blob/main/skills/agent-native/SKILL.md) | Dispatch independent tasks to parallel workers or subagents without write collisions. Use when: running or planning agents in parallel, even two; check scopes before any launch. |
 | [agy-native](https://github.com/boshu2/agentops/blob/main/skills/agy-native/SKILL.md) | Run a supplied task in headless AGY (Antigravity, Gemini) and collect its result. Use when: AGY, Antigravity or Gemini is requested by name; never a fallback. |
-| [claude-exec](https://github.com/boshu2/agentops/blob/main/skills/claude-exec/SKILL.md) | Run one prompt through headless Claude and capture the result. Use when: wanting a one-shot `claude -p` run or CI step. Not for batches or retries. |
+| [claude-exec](https://github.com/boshu2/agentops/blob/main/skills/claude-exec/SKILL.md) | Run one prompt through headless Claude with scoped permissions and a time bound. Use when: scripting or automating a `claude -p` call, even a simple one. |
 | [codex-exec](https://github.com/boshu2/agentops/blob/main/skills/codex-exec/SKILL.md) | Run one prompt through headless Codex and capture the result. Use when: wanting a one-shot `codex exec` run or CI step. Not for batches or retries. |
 | [using-gc](https://github.com/boshu2/agentops/blob/main/skills/using-gc/SKILL.md) | Operate Gas City through its own doors: Mayor, doctor and native run state. Use when: Gas City is selected or a gc run looks stuck. |
 

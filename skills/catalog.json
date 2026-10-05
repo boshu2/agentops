@@ -100,7 +100,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Run one prompt through headless Claude and capture the result. Use when: wanting a one-shot `claude -p` run or CI step. Not for batches or retries.",
+      "description": "Run one prompt through headless Claude with scoped permissions and a time bound. Use when: scripting or automating a `claude -p` call, even a simple one.",
       "disposition": "keep_optional_adapter",
       "effects": [
         "run_claude_process",
@@ -169,7 +169,7 @@
       ],
       "context_rel": [],
       "dependencies": [],
-      "description": "Compare independent opinions from several models or contexts without inflating agreement. Use when: wanting a second opinion, panel or debate, or summarizing reviewers' results.",
+      "description": "Compare independent opinions from several models or contexts without inflating agreement. Use when: wanting a second opinion or debate, or summarizing several reviewers' results.",
       "disposition": "keep_strategy",
       "effects": [
         "write_advisory_council_report"
@@ -346,7 +346,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Change or repair code, config or services without weakening tests; report what ran and what did not. Use when: implementing or fixing anything, however small.",
+      "description": "Change or repair code, config or services without weakening tests; report what ran and what did not. Use when: implementing a change or fixing a defect.",
       "disposition": "keep",
       "effects": [
         "modify_declared_subject",

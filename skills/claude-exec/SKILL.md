@@ -1,6 +1,6 @@
 ---
 name: claude-exec
-description: 'Run one prompt through headless Claude and capture the result. Use when: wanting a one-shot `claude -p` run or CI step. Not for batches or retries.'
+description: 'Run one prompt through headless Claude with scoped permissions and a time bound. Use when: scripting or automating a `claude -p` call, even a simple one.'
 skill_api_version: 1
 user-invocable: true
 hexagonal_role: driving-adapter
@@ -73,8 +73,8 @@ Print mode never prompts: unapproved calls are denied and listed in
 `permission_denials`. Add `Bash` to `--tools` only for authorized commands
 named in `--allowedTools`, e.g. `"Bash(go test *)"`; with settings hooks
 dropped, that list is the guard. `--max-budget-usd` stops after the call that
-crosses it; no turn-cap flag exists. `--no-session-persistence` keeps no
-transcript.
+crosses it, and `--help` lists no turn cap, so bound a run by time and budget.
+`--no-session-persistence` keeps no transcript.
 
 ## Result
 

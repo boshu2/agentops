@@ -1,6 +1,6 @@
 ---
 name: implement
-description: 'Change or repair code, config or services without weakening tests; report what ran and what did not. Use when: implementing or fixing anything, however small.'
+description: 'Change or repair code, config or services without weakening tests; report what ran and what did not. Use when: implementing a change or fixing a defect.'
 practices:
 - tdd
 - refactoring
@@ -93,11 +93,12 @@ recovery, resilience, toil); ordinary edits owe no operations phase.
    `schemas/subject-manifest.v1.schema.json`) over the complete final subject
    before judgment; an independently judged increment needs its own manifest.
    Do not generate both merely because work was delegated.
-7. At that boundary, only when the repository records AgentOps evidence
-   bindings, `ao` is installed and changed paths affect bound acceptance evidence, run
+7. At that boundary, when the repository records AgentOps evidence bindings
+   and changed paths affect bound acceptance evidence, run
    `ao provenance evidence-orphans --root <repo-root>` with one `--changed
    <path>` per derived path, retain its actual output and refresh affected
-   bindings after repairs. Never invent or suppress the orphan list.
+   bindings after repairs. Without `ao`, list the orphan scan under `not run`.
+   Never invent or suppress the orphan list.
 8. Return the handoff below, then stop.
 
 ## Handoff

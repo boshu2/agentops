@@ -85,7 +85,10 @@ response with the case graders (LLM graders use `--judge-model`, default haiku)
 and reports the score delta. `--runs` sets repetitions per case,
 `--max-cost-usd` caps spend and `--json` writes per-run results. The model
 decides whether to load each skill, so the delta mixes routing with content.
-Confirm flags with `claude plugin eval --help`.
+By default it also publishes its HTML report (prompts, responses and verdicts)
+to claude.ai and writes results under the plugin's eval directory: pass
+`--no-publish`, and point `--output-dir`, `--json` and `--report` at
+caller-selected storage. Confirm flags with `claude plugin eval --help`.
 
 `scripts/probe-skill.sh` is the repository runner for small behavioral probes.
 It injects the exact SKILL.md bytes (or a declared prelude) into the treatment

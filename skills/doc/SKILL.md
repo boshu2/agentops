@@ -110,9 +110,11 @@ record a caller's unobserved claim as "stated, unverified", never as fact.
   for startup and resume links; end-state notes cannot replace missing startup
   evidence.
 
-**Destination.** A location the caller names wins: write there, read it back
-and return the exact path. With no named location, return the handoff in the
-response and create no file. Check source, recipient/model and destination
+**Destination.** A new CDLC handoff, draft or proof goes only to the selected
+protected external non-Git destination; with none selected, report the missing
+routing and create no fallback file. For any other handoff a location the
+caller names wins: write there, read it back and return the exact path. With no
+named location, return the handoff in the response and create no file. Check source, recipient/model and destination
 authorization before copying metadata; an opaque locator grants no access.
 AgentOps evidence routing and the `ao session` handoff commands are in
 [AgentOps internals](references/agentops-internal.md).

@@ -72,8 +72,10 @@ only where it prevents a plausible scope mistake.
 1. Read the accepted intent, any existing plan or native handoff, and the
    relevant source owners and active constraints. Reuse the
    acceptance already supplied in the conversation or bead; clarify only what
-   prevents action or judgment. To resume or replace another context, or to
-   hand a slice on, follow [resume and handoff](references/resume-and-handoff.md).
+   prevents action or judgment. To resume or replace another context, hand a
+   slice on, plan code together with a requested retrospective, or keep an
+   exact snapshot of conversation intent, follow
+   [resume and handoff](references/resume-and-handoff.md).
 2. Route only the uncertainty that could change the slice (table below).
 3. Fill the block. A mechanical cross-cutting migration that cannot stay
    working slice by slice uses expand, migrate, contract and states where

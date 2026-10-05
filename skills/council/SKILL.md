@@ -1,6 +1,6 @@
 ---
 name: council
-description: 'Compare independent opinions from several models or contexts without inflating agreement. Use when: wanting a second opinion, panel or debate, or summarizing reviewers'' results.'
+description: 'Compare independent opinions from several models or contexts without inflating agreement. Use when: wanting a second opinion or debate, or summarizing several reviewers'' results.'
 practices: [llm-eval-harness, design-by-contract]
 hexagonal_role: domain
 consumes: [explicit-question, evidence]
