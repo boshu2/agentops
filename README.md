@@ -13,6 +13,7 @@
 
 [Install](#quickstart) · [The loop](#the-operational-loop) ·
 [Goals](#goals) · [Try it](#try-it) · [Skills](#skills-at-a-glance) ·
+[Make it yours](#make-it-yours) · [Evidence](#evidence) ·
 [Beyond AgentOps](#beyond-agentops)
 
 </div>
@@ -31,6 +32,13 @@ Skills guide the agent's decisions; executable gates check specific contracts.
 results and project memories. [Memory](skills/memory/SKILL.md) curates supported
 findings into linked project knowledge, connecting lessons to the work and
 sources behind them. The next session can use that record instead of starting over.
+
+The skills are a kit, and you are expected to change it. Each skill is one
+Markdown file of instructions. Keep the ones that fit how you work, rewrite the
+ones that almost fit, delete the rest, and add skills you write yourself or find
+in other libraries. What you end up with is your own operating model for agents,
+which is the reason this project exists. [Make it yours](#make-it-yours) shows
+how.
 
 Use these paths with Claude Code, Codex, Cursor, OpenCode, Gemini CLI, Pi and
 other coding agents, or personal assistants such as OpenClaw and Grok Bot.
@@ -127,7 +135,7 @@ each host has been tested for is in [host coverage and limits](docs/contracts/mu
 </details>
 
 Start a new session so the skills load. Most skills need only your coding
-agent; Validate also needs the [`ao` CLI](#optional-ao-cli). Invocation names
+agent; a few use the [`ao` CLI](#optional-ao-cli) when it is installed. Invocation names
 vary by agent: this README shows Claude Code's `/agentops:<skill>`; Codex uses
 `$agentops:<skill>`.
 
@@ -276,8 +284,9 @@ Start read-only in any repo, then swap the Job example for your own change.
 <summary><strong>Validate an existing change</strong></summary>
 
 Pick a finished change whose accepted behavior is recorded in an issue or
-conversation. Run the required checks, keep the candidate unchanged, and
-[install `ao`](#optional-ao-cli). Then open a **new conversation**, fill in the
+conversation. Run the required checks and keep the candidate unchanged.
+[Installing `ao`](#optional-ao-cli) is optional; it gives Validate a content
+manifest for the change. Then open a **new conversation**, fill in the
 references and paste:
 
 ```text
@@ -338,6 +347,40 @@ catalog: **[docs/SKILL-ROUTER.md](docs/SKILL-ROUTER.md)**.
 | Runtimes and factories | [`codex-exec`](skills/codex-exec/SKILL.md) [`claude-exec`](skills/claude-exec/SKILL.md) [`agy-native`](skills/agy-native/SKILL.md) [`using-gc`](skills/using-gc/SKILL.md) | Selected executors and Gas City integration |
 | Skill craft | [`skill-builder`](skills/skill-builder/SKILL.md) [`skill-eval`](skills/skill-eval/SKILL.md) | Author skills and measure whether they help |
 
+## Make it yours
+
+Every skill here is a folder with one `SKILL.md`: plain instructions an agent
+loads when a task calls for them. No skill depends on the full set, and coding
+with none of them still works. That makes the library easy to take apart, and
+you should. The 29 skills are a starting point for an operating model that fits
+your work.
+
+- **Start small.** Install two or three skills that match work you already do.
+  Add another when a real task asks for it.
+- **Cut what you override.** If you or the agent keep ignoring a rule, change
+  the rule or remove the skill. `npx skills` lets you pick skills per agent, and
+  [`ao skills link --skill <name>`](docs/install-day2-ops.md#install-source-checkout)
+  links an exact subset from a checkout.
+- **Rewrite what almost fits.** Fork this repository, edit the `SKILL.md` and
+  install from your fork with the same commands, or link a checkout so every
+  agent on your machine reads your edits. A plugin update replaces the installed
+  copy, so keep your changes in a repository you control.
+- **Write your own.** When you have explained the same thing to an agent three
+  times, it is a skill. [Skill Builder](skills/skill-builder/SKILL.md) drafts the
+  package, and tells you when a note in an existing file is enough.
+- **Mix libraries.** Run these next to your company's skills, the
+  [Agentic Coding Flywheel](#agentic-coding-flywheel) tools or any other
+  library. `ao skills link` never replaces a skill it did not install.
+- **Change the workflows too.** The [operational loop](#the-operational-loop)
+  and the [goal workflow](#goals) are defaults. Skip the steps your work does
+  not need, reorder them, or write your own. The Claude Code workflow scripts in
+  [`workflows/`](workflows/) link into a project with
+  [`ao workflows link`](docs/install-day2-ops.md#workflows-claude-code-only).
+- **Measure what you change.** [Skill Eval](skills/skill-eval/SKILL.md) and
+  `claude plugin eval` compare an agent with and without a skill on the same
+  request. [Evidence](#evidence) shows the cases this repository runs; copy them
+  for your own skills.
+
 ## Where AgentOps fits
 
 AgentOps grew from applying DevOps experience and established engineering
@@ -363,10 +406,11 @@ proof that every combination has been tested.
 
 <a id="optional-ao-cli"></a>
 
-## `ao` CLI (needed for Validate)
+## `ao` CLI (optional)
 
-Most skills need only your coding agent. Validate uses `ao` to identify the
-exact change it judges.
+Most skills need only your coding agent. With `ao` installed, Validate binds
+the exact change it judges to a content manifest; without it, Validate names
+the commit and the changed paths.
 
 ```bash
 brew tap boshu2/agentops
@@ -383,20 +427,27 @@ With Go installed: `go install github.com/boshu2/agentops/cli/cmd/ao@latest`.
 ## Updating and advanced setup
 
 <details>
-<summary><strong>Upgrading to 3.9</strong></summary>
+<summary><strong>Upgrading to 3.10</strong></summary>
 
+<a id="upgrading-to-310"></a>
 <a id="upgrading-to-39"></a>
 <a id="upgrading-to-38"></a>
 <a id="upgrading-to-37"></a>
 
-Version 3.9 removes ten bundled external tool skills, retires three delivery
-workflows, deletes the old curl installers and changes the Codex plugin to read
-`skills/` directly. Read the
-[3.9 release notes](docs/releases/2026-10-03-v3.9.0-notes.md) before updating. Use the
+Version 3.10 keeps every 3.9 command and skill name. It rewrites the skill
+descriptions so skills load on plain requests, adds
+[`claude-exec`](skills/claude-exec/SKILL.md) and lets Validate run without `ao`.
+Read the [3.10 release notes](docs/releases/2026-10-05-v3.10.0-notes.md). Use the
 [plugin update instructions](docs/install-day2-ops.md#install-and-update-runtime-plugins)
 or, for npx installs, `npx skills@latest update` ([update notes](docs/install-day2-ops.md#update)).
-For Homebrew: `brew update && brew upgrade agentops`. Start a new session
-afterward; new installs do not silently remove obsolete copies.
+For Homebrew: `brew update && brew upgrade agentops`. In a source checkout, run
+`git pull --ff-only` and then `ao skills link` to pick up the new skill. Start a
+new session afterward; new installs do not silently remove obsolete copies.
+
+**Upgrading from 3.8 or earlier:** version 3.9 removed ten bundled external tool
+skills, retired three delivery workflows, deleted the old curl installers and
+changed the Codex plugin to read `skills/` directly. Read the
+[3.9 release notes](docs/releases/2026-10-03-v3.9.0-notes.md) first.
 
 **Upgrading from 3.6 or earlier:** read the [migration guide](docs/MIGRATION.md).
 Version 3.7 removed commands and skill names, including `learn`, `codebase-recon`
@@ -417,7 +468,7 @@ Skill installation does not install tool dependencies:
 | `rpi` | `ao`, conditional | delegates exact-subject checks to Validate; only persists `verdict.v2` when requested |
 | `plan` | `ao`, conditional | runs `ao provenance snapshot-intent` with an explicit evidence root when the intent source is not durable |
 | `implement` | `ao`, conditional | at an integration boundary whose changed paths affect bound evidence, runs `ao provenance evidence-orphans` |
-| `validate` | `ao` | derives exact subject identity with the helper and uses `ao provenance store-verdict` when persistence is requested; Python/schema checks are developer-only |
+| `validate` | `ao`, optional | with `ao`, derives exact subject identity from a content manifest and uses `ao provenance store-verdict` when persistence is requested; without it, names the commit and changed paths |
 | `reality-check` | `ao`, conditional | inspect selected goal measurements with `ao goals` or evidence-store facts with `ao status` |
 | `using-gc` | `ao` | rig prep runs `ao gc prepare` and `ao gc check` |
 | `doc` | `ao`, optional | a requested continuity handoff may use `ao session handoff`/`rehydrate` |
