@@ -381,6 +381,44 @@ your work.
   request. [Evidence](#evidence) shows the cases this repository runs; copy them
   for your own skills.
 
+## Evidence
+
+A skill is a page of instructions, so the test is whether an agent does anything
+differently with it installed. AgentOps runs that test on Claude Code's own
+evaluator, `claude plugin eval`: one realistic request per skill, three runs
+with the plugin and three without, each answer graded against four or five
+criteria taken from the practice the skill teaches. For Test, one criterion is
+that a regression test is shown failing without the fix.
+
+On Claude Opus 5.5, measured 2026-10-05:
+
+| | No plugin | AgentOps 3.9.0 | AgentOps 3.10 |
+|---|---:|---:|---:|
+| Practice criteria met on 28 requests | 269 of 372 (72%) | 292 of 372 (78%) | 348 of 372 (94%) |
+| Matching skill loaded on a blind request | | 11 of 48 runs | 29 of 48 runs |
+
+Fourteen of the 29 skills moved their case by 0.15 or more. Craft Goal, Claude
+Exec, Plan, Memory and Skill Builder gained the most. The other 15 made no
+measurable difference, and for eight of those the agent already met every
+criterion with no plugin.
+
+Read the limits before you quote these numbers:
+
+- One request per skill, three runs, one model. A difference under 0.15 is
+  noise.
+- The criteria come from each skill's own rules. A pass shows the rule landed on
+  that request. It says nothing about the outcome of a real task, and an earlier
+  [coding pilot](PRODUCT.md#evidence-and-claim-limits) found no end-to-end
+  difference.
+- Loading is the weak point. Nine skills did not load on a request they had
+  never seen, and Implement does not load on a quick fix. Name the skill when
+  you want its rules applied.
+
+The [full report](docs/evals/2026-10-05-plugin-eval-opus-5-5.md) has every case,
+the method and what was rerun. The cases live in
+[`evals/plugin-eval/`](evals/plugin-eval/README.md): run them against your own
+changes, or copy the layout to test your own skills.
+
 ## Where AgentOps fits
 
 AgentOps grew from applying DevOps experience and established engineering
