@@ -406,6 +406,9 @@ Read the limits before you quote these numbers:
 
 - One request per skill, three runs, one model. A difference under 0.15 is
   noise.
+- The 28 requests in the first row were also used to tune the 3.10
+  descriptions, which flatters 3.10. The blind requests in the second row were
+  written without sight of the descriptions.
 - The criteria come from each skill's own rules. A pass shows the rule landed on
   that request. It says nothing about the outcome of a real task, and an earlier
   [coding pilot](PRODUCT.md#evidence-and-claim-limits) found no end-to-end
