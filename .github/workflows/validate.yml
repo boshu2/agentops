@@ -221,7 +221,7 @@ jobs:
 
       - name: Upload Go gate report
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ao-gate-shadow-report
           path: ao-gate-report.json
@@ -433,7 +433,7 @@ jobs:
 
       - name: Upload coverage artifact
         if: always() && runner.os == 'Linux' && (needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true')
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: go-coverage
           path: cli/coverage.out
@@ -639,7 +639,7 @@ jobs:
 
       - name: Upload security gate artifacts
         if: always() && (needs.changes.outputs.go == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true')
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: security-gate
           path: ${{ runner.temp }}/agentops-security/
