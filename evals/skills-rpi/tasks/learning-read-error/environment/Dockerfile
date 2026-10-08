@@ -1,4 +1,4 @@
-FROM golang:1.27.1-bookworm
+FROM golang:1.27.2-bookworm
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git curl ca-certificates nodejs npm python3 jq perl \
     && rm -rf /var/lib/apt/lists/*
