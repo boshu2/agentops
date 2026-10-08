@@ -1,4 +1,4 @@
-FROM golang:1.27.1-bookworm
+FROM golang:1.27.2-bookworm
 RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates nodejs npm python3 python3-yaml jq && rm -rf /var/lib/apt/lists/*
 RUN npm install -g @openai/codex@0.154.0
 COPY runtime /opt/agentops
