@@ -45,6 +45,10 @@
     "license": {
       "type": "string"
     },
+    "icon": {
+      "type": "string",
+      "description": "Directory listing icon: a square PNG inside the plugin folder, path starting with ./"
+    },
     "keywords": {
       "type": "array",
       "items": {

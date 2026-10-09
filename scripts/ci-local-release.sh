@@ -174,7 +174,7 @@ release_version() {
         return 0
     fi
 
-    jq -r '.version' .claude-plugin/plugin.json
+    jq -r '.version' plugin/.claude-plugin/plugin.json
 }
 
 artifact_dir_rel() {
@@ -439,7 +439,7 @@ check_manifest_version_consistency() {
     local marketplace_meta_version
     local marketplace_plugin_version
 
-    plugin_version="$(jq -r '.version' .claude-plugin/plugin.json)"
+    plugin_version="$(jq -r '.version' plugin/.claude-plugin/plugin.json)"
     marketplace_meta_version="$(jq -r '.metadata.version' .claude-plugin/marketplace.json)"
     marketplace_plugin_version="$(jq -r '.plugins[0].version' .claude-plugin/marketplace.json)"
 
@@ -524,7 +524,7 @@ write_release_artifact_manifest() {
     local fast_mode_json=false
 
     version="$(release_version)"
-    repo_version="$(jq -r '.version' .claude-plugin/plugin.json)"
+    repo_version="$(jq -r '.version' plugin/.claude-plugin/plugin.json)"
     generated_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
     manifest_file="$ARTIFACT_DIR/release-artifacts.json"
     local git_sha

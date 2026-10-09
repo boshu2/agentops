@@ -56,10 +56,10 @@ if [ "$missing" -ne 0 ]; then
 fi
 
 # Version guard: the Claude marketplace plugin manifest is the install entrypoint
-# for this image. Assert .claude-plugin/plugin.json declares the expected version
+# for this image. Assert plugin/.claude-plugin/plugin.json declares the expected version
 # so a stale-version drift (plugin.json behind the release) fails the gate.
 EXPECTED_VERSION="${AGENTOPS_EXPECTED_VERSION:-3.10.0}"
-plugin_manifest="$repo_root/.claude-plugin/plugin.json"
+plugin_manifest="$repo_root/plugin/.claude-plugin/plugin.json"
 if [ ! -f "$plugin_manifest" ]; then
   echo "FAIL: Claude plugin manifest not found: $plugin_manifest" >&2
   exit 1
@@ -74,7 +74,7 @@ else
                     | head -1 | sed -E 's/.*"version"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/')"
 fi
 if [ "$plugin_version" != "$EXPECTED_VERSION" ]; then
-  echo "FAIL: .claude-plugin/plugin.json version is '$plugin_version', expected '$EXPECTED_VERSION'" >&2
+  echo "FAIL: plugin/.claude-plugin/plugin.json version is '$plugin_version', expected '$EXPECTED_VERSION'" >&2
   exit 1
 fi
 echo "OK: Claude plugin manifest version $plugin_version matches expected $EXPECTED_VERSION"
