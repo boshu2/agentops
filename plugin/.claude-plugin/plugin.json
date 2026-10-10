@@ -9,6 +9,7 @@
   "homepage": "https://github.com/boshu2/agentops",
   "repository": "https://github.com/boshu2/agentops",
   "license": "Apache-2.0",
+  "icon": "./.claude-plugin/icon.png",
   "keywords": [
     "operations-layer",
     "devops",

@@ -23,7 +23,7 @@ setup_fixture() {
   local fixture="$1"
 
   mkdir -p \
-    "$fixture/.claude-plugin" \
+    "$fixture/plugin/.claude-plugin" \
     "$fixture/.codex-plugin" \
     "$fixture/plugins" \
     "$fixture/schemas"
@@ -32,7 +32,7 @@ setup_fixture() {
   cp "$ROOT/schemas/codex-plugin-manifest.v1.schema.json" "$fixture/schemas/codex-plugin-manifest.v1.schema.json"
   cp "$ROOT/schemas/codex-marketplace.v1.schema.json" "$fixture/schemas/codex-marketplace.v1.schema.json"
 
-  cat > "$fixture/.claude-plugin/plugin.json" <<'EOF'
+  cat > "$fixture/plugin/.claude-plugin/plugin.json" <<'EOF'
 {
   "name": "agentops",
   "version": "0.0.0"

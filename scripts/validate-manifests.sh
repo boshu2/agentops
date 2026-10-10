@@ -358,7 +358,7 @@ PY
 log "Validating manifest schemas"
 
 validate_manifest \
-    "$REPO_ROOT/.claude-plugin/plugin.json" \
+    "$REPO_ROOT/plugin/.claude-plugin/plugin.json" \
     "$REPO_ROOT/schemas/plugin-manifest.v1.schema.json" \
     "plugin manifest"
 

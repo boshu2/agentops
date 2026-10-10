@@ -84,14 +84,14 @@ if [[ -f "$commit_msg_file" ]] && grep -q '^Release v' "$commit_msg_file" 2>/dev
     if [[ -n "$release_ver" ]]; then
         plugin_ver=""
         marketplace_ver=""
-        if [[ -f "$REPO_ROOT/.claude-plugin/plugin.json" ]]; then
-            plugin_ver=$(grep -o '"version": *"[^"]*"' "$REPO_ROOT/.claude-plugin/plugin.json" | head -1 | grep -o '[0-9][0-9.]*')
+        if [[ -f "$REPO_ROOT/plugin/.claude-plugin/plugin.json" ]]; then
+            plugin_ver=$(grep -o '"version": *"[^"]*"' "$REPO_ROOT/plugin/.claude-plugin/plugin.json" | head -1 | grep -o '[0-9][0-9.]*')
         fi
         if [[ -f "$REPO_ROOT/.claude-plugin/marketplace.json" ]]; then
             marketplace_ver=$(grep -o '"version": *"[^"]*"' "$REPO_ROOT/.claude-plugin/marketplace.json" | head -1 | grep -o '[0-9][0-9.]*')
         fi
         if [[ -n "$plugin_ver" ]] && [[ "$plugin_ver" != "$release_ver" ]]; then
-            echo "pre-commit: WARN — .claude-plugin/plugin.json version ($plugin_ver) != release version ($release_ver)"
+            echo "pre-commit: WARN — plugin/.claude-plugin/plugin.json version ($plugin_ver) != release version ($release_ver)"
         fi
         if [[ -n "$marketplace_ver" ]] && [[ "$marketplace_ver" != "$release_ver" ]]; then
             echo "pre-commit: WARN — .claude-plugin/marketplace.json version ($marketplace_ver) != release version ($release_ver)"
