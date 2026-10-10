@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Test: Claude Code runtime smoke — validates AgentOps skill files load correctly
-# under the Claude Code plugin model (.claude-plugin/ manifest + skills/).
+# under the Claude Code plugin model (plugin/.claude-plugin/ manifest + generated plugin/skills/).
 # Standalone: does NOT require a live Claude Code session.
 # Promoted from: tests/_quarantine/claude-code/ (structural checks only)
 set -euo pipefail
@@ -23,7 +23,7 @@ echo ""
 # ── 1. Plugin manifest validity ───────────────────────────────────────────────
 echo "Stage 1: Claude Code plugin manifest"
 
-PLUGIN_JSON="$REPO_ROOT/.claude-plugin/plugin.json"
+PLUGIN_JSON="$REPO_ROOT/plugin/.claude-plugin/plugin.json"
 MARKETPLACE_JSON="$REPO_ROOT/.claude-plugin/marketplace.json"
 
 if [[ -f "$PLUGIN_JSON" ]]; then
@@ -34,7 +34,7 @@ if [[ -f "$PLUGIN_JSON" ]]; then
     jq -e '.version' "$PLUGIN_JSON" >/dev/null 2>&1 \
         && pass "plugin.json has .version field" || fail "plugin.json missing .version field"
 else
-    fail ".claude-plugin/plugin.json not found"
+    fail "plugin/.claude-plugin/plugin.json not found"
 fi
 
 if [[ -f "$MARKETPLACE_JSON" ]]; then

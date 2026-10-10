@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The Claude Code plugin now installs from `plugin/`, a generated folder that
+  holds only what the plugin loads: skills, agents, the policy hook dispatcher
+  and Workflow tool scripts, plus the manifest and a new listing icon. The
+  marketplace entry points at `./plugin`; install commands are unchanged.
+  `scripts/regen-plugin-tree.sh` regenerates it and `scripts/regen-all.sh
+  --check` fails when it is stale. The Codex plugin is unchanged.
+- The plugin no longer puts `bin/factory` and `bin/ralph` on the Bash `PATH`.
+  They are operator tools; run them from a repository checkout.
+
 ## [3.10.0] - 2026-10-05
 
 AgentOps 3.10 is a release about the skills themselves. All 28 were audited,

@@ -97,7 +97,7 @@ run_lane "Manifest schema validation" "$RUN_ALL_STATIC_LANE_TIMEOUT_SECONDS" "$(
 
 # Validate JSON files
 for jf in \
-    "$REPO_ROOT/.claude-plugin/plugin.json" \
+    "$REPO_ROOT/plugin/.claude-plugin/plugin.json" \
     "$REPO_ROOT/.codex-plugin/plugin.json" \
     "$REPO_ROOT/plugins/marketplace.json"
 do

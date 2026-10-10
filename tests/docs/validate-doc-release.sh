@@ -26,12 +26,12 @@ validate_changelog_entry() {
   local changelog="$REPO_ROOT/CHANGELOG.md"
   local release_version
 
-  if ! release_version="$(jq -r '.version // empty' "$REPO_ROOT/.claude-plugin/plugin.json")"; then
-    echo "ERROR: cannot read .claude-plugin/plugin.json with jq"
+  if ! release_version="$(jq -r '.version // empty' "$REPO_ROOT/plugin/.claude-plugin/plugin.json")"; then
+    echo "ERROR: cannot read plugin/.claude-plugin/plugin.json with jq"
     return 1
   fi
   if [[ -z "$release_version" ]]; then
-    echo "MISMATCH: .claude-plugin/plugin.json has no version"
+    echo "MISMATCH: plugin/.claude-plugin/plugin.json has no version"
     return 1
   fi
   if ! grep -Fq "## [$release_version]" "$changelog"; then

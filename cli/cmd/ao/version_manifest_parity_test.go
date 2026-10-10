@@ -13,7 +13,7 @@ import (
 
 // findReleaseManifestRoot walks up from the package directory looking for the
 // AgentOps repo root, identified by the co-presence of the Go module file and
-// the Claude plugin manifest. Both are tracked, so this works in a fresh clone.
+// the Claude marketplace manifest. Both are tracked, so this works in a fresh clone.
 // Returns "" when the test is not running inside a checkout.
 func findReleaseManifestRoot(t *testing.T) string {
 	t.Helper()
@@ -23,7 +23,7 @@ func findReleaseManifestRoot(t *testing.T) string {
 	}
 	for {
 		_, modErr := os.Stat(filepath.Join(dir, "cli", "go.mod"))
-		_, pluginErr := os.Stat(filepath.Join(dir, ".claude-plugin", "plugin.json"))
+		_, pluginErr := os.Stat(filepath.Join(dir, ".claude-plugin", "marketplace.json"))
 		if modErr == nil && pluginErr == nil {
 			return dir
 		}
@@ -90,9 +90,9 @@ func TestVersion_FallbackMatchesReleaseManifests(t *testing.T) {
 	}
 
 	jsonSurfaces := map[string][]string{
-		filepath.Join(".claude-plugin", "plugin.json"):      {"version"},
-		filepath.Join(".claude-plugin", "marketplace.json"): {"metadata/version", "plugins/0/version"},
-		filepath.Join(".codex-plugin", "plugin.json"):       {"version"},
+		filepath.Join("plugin", ".claude-plugin", "plugin.json"): {"version"},
+		filepath.Join(".claude-plugin", "marketplace.json"):      {"metadata/version", "plugins/0/version"},
+		filepath.Join(".codex-plugin", "plugin.json"):            {"version"},
 	}
 	for rel, paths := range jsonSurfaces {
 		raw, err := os.ReadFile(filepath.Join(root, rel))

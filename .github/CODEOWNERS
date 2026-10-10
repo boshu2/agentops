@@ -6,6 +6,7 @@
 
 # Plugin marketplace definition
 /.claude-plugin/ @boshu2
+/plugin/ @boshu2
 
 # Agents directory
 /agents/ @boshu2

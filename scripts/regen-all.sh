@@ -37,6 +37,7 @@ if [[ "$mode" == regen ]]; then
   step "command heading projections" bash scripts/regen-command-surfaces.sh
   step "CLI surface inventory" bash scripts/check-cmdao-surface-parity.sh --write-surface
   step "documentation index" python3 scripts/generate-documentation-index.py
+  step "Claude plugin folder" bash scripts/regen-plugin-tree.sh
   echo
   [[ $fail -eq 0 ]] && echo "Regeneration complete. Review the diff and run scripts/regen-all.sh --check." || echo "Regeneration failed."
 else
@@ -47,6 +48,7 @@ else
   step "command heading projections" bash scripts/regen-command-surfaces.sh --check
   step "CLI surface inventory" bash scripts/check-cmdao-surface-parity.sh
   step "documentation index" python3 scripts/generate-documentation-index.py --check
+  step "Claude plugin folder" bash scripts/regen-plugin-tree.sh --check
   step "documentation release checks" bash tests/docs/validate-doc-release.sh
   echo
   [[ $fail -eq 0 ]] && echo "All generated projections are current." || echo "Projection drift or validation failure detected."

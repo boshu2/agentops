@@ -3,8 +3,8 @@ setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     SUITE="$REPO_ROOT/tests/explicit-skill-requests"
     FIXTURE="$BATS_TEST_TMPDIR/repo"
-    mkdir -p "$FIXTURE"/{schemas,.claude-plugin,.codex-plugin,plugins,skills/research,tests/explicit-skill-requests/prompts}
-    cp "$REPO_ROOT/.claude-plugin/plugin.json" "$FIXTURE/.claude-plugin/"
+    mkdir -p "$FIXTURE"/{schemas,plugin/.claude-plugin,.codex-plugin,plugins,skills/research,tests/explicit-skill-requests/prompts}
+    cp "$REPO_ROOT/plugin/.claude-plugin/plugin.json" "$FIXTURE/plugin/.claude-plugin/"
     cp "$REPO_ROOT/.codex-plugin/plugin.json" "$FIXTURE/.codex-plugin/"
     cp "$REPO_ROOT/plugins/marketplace.json" "$FIXTURE/plugins/"
     for schema in plugin-manifest codex-plugin-manifest codex-marketplace; do
@@ -38,7 +38,7 @@ setup() {
 }
 
 @test "invalid manifest cannot pass explicit request suite" {
-    printf '{"name":42}\n' > "$FIXTURE/.claude-plugin/plugin.json"
+    printf '{"name":42}\n' > "$FIXTURE/plugin/.claude-plugin/plugin.json"
     run bash "$SUITE/run-all.sh" "$FIXTURE"
     [ "$status" -ne 0 ]
     [[ "$output" == *'plugin manifest failed schema validation'* ]]
