@@ -1,4 +1,4 @@
 # Development-only statistics dependencies for evaluator readout.
-numpy==2.5.3
+numpy==2.5.4
 # _stats/__init__.py also exposes its existing power-analysis helpers.
 scipy==1.18.1
