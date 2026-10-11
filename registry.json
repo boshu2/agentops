@@ -829,7 +829,7 @@
         "has_skill_md": true,
         "name": "doc",
         "path": "skills/doc/",
-        "reference_count": 16,
+        "reference_count": 17,
         "tier": "product"
       },
       {
@@ -879,7 +879,7 @@
         "has_skill_md": true,
         "name": "implement",
         "path": "skills/implement/",
-        "reference_count": 3,
+        "reference_count": 4,
         "tier": "execution"
       },
       {
@@ -1117,7 +1117,7 @@
         "has_skill_md": true,
         "name": "security",
         "path": "skills/security/",
-        "reference_count": 6,
+        "reference_count": 7,
         "tier": "product"
       },
       {
@@ -1175,7 +1175,7 @@
         "has_skill_md": true,
         "name": "test",
         "path": "skills/test/",
-        "reference_count": 7,
+        "reference_count": 10,
         "tier": "execution"
       },
       {
