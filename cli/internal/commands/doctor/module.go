@@ -263,7 +263,7 @@ func renderFindings(command *cobra.Command, report *doctorapp.Report) {
 func (module Module) runFix(command *cobra.Command, request doctorapp.MutationRequest, jsonOutput bool) error {
 	report, err := module.useCases.Mutation.Fix(command.Context(), request)
 	if err != nil {
-		return exit(doctorapp.ExitIOError, err.Error())
+		return module.presentFixFailure(command, report, err, jsonOutput)
 	}
 	if jsonOutput {
 		if err := module.emitStructured(command, report); err != nil {
