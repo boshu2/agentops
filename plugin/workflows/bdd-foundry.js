@@ -10,6 +10,6 @@ export const meta = {
 throw new Error(
   'workflows/bdd-foundry.js is retired. ' +
     'State accepted behavior in the existing conversation or BD bead, implement and check it natively, ' +
-    'then obtain fresh independent judgment of the exact change. ' +
+    'with checks and CI as the gate and one fresh read only where a mistake is costly. ' +
     'Use bd directly for work status and dependencies. See AGENTS.md and docs/agent-workflow-reference.md.'
 )

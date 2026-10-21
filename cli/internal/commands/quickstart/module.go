@@ -46,9 +46,10 @@ func (Module) Command() *cobra.Command {
 Read the repository's brief and follow its scope, checks and delivery policy.
 No skill installation, workflow-skill loading, bootstrap or init is required.
 
-Use ao gate check for deterministic repository checks. A fresh independent
-context judges the exact final change against unchanged acceptance; the
-Validate skill is an optional way to conduct that required judgment.
+Use ao gate check for deterministic repository checks. Checks and CI gate an
+ordinary change; obtain one fresh author-distinct read only when the caller
+asks, a mistake cannot be cheaply undone, or no deterministic check covers the
+change. The Validate skill is an optional way to conduct that read.
 Specialists and machine-readable evidence persistence are optional.`,
 		Args:    cobra.NoArgs,
 		GroupID: "start",
@@ -58,11 +59,13 @@ Specialists and machine-readable evidence persistence are optional.`,
 1. Read the repository brief; keep accepted behavior and write scope fixed.
 2. Use your native agent and shell to implement, run checks and repair known failures.
 3. Run required repository checks; ao gate check supplies deterministic facts.
-4. Obtain fresh independent judgment of the exact final change against unchanged acceptance.
+4. Checks and CI gate an ordinary change; obtain one fresh author-distinct read
+   only when the caller asks, a mistake cannot be cheaply undone, or no
+   deterministic check covers the change.
 5. Report the result, checked and not_checked scope, and follow repository delivery policy.
 
-No skills, bootstrap or ao init are required. Missing independent judgment or
-unchecked acceptance means NOT_PROVEN; passing checks alone do not prove completion.
+No skills, bootstrap or ao init are required. A requested binding verdict
+reports missing proof or unchecked acceptance as NOT_PROVEN.
 Specialists, including the Validate skill, are optional. From an AgentOps checkout:
   ao skills find "your task"             # discover an optional specialist
   ao skills link --skill security        # install only a selected specialist

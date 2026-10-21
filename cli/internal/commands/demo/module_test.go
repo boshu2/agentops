@@ -32,16 +32,54 @@ func TestModule_CommandAttributes(t *testing.T) {
 	}
 }
 
+// conditionalReviewRule is the AGENTS.md / docs/agent-workflow-reference.md
+// review rule (#1189, ADR-0017 2026-10-03 amendment) as the demo states it.
+const conditionalReviewRule = "Checks and CI gate an ordinary change; obtain one fresh author-distinct read only when the caller asks, a mistake cannot be cheaply undone, or no deterministic check covers the change."
+
+// requestedVerdictRule scopes NOT_PROVEN to a requested binding verdict.
+const requestedVerdictRule = "A requested binding verdict reports missing proof or unchecked acceptance as NOT_PROVEN."
+
+// repairRule is the one-round repair rule: a check confirms a repair.
+const repairRule = "Repair findings, confirm each with a check; a repair does not start another review."
+
+// retiredReviewClaims are the pre-#1189 always-review claims no demo view
+// may print.
+var retiredReviewClaims = []string{
+	"checks alone do not prove completion",
+	"checks alone is insufficient",
+	"convergence law",
+	"repair_rounds",
+	"re-validates",
+	"required for accepted completion",
+}
+
+// normalizeSpace collapses line wrapping so a pinned sentence matches however
+// the demo wraps it.
+func normalizeSpace(text string) string {
+	return strings.Join(strings.Fields(text), " ")
+}
+
+func assertNoRetiredReviewClaims(t *testing.T, view, text string) {
+	t.Helper()
+	for _, retired := range retiredReviewClaims {
+		if strings.Contains(text, retired) {
+			t.Errorf("%s keeps retired review claim %q:\n%s", view, retired, text)
+		}
+	}
+}
+
 func TestDemoShowsBoundedRepairBoundary(t *testing.T) {
 	var out bytes.Buffer
 	if err := rpiDemo(&out); err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"AGENTOPS RPI DEMO", "existing intent source", "runtime derives", "subject-manifest.v1", "fresh validation result", "persistence is optional", "convergence law"} {
-		if !strings.Contains(out.String(), want) {
+	text := normalizeSpace(out.String())
+	for _, want := range []string{"AGENTOPS RPI DEMO", "existing intent source", "runtime derives", "subject-manifest.v1", conditionalReviewRule, "fresh validation result", "persistence is optional", repairRule} {
+		if !strings.Contains(text, want) {
 			t.Fatalf("demo missing %q:\n%s", want, out.String())
 		}
 	}
+	assertNoRetiredReviewClaims(t, "demo --rpi", text)
 	for _, forbidden := range []string{"PlanPacket", "CandidatePacket", "RevisionPacket"} {
 		if strings.Contains(out.String(), forbidden) {
 			t.Fatalf("demo advertises removed %s contract:\n%s", forbidden, out.String())
@@ -54,11 +92,13 @@ func TestDemoConceptsExcludeLifecycleAuthority(t *testing.T) {
 	if err := showConcepts(&out); err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"independent judgment", "does not own retries", "Git", "delivery", "native coding agent", "optional"} {
-		if !strings.Contains(out.String(), want) {
+	text := normalizeSpace(out.String())
+	for _, want := range []string{conditionalReviewRule, "does not own retries", "Git", "delivery", "native coding agent", "optional"} {
+		if !strings.Contains(text, want) {
 			t.Fatalf("concepts missing %q:\n%s", want, out.String())
 		}
 	}
+	assertNoRetiredReviewClaims(t, "demo --concepts", text)
 }
 
 func TestPublishedDemoQuick(t *testing.T) {
@@ -69,10 +109,22 @@ func TestPublishedDemoQuick(t *testing.T) {
 	if err := command.Execute(); err != nil {
 		t.Fatalf("ao demo --quick failed: %v\n%s", err, out.String())
 	}
-	for _, want := range []string{"AGENTOPS NATIVE DEMO", "ao gate check", "fresh independent context", "binding PASS", "unchanged acceptance", "NOT_PROVEN", "checked/not_checked", "ao demo --rpi"} {
-		if !strings.Contains(out.String(), want) {
+	text := normalizeSpace(out.String())
+	for _, want := range []string{"AGENTOPS NATIVE DEMO", "ao gate check", conditionalReviewRule, "binding PASS", "unchanged acceptance", requestedVerdictRule, "checked/not_checked", "ao demo --rpi"} {
+		if !strings.Contains(text, want) {
 			t.Fatalf("demo output missing %q:\n%s", want, out.String())
 		}
+	}
+	assertNoRetiredReviewClaims(t, "demo --quick", text)
+}
+
+func TestDemoHelpStatesConditionalReview(t *testing.T) {
+	text := normalizeSpace(NewModule().Command().Long)
+	if !strings.Contains(text, "one fresh read only where a mistake is costly") {
+		t.Errorf("demo help missing the conditional fresh read, got:\n%s", text)
+	}
+	if strings.Contains(text, "fresh independent judgment and delivery") {
+		t.Errorf("demo help keeps the always-review path, got:\n%s", text)
 	}
 }
 
