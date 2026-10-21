@@ -144,6 +144,23 @@ Helper:     <HOLD incident and helper use, or none>; native state: <observed con
 Next:       <thesis>; decisions: <open questions for the caller>
 ```
 
+## Foggy epics
+
+When the outcome is clear but the way there is not, the next beads are
+decisions, not build slices. Make each open question a decision bead whose
+answer is a choice, sized to one session, and name how it resolves: a cited
+fact (Research), a rough artifact the caller reacts to (Plan's probes and
+prototypes), a conversation with the caller (Interview), or a manual step that
+only unblocks a decision. A bead that needs the caller's own answer resolves
+only with the caller; never answer it on their behalf.
+
+Keep two lists in the root epic notes: in-scope questions not yet specific
+enough to become beads, which graduate as the frontier moves, and work ruled
+out of scope, which does not come back without the caller. Record each
+resolved decision as one line plus its bead, not a restatement. Resolve one
+decision per pass. The fog has lifted when no decision stands between the
+graph and build beads with acceptance examples; hand those to Plan.
+
 ## Hygiene
 
 Report cycles among the epic's beads (`bd dep cycles`, filtered to them),

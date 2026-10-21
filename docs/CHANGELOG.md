@@ -7,8 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Three skills, bringing the menu to 32. Triage turns an incoming bug report,
+  feature request, external PR or alert into a decision backed by evidence
+  and, for accepted work, a brief an agent can act on without the
+  conversation. Architecture finds where a codebase's structure makes change
+  expensive and compares interface designs before any code moves. Ergonomics
+  checks whether an agent can discover a CLI, API or tool, read its output and
+  recover from its errors. None has been measured with Skill Eval yet.
+
 ### Changed
 
+- Ten skills picked up methods from a survey of other public skill libraries,
+  rewritten in AgentOps terms. Doc brings documentation current after a change,
+  describes a change for reviewers, keeps facts and their certainty when
+  rewriting, and checks a handoff against current state before resuming from
+  it. Research checks a document's claims by re-deriving them another way and
+  traces how a decision got its shape. Security names the snapshot and lists
+  unread inputs. Idea Genie drafts along several angles before judging and
+  weighs today's workarounds over stated interest. Skill Builder covers fixing
+  a skill at the layer that owns the behavior. Skill Eval prefers cases from
+  real use and measures noise before cutting. Navigate handles epics that
+  still need decisions. Reality Check reports a health snapshot from the
+  project's own checks. Agent Native accounts for every item in a multi-item
+  packet. Domain proposes a decision record only when one is warranted.
 - The Claude Code plugin now installs from `plugin/`, a generated folder that
   holds only what the plugin loads: skills, agents, the policy hook dispatcher
   and Workflow tool scripts, plus the manifest and a new listing icon. The

@@ -82,6 +82,18 @@ report a missing fresh reviewer as a gap, never as validation that occurred.
 Shared routing and handoff detail:
 [advice or acceptance](../review/references/advice-or-acceptance.md).
 
+## Health snapshot
+
+For "is this repository healthy" or "do the checks pass", run the project's
+own checks: those declared in its instructions or CI configuration, or found in
+its build files. Record what you selected and where it came from. Run each one
+separately and keep going after a failure so later results are not lost.
+Report each check as passed, failed, not run because the tool is unavailable,
+or not determined because its output could not be captured, and take the result
+from the exit status rather than from parsing the output. Name declared checks
+you did not run. Do not fix anything, and do not fold the results into one
+score that hides a failure.
+
 ## Goal measurement
 
 Running `ao goals` against the declared goals source, its derived snapshots and

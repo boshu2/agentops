@@ -1,6 +1,6 @@
 ---
 name: research
-description: 'Answer one cited question: how code works, or whether a repeated pattern deserves a rule. Use when: asked how, why, or whether to enforce a pattern.'
+description: 'Answer one cited question: how code works, why it got this shape, whether a document''s claims hold, or whether a pattern deserves a rule. Use when: asked how, why, is this true, or whether to enforce a pattern.'
 practices:
 - pragmatic-programmer
 - ddd-bounded-context
@@ -33,8 +33,8 @@ output_contract: cited answer; findings.json for ordinary durable reports; valid
 # Research
 
 Answer the caller's bounded question with cited evidence. Choose ordinary
-investigation, repository tracing or pattern evidence according to the question;
-these are optional modes, not a sequence. A quick answer needs no report file.
+investigation, claim checking, decision lineage, repository tracing or pattern
+evidence according to the question; these are optional modes, not a sequence. A quick answer needs no report file.
 [Plan](../plan/SKILL.md) owns unified discovery and resumption when the question
 is part of shaping a change; return this cited answer to that existing intent
 without restarting its interview or taking over caller choices.
@@ -68,6 +68,10 @@ without restarting its interview or taking over caller choices.
    the external claim unknown and name the source that would settle it.
 3. Lead with the answer, then show evidence and remaining gaps. Each part of the
    question is answered or explicitly unknown with the searched scope disclosed.
+   Before settling a consequential answer, look once for the strongest contrary
+   evidence. When the caller asked for an explanation, write for their level in
+   plain words and mark which reasons are documented, which are your inference
+   and which are unknown.
 
 Code claims cite the observed commit plus `file:line`. For uncommitted content,
 state HEAD and the changed-file status; do not claim the working bytes can be
@@ -80,6 +84,36 @@ For several supplied reports, retain each source's identifier, author/runtime
 when known and revision/date. Compare claims as agreement, contradiction or
 unknown while preserving their original evidence. Verify decisive claims at
 their source and return one synthesis; do not launch recursive synthesis passes.
+
+## Claim checking
+
+To check whether a draft, report or answer is true, split it into atomic
+claims a source could confirm or refute. Opinions and predictions are not
+checked; say so. Check first what would mislead most: numbers, quotations,
+attributions, superlatives and the claims the conclusion rests on. Recall from
+training is a lead, never the source.
+
+- **Re-derive, do not re-read.** A claim produced from data (a query, a script,
+  a repository count) is checked through a different path: another query, a
+  different key or grouping, or the underlying files themselves. Re-running the
+  producer repeats its mistake, and a report's own numbers are not evidence for
+  that report.
+- **Association is not authorship.** "X wrote, decided or caused Y" needs a
+  statement or record of exactly that relation. Appearing in the same commit,
+  meeting or document is weaker evidence; report it as such.
+- Return each claim as supported, contradicted, unsupported or not checkable,
+  with its citation and the path used. Corrections are proposals unless the
+  caller authorized editing the subject.
+
+## Decision lineage
+
+For "why is it like this" or "how did this idea change", trace one decision or
+idea through its record: commits, ADRs, issues, reviews and prior reports.
+Separate its first appearance, clearest statement, current form, reversals,
+contradictions (two claims that cannot both hold) and abandoned variants, each
+dated and cited. A bucket with no evidence says what was searched. Do not
+smooth sparse or messy history into a tidy story; a supersession is not a
+contradiction.
 
 ## Repository tracing
 
