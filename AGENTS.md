@@ -205,8 +205,8 @@ in the federated graph whose native state AgentOps reads but never owns; none
 becomes a core dependency or lifecycle authority.
 
 Operate a selected factory only through its own doors (coordinator, doctor,
-supervisor); never create, scale or repair its sessions by hand
-([using-gc](skills/using-gc/SKILL.md)).
+supervisor); dispatch through its coordinator, and never create, scale or repair
+its sessions by hand ([using-gc](skills/using-gc/SKILL.md)).
 
 ## Concurrency
 

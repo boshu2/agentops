@@ -173,7 +173,7 @@ build_arm_sandbox() {
     done
   fi
   if [[ "$variant" == "context_on" ]]; then
-    # project always-loaded surface
+    # project root surface (CLAUDE.md always; path-scoped .claude/rules on match)
     if [[ -f "$SRC_REPO_ROOT/CLAUDE.md" ]]; then cp "$SRC_REPO_ROOT/CLAUDE.md" "$ws/CLAUDE.md"; fi
     if [[ -d "$SRC_REPO_ROOT/.claude/rules" ]]; then
       mkdir -p "$ws/.claude"; cp -r "$SRC_REPO_ROOT/.claude/rules" "$ws/.claude/rules"
