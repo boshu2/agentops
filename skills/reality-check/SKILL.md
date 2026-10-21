@@ -85,9 +85,12 @@ Shared routing and handoff detail:
 ## Health snapshot
 
 For "is this repository healthy" or "do the checks pass", run the project's
-own checks: those declared in its instructions or CI configuration, or found in
-its build files. Record what you selected and where it came from. Run each one
-separately and keep going after a failure so later results are not lost.
+own read-only checks: those declared in its instructions or CI configuration,
+or found in its build files. Prefer a `--check`, dry-run or verify variant
+when one exists. List any step that writes tracked files, publishes, deploys
+or needs credentials as not run, with the reason. Record what you selected and
+where it came from. Run each one separately and keep going after a failure so
+later results are not lost.
 Report each check as passed, failed, not run because the tool is unavailable,
 or not determined because its output could not be captured, and take the result
 from the exit status rather than from parsing the output. Name declared checks

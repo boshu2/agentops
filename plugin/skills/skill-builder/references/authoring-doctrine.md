@@ -97,10 +97,11 @@ miss is a missing condition or a missing case.
   run could visibly break, counters a tendency agents have shown, or supplies
   a fact the agent cannot derive from the repository. Restated capability,
   effort language and rationale after a self-sufficient directive do not.
-- **The description is loaded every turn.** Its first sentence names what this
-  skill produces that a sibling would not; then the work states that should
-  trigger it; then the sibling to use for the neighboring job, when the same
-  words could fire both.
+- **The description is the routing pointer.** Most hosts keep it in context
+  with the catalog, so it is read far more often than the body (verify per host,
+  as above). Its first sentence names what this skill produces that a sibling
+  would not; then the work states that should trigger it; then the sibling to
+  use for the neighboring job, when the same words could fire both.
 - **Shrink by moving, not compressing.** When a body must get smaller, move a
   coherent conditional block to a reference named where it is needed, or
   delete true duplication. Fused clauses and dropped articles save bytes and

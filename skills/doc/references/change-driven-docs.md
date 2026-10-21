@@ -46,9 +46,10 @@ choosing a version number, or resolving two documents that disagree about
 intent rather than fact. Preserve changelog and release-note history: correct
 wording in place and never regenerate or drop existing entries.
 
-Re-run the example or command you changed when the environment allows it. A
-diagram that still names a removed or renamed component is a finding even when
-you cannot redraw it.
+Re-run an example or command you changed when it is read-only, or in the
+disposable environment the [developer journey](developer-journey.md) uses;
+otherwise say it was not run. A diagram that still names a removed or renamed
+component is a finding even when you cannot redraw it.
 
 ## Describe a change for reviewers
 
@@ -62,6 +63,8 @@ State reversibility and reach plainly: can the change be undone by reverting,
 or does it migrate data, delete state or alter a public contract; and which
 consumers, platforms or workflows could notice. Name what was tested and what
 was not. A small change gets a few sentences, not a template of empty sections.
+When the repository has a pull request template, fill it: its required lines
+(trailers, checklists) may be what a merge or squash keeps.
 
 ## Return
 

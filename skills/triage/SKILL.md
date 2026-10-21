@@ -128,7 +128,8 @@ Next:      <brief | needs-info note | canonical item | maintainer question>
 Writes:    drafts: <reply, label or close text, not sent> | applied: <what, under which authorization>
 ```
 
-Return it inline or on the tracker item; no report file, no new decision store.
+Return it inline; post it on the tracker item only under the authorization
+below. No report file, no new decision store.
 
 ## It's working if
 
@@ -146,8 +147,9 @@ Read-only by default; reading and reproducing in a disposable environment need
 no further permission. Labels, comments, assignment, closing, reopening and
 replies to a reporter happen only when the caller authorizes that action for
 that item; otherwise return drafts. "Triage these" authorizes reading and
-recommending, not closing. A rejection is recorded where the repository
-already keeps decisions; a posted comment follows its attribution policy. Keep
+recommending, not closing. When authorized, record a rejection where the
+repository already keeps decisions; a posted comment follows its attribution
+policy. Keep
 personal data, secrets and raw attachments out of briefs and public comments;
 cite them where they live. Triage does not rank the backlog, pick next work,
 shape the slice or fix the defect. A missing input or a step that could not run

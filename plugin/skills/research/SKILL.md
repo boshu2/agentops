@@ -102,8 +102,8 @@ training is a lead, never the source.
   statement or record of exactly that relation. Appearing in the same commit,
   meeting or document is weaker evidence; report it as such.
 - Return each claim as supported, contradicted, unsupported or not checkable,
-  with its citation and the path used. Corrections are proposals unless the
-  caller authorized editing the subject.
+  with its citation and the path used. Corrections are proposals; editing the
+  checked document belongs to [Doc](../doc/SKILL.md).
 
 ## Decision lineage
 

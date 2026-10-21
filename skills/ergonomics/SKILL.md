@@ -101,8 +101,10 @@ refusal names it. A partial failure says what completed.
 
 1. Inventory commands, flags and documented failure paths from help and source.
 2. Run in a disposable environment: temporary HOME and working directory, only
-   the env vars the run needs, stdin from `/dev/null`, no terminal, and a
-   deadline per command (`timeout` or the host's equivalent).
+   the env vars the run needs, stdin from `/dev/null`, no terminal, no network
+   unless approved, and a deadline per command (`timeout` or the host's
+   equivalent). If network cannot be withheld, say so on the `environment:`
+   line.
 3. Start with paths rejected before any work: help, an unknown flag, a missing
    argument, an invalid value. These need no further approval.
 4. Capture the literal command, the target's own exit code (not a pipe's or
@@ -110,8 +112,10 @@ refusal names it. A partial failure says what completed.
    before they reach the report.
 5. Follow a printed next step only within the same authority, else record it as
    not followed; whether that step works is part of the audit.
-6. A target that cannot launch in the sandbox (exit 126 or 127) is a
-   containment limit, neither a finding nor a pass. Name the access a rerun needs.
+6. A target binary that cannot launch in the sandbox (exit 126 or 127 before
+   it prints anything of its own) is a containment limit, neither a finding nor
+   a pass; name the access a rerun needs. A 127 from a tool the target itself
+   calls, after it started, is a finding about its dependency handling.
 
 ## Findings
 
@@ -139,7 +143,7 @@ carries no score or verdict.
 - Every finding has a location, literal reproduction, agent consequence and
   smallest fix; every observed failure was checked against each applicable item.
 - Live runs used a disposable HOME and working directory, a scrubbed
-  environment, closed stdin and a deadline.
+  environment, closed stdin, no unapproved network and a deadline.
 - Unexercised paths carry a reason; launch failures stay apart from tool failures.
 - No score, grade or readiness claim appears.
 
