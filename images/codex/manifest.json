@@ -1,7 +1,7 @@
 {
   "image": "codex",
   "schema_version": "skill-image.v1",
-  "skill_count": 29,
+  "skill_count": 32,
   "skills": [
     {
       "disposition": "keep_optional_adapter",
@@ -12,6 +12,11 @@
       "disposition": "keep_optional_adapter",
       "path": "skills/agy-native/",
       "slug": "agy-native"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/architecture/",
+      "slug": "architecture"
     },
     {
       "disposition": "keep_optional_adapter",
@@ -42,6 +47,11 @@
       "disposition": "keep_specialist",
       "path": "skills/domain/",
       "slug": "domain"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/ergonomics/",
+      "slug": "ergonomics"
     },
     {
       "disposition": "keep_strategy",
@@ -137,6 +147,11 @@
       "disposition": "keep_specialist",
       "path": "skills/test/",
       "slug": "test"
+    },
+    {
+      "disposition": "keep_specialist",
+      "path": "skills/triage/",
+      "slug": "triage"
     },
     {
       "disposition": "keep_optional_adapter",
