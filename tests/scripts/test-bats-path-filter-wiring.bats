@@ -48,3 +48,27 @@ setup() {
     [ "$status" -eq 0 ]
     [[ "$output" == *"needs.changes.outputs.bats == 'true'"* ]]
 }
+
+@test "validate.yml bats filter also covers workflow scripts and test fixtures" {
+    # bats suites read workflows/*.js (e.g. the implement-wave test) and
+    # tests/fixtures/**, so an edit to either must re-run bats. Parsed with
+    # yaml.safe_load, filters string included, so layout changes cannot hide it.
+    run python3 -c '
+import sys
+
+import yaml
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    workflow = yaml.safe_load(handle)
+found = [s for s in workflow["jobs"]["changes"]["steps"]
+         if str(s.get("uses", "")).startswith("dorny/paths-filter@")]
+assert len(found) == 1, found
+bats = yaml.safe_load(found[0]["with"]["filters"])["bats"]
+assert bats[0] == "**/*.bats", bats
+assert "workflows/**" in bats, bats
+assert "tests/fixtures/**" in bats, bats
+print("ok")
+' "$WORKFLOW_PATH"
+    echo "$output" >&2
+    [ "$status" -eq 0 ]
+}

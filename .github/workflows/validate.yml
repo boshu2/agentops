@@ -16,8 +16,9 @@ name: Validate
 # MUST be empty.
 
 on:
-  # This repository chooses tag, manual, pull-request, and merge-group runs.
-  # AgentOps itself does not assign delivery authority to this workflow.
+  # The pull-request `summary` check gates merges to main. A v* tag run is the
+  # exact-SHA release verdict that release.yml waits for before publishing. A
+  # manual (workflow_dispatch) run is a full verdict request and never path-filters.
   push:
     tags:
       - 'v*'
@@ -55,6 +56,7 @@ jobs:
       learning: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.learning }}
       markdown: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.markdown }}
       corpus: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.corpus }}
+      full: ${{ steps.release.outputs.release }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Detect release tag push or merge-queue (force full run)
@@ -63,7 +65,8 @@ jobs:
         run: |
           # merge_group has no PR base for the path-filter, so force the full
           # validation suite — the queue must validate the combined ref in full.
-          if [[ "${GITHUB_REF}" == refs/tags/v* || "${GITHUB_EVENT_NAME}" == "merge_group" ]]; then
+          # A manual dispatch is a full verdict request, so it never path-filters.
+          if [[ "${GITHUB_REF}" == refs/tags/v* || "${GITHUB_EVENT_NAME}" == "merge_group" || "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
             echo "release=true" >> "$GITHUB_OUTPUT"
           else
             echo "release=false" >> "$GITHUB_OUTPUT"
@@ -99,6 +102,8 @@ jobs:
               - 'scripts/**'
             bats:
               - '**/*.bats'
+              - 'workflows/**'
+              - 'tests/fixtures/**'
             ci:
               - '.github/**'
             contracts:
@@ -227,16 +232,6 @@ jobs:
           path: ao-gate-report.json
           if-no-files-found: error
 
-  # ─────────────────────────────────────────────────────────────────────────
-  # skill-gates — REQUIRED. The consolidated skill-authoring gate surface:
-  # every check that guards a SKILL.md / .feature / derived-skill-surface edit,
-  # grouped into one named job (ag-87sv). Pure regroup of already-live gates —
-  # no new gate logic. Absorbs from skills-integrity (heal --strict,
-  # validate-skill-schema, validate-skill-frontmatter, validate-skill-body-refs)
-  # + contracts-sync + doctrine-proof
-  # (check-scenario-test-linkage), and adds the six-surface drift sweep
-  # `regen-all.sh --check`. Required: listed in `summary.needs`.
-  # ─────────────────────────────────────────────────────────────────────────
   # ─────────────────────────────────────────────────────────────────────────
   # correctness — go build/test/coverage/complexity, embedded sync, CLI
   # integration, JSON-flag consistency, bats, python smoke, native Windows
@@ -654,50 +649,59 @@ jobs:
     if: always()
     steps:
       - name: Check results
+        env:
+          # Expressions reach the shell only through env, so this run text
+          # executes unchanged in tests/scripts/validate-release-tag-full-ci.bats.
+          NEEDS_JSON: ${{ toJson(needs) }}
         run: |
           echo "=== CI Summary ==="
-          echo "go-gate-shadow: ${{ needs.go-gate-shadow.result }}"
-          echo "correctness: ${{ needs.correctness.result }}"
-          echo "security: ${{ needs.security.result }}"
-
-          # Fail on actual failures. On release tags, skipped purpose jobs are
-          # also failures because validate.yml must be a full exact-SHA release
-          # verdict, not a path-filtered partial signal.
-          if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
-            echo ""
-            echo "❌ Some checks failed (failure detected)"
-            exit 1
-          fi
-
-          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
-            release_needs_json='${{ toJson(needs) }}'
-            release_skipped="$(
-              NEEDS_JSON="$release_needs_json" python3 - <<'PY'
+          python3 - <<'PY'
           import json
           import os
-
-          # All purpose jobs run on release tags (changes sets every output
-          # true), so no job should be skipped. None are allowlisted.
-          allowed_skips = set()
+          import sys
 
           needs = json.loads(os.environ["NEEDS_JSON"])
-          unexpected = sorted(
+          full = ((needs.get("changes") or {}).get("outputs") or {}).get("full") == "true"
+
+          # Only success passes, plus a path-filter skip outside a full run:
+          # failure, cancelled, timed_out or a missing result fails. A full run
+          # (release tag, merge queue, manual dispatch) forces every lane on, so
+          # a skipped lane there is not a verdict. None are allowlisted.
+          allowed_skips = set()
+
+          for name, metadata in needs.items():
+              print(f"{name}: {metadata.get('result')}")
+
+          not_ok = sorted(
+              (name, metadata.get("result"))
+              for name, metadata in needs.items()
+              if metadata.get("result") not in ("success", "skipped")
+          )
+          skipped = sorted(
               name
               for name, metadata in needs.items()
-              if metadata.get("result") == "skipped" and name not in allowed_skips
+              if full and metadata.get("result") == "skipped" and name not in allowed_skips
           )
 
-          for name in unexpected:
-              print(name)
-          PY
-            )"
-            if [[ -n "$release_skipped" ]]; then
-              echo ""
-              echo "❌ Release-tag Validate had unexpected skipped jobs; skipped release lanes are not a release verdict"
-              printf '%s\n' "$release_skipped" | sed 's/^/- /'
-              exit 1
-            fi
-          fi
+          if not_ok:
+              print("")
+              print("❌ Some checks did not succeed (failure, cancelled or timed out)")
+              for name, result in not_ok:
+                  print(f"- {name}: {result}")
 
-          echo ""
-          echo "✅ All checks passed"
+          if skipped:
+              print("")
+              if os.environ.get("GITHUB_REF", "").startswith("refs/tags/v"):
+                  print("❌ Release-tag Validate had unexpected skipped jobs; skipped release lanes are not a release verdict")
+              else:
+                  event = os.environ.get("GITHUB_EVENT_NAME", "")
+                  print(f"❌ Full {event} Validate had unexpected skipped jobs; a full run skips no lane")
+              for name in skipped:
+                  print(f"- {name}")
+
+          if not_ok or skipped:
+              sys.exit(1)
+
+          print("")
+          print("✅ All checks passed")
+          PY
