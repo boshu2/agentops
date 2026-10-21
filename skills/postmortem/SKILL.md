@@ -99,6 +99,14 @@ Answer inline.
 3. Put each causal claim through the first check above. Distinguish necessary
    validation and compatibility work from avoidable rework; repeated review
    alone proves no waste.
+   If the inputs include an earlier postmortem of the same subject, account for
+   its recommendations before issuing new ones: applied, partly applied,
+   not applied, or unknown, with evidence from the supplied work since then.
+   Preserve whether a change was authorized, held or never approved; missing
+   evidence of application is not failed adoption. Report recurrence of the
+   targeted failure only when observed. For repeated unapplied advice, name
+   known obstacles or an unresolved question instead of simply repeating it.
+   Nonapplication alone proves neither cause, blame nor that the advice helps.
 4. For time or token claims, state source, interval, units, included and
    excluded actors, and uncertainty. Separate elapsed time, overlapping work and
    accounting scopes; never equate totals with waste, savings or money without

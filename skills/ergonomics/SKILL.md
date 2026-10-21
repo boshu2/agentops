@@ -1,6 +1,6 @@
 ---
 name: ergonomics
-description: 'Audit a CLI, API, MCP tool or SDK, or a design for one, for whether an agent can find it, use it right first time and recover from errors. Use when: a tool agents will call is being designed or shipped, or agents keep misusing one, even a single command.'
+description: "Audit CLI, API, MCP or SDK discovery, first use and error recovery. Use when: designing an agent-facing tool or investigating misuse, including one command."
 practices:
 - ai-assisted-dev
 - design-by-contract
@@ -100,11 +100,14 @@ refusal names it. A partial failure says what completed.
 ## Live exercise
 
 1. Inventory commands, flags and documented failure paths from help and source.
-2. Run in a disposable environment: temporary HOME and working directory, only
-   the env vars the run needs, stdin from `/dev/null`, no terminal, no network
-   unless approved, and a deadline per command (`timeout` or the host's
-   equivalent). If network cannot be withheld, say so on the `environment:`
-   line.
+2. Use an available disposable sandbox that enforces the allowed filesystem,
+   process and network access. Keep operator files, credentials and host
+   sockets outside its access; no network unless authorized. Within it, use a
+   temporary HOME and working directory, only the needed env vars, stdin from
+   `/dev/null`, no terminal and a deadline per command (`timeout` or the host's
+   equivalent). Those settings alone do not establish containment. If required
+   isolation is unavailable, use plan mode and record live paths as not
+   exercised; do not execute on the ambient host or install a sandbox.
 3. Start with paths rejected before any work: help, an unknown flag, a missing
    argument, an invalid value. These need no further approval.
 4. Capture the literal command, the target's own exit code (not a pipe's or
@@ -142,8 +145,8 @@ carries no score or verdict.
 
 - Every finding has a location, literal reproduction, agent consequence and
   smallest fix; every observed failure was checked against each applicable item.
-- Live runs used a disposable HOME and working directory, a scrubbed
-  environment, closed stdin, no unapproved network and a deadline.
+- Live runs used enforced containment, a disposable HOME and working directory,
+  a scrubbed environment, closed stdin, no unapproved network and a deadline.
 - Unexercised paths carry a reason; launch failures stay apart from tool failures.
 - No score, grade or readiness claim appears.
 

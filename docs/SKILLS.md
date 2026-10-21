@@ -18,24 +18,24 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 | [review](https://github.com/boshu2/agentops/blob/main/skills/review/SKILL.md) | Give advisory feedback on a plan, design or code change. Use when: asked for an opinion or a look-over, even informally. Not for acceptance; use Validate. |
 | [validate](https://github.com/boshu2/agentops/blob/main/skills/validate/SKILL.md) | Freshly judge whether a finished change and its claims meet original acceptance: PASS, FAIL or NOT_PROVEN. Use when: asked for a go/no-go, sign-off or independent verdict. |
 | [orchestrate](https://github.com/boshu2/agentops/blob/main/skills/orchestrate/SKILL.md) | Coordinate several workers: what idle agents do next, which finished work gets checked first, how to recover a dead one. Use when: managing multiple agents. |
-| [memory](https://github.com/boshu2/agentops/blob/main/skills/memory/SKILL.md) | Write, find or curate lessons and agent rules with stated evidence and limits. Use when: asked to remember something or write a rule into agent instructions. |
+| [memory](https://github.com/boshu2/agentops/blob/main/skills/memory/SKILL.md) | Find or curate supported lessons and agent rules. Use when: asked to remember, trace a corrected claim, audit instructions or write an agent rule. |
 
 ## Engineering specialists
 
 | Skill | Use it for |
 |---|---|
-| [architecture](https://github.com/boshu2/agentops/blob/main/skills/architecture/SKILL.md) | Propose deeper modules, better seams or moved boundaries where code structure makes change expensive, comparing interface designs first. Use when: a change kept spreading across files, or a module or boundary is in question. Not for making the change; use Refactor. |
-| [doc](https://github.com/boshu2/agentops/blob/main/skills/doc/SKILL.md) | Write or update READMEs, docs, change descriptions and handoff notes, checked against source. Use when: documenting something, updating docs after a change, or leaving or resuming a session handoff. |
+| [architecture](https://github.com/boshu2/agentops/blob/main/skills/architecture/SKILL.md) | Compare interface designs and find structural friction. Use when: a change spreads across modules or a boundary is unclear. For code changes, use Refactor. |
+| [doc](https://github.com/boshu2/agentops/blob/main/skills/doc/SKILL.md) | Write source-checked docs, READMEs, change descriptions and handoff notes. Use when: documenting a change or leaving or resuming a session handoff. |
 | [domain](https://github.com/boshu2/agentops/blob/main/skills/domain/SKILL.md) | Settle what domain terms mean per context, and which repository conventions or language standards (Go, Python) apply. Use when: names disagree or a rename is proposed. |
-| [ergonomics](https://github.com/boshu2/agentops/blob/main/skills/ergonomics/SKILL.md) | Audit a CLI, API, MCP tool or SDK, or a design for one, for whether an agent can find it, use it right first time and recover from errors. Use when: a tool agents will call is being designed or shipped, or agents keep misusing one, even a single command. |
+| [ergonomics](https://github.com/boshu2/agentops/blob/main/skills/ergonomics/SKILL.md) | Audit CLI, API, MCP or SDK discovery, first use and error recovery. Use when: designing an agent-facing tool or investigating misuse, including one command. |
 | [refactor](https://github.com/boshu2/agentops/blob/main/skills/refactor/SKILL.md) | Restructure or clean up code with no behavior change, proved by before-and-after checks. Use when: asked to clean up, extract, dedupe or simplify, even one function. |
-| [research](https://github.com/boshu2/agentops/blob/main/skills/research/SKILL.md) | Answer one cited question: how code works, why it got this shape, whether a document's claims hold, or whether a pattern deserves a rule. Use when: asked how, why, is this true, or whether to enforce a pattern. |
+| [research](https://github.com/boshu2/agentops/blob/main/skills/research/SKILL.md) | Answer one cited question about code, history, claims or patterns. Use when: asked how it works, why it changed, whether a claim holds or a pattern warrants a rule. |
 | [reverse-engineer](https://github.com/boshu2/agentops/blob/main/skills/reverse-engineer/SKILL.md) | Tear down a competitor's repo or product into a feature inventory and adoption choices. Use when: comparing us to another tool or asking what to steal. |
 | [security](https://github.com/boshu2/agentops/blob/main/skills/security/SKILL.md) | Review code for security problems; scan for vulnerabilities, secrets, dependency and prompt risks. Use when: asked whether code is safe to ship, even one small handler. |
 | [skill-builder](https://github.com/boshu2/agentops/blob/main/skills/skill-builder/SKILL.md) | Create, repair, audit or consolidate agent skills (SKILL.md packages). Use when: writing or fixing a skill, its description or structure. Not for one-off lessons; use Memory. |
 | [skill-eval](https://github.com/boshu2/agentops/blob/main/skills/skill-eval/SKILL.md) | Measure whether a skill helps by comparing runs with and without it. Use when: reading skill A/B results or deciding to keep, revise or remove one. |
 | [test](https://github.com/boshu2/agentops/blob/main/skills/test/SKILL.md) | Write or assess tests that prove behavior and would fail without the fix. Use when: writing tests, TDD, or asked whether a green test is enough. |
-| [triage](https://github.com/boshu2/agentops/blob/main/skills/triage/SKILL.md) | Sort an incoming bug report, feature request, external PR, alert or feedback into a supported decision and, when warranted, an agent-ready brief. Use when: a report arrives or untriaged items pile up. Not for shaping accepted work; use Plan. |
+| [triage](https://github.com/boshu2/agentops/blob/main/skills/triage/SKILL.md) | Turn incoming reports, external PRs and alerts into evidence-based decisions and agent-ready briefs. Use when: intake arrives. For accepted work, use Plan. |
 
 ## Deliberate planning and review strategies
 

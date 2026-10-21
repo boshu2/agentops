@@ -1,6 +1,6 @@
 ---
 name: architecture
-description: 'Propose deeper modules, better seams or moved boundaries where code structure makes change expensive, comparing interface designs first. Use when: a change kept spreading across files, or a module or boundary is in question. Not for making the change; use Refactor.'
+description: "Compare interface designs and find structural friction. Use when: a change spreads across modules or a boundary is unclear. For code changes, use Refactor."
 practices: [hexagonal-architecture, ddd-bounded-context, legacy-code-seams, refactoring, pragmatic-programmer, design-patterns]
 hexagonal_role: domain
 consumes: [repo-context]

@@ -1,6 +1,6 @@
 ---
 name: doc
-description: 'Write or update READMEs, docs, change descriptions and handoff notes, checked against source. Use when: documenting something, updating docs after a change, or leaving or resuming a session handoff.'
+description: "Write source-checked docs, READMEs, change descriptions and handoff notes. Use when: documenting a change or leaving or resuming a session handoff."
 practices:
 - wiki-knowledge-surface
 - code-complete

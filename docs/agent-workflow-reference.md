@@ -28,7 +28,9 @@ shell; the tracker, Git and runtime keep their existing authority.
 
 Start with the user's outcome and use the smallest set of methods that can
 change a decision. The skill menu is a set of tools, not a sequence to run in
-full. For example, consider adding a batch import that users can safely retry:
+full. An incoming report with an unverified expectation belongs to
+[Triage](../skills/triage/SKILL.md); accepted work does not need another intake
+pass. For example, consider adding a batch import that users can safely retry:
 
 - If "safe to retry" is ambiguous, use [Interview](../skills/interview/SKILL.md)
   to settle duplicate handling and partial success. Keep settled answers; ask
@@ -37,11 +39,18 @@ full. For example, consider adding a batch import that users can safely retry:
   caller examples for the plausible interfaces and choose a thin end-to-end
   slice. Use [Refactor](../skills/refactor/SKILL.md) when existing coupling makes
   that slice expensive, preserving the behavior and tests users depend on.
+  [Architecture](../skills/architecture/SKILL.md) can investigate structural
+  friction and compare boundaries when the cause itself is uncertain; a small
+  known transformation does not need that investigation.
 - Implement the slice and exercise its actual boundaries. For this import,
   useful examples include a malformed row, a retry after partial success, and
   a response lost after the server accepted the batch. [Test](../skills/test/SKILL.md)
   helps choose checks that distinguish these outcomes; [Review](../skills/review/SKILL.md)
   helps examine consequential gaps when a fresh read is owed or requested.
+  If the question is whether an agent can discover and recover through the
+  interface, [Ergonomics](../skills/ergonomics/SKILL.md) examines that named
+  surface. Its findings can inform Test's assertions; it adds no permission to
+  run production mutations or forward access.
 - When a failure exposes reusable guidance, [Postmortem](../skills/postmortem/SKILL.md)
   can trace what happened and [Memory](../skills/memory/SKILL.md) can maintain a
   supported, scoped lesson. Preserve why a proposed explanation was rejected.

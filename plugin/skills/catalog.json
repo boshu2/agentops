@@ -106,7 +106,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Propose deeper modules, better seams or moved boundaries where code structure makes change expensive, comparing interface designs first. Use when: a change kept spreading across files, or a module or boundary is in question. Not for making the change; use Refactor.",
+      "description": "Compare interface designs and find structural friction. Use when: a change spreads across modules or a boundary is unclear. For code changes, use Refactor.",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": true,
@@ -281,7 +281,7 @@
       ],
       "context_rel": [],
       "dependencies": [],
-      "description": "Write or update READMEs, docs, change descriptions and handoff notes, checked against source. Use when: documenting something, updating docs after a change, or leaving or resuming a session handoff.",
+      "description": "Write source-checked docs, READMEs, change descriptions and handoff notes. Use when: documenting a change or leaving or resuming a session handoff.",
       "disposition": "keep_specialist",
       "effects": [
         "write_documentation",
@@ -356,7 +356,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Audit a CLI, API, MCP tool or SDK, or a design for one, for whether an agent can find it, use it right first time and recover from errors. Use when: a tool agents will call is being designed or shipped, or agents keep misusing one, even a single command.",
+      "description": "Audit CLI, API, MCP or SDK discovery, first use and error recovery. Use when: designing an agent-facing tool or investigating misuse, including one command.",
       "disposition": "keep_specialist",
       "effects": [
         "run_target_in_disposable_environment"
@@ -453,7 +453,7 @@
       "produces": [
         "subject-manifest.v1"
       ],
-      "references_count": 4,
+      "references_count": 5,
       "tier": "execution",
       "user_invocable": true
     },
@@ -508,7 +508,7 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Write, find or curate lessons and agent rules with stated evidence and limits. Use when: asked to remember something or write a rule into agent instructions.",
+      "description": "Find or curate supported lessons and agent rules. Use when: asked to remember, trace a corrected claim, audit instructions or write an agent rule.",
       "disposition": "keep_off_path",
       "effects": [
         "write_protected_drafts",
@@ -527,7 +527,7 @@
         "reviewed-topic-pages",
         "ranked-toil-evidence"
       ],
-      "references_count": 5,
+      "references_count": 6,
       "tier": "execution",
       "user_invocable": true
     },
@@ -782,7 +782,7 @@
       ],
       "context_rel": [],
       "dependencies": [],
-      "description": "Answer one cited question: how code works, why it got this shape, whether a document's claims hold, or whether a pattern deserves a rule. Use when: asked how, why, is this true, or whether to enforce a pattern.",
+      "description": "Answer one cited question about code, history, claims or patterns. Use when: asked how it works, why it changed, whether a claim holds or a pattern warrants a rule.",
       "disposition": "keep_specialist",
       "effects": [
         "write_research_report",
@@ -1051,7 +1051,7 @@
       "produces": [
         "test-evidence"
       ],
-      "references_count": 10,
+      "references_count": 11,
       "tier": "execution",
       "user_invocable": true
     },
@@ -1075,7 +1075,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Sort an incoming bug report, feature request, external PR, alert or feedback into a supported decision and, when warranted, an agent-ready brief. Use when: a report arrives or untriaged items pile up. Not for shaping accepted work; use Plan.",
+      "description": "Turn incoming reports, external PRs and alerts into evidence-based decisions and agent-ready briefs. Use when: intake arrives. For accepted work, use Plan.",
       "disposition": "keep_specialist",
       "effects": [
         "write_authorized_tracker_updates"

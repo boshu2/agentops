@@ -1020,7 +1020,7 @@
         "has_skill_md": true,
         "name": "implement",
         "path": "skills/implement/",
-        "reference_count": 4,
+        "reference_count": 5,
         "tier": "execution"
       },
       {
@@ -1058,7 +1058,7 @@
         "has_skill_md": true,
         "name": "memory",
         "path": "skills/memory/",
-        "reference_count": 5,
+        "reference_count": 6,
         "tier": "execution"
       },
       {
@@ -1316,7 +1316,7 @@
         "has_skill_md": true,
         "name": "test",
         "path": "skills/test/",
-        "reference_count": 10,
+        "reference_count": 11,
         "tier": "execution"
       },
       {

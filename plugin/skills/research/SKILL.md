@@ -1,6 +1,6 @@
 ---
 name: research
-description: 'Answer one cited question: how code works, why it got this shape, whether a document''s claims hold, or whether a pattern deserves a rule. Use when: asked how, why, is this true, or whether to enforce a pattern.'
+description: "Answer one cited question about code, history, claims or patterns. Use when: asked how it works, why it changed, whether a claim holds or a pattern warrants a rule."
 practices:
 - pragmatic-programmer
 - ddd-bounded-context
