@@ -33,7 +33,8 @@ Each task's worker build context contains `environment/Dockerfile`,
 `environment/source` as `source`, and the same public `helpers` in both arms.
 No `tests`, `solution`, prior Git history, host home or sibling output belongs
 in that context. The Dockerfile creates a fresh one-commit baseline from the
-sanitized snapshot and pins Codex 0.154.0 and Go 1.27.1. Actual image availability
+sanitized snapshot and pins Codex 0.154.0; its `FROM golang:<tag>` line is the
+authoritative Go version. Actual image availability
 and runtime compatibility are the runner's checks; local calibration reports
 its actual host Go version rather than asserting the container pin was tested.
 
@@ -182,5 +183,7 @@ python3 evals/skills-rpi/taskbank/calibrate.py \
 Honor the caller's shared window even for calibration. In the S3/S4 pilot the
 window begins at the first evaluation preflight or calibration, and failed starts
 and retries consume the same allowance. The existing executable `prepare.py`
-pins Harbor 0.22.0; do not substitute the newer requirements-file pin while
-claiming the same runtime. Runtime availability remains a separate check.
+pins Harbor 0.22.0, and `requirements.txt` and the suite README must name the
+same version (`test_prepare.py` fails when they disagree); a Harbor bump changes
+all three together and is a new runtime identity. Runtime availability remains a
+separate check.

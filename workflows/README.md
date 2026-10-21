@@ -11,7 +11,7 @@ Five active conveyor shapes:
 |---|---|---|
 | `audit-dimensions` | pipeline: finder → skeptic, per dimension | auditing a subject across independent lenses |
 | `verify-fixes` | parallel adversarial verifiers, one per group | refuting "it's fixed" claims after a change |
-| `implement-wave` | parallel disjoint-scope lanes → one fresh verifier | executing a wave of bead-shaped work items |
+| `implement-wave` | sequential scoped lanes in one shared tree → one fresh verifier | executing a wave of bead-shaped work items |
 | `bulk-read` | parallel cheap readers, one per file → line-referenced bullets | answering a question about big files without their bytes entering the caller's context |
 | `code-write` | metadata probe for batches → sequential cheap writers, one per item (spec + reference → target) → receipts | writing patterned or boilerplate files the caller should not read back |
 
@@ -24,10 +24,10 @@ throw immediately and perform no work.
 
 | Name | Migration |
 |---|---|
-| `bdd-foundry` | State accepted behavior in the conversation or a BD bead; implement and check natively, then obtain fresh independent judgment. Use `bd` directly for work status. |
+| `bdd-foundry` | State accepted behavior in the conversation or a BD bead; implement and check natively, with checks and CI as the gate and one fresh read only where a mistake is costly. Use `bd` directly for work status. |
 | `ship-beads` | Use native Git and BD operations under the caller repository policy, or dispatch to a selected software factory through its coordinator. |
 | `bead-crank` | Former alias of `ship-beads`; it fails closed too. Follow the `ship-beads` migration in the row above. |
-| `operating-loop` | Follow native execution and fresh judgment; use the optional `rpi` skill for one bounded experiment. Delivery follows the `ship-beads` migration above. |
+| `operating-loop` | Follow native execution (`docs/agent-workflow-reference.md`): checks and CI gate an ordinary change, with one fresh read only where a mistake is costly; use the optional `rpi` skill for one bounded experiment. Delivery follows the `ship-beads` migration above. |
 
 ## Install
 
@@ -63,7 +63,7 @@ The plugin supplies the namespace; each source `meta.name` remains bare.
 
 ## Doctrine: thin conveyors
 
-These scripts are **thin conveyors**. All task semantics — the subject, the charters, the briefs, the acceptance criteria — arrive via `args`. The script contributes only orchestration shape, guardrail scaffolding (RED-first, disjoint ownership, no-stash, adversarial verification, destructive-command-guard awareness), and result plumbing. If a prompt inside a script ever encodes knowledge about a specific repo, defect, or session, that is a bug in the script. Agents operate in the session working directory; pass `args.root` only if you must point them elsewhere. Malformed args throw immediately with the expected shape — a thrown workflow is better than a silently wrong fleet.
+These scripts are **thin conveyors**. All task semantics — the subject, the charters, the briefs, the acceptance criteria — arrive via `args`. The script contributes only orchestration shape, guardrail scaffolding (RED-first, declared write scopes, no-stash, adversarial verification, destructive-command-guard awareness), and result plumbing. If a prompt inside a script ever encodes knowledge about a specific repo, defect, or session, that is a bug in the script. Agents operate in the session working directory; pass `args.root` only if you must point them elsewhere. Malformed args throw immediately with the expected shape — a thrown workflow is better than a silently wrong fleet.
 
 **The bead is the reusable artifact, not the orchestration.** `implement-wave` lanes are deliberately bead-shaped — `{key, scope, brief, acceptance}` — because acceptance is the contract the verifier judges against, exactly how a bead carries acceptance into Validate. Write good beads; the conveyor is interchangeable.
 
@@ -111,7 +111,7 @@ Workflow({ name: 'verify-fixes', args: {
 
 ## implement-wave
 
-One wave of parallel implementer lanes with strictly disjoint file ownership, then a single fresh adversarial verifier judging every lane against its acceptance. Lane scaffolding enforces: RED reproduced before editing (pre-fix binaries built first), GREEN proven after, no `git stash` on the shared tree, out-of-scope needs reported in `constraints` instead of edited, destructive-command guards respected. A failed lane is surfaced to the verifier rather than dropped.
+One wave of sequential implementer lanes, then a single fresh adversarial verifier judging every lane against its acceptance. Lanes run one at a time in the caller's working tree, as `code-write` writers do, so wall-clock time is the sum of lane times. A lane's declared scope is an instruction, not an enforced boundary, and the shared tree attributes changes to a lane only through its implementer's claims. Worktree isolation and a post-run scope diff are deferred until an out-of-scope edit or lost work is observed, or a latency need is measured. Lane scaffolding instructs: RED reproduced before editing (pre-fix binaries built first), GREEN proven after, no `git stash` and no reverting of earlier lanes' uncommitted changes, out-of-scope needs reported in `constraints` instead of edited, destructive-command guards respected. A failed lane is surfaced to the verifier rather than dropped, and later lanes still run.
 
 Args: `{ context: string, conventions?: string, root?: string, lanes: [{ key, scope: [string], brief, acceptance }], verify?: { brief } }`
 Returns: `{ implementers: [{ key, summary, red_repro, green_proof, files_changed, constraints }], verification: { verdicts, residuals } }` — a lane whose agent died comes back with an `error` field and is still handed to the verifier.

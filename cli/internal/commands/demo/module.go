@@ -52,7 +52,8 @@ func (Module) Command() *cobra.Command {
 		Use:   "demo",
 		Short: "Show native execution with optional workflow examples",
 		Long: `Show a native coding-agent change from accepted behavior through checks,
-fresh independent judgment and delivery under repository policy.
+CI and delivery under repository policy, with one fresh read only where a
+mistake is costly.
 
 No skills or bootstrap are required. Specialists and evidence persistence are
 optional. Use --rpi to show the full workflow-skill alternative.
@@ -79,10 +80,12 @@ func showConcepts(w io.Writer) error {
 	fmt.Fprintln(w, `AGENTOPS PRODUCT BOUNDARY
 
 The native coding agent owns the approach and completes accepted work using
-repository instructions, ordinary tools and deterministic checks. A fresh
-independent judgment over exact content is required for accepted completion;
-using the Validate skill to obtain it is optional. No workflow skills or
-bootstrap are required. Machine-readable verdict persistence is optional.
+repository instructions, ordinary tools and deterministic checks. Checks and CI
+gate an ordinary change; obtain one fresh author-distinct read only when the
+caller asks, a mistake cannot be cheaply undone, or no deterministic check
+covers the change. Using the Validate skill for that read is optional. No
+workflow skills or bootstrap are required. Machine-readable verdict persistence
+is optional.
 
 AgentOps does not own retries, budgets, queues, work ownership, Git, closure, release,
 or delivery. Specialists and multi-agent strategies are optional callers.`)
@@ -97,14 +100,17 @@ Request: a parser must reject an empty value while preserving valid inputs.
 2. Add a discriminating regression, reproduce the failure, and repair the parser
    with native coding-agent tools. Run the required package and repository checks.
 3. Use ao gate check for deterministic facts; repair understood failures directly.
-4. A fresh independent context checks the exact final change, unchanged acceptance,
-   all changed paths and test evidence. The author cannot issue the binding PASS.
+4. Checks and CI gate an ordinary change; obtain one fresh author-distinct read
+   only when the caller asks, a mistake cannot be cheaply undone, or no
+   deterministic check covers the change. That read checks the exact final change
+   against unchanged acceptance; the author cannot issue a binding PASS.
 5. Report the outcome and checked/not_checked scope, then follow repository delivery
-   policy. Missing judgment or unchecked acceptance remains NOT_PROVEN.
+   policy. A requested binding verdict reports missing proof or unchecked
+   acceptance as NOT_PROVEN.
 
 No skill installation, workflow-skill loading, bootstrap or ao init is required.
 Specialists and evidence persistence are optional. The Validate skill can help
-conduct the required review; ao provenance can record explicitly requested proof.
+conduct a fresh read; ao provenance can record explicitly requested proof.
 Use ao demo --rpi for the optional full workflow example.`)
 	return nil
 }
@@ -115,10 +121,14 @@ func rpiDemo(w io.Writer) error {
 1. Plan refines one active behavior and write scope in the existing intent source.
 2. Implement runs one bounded RED -> GREEN -> refactor experiment.
 3. The runtime derives changed paths, check receipts, and subject-manifest.v1.
-4. A distinct fresh context validates the exact intent and subject.
-5. Validate returns one fresh validation result; verdict.v2 persistence is optional.
-6. FAIL or NOT_PROVEN with findings repairs and re-validates under the convergence law
-   within the caller's repair_rounds; RPI reports PASS, FAIL, NOT_PROVEN, NOT_PLANNED, or NOT_BUILT.
+4. Checks and CI gate an ordinary change; obtain one fresh author-distinct read
+   only when the caller asks, a mistake cannot be cheaply undone, or no
+   deterministic check covers the change.
+5. That read is one round: Validate returns one fresh validation result over the
+   exact intent and subject; verdict.v2 persistence is optional.
+6. Repair findings, confirm each with a check; a repair does not start another review.
+   RPI reports done, stopped, NOT_PLANNED or NOT_BUILT, with judgment none, PASS,
+   FAIL or NOT_PROVEN.
 
 No Git repository or ao binary is required for this semantic traversal.`)
 	return nil

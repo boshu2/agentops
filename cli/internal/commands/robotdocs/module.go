@@ -103,10 +103,13 @@ Diagnostic commands extend this dictionary. Read the precise codes with
 ## Native execution
 
 Read the repository brief, preserve accepted behavior and scope, implement
-with native tools, run required checks and repair known failures. Obtain
-fresh independent judgment over the exact final change against unchanged acceptance.
-The author cannot issue the binding PASS. Missing judgment or unchecked
-acceptance remains NOT_PROVEN; passing deterministic checks alone is insufficient.
+with native tools, run required checks and repair known failures. Checks and
+CI gate an ordinary change; obtain one fresh author-distinct read only when
+the caller asks, a mistake cannot be cheaply undone, or no deterministic check
+covers the change. That read judges the exact final change against unchanged
+acceptance in one round, and a repair confirmed by a check does not start
+another review. The author cannot issue a binding PASS. A requested binding
+verdict reports missing proof or unchecked acceptance as NOT_PROVEN.
 Report checked and not_checked scope and follow repository delivery policy.
 
 The Validate skill is an optional review method; skills, bootstrap and

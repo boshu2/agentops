@@ -13,16 +13,18 @@ One invocation consumes and produces:
    evidence-based approach revision within unchanged acceptance;
 3. one runtime-derived subject manifest and factual check receipts with
    complete or honestly incomplete changed-path proof;
-4. fresh author-distinct native judgment over exact content, with fresh
-   re-validation after acceptance-relevant repairs;
+4. one fresh author-distinct read over exact content only when the caller asks,
+   a mistake cannot be cheaply undone, or no deterministic check covers the
+   change; a check confirms each repair without another review;
 5. a subject-led report, with a durable verdict only when requested or required
    by a declared consumer.
 
-Finish when acceptance is met and freshly validated. A true causal stall admits
-at most one bounded fresh helper within the existing allowance; cancellation,
-refusal and spent hard resources stop work. Do not renew an allowance through
-replanning, compaction or delegation. Changed acceptance requires caller
-authority. Repository Git and release procedures remain separate.
+Finish when acceptance is met on the checks, CI and any owed fresh read. A true
+causal stall admits at most one bounded fresh helper within the existing
+allowance; cancellation, refusal and spent hard resources stop work. Do not
+renew an allowance through replanning, compaction or delegation. Changed
+acceptance requires caller authority. Repository Git and release procedures
+remain separate.
 
 ## Mutable scope
 
@@ -39,8 +41,10 @@ ordinary implementation authority.
 
 Use the cheapest targeted checks during implementation. Before reporting the
 complete change, run the ordinary deterministic suite appropriate to the final
-surface and obtain one fresh independent judgment. Record exactly what was checked
-and not checked.
+surface; with CI it is the gate for an ordinary change. Obtain one fresh
+author-distinct read only where the
+[agent workflow reference](docs/agent-workflow-reference.md) requires one.
+Record exactly what was checked and not checked.
 
 The repository may then commit, push, merge, release, or roll back through its
 normal Git/CI policy. Those transitions cannot upgrade or replace the semantic

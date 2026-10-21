@@ -1,9 +1,34 @@
 # ADR-0017: The Loop Is Control Flow, Not Knowledge
 
-- **Status:** Accepted, amended for native execution 2026-09-10 (2026-09-03)
+- **Status:** Accepted, amended for native execution 2026-09-10 and conditional review 2026-10-03 (2026-09-03)
 - **Author:** AgentOps maintainers
 - **Builds on:** [ADR-0004](ADR-0004-corpus-moat-unproven-position-on-the-system.md) (corpus moat unproven, position on the verification system), [ADR-0011](ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md) (escape-corpus compounding demoted to hypothesis)
 - **Origin:** `docs/plans/2026-09-03-loop-restore.md` (this decision's intent source), and the 2026-09-02 Train 1 run, where the repair loop had to be improvised by hand
+
+## Conditional-review amendment — 2026-10-03 (#1189)
+
+The caller approved conditional review in #1189. Spend validation where a
+mistake is costly. For an ordinary change the author runs the checks and CI is
+the gate; no fresh review is owed. One fresh author-distinct read happens only
+when the caller asks, a mistake cannot be cheaply undone after it lands (a
+published release or instructions users will follow, a security boundary,
+destroying data or tracker state, deleting a check that protects the product),
+or no deterministic check covers the changed behavior. That read is one round:
+the reviewer gets the exact subject and one question and does not re-run
+checks. A repair is confirmed by a check and does not start another review.
+A requested binding verdict keeps the PASS rule in
+`skills/validate/SKILL.md`; `NOT_PROVEN` is reported with its gaps instead of
+being chased. The operating rule lives in `AGENTS.md` and the
+[agent workflow reference](../agent-workflow-reference.md).
+
+This supersedes the 2026-09-10 sentence "A fresh author-distinct reviewer
+judges the final change" and the 2026-09-09 clause requiring fresh
+author-distinct final validation with all acceptance and an empty
+`not_checked`. Those texts remain below for provenance only. The observed
+failure was review cost exceeding the cost of the work: a reviewer asked to
+find problems always finds one, so mandatory review plus re-validation after
+every repair could not converge. This amendment changes when review is owed;
+it claims no measured quality effect.
 
 ## Active native-default amendment — 2026-09-10
 

@@ -46,9 +46,10 @@ alone does not.
 7. **Stop boundary.** The native agent owns the authorized outcome, planning only when
    needed and revising approach within unchanged acceptance. Known defects get
    direct repair; a causal stall gets at most one bounded fresh helper inside
-   the existing allowance. Finish when accepted and freshly validated, or stop
-   at the actual cancellation, refusal, causal or resource boundary. The native
-   caller keeps budgets, stops, queue and work authority.
+   the existing allowance. Finish when accepted on the checks, CI and any fresh
+   read the [agent workflow reference](docs/agent-workflow-reference.md)
+   requires, or stop at the actual cancellation, refusal, causal or resource
+   boundary. The native caller keeps budgets, stops, queue and work authority.
 8. **Open ecosystem.** Callers keep their trackers, Git, PRs, CI, cloud agents,
    merge queues, rollback, and release systems.
 9. **Shared domain language.** Use the caller's established terms and rule owners

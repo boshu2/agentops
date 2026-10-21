@@ -30,10 +30,11 @@ var rootCmd = &cobra.Command{
 	Version: version,
 	Short:   "AgentOps CLI: deterministic checks and evidence records",
 	Long: `ao provides deterministic repository checks and generic evidence records.
-Your native coding agent owns the approach and completes accepted work. Fresh
-independent judgment of the exact final change is required; workflow skills,
-specialists and evidence persistence are optional. No skills, bootstrap or init
-are required. Git, delivery, work ownership and continuation stay with the caller.
+Your native coding agent owns the approach and completes accepted work. Checks
+and CI gate an ordinary change; one fresh author-distinct read is owed only when
+the caller asks, a mistake cannot be cheaply undone, or no deterministic check
+covers the change. Workflow skills, specialists and evidence persistence are
+optional. No skills, bootstrap or init are required. Git, delivery, work ownership and continuation stay with the caller.
 
 For AI agents:
   ao quick-start      Native execution brief, without mandatory workflow skills.
