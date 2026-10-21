@@ -6,7 +6,10 @@ status: historical
 
 Snapshot date 2026-10-21. Tree: `main` at a193b6bdf, after PRs #1217-#1221.
 Every repository count in this file was measured on a193b6bdf unless the row
-says otherwise. Counts drift; re-measure before acting on one.
+says otherwise. Counts drift; re-measure before acting on one. After this
+snapshot, [#1222](https://github.com/boshu2/agentops/pull/1222) (b54da62a9)
+added the `architecture`, `ergonomics` and `triage` skills and edited 19
+others; none of that is scored here.
 
 ## 1. What this is
 
