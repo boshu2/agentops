@@ -139,6 +139,9 @@ bounds. Supply failed assumption, evidence and one discriminating question.
 Resume with a testable different approach; an unhelpful response ends the attempt.
 Do not create a helper chain, rename the same incident or consult help for an
 understood failed check. Cancellation, refusal and spent real bounds skip help.
+A stall claim names its category and the observed fact (the failing check and
+the subjects it failed on, the caller correction, or the last observed
+activity); no count, ledger or detector defines a stall.
 Keep recovery state in the native handoff only when needed to protect evidence.
 
 Optional [outer-goal guidance](../../skills/rpi/references/outer-goal.md) stays

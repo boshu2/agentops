@@ -25,7 +25,9 @@
 # WHAT it checks, per golden, over the top_k pack `ao skills find` returns:
 #   MISS       an id in expected_selected_ids is absent from the pack
 #   LEAK       an id in critical_omitted_ids is present in the pack
-#   MISROUTE   a forbidden_leaks regex matches the rank-1 id
+#   MISROUTE   a forbidden_leaks regex matches the rank-1 id, or any id whose
+#              score equals rank 1's (name order alone set that rank); ties are
+#              read from top_k+1 results, and an unscored pack grades rank 1 only
 #   PROVENANCE fewer than min_provenance_density of the pack cite a path that exists
 #   TOKENS     the pack's descriptions exceed max_tokens whitespace tokens
 #   SCHEMA     the golden itself does not satisfy the v1 contract
@@ -256,10 +258,34 @@ def cites_a_real_file(item):
     return os.path.exists(path)
 
 
+def numeric_score(item):
+    """Return the item's routing score, or None when it carries none."""
+    score = item.get("score")
+    if isinstance(score, bool) or not isinstance(score, (int, float)):
+        return None
+    return score
+
+
+def rank1_ties(results):
+    """Return the items after rank 1 whose score equals rank 1's.
+
+    `ao skills find` breaks equal scores by name, so a tied item is ordered
+    below rank 1 by name alone. Without a numeric rank-1 score there is no tie
+    to read and only rank 1 is graded.
+    """
+    top = numeric_score(results[0]) if results else None
+    if top is None:
+        return []
+    return [item for item in results[1:] if numeric_score(item) == top]
+
+
 def grade(golden):
     """Grade one validated golden. Returns (findings, observed)."""
     top_k = golden["top_k"]
-    pack = resolve_pack(golden["query"], top_k)[:top_k]
+    # One result past the cut shows a tie that top_k would hide; every
+    # expectation below is still declared over exactly the top_k pack.
+    window = resolve_pack(golden["query"], top_k + 1)[: top_k + 1]
+    pack = window[:top_k]
     ids = [item["name"] for item in pack]
     observed = {"pack": ids, "rank1": ids[0] if ids else None}
     findings = []
@@ -277,9 +303,16 @@ def grade(golden):
             findings.append(
                 "LEAK: '%s' must be omitted but ranked %d" % (leaked, ids.index(leaked) + 1)
             )
+    ties = rank1_ties(window)
     for pattern in golden["forbidden_leaks"]:
         if re.search(pattern, ids[0]):
             findings.append("MISROUTE: rank-1 '%s' matches forbidden pattern %s" % (ids[0], pattern))
+        for item in ties:
+            if re.search(pattern, item["name"]):
+                findings.append(
+                    "MISROUTE: '%s' ties rank-1 at %s and matches forbidden pattern %s"
+                    " (rank set by name order)" % (item["name"], item["score"], pattern)
+                )
 
     resolvable = sum(1 for item in pack if cites_a_real_file(item))
     density = resolvable / len(pack)

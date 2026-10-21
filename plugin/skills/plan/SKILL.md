@@ -20,6 +20,7 @@ metadata:
   effects: [update_intent_source]
   canonical_status: canonical
   disposition: keep
+  triggers: ["write scope", "scope boundaries"]
 ---
 
 # Plan
@@ -51,8 +52,9 @@ supplied text. Planning produces no AgentOps packet.
 
 ## Output
 
-Write this block into the caller's existing intent (tracker item or
-conversation). It is the whole plan.
+Write this block into the caller's existing intent when the request or
+existing authorization covers editing it (the conversation always does);
+otherwise return it as a proposed amendment. It is the whole plan.
 
 ```text
 Outcome:  <who observes what, in the repository's terms>
@@ -84,7 +86,8 @@ only where it prevents a plausible scope mistake.
    `ao provenance evidence-orphans` finds it. Across an epic,
    [Navigate](../navigate/SKILL.md) picks the next bead; Plan shapes that bead.
 4. When evidence disproves an approach, keep the failed assumption, its
-   evidence and the revised check in the existing intent. An approach change
+   evidence and the revised check in the existing intent, under the same
+   authority as the Output write below. An approach change
    within accepted outcome and scope needs no new permission; acceptance or
    scope expansion needs the caller. Never relabel a failed acceptance
    condition as a caveat to obtain green.
