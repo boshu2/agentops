@@ -131,6 +131,20 @@ Answer inline.
   Changes (at most three, or "no change"): <change> - <its limit, or the experiment that tests it>
   ```
 
+- Aim each change at what the next run will meet, usually the instruction,
+  tool result or missing input found in step 2, not at re-fixing code that is
+  already repaired. The kind of avoidable miss picks the lever:
+  - Mechanical slip (wrong path, skipped command, forbidden call): a lint rule,
+    test or hook. Read the repository's check commands, hooks and CI first; an
+    existing check that did not run or could not fail is the change, not a
+    duplicate. When no seam in the code can hold such a check, name
+    [Architecture](../architecture/SKILL.md) as the follow-up, with that defect
+    as its named pain.
+  - Judgment miss: one proposed standard or instruction line; writing it is
+    separately authorized [Memory](../memory/SKILL.md) work.
+  - Fact found slowly: one pointer where the search began. Fact out of reach:
+    a way to expose it next time, such as a captured log; changing access
+    needs caller authority.
 - Only when requested, save `YYYY-MM-DD-postmortem-<topic>.md` in caller-selected
   protected external non-Git storage. Missing routing does not authorize a
   repository fallback; preserve existing requested evidence under owner policy.
@@ -143,7 +157,7 @@ Answer inline.
 - [ ] The causal question and actual inputs are pinned; gaps are explicit.
 - [ ] Supported and rejected claims cite discriminating evidence.
 - [ ] Alternatives, counterfactuals, and unknowns remain visible.
-- [ ] At most three changes, each bounded or framed as an experiment.
+- [ ] At most three changes, each aimed at what the next run meets, bounded or framed as an experiment.
 - [ ] The report stops short of proof, planning, tracker, and delivery authority.
 
 Behavior examples are in [postmortem.feature](references/postmortem.feature).

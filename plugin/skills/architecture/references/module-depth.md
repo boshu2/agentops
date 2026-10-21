@@ -40,6 +40,7 @@ calling something a defect cluster.
 | Decision repeated across modules | One rule (a format, a threshold, a mapping) is edited in several files per change | The copies belong to different contexts and are meant to diverge |
 | Option growth | Flags added one caller at a time; branches on the flag throughout | Options are independent and each is tested at the interface |
 | Tests mocking internals | Tests construct collaborators the caller never sees, or assert call sequences | The mocked thing is an adapter at a real seam |
+| Helper extracted to be testable | The helper has its own tests and one caller, yet fixes keep landing in that caller's wiring, which no test reaches | The helper holds a rule several callers share, or the caller is itself tested through its interface |
 
 ## Where a boundary belongs
 
@@ -107,3 +108,11 @@ Expand, migrate, contract keeps every step shippable:
 
 Name the step where reversal stops being cheap in each proposal. Persisted or
 published shapes need a compatibility plan before contract, not after.
+
+Once callers sit on the new interface, the next change can import straight
+past it again. When the friction was callers reaching into a module's
+internals or importing against the dependency direction, say under Migration
+whether an import rule that runs with the build should hold the new shape, or
+why not; [Research](../../research/SKILL.md#evidence-rules) sets when a
+blocking check is earned. State such a rule over the tree's layout rather than
+per named package, so adding a package needs no edit to the rule.
