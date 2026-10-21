@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Eleven skills picked up methods from a survey of other public skill
+- Nineteen skills picked up methods from a survey of other public skill
   libraries, rewritten in AgentOps terms. Doc brings documentation current
   after a change, describes a change for reviewers, writes release notes for a
   range, keeps facts and their certainty when rewriting, links only what the
@@ -39,7 +39,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   decisions. Reality Check reports a read-only health snapshot and looks for
   placeholder implementations behind a done claim. Agent Native accounts for
   every item in a packet and proves content is integrated before a workspace
-  is removed. Domain proposes a decision record only when one is warranted.
+  is removed. Domain proposes a decision record only when one is warranted. Plan
+  and Interview expose consequential intent gaps; Refactor compares interfaces
+  before restructuring. Implement handles uncertain writes, shared indexes and
+  conditional change safety. Test covers meaningful kind/action outcomes,
+  recovery and performance evidence; Review checks the request and its callers.
+  Memory traces corrected claims and audits instructions within existing
+  authority. Postmortem checks what happened to earlier recommendations when
+  those reports are among its inputs.
 - The Claude Code plugin now installs from `plugin/`, a generated folder that
   holds only what the plugin loads: skills, agents, the policy hook dispatcher
   and Workflow tool scripts, plus the manifest and a new listing icon. The
