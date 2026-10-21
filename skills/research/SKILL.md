@@ -43,7 +43,8 @@ without restarting its interview or taking over caller choices.
 
 - **One lineage counts once.** Copies, ports and repeated quotations of one
   upstream source are a single exemplar, however many files or reports carry
-  them. Check provenance before counting instances as independent.
+  them. Check provenance before counting instances as independent, and stop
+  searching once new queries return only sources already read.
 - **Separate the invariant from the incidental.** Align instances by their role
   in the behavior; name what must hold, what legitimately varies and what is
   incidental syntax. An instance missing the invariant is not an instance.
@@ -55,7 +56,10 @@ without restarting its interview or taking over caller choices.
   or no passing holdout, leaves a pattern a hypothesis; say what evidence would
   confirm or refute it.
 - Keep observation, inference, contradiction and unknown separate. Every
-  material claim cites evidence; source agreement does not erase shared provenance.
+  material claim cites evidence; a claim taken from a document or report cites
+  a passage that asserts it, not one that only discusses the topic, else mark
+  it unsupported. Say when a decisive claim rests on one source; agreement does
+  not erase shared provenance.
 - **A call is not the callee's behavior.** Seeing code call `retry`, `validate`
   or a service shows only that the call happens. Before a claim relies on what
   the callee guarantees (retried, atomic, idempotent, ordered, durable), read
@@ -69,12 +73,18 @@ without restarting its interview or taking over caller choices.
   generated files), and that the intended ref or tree was searched rather than
   a stale index. Where cheap, confirm the same search finds a term known to be
   present. A failed or mis-scoped search is an unknown with its cause, not
-  "none found".
+  "none found". For "unused" or "nothing calls this", text search also misses
+  re-exports, aliases, reflection, string-keyed dispatch, dependency injection,
+  generated code and outside consumers; prefer the host's references-aware
+  tool when it has one, and name which of these remain unchecked.
 
 ## Investigation
 
 1. State the question and the decision it informs. Reuse the accepted scope and
    identify what evidence would answer it; do not expand the objective mid-search.
+   Use the subject, range and sources the caller named. Report an empty range,
+   a missing subject or an unreachable named source as such instead of
+   answering about an adjacent one; name any substitute the caller allowed.
 2. Inspect the smallest relevant sources and verify search hits against the
    actual source. External facts that change (versions, vendor behavior,
    standards) need current primary sources. This skill pre-approves only local
@@ -88,7 +98,11 @@ without restarting its interview or taking over caller choices.
    find the version this repository actually resolves: its lockfile, the
    installed binary's reported version or a vendored copy. Answer from that
    version's source, tests or release notes. Latest documentation, web answers
-   and recall are leads; say so when they describe a different version.
+   and recall are leads; say so when they describe a different version. Before
+   recommending an external API, SDK, auth scope or service, look for
+   deprecation, sunset and breaking-change notices for the version being
+   recommended and state any in the answer; without a permitted lookup, say
+   that status is unchecked.
 3. Lead with the answer, then show evidence and remaining gaps. Each part of the
    question is answered or explicitly unknown with the searched scope disclosed.
    Before settling a consequential answer, look once for the strongest contrary
@@ -134,11 +148,17 @@ For "should we adopt, replace or keep X" or "does advisory Y reach us", the
 answer needs both sides. Ours: the current tool and a cited place it is used,
 or a searched absence plus where X would plug in, and any earlier decision on
 the same question. Theirs: a current primary source for each external fact the
-answer rests on. A strong side never covers a missing one; then answer "not yet
-answerable" and list what to inspect. Keeping the current tool or doing nothing
-is a real option. "Does not reach us" states the search and its scope. For a
-choice that is costly to undo, each decisive claim needs two independent
-sources. A claim made in the conversation is a lead to check, not evidence.
+answer rests on. Where relevant, also cover the fit, license, cost-of-staying
+and maintenance facts in [adoption evidence](references/adoption-evidence.md).
+A strong side never covers a missing one; then answer "not yet answerable" and
+list what to inspect. Keeping the current tool or doing nothing is a real
+option. "Does not reach us" states the search and its scope. For a choice that
+is costly to undo, each decisive claim needs two independent sources. A claim
+made in the conversation is a lead to check, not evidence. Rank candidates for
+"what should we use for X" only when they are a short list found in current
+sources and the criteria are stated or recoverable; otherwise return what was
+found and name what is missing, leaving criteria to the caller and an open
+field to [Idea Genie](../idea-genie/SKILL.md).
 
 ## Decision lineage
 
@@ -148,7 +168,10 @@ Separate its first appearance, clearest statement, current form, reversals,
 contradictions (two claims that cannot both hold) and abandoned variants, each
 dated and cited. A bucket with no evidence says what was searched. Do not
 smooth sparse or messy history into a tidy story; a supersession is not a
-contradiction.
+contradiction. Before presenting a past reason as a binding constraint, check
+that its cause still holds in the current tree or record; if it no longer
+holds, report that as evidence for reopening the decision; whether it still
+binds stays with its owner or the caller.
 
 ## Repository tracing
 
@@ -158,7 +181,10 @@ Follow a relevant flow through entry, domain logic, integration and tests;
 prefer a completed trace to a shallow directory inventory. Report an interrupted
 trace at its exact file/line and explain what is missing. Choose a useful lens
 such as persistence, authorization, CLI, build or test without requiring a sweep
-of every lens.
+of every lens. In any trace, a how-it-works answer included, say what each step
+reads or changes and keep the error and edge branches the question depends on,
+not only the success path. Source and tests establish behavior; a file name or
+a claim in the conversation does not.
 
 An inline investigation may use dirty working-tree evidence with explicit
 limits. A selected durable `codebase-recon.v1` pack is commit-bound and follows
@@ -193,6 +219,9 @@ selected evidence contract requires one. Ordinary durable reports follow
 contradictions, unknowns, checked and unchecked areas. Multi-report synthesis
 also retains `source_ledger` and `comparison`. Selected recon and pattern modes
 retain their own validated formats instead of forcing them into this schema.
+To save a report, use the location the caller named, else the repository's
+existing research or decision-notes location and naming; with neither, return
+the answer and ask where to save it. Read the file back and report its exact path.
 
 Use only authorized sources and destinations. For restricted or mined episode
 material, follow [Memory's access and storage boundary](../memory/SKILL.md).
