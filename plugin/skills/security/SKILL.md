@@ -80,6 +80,14 @@ Apply these to every review, scripted or manual. They are the rules most often s
    unread path is a hypothesis and is labeled so. When the remaining budget
    cannot finish another full pass, stop opening new leads and report the hunt
    as unconverged.
+6. **Shipped scope for a share or publish question.** When asked whether
+   content is safe to make public or hand to another party (a repository, an
+   export, a package), the snapshot is what the recipient will receive: the
+   built artifact or output tree, every commit reachable in the history that
+   travels with it, and derived copies such as indexes, caches and generated
+   files. Content removed at HEAD is still exposed in earlier commits. Report
+   history exposure with its fix class (credential rotation, fresh history or
+   an owner-authorized rewrite) and perform none of them.
 
 For each finding, explain the attacker path and relevant protective control in
 the fields below. Read [attacker-path evidence](references/attacker-path-evidence.md)

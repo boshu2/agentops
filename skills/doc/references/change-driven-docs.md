@@ -66,6 +66,15 @@ was not. A small change gets a few sentences, not a template of empty sections.
 When the repository has a pull request template, fill it: its required lines
 (trailers, checklists) may be what a merge or squash keeps.
 
+## Release notes for a range
+
+For changelog or release-note entries, list the commits or merged changes in
+the exact range, then group them by what a user notices, not by commit. Leave
+out changes with no visible effect. Write each entry from the diff rather than
+the commit subject, and cite the commits or pull requests it covers so a
+reader can check it. Choosing a version number or publishing stays with the
+caller.
+
 ## Return
 
 Changed paths with a one-line reason each, coverage findings left unfixed,

@@ -139,6 +139,14 @@ is undone by a revert or a flag.
    continue single-model.
 3. Reveal the sealed perspectives and cross-review each by evidence,
    reversibility, system fit, failure modes and cost.
+   Compare perspectives by mechanism, not by name: two that rely on the same
+   mechanism count as one alternative, and fewer than two distinct ones is an
+   incomplete comparison, not a winner. A perspective that breaks a frozen
+   constraint is out, whatever its other strengths.
+   A combination of parts from several perspectives is a new candidate with no
+   inherited support: walk one concrete example through each guarantee the
+   combined design needs before listing it, or list it as unchecked so Plan
+   does not combine on trust.
 4. Attempt concrete refutations. Keep disagreements, failed refutations and
    minority reasoning explicit.
 5. Write `idea-challenge.v1`, validate it, and pass it to Plan as one optional

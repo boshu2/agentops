@@ -56,6 +56,20 @@ without restarting its interview or taking over caller choices.
   confirm or refute it.
 - Keep observation, inference, contradiction and unknown separate. Every
   material claim cites evidence; source agreement does not erase shared provenance.
+- **A call is not the callee's behavior.** Seeing code call `retry`, `validate`
+  or a service shows only that the call happens. Before a claim relies on what
+  the callee guarantees (retried, atomic, idempotent, ordered, durable), read
+  its implementation or tests, or an external service's published contract;
+  otherwise mark the guarantee unknown in the claim itself, not in a later
+  caveat.
+- **A search that found nothing proves absence only if it could have matched.**
+  Before saying something does not exist or is unused, check the search's exit
+  status and error output, whether results were truncated, whether ignore rules
+  or default filters skipped relevant paths (ignored, hidden, vendored or
+  generated files), and that the intended ref or tree was searched rather than
+  a stale index. Where cheap, confirm the same search finds a term known to be
+  present. A failed or mis-scoped search is an unknown with its cause, not
+  "none found".
 
 ## Investigation
 
@@ -66,6 +80,15 @@ without restarting its interview or taking over caller choices.
    standards) need current primary sources. This skill pre-approves only local
    tools: use the host's web tools when available and permitted; otherwise mark
    the external claim unknown and name the source that would settle it.
+   Before an external search or outside service sees a query, strip host
+   names, IP addresses, file paths, query fragments, account or customer
+   identifiers and internal names; search on the generic error class with the
+   library and version. If no safe form remains, skip the external lookup and
+   say so. For how a third-party library, tool or service behaves here, first
+   find the version this repository actually resolves: its lockfile, the
+   installed binary's reported version or a vendored copy. Answer from that
+   version's source, tests or release notes. Latest documentation, web answers
+   and recall are leads; say so when they describe a different version.
 3. Lead with the answer, then show evidence and remaining gaps. Each part of the
    question is answered or explicitly unknown with the searched scope disclosed.
    Before settling a consequential answer, look once for the strongest contrary
@@ -104,6 +127,18 @@ training is a lead, never the source.
 - Return each claim as supported, contradicted, unsupported or not checkable,
   with its citation and the path used. Corrections are proposals; editing the
   checked document belongs to [Doc](../doc/SKILL.md).
+
+## Adoption questions
+
+For "should we adopt, replace or keep X" or "does advisory Y reach us", the
+answer needs both sides. Ours: the current tool and a cited place it is used,
+or a searched absence plus where X would plug in, and any earlier decision on
+the same question. Theirs: a current primary source for each external fact the
+answer rests on. A strong side never covers a missing one; then answer "not yet
+answerable" and list what to inspect. Keeping the current tool or doing nothing
+is a real option. "Does not reach us" states the search and its scope. For a
+choice that is costly to undo, each decisive claim needs two independent
+sources. A claim made in the conversation is a lead to check, not evidence.
 
 ## Decision lineage
 

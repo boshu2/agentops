@@ -19,19 +19,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Ten skills picked up methods from a survey of other public skill libraries,
-  rewritten in AgentOps terms. Doc brings documentation current after a change,
-  describes a change for reviewers, keeps facts and their certainty when
-  rewriting, and checks a handoff against current state before resuming from
-  it. Research checks a document's claims by re-deriving them another way and
-  traces how a decision got its shape. Security names the snapshot and lists
-  unread inputs. Idea Genie drafts along several angles before judging and
-  weighs today's workarounds over stated interest. Skill Builder covers fixing
-  a skill at the layer that owns the behavior. Skill Eval prefers cases from
-  real use and measures noise before cutting. Navigate handles epics that
-  still need decisions. Reality Check reports a health snapshot from the
-  project's own checks. Agent Native accounts for every item in a multi-item
-  packet. Domain proposes a decision record only when one is warranted.
+- Eleven skills picked up methods from a survey of other public skill
+  libraries, rewritten in AgentOps terms. Doc brings documentation current
+  after a change, describes a change for reviewers, writes release notes for a
+  range, keeps facts and their certainty when rewriting, links only what the
+  reader can open, and checks a handoff against current state before resuming
+  from it. Research checks a document's claims by re-deriving them another way,
+  traces how a decision got its shape, answers adoption questions only with
+  both sides evidenced, explains a library from the version actually resolved,
+  strips internal details from outside searches, and treats an empty search as
+  absence only when it could have matched. Security names the snapshot, lists
+  unread inputs, reviews what actually ships (history included) for a publish
+  question, and covers CI definitions. Validate counts green obtained by
+  changing the subject or the gate as weakened acceptance. Idea Genie drafts
+  along several angles before judging, weighs today's workarounds over stated
+  interest, and compares challenges by mechanism. Skill Builder covers fixing a
+  skill at the layer that owns the behavior. Skill Eval prefers cases from real
+  use and measures noise before cutting. Navigate handles epics that still need
+  decisions. Reality Check reports a read-only health snapshot and looks for
+  placeholder implementations behind a done claim. Agent Native accounts for
+  every item in a packet and proves content is integrated before a workspace
+  is removed. Domain proposes a decision record only when one is warranted.
 - The Claude Code plugin now installs from `plugin/`, a generated folder that
   holds only what the plugin loads: skills, agents, the policy hook dispatcher
   and Workflow tool scripts, plus the manifest and a new listing icon. The

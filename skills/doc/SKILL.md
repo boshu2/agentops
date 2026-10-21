@@ -45,7 +45,7 @@ coverage ledger or separate report. Select only the mode relevant to the task.
 | Check an advertised install, upgrade or first-success path | Follow the selected package and current instructions in an authorized disposable environment. See [developer journey](references/developer-journey.md). |
 | Audit or scaffold OSS documentation | Compare existing docs with the requested pack. Create missing files; revise existing files only within the authorized request. See [OSS pack](references/oss-pack.md). |
 | Initialize missing entry documents | Create only explicitly requested missing files; report existing paths as skipped. See [setup examples](references/bootstrap/examples.md). |
-| Bring docs current after a change, or describe a change for reviewers | Start from the exact diff and its public surface; fix what it proves wrong and ask about judgment calls. See [change-driven docs](references/change-driven-docs.md). |
+| Bring docs current after a change, describe a change for reviewers, or write release notes for a range | Start from the exact diff and its public surface; fix what it proves wrong and ask about judgment calls. See [change-driven docs](references/change-driven-docs.md). |
 | Preserve a session for another context, or resume from one | Fill the [handoff template](#session-handoff) and deliver it as described there; [resume](#resume-from-a-handoff) by checking it against current state. |
 
 These are optional task shapes, not successive phases. Detailed references
@@ -74,6 +74,13 @@ specified documents is sufficient.
 4. Check links, examples and the repository's applicable documentation build or
    validator. Remove empty claims and redundant prose; [prose guidance](references/de-slopify.md)
    can help when the requested output is substantial.
+   A link handed to a reader (in a document, report, handoff or change
+   description) must open the exact item it names for that reader. Build
+   repository URLs from Git rather than by hand, and point them at a ref that
+   already contains the pushed content: a main-branch link to a file that exists
+   only on a feature branch is dead. Link the item itself (the pull request, the
+   file and line), not its parent page. When no direct link can be verified, say
+   where to find the item instead of giving a guessed link.
 5. Return changed paths and check results, plus unresolved factual gaps. Write a
    separate report only when the caller requests one or an existing consumer
    requires it.

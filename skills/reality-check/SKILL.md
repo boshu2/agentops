@@ -44,6 +44,12 @@ of the report.
    exercises code without asserting the claimed outcome are unverifiable, not
    confirmed. Name the missing evidence instead of resolving an untestable
    claim by assertion.
+   For a claim that behavior is implemented, search the code behind it for
+   pretend implementations: constant or hard-coded results, TODO or
+   not-implemented branches, sample data, or test doubles outside test code.
+   Trace each hit to its callers before classifying it. A placeholder that a
+   production path reaches makes the item a gap; a double used only by tests,
+   or code nothing calls, does not.
 3. When asked about a plan, compare proposed scope with the original goal;
    additions that lack authority are scope escalation the report cannot approve.
    Repeated measurements reuse the same question and criteria; a changed
