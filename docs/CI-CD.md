@@ -29,11 +29,12 @@ pull request, merge queue, or another delivery process.
 
 | Workflow | Purpose |
 |---|---|
-| `.github/workflows/validate.yml` | Optional hosted execution of repository deterministic checks |
+| `.github/workflows/validate.yml` | Pull-request merge gate (`summary`) and exact-SHA release prerequisite |
 | `.github/workflows/release.yml` | Repository-owned tagged release publication |
 | `.github/workflows/nightly.yml` | Scheduled deterministic regression and security coverage |
 
-No workflow is a semantic validator. No workflow writes a Validate verdict.
+No workflow is a semantic validator. No workflow writes a Validate skill verdict;
+the release `validate-verdict` job only reads the exact-SHA CI result.
 
 ## Current CI jobs
 

@@ -12,11 +12,12 @@
 #
 # What it does:
 #   1. Validates preconditions (clean tree, tag exists, commits after tag)
-#   2. Rewrites the tag at HEAD as an annotated tag, preserving the prior message
-#   3. Deletes the stale GitHub release before the new tag push
-#   4. Pushes main + updated tag to origin
-#   5. Waits for the tag-push release workflow to complete
-#   6. Upgrades Homebrew formula
+#   2. Pushes main to origin; a rejected push stops before any tag or release change
+#   3. Rewrites the tag at HEAD as an annotated tag, preserving the prior message
+#   4. Deletes the stale GitHub release and remote tag before the new tag push
+#   5. Pushes the updated tag to origin
+#   6. Waits for the tag-push release workflow to complete
+#   7. Upgrades Homebrew formula
 
 set -euo pipefail
 
@@ -87,6 +88,14 @@ else
   echo "  $COMMITS_AFTER commit(s) after $TAG will be included."
 fi
 
+# --- Push main ---
+# Before any tag or release change: if origin rejects main (protected branch,
+# non-fast-forward), the published release and both tags are still intact and
+# a rerun starts from the same preconditions.
+
+echo "==> Pushing main..."
+git push origin main
+
 # --- Move tag ---
 
 OLD_SHA=$(git rev-parse --short "$TAG^{commit}")
@@ -120,10 +129,7 @@ gh release delete "$TAG" --repo "$REPO" --yes 2>/dev/null || true
 echo "==> Removing remote tag before republish..."
 git push origin ":refs/tags/$TAG" 2>/dev/null || true
 
-# --- Push ---
-
-echo "==> Pushing main..."
-git push origin main
+# --- Push tag ---
 
 echo "==> Updating remote tag..."
 WAIT_START=$(date -u +%Y-%m-%dT%H:%M:%SZ)
