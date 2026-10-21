@@ -86,7 +86,8 @@ only where it prevents a plausible scope mistake.
    `ao provenance evidence-orphans` finds it. Across an epic,
    [Navigate](../navigate/SKILL.md) picks the next bead; Plan shapes that bead.
 4. When evidence disproves an approach, keep the failed assumption, its
-   evidence and the revised check in the existing intent. An approach change
+   evidence and the revised check in the existing intent, under the same
+   authority as the Output write below. An approach change
    within accepted outcome and scope needs no new permission; acceptance or
    scope expansion needs the caller. Never relabel a failed acceptance
    condition as a caveat to obtain green.
