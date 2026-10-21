@@ -1,8 +1,9 @@
 #!/usr/bin/env bats
 # Release publish boundary, read from the parsed workflow (yaml.safe_load), not
-# from its text layout: publish waits on the doc-release and pre-publish
-# evidence jobs with no soft-fail path, security and readiness evidence run in
-# a job publish waits on, curated notes are validated and extracted before
+# from its text layout: publish waits on the doc-release, pre-publish evidence
+# and exact-SHA Validate verdict jobs with no soft-fail path, security and
+# readiness evidence run in a job publish waits on, curated notes are validated
+# and extracted before
 # GoReleaser and applied after it, and the evidence artifact published by
 # pre-publish-evidence is attached to the release after GoReleaser.
 
@@ -101,5 +102,18 @@ assert steps("publish")[downloaded]["with"]["name"] == name, (name, steps("publi
 attached = [i for i, text in runs("publish")
             if "gh release upload" in text and "security-gate-summary.json" in text]
 assert any(downloaded < goreleaser < i for i in attached), (downloaded, goreleaser, attached)
+'
+}
+
+@test "publish waits on a green exact-SHA Validate verdict" {
+    check_workflow '
+assert "validate-verdict" in needs, needs
+condition = str(publish.get("if", ""))
+assert "needs.validate-verdict.result == \x27success\x27" in condition, condition
+verdict = jobs["validate-verdict"]
+assert verdict.get("permissions", {}).get("actions") == "read", verdict.get("permissions")
+verdict_runs = runs("validate-verdict")
+calls = [text for _, text in verdict_runs if "scripts/verify-release-ci.sh" in text]
+assert calls, f"no validate-verdict step runs scripts/verify-release-ci.sh: {verdict_runs}"
 '
 }

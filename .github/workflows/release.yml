@@ -137,9 +137,34 @@ jobs:
           path: release-artifacts
           if-no-files-found: error
 
+  # The tagged SHA must have a green Validate run before anything publishes:
+  # scripts/verify-release-ci.sh finds that exact-SHA run, watches it to the end
+  # and prints GO release-ci only for a completed, successful run.
+  validate-verdict:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Require a green exact-SHA Validate run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+        run: |
+          TAG="${INPUT_TAG:-$GITHUB_REF_NAME}"
+          if [[ "$TAG" != v* ]]; then
+            TAG="v$TAG"
+          fi
+          bash scripts/verify-release-ci.sh "$TAG" --repo "$GITHUB_REPOSITORY" --timeout 900
+
   publish:
-    needs: [doc-release-gate, pre-publish-evidence]
-    if: needs.doc-release-gate.result == 'success' && needs.pre-publish-evidence.result == 'success'
+    needs: [doc-release-gate, pre-publish-evidence, validate-verdict]
+    if: needs.doc-release-gate.result == 'success' && needs.pre-publish-evidence.result == 'success' && needs.validate-verdict.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
