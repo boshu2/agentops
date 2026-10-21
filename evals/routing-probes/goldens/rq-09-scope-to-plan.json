@@ -16,6 +16,6 @@
   ],
   "min_provenance_density": 1.0,
   "max_tokens": 110,
-  "rationale": "ADR-0018 (Train 2 retirements) deleted the scope skill and folded its write-scope checks into plan's Workflow step 3; plan's description carries scope's former triggers ('review write scope', 'check scope boundaries', 'scope this change') so the caller's own words still land on the kernel that owns them. A retired 'scope' id surfacing at any rank is a tombstone leak.",
-  "notes": "Added 2026-09-03 with the scope fold; pins that the retired skill's triggers route to plan."
+  "rationale": "ADR-0018 (Train 2 retirements) deleted the scope skill, folded its write-scope checks into plan's Workflow step 3, and requires plan to carry scope's former triggers so the caller's own words still land on the kernel that owns them. Plan's description names write scope only in prose, which `ao skills find` scores token by token but never phrase-matches, so this query once tied plan and review at 0.3333 and plan ranked first by name order alone. Plan's metadata.triggers ('write scope', 'scope boundaries') give it a strict lead without changing its host-visible description. A retired 'scope' id, or 'review', at rank 1 or tied with rank 1 is a misroute.",
+  "notes": "Added 2026-09-03 with the scope fold. Corrected 2026-10-21: it had passed only on a name-order tie; plan's metadata.triggers and the tie-aware MISROUTE check now pin a strict margin (plan about 0.67, review about 0.33)."
 }

@@ -20,6 +20,7 @@ metadata:
   effects: [update_intent_source]
   canonical_status: canonical
   disposition: keep
+  triggers: ["write scope", "scope boundaries"]
 ---
 
 # Plan
