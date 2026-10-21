@@ -137,6 +137,7 @@ packet_id:        the caller's packet id
 executor:         selected runtime; requested model; observed model if reported
 observed_session: session/context id the runtime reported, else unknown
 engagement:       observable evidence the worker started, else unobserved
+last_activity:    time and kind of the last observed tool call, output or file change, else unobserved
 terminal_status:  exit or terminal state | running | launch failed
 result:           candidate <ref> | evidence <ref> | error <verbatim>
 gaps:             recording failures and unknowns
