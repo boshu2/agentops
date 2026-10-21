@@ -152,8 +152,10 @@ Native execution owns the authorized outcome through finish. The optional
 and Memory when selected. Known
 failures get direct repair; evidence can revise an approach within unchanged
 acceptance and scope. A genuine causal stall admits at most one bounded helper,
-never a helper chain. Cheap checks precede fresh author-distinct final judgment;
-reserve capacity for finishing and respect real caller/native bounds.
+never a helper chain. Checks and CI gate an ordinary change; one fresh
+author-distinct read is added only where a mistake is costly or no
+deterministic check covers the change. Reserve capacity for finishing and
+respect real caller/native bounds.
 
 [Memory](skills/memory/SKILL.md) supplies optional recall and separately budgeted
 mine/learn and curate/qualify/retire operations. BD owns work/status/handoffs,

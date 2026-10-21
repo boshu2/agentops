@@ -7,15 +7,19 @@ repository owns Git, CI, merging, release, and deployment.
 
 ## What happens after FAIL or NOT_PROVEN?
 
-Repair known findings within accepted scope and real remaining bounds, then
-validate the changed subject freshly. A genuine causal stall gets at most one
-bounded fresh helper. Stop on completed acceptance, cancellation, refusal, a
-spent real bound or unresolved stall; report unfinished acceptance honestly.
+Repair known findings within accepted scope and real remaining bounds, and
+confirm each repair with a check; a repair does not start another review.
+Report `NOT_PROVEN` with its gaps instead of chasing it. A genuine causal stall
+gets at most one bounded fresh helper. Stop on completed acceptance,
+cancellation, refusal, a spent real bound or unresolved stall; report
+unfinished acceptance honestly. See the [agent workflow
+reference](agent-workflow-reference.md).
 
 ## Must I use multiple models?
 
-No. A fresh subagent with a distinct declared context identity is the default
-independent validator. Councils and mixed-model strategies are optional.
+No. When a fresh read is owed, a fresh subagent with a distinct declared
+context identity is the default independent validator. Councils and
+mixed-model strategies are optional.
 
 ## Must I use the ao CLI?
 
