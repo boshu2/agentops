@@ -44,7 +44,6 @@ scripts/check-docs-cli-snippets.sh
 scripts/check-dream-throughput.sh
 scripts/check-epic-children-closed.sh
 scripts/check-evolve-cycle-logging.sh
-scripts/check-file-manifest-overlap.sh
 scripts/check-finding-registry.sh
 scripts/check-flywheel-compounding.sh
 scripts/check-flywheel-lifecycle.sh
@@ -58,7 +57,6 @@ scripts/check-hookless-cold-start.sh
 scripts/check-json-marshal-checked.sh
 scripts/check-membrane-parity.sh
 scripts/check-membrane-receipts-freshness.sh
-scripts/check-mutation-route-coverage.sh
 scripts/check-next-work-schema-rows.sh
 scripts/check-no-apparatus-regrowth.sh
 scripts/check-no-daemonized-wake.sh
