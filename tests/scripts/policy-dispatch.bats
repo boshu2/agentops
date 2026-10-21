@@ -348,6 +348,22 @@ assert_ask_for() {
   [ "$(telemetry_lines)" -eq 0 ]
 }
 
+@test "installer text scopes the self-waive ask to the default path, which is all the matchers cover" {
+  # A relocated waiver file gets no ask, so the installer must not promise one.
+  run run_dispatch Bash command 'echo "core.x 9999999999" >> /opt/agentops/policy-waivers'
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+  run run_dispatch Write file_path "/opt/agentops/policy-waivers"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+  run env HOME="$TMPDIR/home" SETTINGS="$TMPDIR/home/.claude/settings.json" \
+    bash "$BATS_TEST_DIRNAME/../../hooks/guards/scripts/install-hooks.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'${AOP_WAIVER_FILE:-${AGENTOPS_HOME:-~/.agents/ao}/policy-waivers}'* ]]
+  [[ "$output" == *"~/.agents/ao/policy-waivers path only; a relocated file gets no ask"* ]]
+  [[ "$output" != *"writes to that file"* ]]
+}
+
 # ---------- plugin layout -----------------------------------------------------
 
 @test "plugin layout: dispatcher resolves ../policies/policies.json without AOP_POLICIES" {
