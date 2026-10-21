@@ -127,10 +127,12 @@ esac
 
 # --- ag-5apc: always-loaded-root contamination fix --------------------------------
 # Isolating AO_AGENTS_DIR alone is INSUFFICIENT: the agent also auto-loads knowledge
-# from always-loaded roots — the repo-root CLAUDE.md, .claude/rules/*, the user-global
-# ~/.claude/CLAUDE.md, and the auto-memory MEMORY.md. Read in BOTH arms, those leave no
-# delta to measure. So each arm runs in an isolated SANDBOX (HOME + workspace) and these
-# surfaces are treated as CORPUS — present in context_on, absent from context_off.
+# from project and user roots — the repo-root CLAUDE.md, the user-global
+# ~/.claude/CLAUDE.md and the auto-memory MEMORY.md load always; .claude/rules/* is
+# copied as corpus too, but a path-scoped rule loads only when a matching file is
+# touched, not always. Read in BOTH arms, those leave no delta to measure. So each
+# arm runs in an isolated SANDBOX (HOME + workspace) and these surfaces are treated
+# as CORPUS — present in context_on, absent from context_off.
 # Sources are env-overridable so the self-test can point them at marker fixtures.
 SRC_REPO_ROOT="${CORPUS_DELTA_REPO_ROOT:-$REPO_ROOT}"
 SRC_USER_CLAUDE="${CORPUS_DELTA_USER_CLAUDE:-$HOME/.claude/CLAUDE.md}"
