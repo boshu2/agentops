@@ -1,3 +1,8 @@
+---
+paths:
+  - "cli/**/*"
+---
+
 # Go Conventions
 
 > Canonical source with full examples: `skills/domain/references/standards/go.md`

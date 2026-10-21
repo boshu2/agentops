@@ -3,6 +3,11 @@
 #
 # Enforces the lean AGENTS.md orientation contract.
 #   - AGENTS.md exists and is <=250 lines (orientation only)
+#   - AGENTS.md is <=14336 bytes: runtimes load it on every turn, and joining
+#     lines passes the line budget without shrinking what an agent reads
+#     (118f78746). Retire this budget when no supported runtime loads
+#     AGENTS.md always-on, or when a total always-on check that includes
+#     .claude/rules replaces it.
 #   - AGENTS.md contains pointer links to the three detail owners
 #   - Each owner exists and links back to AGENTS.md
 #
@@ -22,6 +27,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 readonly LIMIT=250
+readonly BYTE_LIMIT=14336
 readonly OWNERS=(
   docs/agent-workflow-reference.md
   docs/CI-CD.md
@@ -53,6 +59,13 @@ if [ "$lines" -gt "$LIMIT" ]; then
   fail "AGENTS.md is $lines lines, exceeds $LIMIT-line orientation budget"
 fi
 
+# 2b. AGENTS.md is <=BYTE_LIMIT bytes
+checks=$((checks + 1))
+bytes=$(wc -c < AGENTS.md)
+if [ "$bytes" -gt "$BYTE_LIMIT" ]; then
+  fail "AGENTS.md is $bytes bytes, exceeds $BYTE_LIMIT-byte always-on budget"
+fi
+
 # 3. Each owner exists
 for owner in "${OWNERS[@]}"; do
   checks=$((checks + 1))
@@ -81,7 +94,7 @@ done
 echo "validate-agents-split: scanned $checks checks"
 
 if [ "$failed" -eq 0 ]; then
-  echo "PASS — AGENTS.md ($lines lines) + 3 detail owners, links bidirectional."
+  echo "PASS — AGENTS.md ($lines lines, $bytes bytes) + 3 detail owners, links bidirectional."
   exit 0
 fi
 

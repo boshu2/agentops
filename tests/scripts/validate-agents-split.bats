@@ -101,6 +101,24 @@ write_valid_split() {
     [[ "$output" == *"does not back-link to AGENTS.md"* ]]
 }
 
+@test "fails when AGENTS.md is under 250 lines but over the byte budget" {
+    write_valid_split
+    # Joining lines keeps the line count low without shrinking the text an
+    # agent loads, so 100 long lines must still fail on bytes alone.
+    long_line="$(printf 'x%.0s' $(seq 1 200))"
+    for _ in $(seq 1 100); do
+        echo "$long_line" >> "$WORK_REPO/AGENTS.md"
+    done
+    [ "$(wc -l < "$WORK_REPO/AGENTS.md")" -lt 250 ]
+    [ "$(wc -c < "$WORK_REPO/AGENTS.md")" -gt 14336 ]
+
+    run bash -c "cd '$WORK_REPO' && bash scripts/validate-agents-split.sh"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"FAIL"* ]]
+    [[ "$output" == *"exceeds 14336-byte always-on budget"* ]]
+    [[ "$output" != *"exceeds 250-line"* ]]
+}
+
 @test "treats AGENTS.md at exactly the 250-line limit as passing" {
     write_valid_split
     current=$(wc -l < "$WORK_REPO/AGENTS.md")

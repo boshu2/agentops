@@ -1,7 +1,7 @@
 # CLI subtree
 
 Inherit [the root operating contract](../AGENTS.md), including its BD identity,
-private-history preservation, fresh-judgment, and delivery-authority rules.
+private-history preservation, validation, and delivery-authority rules.
 
 - **CLI architecture:** before changing command composition, gates, or evidence
   boundaries, read [the Go CLI architecture](../docs/architecture/go-cli.md).
