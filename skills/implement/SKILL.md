@@ -51,6 +51,11 @@ owns source changes and factual checks; the runtime derives identity and receipt
   you did not or could not run as not run. Never call unrun work verified,
   fixed or green.
 
+When changing a public failure path, preserve its native failure signal and
+check that its recovery advice matches any work already performed. For uncertain
+write outcomes or unattended callers, use only the relevant checks in
+[Test's error recovery method](../test/references/error-recovery.md).
+
 For authorized service operations, load only the relevant procedure from
 [operations methods](references/operations.md) (reliability, delivery, incident
 recovery, resilience, toil); ordinary edits owe no operations phase.

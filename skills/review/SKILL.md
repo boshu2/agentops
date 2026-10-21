@@ -66,7 +66,12 @@ Shared routing and handoff rules: [advice or acceptance](references/advice-or-ac
 1. Fix the question and the exact subject from the request and current sources;
    recover settled choices before asking for missing intent.
 2. Trace each concern to a concrete source or observable example, and seek
-   contrary evidence before recommending a change.
+   contrary evidence before recommending a change. Read the handling path
+   before calling an error swallowed or a retry safe; a wrapper may translate
+   the failure, and a timeout may follow a completed write. For a changed public
+   failure path, consult [error recovery](../test/references/error-recovery.md)
+   only when its signal or next action is in doubt. Cite the caller and handler
+   that establish the consequence; a suspicious line alone is a hypothesis.
 3. Use read-only inspection and checks that preserve the subject. A mutating
    check needs an authorized disposable copy. Do not repair the candidate during
    Review. Unavailable execution stays a disclosed gap, not a passing result or

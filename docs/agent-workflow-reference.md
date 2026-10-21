@@ -24,6 +24,34 @@ shell; the tracker, Git and runtime keep their existing authority.
    causal stall admits at most one bounded helper, never a chain. Report the
    outcome, what was checked and what was not when complete or actually stopped.
 
+## Choose methods for the problem
+
+Start with the user's outcome and use the smallest set of methods that can
+change a decision. The skill menu is a set of tools, not a sequence to run in
+full. For example, consider adding a batch import that users can safely retry:
+
+- If "safe to retry" is ambiguous, use [Interview](../skills/interview/SKILL.md)
+  to settle duplicate handling and partial success. Keep settled answers; ask
+  the next question only when its prerequisites are known.
+- If the boundary is uncertain, use [Plan](../skills/plan/SKILL.md) to compare
+  caller examples for the plausible interfaces and choose a thin end-to-end
+  slice. Use [Refactor](../skills/refactor/SKILL.md) when existing coupling makes
+  that slice expensive, preserving the behavior and tests users depend on.
+- Implement the slice and exercise its actual boundaries. For this import,
+  useful examples include a malformed row, a retry after partial success, and
+  a response lost after the server accepted the batch. [Test](../skills/test/SKILL.md)
+  helps choose checks that distinguish these outcomes; [Review](../skills/review/SKILL.md)
+  helps examine consequential gaps when a fresh read is owed or requested.
+- When a failure exposes reusable guidance, [Postmortem](../skills/postmortem/SKILL.md)
+  can trace what happened and [Memory](../skills/memory/SKILL.md) can maintain a
+  supported, scoped lesson. Preserve why a proposed explanation was rejected.
+  Reuse on later work establishes benefit; writing the lesson does not.
+
+A task with clear intent and adequate checks can go directly to implementation.
+Choose a method because it resolves a concrete uncertainty, and leave it when
+that uncertainty is settled. No separate worksheet or skill invocation is owed
+for each example above.
+
 [Memory](../skills/memory/SKILL.md) owns on-demand find/recall, capture/mine/learn
 and curate operations over caller-selected reviewed project `.context/` or
 external topic pages. Mining is separately budgeted. Read cleared project pages
