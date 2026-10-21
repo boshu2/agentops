@@ -33,7 +33,8 @@ pull request, merge queue, or another delivery process.
 | `.github/workflows/release.yml` | Repository-owned tagged release publication |
 | `.github/workflows/nightly.yml` | Scheduled deterministic regression and security coverage |
 
-No workflow is a semantic validator. No workflow writes a Validate verdict.
+No workflow is a semantic validator. No workflow writes a Validate skill verdict;
+the release `validate-verdict` job only reads the exact-SHA CI result.
 
 ## Current CI jobs
 
