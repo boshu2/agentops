@@ -17,10 +17,15 @@
 | `agent-native` | `customer-of` | `claude-exec` |
 | `agent-native` | `customer-of` | `codex-exec` |
 | `agy-native` | `separate-ways` | `codex-exec` |
+| `architecture` | `partnership` | `domain` |
+| `architecture` | `supplier-to` | `plan` |
+| `architecture` | `supplier-to` | `refactor` |
 | `claude-exec` | `separate-ways` | `codex-exec` |
 | `claude-exec` | `supplier-to` | `validate` |
 | `codex-exec` | `supplier-to` | `validate` |
 | `craft-goal` | `supplier-to` | `plan` |
+| `ergonomics` | `partnership` | `doc` |
+| `ergonomics` | `supplier-to` | `implement` |
 | `idea-genie` | `customer-of` | `research` |
 | `idea-genie` | `supplier-to` | `plan` |
 | `implement` | `customer-of` | `plan` |
@@ -34,6 +39,7 @@
 | `rpi` | `customer-of` | `validate` |
 | `security` | `supplier-to` | `validate` |
 | `skill-eval` | `supplier-to` | `skill-builder` |
+| `triage` | `supplier-to` | `plan` |
 | `using-gc` | `partnership` | `agent-native` |
 | `validate` | `customer-of` | `implement` |
 | `validate` | `customer-of` | `plan` |
@@ -48,6 +54,8 @@
 | `agent-native` | produces | `per-packet-results` |
 | `agy-native` | consumes | `explicit-packet` |
 | `agy-native` | produces | `agy-run-evidence` |
+| `architecture` | consumes | `repo-context` |
+| `architecture` | produces | `architecture-proposal` |
 | `claude-exec` | consumes | `claude-command-packet` |
 | `claude-exec` | produces | `claude-run-output` |
 | `codex-exec` | consumes | `codex-command-packet` |
@@ -63,6 +71,9 @@
 | `doc` | produces | `documentation` |
 | `doc` | produces | `session-handoff` |
 | `domain` | produces | `domain-language-guidance` |
+| `ergonomics` | consumes | `repo-context` |
+| `ergonomics` | consumes | `interface-design` |
+| `ergonomics` | produces | `ergonomics-findings` |
 | `idea-genie` | consumes | `repo-context` |
 | `idea-genie` | consumes | `task-question` |
 | `idea-genie` | consumes | `idea-portfolio.v1` |
@@ -118,6 +129,10 @@
 | `test` | consumes | `standards` |
 | `test` | consumes | `repo-context` |
 | `test` | produces | `test-evidence` |
+| `triage` | consumes | `incoming-report` |
+| `triage` | consumes | `native-source-evidence` |
+| `triage` | produces | `triage-outcome` |
+| `triage` | produces | `agent-ready-brief` |
 | `using-gc` | consumes | `explicit-packets` |
 | `using-gc` | produces | `gas-city-runtime-evidence` |
 | `validate` | consumes | `subject-manifest.v1` |

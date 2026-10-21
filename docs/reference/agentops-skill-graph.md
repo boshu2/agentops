@@ -6,12 +6,14 @@
 graph LR
   agent_native["agent-native"]
   agy_native["agy-native"]
+  architecture["architecture"]
   claude_exec["claude-exec"]
   codex_exec["codex-exec"]
   council["council"]
   craft_goal["craft-goal"]
   doc["doc"]
   domain["domain"]
+  ergonomics["ergonomics"]
   idea_genie["idea-genie"]
   implement["implement"]
   interview["interview"]
@@ -31,6 +33,7 @@ graph LR
   skill_builder["skill-builder"]
   skill_eval["skill-eval"]
   test["test"]
+  triage["triage"]
   using_gc["using-gc"]
   validate["validate"]
   rpi --> implement
