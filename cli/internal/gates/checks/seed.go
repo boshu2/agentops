@@ -472,7 +472,7 @@ func init() {
 		// a text-diff heuristic, so a false positive must never block a push,
 		// and a clean run means "none of the six shapes was present" — never
 		// "acceptance was not weakened".
-		{ID: "gate.tightening-ratchet", Tiers: gates.Full, Match: gateTighteningPaths, Blocking: false, Backing: "check-gate-tightening-ratchet.sh", RepairHint: "tighten it back, or — if the loosening is deliberate — add a `Gate-Loosen-Reason: <one-line argument>` trailer to a commit in this range; tightening is always free"},
+		{ID: "gate.tightening-ratchet", Tiers: gates.Full, Match: gateTighteningPaths, Blocking: false, Backing: "check-gate-tightening-ratchet.sh", RepairHint: "tighten it back, or — if the loosening is deliberate — add a `Gate-Loosen-Reason: <one-line argument>` trailer to a commit in this range; tightening is always free; when the repository squash-merges with the PR body, also repeat the trailer in the PR description"},
 		// evidence.grounding (ADVISORY): a persisted audit/receipt/handoff is
 		// only worth the ground under it, and three failure shapes are purely
 		// MECHANICAL — a cited path that does not exist, a full-length commit id
