@@ -138,3 +138,42 @@ teardown() {
     [ "$status" -eq 0 ]
     [ "$output" = "tag" ]
 }
+
+@test "retag-release changes no tag or release when main is rejected, and a rerun completes" {
+    original="$(git -C "$WORK_REPO" rev-parse 'v1.0.0^{commit}')"
+    cat > "$REMOTE_REPO/hooks/pre-receive" <<'EOF'
+#!/usr/bin/env bash
+while read -r _old _new ref; do
+  if [[ "$ref" == refs/heads/main ]]; then
+    echo "protected branch: main" >&2
+    exit 1
+  fi
+done
+EOF
+    chmod +x "$REMOTE_REPO/hooks/pre-receive"
+    : > "$GH_LOG"
+
+    run env PATH="$STUB_BIN:$PATH" GH_LOG="$GH_LOG" \
+        bash -c "cd '$WORK_REPO' && bash scripts/retag-release.sh v1.0.0 owner/repo"
+    echo "$output" >&2
+    [ "$status" -ne 0 ]
+    run grep -F "release delete" "$GH_LOG"
+    [ "$status" -eq 1 ]
+    run git --git-dir="$REMOTE_REPO" rev-parse 'refs/tags/v1.0.0^{commit}'
+    [ "$status" -eq 0 ]
+    [ "$output" = "$original" ]
+    run git -C "$WORK_REPO" rev-parse 'refs/tags/v1.0.0^{commit}'
+    [ "$status" -eq 0 ]
+    [ "$output" = "$original" ]
+
+    rm "$REMOTE_REPO/hooks/pre-receive"
+    run env PATH="$STUB_BIN:$PATH" GH_LOG="$GH_LOG" \
+        bash -c "cd '$WORK_REPO' && bash scripts/retag-release.sh v1.0.0 owner/repo"
+    echo "$output" >&2
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"nothing to retag"* ]]
+    head_sha="$(git -C "$WORK_REPO" rev-parse HEAD)"
+    run git --git-dir="$REMOTE_REPO" rev-parse 'refs/tags/v1.0.0^{commit}'
+    [ "$status" -eq 0 ]
+    [ "$output" = "$head_sha" ]
+}

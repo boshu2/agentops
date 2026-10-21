@@ -15,7 +15,7 @@ Use the existing issue or conversation and load a skill only for a concrete
 uncertainty or an explicitly selected workflow. Checks and CI are the gate for an ordinary change; a fresh read is for the costly cases named in the charter below.
 Native goals supply continuity; BD keeps work and handoffs. Neither needs RPI.
 Creating a goal does not reset the conversation or enforce a resource limit.
-Delegate focused intent, scope and evidence; retrieve history only when it can change a decision. Assign final review once, preserving required review legs.
+Delegate focused intent, scope and evidence; retrieve history only when it can change a decision. When a fresh read is owed, assign it once, preserving any required review legs.
 See [the skill menu](docs/SKILL-ROUTER.md) for optional guidance. Plan states observable behavior in existing domain terms; Validate checks those same accepted examples. Conversation or bead examples suffice.
 
 ## Repository map and mechanics
@@ -106,8 +106,8 @@ absence of a withdrawal; child closure and deletion cannot clear an anchor fact.
 
 ## Runtime floor
 
-Default to native Codex plus the local shell; other runtimes only on explicit
-request. Bounded cross-family judgment follows
+Default to the native agent runtime and the local shell; other runtimes only on
+explicit request. Bounded cross-family judgment follows
 [model-dispatch](skills/agent-native/references/model-dispatch.md) and actual host
 authorization. `ao` is a repository tool, not a session ritual.
 
@@ -119,11 +119,11 @@ The integration graph is federated: AgentOps cites source identities and never a
 |---|---|---|
 | Work, status, dependencies, close reasons | Beads or the caller's tracker | Query directly; never build a second work index. |
 | Source content and delivery history | Git and repository policy | Bind exact content when useful; a commit or merge never implies semantic PASS. |
-| Past agent sessions | Native sessions / CASS | Retrieve cited episodes on demand; search output is evidence, not policy. |
-| Curated cross-session memory | caller-selected reviewed project `.context/`, external Markdown/OKF bundle, CM, ee, or another memory system | Check owner, task, model and destination access before retrieval; ADR-0016 governs disclosure. |
+| Past agent sessions | Native sessions / CASS session search | Retrieve cited episodes on demand; search output is evidence, not policy. |
+| Curated cross-session memory | caller-selected reviewed project `.context/`, external Markdown/OKF bundle or another memory system | Check owner, task, model and destination access before retrieval; ADR-0016 governs disclosure. |
 | Runtime execution | native coding agent and shell, or an explicitly selected factory | Read and report native state; runtime completion is never validation. |
 | Checks and test output | The executable that produced them | Store factual receipts; a fresh context judges meaning. |
-| Requested proof | caller-selected storage; existing `.agents/ao/` preserved | New CDLC proof defaults to protected external non-Git storage (ADR-0016). |
+| Requested proof | caller-selected storage; existing `.agents/ao/` preserved | New CDLC (Context Delivery Lifecycle) proof defaults to protected external non-Git storage (ADR-0016). |
 | Disposable and derived local state | caller-selected scratch/projections; legacy `.agents/` preserved | Inventory unique evidence before owner-directed expiry (ADR-0016). |
 
 ## Source precedence
@@ -182,16 +182,6 @@ of the work. A requested binding verdict keeps the PASS rule in
 [Validate](skills/validate/SKILL.md); report `NOT_PROVEN` with its gaps instead
 of chasing it. Persist machine evidence only for a caller request or declared consumer.
 
-[Memory](skills/memory/SKILL.md) owns optional find/recall, capture/mining and curation:
-support, applicability, invalidation and preservation; no blind TTL/deletion.
-For relevant prior context, start at [the project context map](.context/README.md)
-and follow relevant pages to current source owners. Read cleared project pages
-with ordinary filesystem tools, without BD or AO. Docs, ADRs and code retain
-authority; BD retains work status.
-Benefit needs later work evidence. Use public or already-cleared inputs; this
-path supplies no native restricted-source enforcement. Protected external drafts and
-independent support/disclosure review precede Git import (ADR-0016).
-
 The [RPI skill](skills/rpi/SKILL.md) packages this charter when explicitly selected;
 it is not a prerequisite for native execution or independent review. The
 [architecture reference](docs/architecture/rpi-traversal.md) owns exact evidence
@@ -208,21 +198,15 @@ transition. Consumer repositories keep their own direct-push, PR, CI, merge,
 rollback, and release policy.
 
 Premortem, Postmortem, Council, and genie skills are caller-selected judgment
-strategies. NTM, Agent Mail, Gas City, swarms, and other factory tools are
-optional adapters. Context miners (CASS, CM, recon tooling) are context
+strategies. Agent Mail, Gas City, swarms, and other factory tools are
+optional adapters. Context miners (CASS, recon tooling) are context
 sources. Strategies, adapters, factories, and context sources are peer nodes
 in the federated graph whose native state AgentOps reads but never owns; none
 becomes a core dependency or lifecycle authority.
 
-A selected factory's internal control plane is operated only through that
-factory's own doors: its coordinator (for Gas City, the Mayor via mail), its
-doctor, and its supervisor start/stop from outside. An agent never creates,
-scales, or repairs factory-internal sessions by hand — a hand-made session can
-squat a canonical name and block the factory's own reconciler. Dispatch
-belongs to the coordinator too: the agent authors one source intent bead and
-hands its id over; the coordinator authors the workflow beads and launches the
-runs. The agent lane into a factory is: author source intent, mail the
-coordinator, read state, judge results.
+Operate a selected factory only through its own doors (coordinator, doctor,
+supervisor); dispatch through its coordinator, and never create, scale or repair
+its sessions by hand ([using-gc](skills/using-gc/SKILL.md)).
 
 ## Concurrency
 
@@ -240,6 +224,7 @@ AgentOps work ownership.
 | Skill behavior or inventory | `skills/<slug>/SKILL.md`, generated `docs/SKILL-ROUTER.md` |
 | Codex skill loading or invocation policy | `docs/contracts/codex-skill-api.md`, `skills/<slug>/agents/openai.yaml` |
 | Deterministic checks | `docs/CI-CD.md`, `cli/internal/gates/` |
+| Prior context or memory | [context map](.context/README.md), [Memory](skills/memory/SKILL.md), ADR-0016 |
 
 ## Closeout
 
