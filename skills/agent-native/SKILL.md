@@ -52,6 +52,16 @@ dispatch and when; this skill launches and observes.
 - **Dispatch once.** Keep each packet's identity with its result. An executor
   error is a result, not a retry trigger; repair and follow-up are the caller's
   authority.
+- **Account for every input.** When a packet carries many items (files,
+  records, issues), give each a stable ID before launch and join the returned
+  results back to that list. An item with no result is missing, not done; an
+  output with no matching input is unexplained. Report both by ID.
+- **Prove integration before removal.** Before a caller-authorized removal of
+  a finished worker's workspace, branch or stash, compare its content with the
+  integration target by patch or file diff, not by merged status: squash and
+  rebase hide ancestry. Preserve uncommitted, unique or unintegrated content in
+  a recoverable form, such as an archive ref or bundle, first. Report what was
+  kept, what was removed and the evidence for each.
 
 ## Roles
 

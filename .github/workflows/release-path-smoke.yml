@@ -64,13 +64,13 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: '1.27.2'
+          go-version: '1.27.3'
           cache-dependency-path: cli/go.sum
 
       # Same action + same version constraint the Release Publisher uses, so the
       # smoke exercises the binary the publisher would actually get.
       - name: Install GoReleaser
-        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7
+        uses: goreleaser/goreleaser-action@a4f02ab5355a589de60d917a659ce617ed19b3de # v7
         with:
           version: '~> v2'
           install-only: true
