@@ -153,8 +153,8 @@ and Memory when selected. Known
 failures get direct repair; evidence can revise an approach within unchanged
 acceptance and scope. A genuine causal stall admits at most one bounded helper,
 never a helper chain. Checks and CI gate an ordinary change; one fresh
-author-distinct read is added only where a mistake is costly or no
-deterministic check covers the change. Reserve capacity for finishing and
+author-distinct read is added only when the caller asks, a mistake is costly,
+or no deterministic check covers the change. Reserve capacity for finishing and
 respect real caller/native bounds.
 
 [Memory](skills/memory/SKILL.md) supplies optional recall and separately budgeted
