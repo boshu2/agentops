@@ -17,9 +17,7 @@
 # AND asserts a non-zero outcome from it.
 #
 # Enforced by: cli/internal/gates/checks/negative_witness_test.go
-always.file-manifest-overlap
 always.git-config-hygiene
-always.mutation-route
 always.quarantine-empty
 always.regen-all
 always.retrieval-manifest-paths

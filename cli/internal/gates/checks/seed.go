@@ -319,7 +319,9 @@ func init() {
 	seed := []gates.Check{
 		// always-run (no Match): structural invariants that hold regardless of
 		// what changed.
-		{ID: "always.mutation-route", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-mutation-route-coverage.sh"},
+		// The daemon route-registration gate was retired: it guarded
+		// cli/internal/daemon, deleted in 010ade393 and kept deleted by ADR-0009,
+		// so its script printed "daemon source dir absent" and exited 0 on every run.
 		{ID: "always.no-tracked-agents", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-no-tracked-agents.sh"},
 		// static portability guard for the never-safe `find -printf` (GNU-only)
 		// class — four real instances shipped because no gate caught it and Linux
@@ -429,7 +431,9 @@ func init() {
 			RepairHint: "docs/provenance/ledger.jsonl hash chain broken — find the first bad entry with 'ao provenance verify'; repair is a deliberate re-seal, never hand-edit (age-gate-the-ungated-egwt.9)"},
 		{ID: "always.retrieval-manifest-paths", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-retrieval-manifest-paths.sh",
 			Args: []string{"cli/cmd/ao/testdata/retrieval-bench/search-eval-manifest.json"}},
-		{ID: "always.file-manifest-overlap", Tiers: gates.Full, Blocking: true, Backing: "check-file-manifest-overlap.sh"},
+		// The swarm task-manifest overlap gate was retired: registered with no Args
+		// and no Stdin, it never received a manifest and printed SKIP with exit 0
+		// on every run.
 		{ID: "derived.changed-scope", Tiers: gates.Fast, Blocking: true, Backing: "regen-changed-scope.sh", Args: []string{"--check", "--scope", "head"},
 			Match: regenScopePaths, RepairHint: "bash scripts/regen-changed-scope.sh --scope head; for a reported skill run: bash skills/skill-builder/scripts/heal.sh --check --strict skills/<skill>"},
 		{ID: "always.regen-all", Tiers: gates.Full, Blocking: true, Backing: "regen-all.sh", Args: []string{"--check"}, RepairHint: "bash scripts/regen-all.sh"},

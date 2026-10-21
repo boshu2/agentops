@@ -10,7 +10,7 @@ import (
 func TestSeedChecksRegistered(t *testing.T) {
 	want := []string{
 		"go.build",
-		"always.mutation-route",
+		"always.no-tracked-agents",
 		"skill.schema",
 		"contract.skill-mesh",
 		"ci.policy-parity",

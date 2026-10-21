@@ -47,7 +47,7 @@ func init() {
 		// runs and routes internally via each constraint's applies_to.path_globs.
 		// The empty/parsed-fast path keeps the no-constraints case ~free.
 		Run:        runConstraintEnforceGate,
-		RepairHint: "ao constraint list — fix the change to satisfy the active constraint, or `ao constraint retire <id>` if the rule is wrong",
+		RepairHint: "the log names each violating file and constraint id: fix the change, or, if the rule is wrong, set that id's status to retired in every index that lists it (docs/constraints/published.json and .agents/constraints/index.json); an id active in either still enforces",
 	})
 	gates.Register(gates.Check{
 		ID:         "constraints.shadow",
