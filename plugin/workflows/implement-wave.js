@@ -1,9 +1,9 @@
 export const meta = {
   name: 'implement-wave',
   description:
-    'Run one wave of parallel implementer lanes with strictly disjoint file ownership, then judge every lane against its acceptance with a single fresh adversarial verifier.',
-  whenToUse: 'When a wave of scoped changes should be built in parallel: caller supplies lanes (scope + brief + acceptance) via args; disjoint-ownership implementers, then one adversarial verifier judges every lane against its acceptance.',
-  phases: [{ title: 'Implement', detail: 'parallel implementers, strict disjoint file ownership' }, { title: 'Verify', detail: 'adversarial verifier judges each lane against its acceptance' }],
+    'Run one wave of sequential implementer lanes with declared scopes (instructed, not enforced) in the caller\'s working tree, then judge every lane against its acceptance with a single fresh adversarial verifier.',
+  whenToUse: 'When a wave of scoped changes should be built one lane at a time: caller supplies lanes (scope + brief + acceptance) via args; sequential implementer lanes with declared scopes (instructed, not enforced) share one tree, then one adversarial verifier judges every lane against its acceptance.',
+  phases: [{ title: 'Implement', detail: 'sequential implementer lanes with declared scopes (instructed, not enforced)' }, { title: 'Verify', detail: 'adversarial verifier judges each lane against its acceptance' }],
 };
 
 const IMPLEMENTER_SCHEMA = {
@@ -83,32 +83,36 @@ const conventionsBlock = input.conventions
 
 phase('Implement');
 
-const reports = await parallel(
-  input.lanes.map((lane) => () =>
-    agent(
-      'You are one implementer lane in a parallel wave. Other lanes are editing the same tree at the same time.\n\n' +
+// Serialize lanes: every lane works in the same tree, and shared paths
+// serialize. A lane that throws is recorded as null and still reaches the
+// verifier below.
+const reports = [];
+for (const lane of input.lanes) {
+  try {
+    reports.push(await agent(
+      'You are one implementer lane in a wave. Lanes run one at a time in the caller\'s working tree; earlier lanes in this wave may have left uncommitted changes that are not yours to revert, reset or stash.\n\n' +
         'Context:\n' + input.context + '\n' +
         conventionsBlock + '\n' +
         'Lane key: ' + lane.key + '\n' +
         'File ownership — you may create or edit ONLY paths matching:\n' +
         lane.scope.map((s) => '  - ' + s).join('\n') + '\n' +
-        'Ownership is strictly disjoint across lanes. If the work seems to require touching any path outside your scope, do NOT edit it: finish what you can inside scope and report the out-of-scope need under constraints.\n\n' +
+        'If the work seems to require touching any path outside your scope, do NOT edit it: finish what you can inside scope and report the out-of-scope need under constraints.\n\n' +
         'Task brief:\n' + lane.brief + '\n\n' +
         'Acceptance — the contract a fresh adversarial verifier will judge you against:\n' + lane.acceptance + '\n\n' +
         'Process rules (non-negotiable):\n' +
         '- ' + where + '\n' +
         '- RED first: before editing anything, reproduce the failing behavior (test, command, or observation) and record the exact repro under red_repro. If you need a pre-fix binary or build artifact for comparison, build it BEFORE editing.\n' +
         '- GREEN proof: after editing, rerun the same repro and record the passing evidence under green_proof, along with the project\'s relevant test/build commands.\n' +
-        '- Never run `git stash` — the tree is shared with other lanes.\n' +
+        '- Never run `git stash`, and never revert or reset changes you did not make: the tree holds earlier lanes\' uncommitted work, and later lanes inherit yours.\n' +
         '- Destructive-command guards may block commands like `rm -rf`; do not fight them. Use fresh, uniquely named scratch directories instead of deleting.\n' +
         '- Commit/push policy comes from the brief; if the brief is silent, leave your changes uncommitted in the working tree.\n' +
         '- List every path you changed under files_changed.',
       { label: 'lane:' + lane.key, phase: 'Implement', schema: IMPLEMENTER_SCHEMA }
-    )
-  )
-);
+    ));
+  } catch (_) { reports.push(null); }
+}
 
-// CONTRACT: parallel() resolves failed thunks to null — a dead lane is still
+// CONTRACT: a failed lane is recorded as null — a dead lane is still
 // presented to the verifier so it lands as INCOMPLETE, never disappears.
 const implementers = input.lanes.map((lane, i) => {
   const r = reports[i];
@@ -139,9 +143,11 @@ const laneDossier = input.lanes
   .join('\n\n');
 
 const verifierCharter =
-  'You are a fresh adversarial verifier for a wave of parallel implementer lanes. ' +
+  'You are a fresh adversarial verifier for a wave of implementer lanes. ' +
   'Try to REFUTE each lane\'s work; a lane earns RESOLVED only when your own fresh evidence fails to break it. ' +
   'Unverified work is unfinished work.\n\n' +
+  'Lanes ran sequentially in this order: ' + input.lanes.map((lane) => lane.key).join(', ') + '. ' +
+  'The tree is shared, so per-lane attribution comes only from implementer claims.\n\n' +
   'Context:\n' + input.context + '\n\n' +
   laneDossier + '\n\n' +
   'For every lane (verdict item = the lane key):\n' +

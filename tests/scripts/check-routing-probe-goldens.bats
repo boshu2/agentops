@@ -40,8 +40,9 @@ EOF
     export ROUTING_GOLDENS_AO_BIN="$FIX/bin/ao"
 }
 
-# make_pack SPEC... — SPEC is "name:description_word_count:provenance(1|0)".
+# make_pack SPEC... — SPEC is "name:description_word_count:provenance(1|0)[:score]".
 # provenance 1 writes a real SKILL.md the pack can cite; 0 cites a dead path.
+# score is the item's routing score (default 0.5); "none" omits the field.
 make_pack() {
     python3 - "$FIX" "$@" <<'PY'
 import json, os, sys
@@ -49,7 +50,9 @@ import json, os, sys
 fixture_root = sys.argv[1]
 pack = []
 for spec in sys.argv[2:]:
-    name, words, resolvable = spec.split(":")
+    fields = spec.split(":")
+    name, words, resolvable = fields[:3]
+    score = fields[3] if len(fields) > 3 else "0.5"
     directory = os.path.join(fixture_root, "skills", name)
     path = os.path.join(directory, "SKILL.md")
     if resolvable == "1":
@@ -58,12 +61,14 @@ for spec in sys.argv[2:]:
             handle.write("fixture skill\n")
     else:
         path = os.path.join(directory, "never-written.md")
-    pack.append({
+    item = {
         "name": name,
         "description": " ".join(["word"] * int(words)),
         "path": path,
-        "score": 0.5,
-    })
+    }
+    if score != "none":
+        item["score"] = float(score)
+    pack.append(item)
 with open(os.path.join(fixture_root, "pack.json"), "w", encoding="utf-8") as handle:
     json.dump(pack, handle)
 PY
@@ -149,9 +154,45 @@ print(value)
 
 @test "a forbidden pattern matching a lower rank is not a MISROUTE" {
     # Rank 1 is the routing decision; a decoy that merely appears in the pack is
-    # governed by critical_omitted_ids, not by forbidden_leaks.
-    make_pack "alpha:5:1" "beta:5:1" "gamma:5:1"
+    # governed by critical_omitted_ids, not by forbidden_leaks. beta scores
+    # strictly below alpha: the old fixture tied only because make_pack
+    # hard-coded every score to 0.5.
+    make_pack "alpha:5:1" "beta:5:1:0.4" "gamma:5:1:0.3"
     make_golden lower-rank-case '{"forbidden_leaks": ["^beta$"]}'
+
+    run bash "$GATE"
+
+    [ "$status" -eq 0 ]
+}
+
+@test "a forbidden id tied with rank 1 is a MISROUTE" {
+    # Equal scores mean name order chose rank 1; under any other tie-break the
+    # forbidden id would have been the routing decision.
+    make_pack "alpha:5:1:0.5" "beta:5:1:0.5" "gamma:5:1:0.3"
+    make_golden tie-case '{"forbidden_leaks": ["^beta$"]}'
+
+    run bash "$GATE"
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"MISROUTE: 'beta' ties rank-1 at 0.5 and matches forbidden pattern ^beta$ (rank set by name order)"* ]]
+}
+
+@test "a forbidden id tied with rank 1 just past top_k is a MISROUTE" {
+    # Ties are read from top_k+1 results so the cut cannot hide a tied id;
+    # MISS, LEAK, PROVENANCE and TOKENS stay declared over exactly top_k.
+    make_pack "alpha:5:1:0.5" "beta:5:1:0.4" "gamma:5:1:0.3" "delta:5:0:0.5"
+    make_golden hidden-tie-case '{"top_k": 3, "forbidden_leaks": ["^delta$"]}'
+
+    run bash "$GATE"
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"MISROUTE: 'delta' ties rank-1 at 0.5 and matches forbidden pattern ^delta$"* ]]
+    [[ "$output" != *"PROVENANCE:"* ]]
+}
+
+@test "a pack without scores grades only rank 1 for MISROUTE" {
+    make_pack "alpha:5:1:none" "beta:5:1:none" "gamma:5:1:none"
+    make_golden unscored-case '{"forbidden_leaks": ["^beta$"]}'
 
     run bash "$GATE"
 
