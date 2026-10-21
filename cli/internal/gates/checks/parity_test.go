@@ -30,7 +30,7 @@ func selectedIDs(t *testing.T, changed []string) map[string]bool {
 
 // alwaysIDs are the no-Match checks that must run for any change.
 var alwaysIDs = []string{
-	"always.mutation-route",
+	"always.shell-portability",
 	"always.no-tracked-agents",
 }
 

@@ -1,6 +1,7 @@
 """Pre-launch comparison checks; no model calls."""
 import json
 from pathlib import Path
+import re
 import sys
 import tempfile
 import unittest
@@ -135,6 +136,24 @@ class PairedPreflight(unittest.TestCase):
         self.save()
         with self.assertRaisesRegex(ValueError, "calibration"):
             self.check()
+
+
+class HarborPinCoupling(unittest.TestCase):
+    """The installed Harbor is part of the declared runtime identity."""
+
+    def test_requirements_readme_and_prepare_name_one_harbor_version(self):
+        here = Path(__file__).resolve().parent
+        pins = [line.split("==", 1)[1].strip()
+                for line in (here / "requirements.txt").read_text().splitlines()
+                if line.strip().startswith("harbor==")]
+        readme = re.findall(r"pins Harbor (\d+(?:\.\d+)+)", (here / "README.md").read_text())
+        self.assertEqual(len(pins), 1, f"requirements.txt harbor== pins: {pins}")
+        self.assertEqual(len(readme), 1, f"README.md 'pins Harbor' versions: {readme}")
+        self.assertEqual(
+            {"requirements.txt": pins[0], "README.md": readme[0]},
+            {"requirements.txt": prepare.HARBOR_VERSION, "README.md": prepare.HARBOR_VERSION},
+            f"Harbor pins disagree: requirements.txt {pins[0]}, README.md {readme[0]}, "
+            f"prepare.HARBOR_VERSION {prepare.HARBOR_VERSION}; bump all three together")
 
 
 class PackagedCalibration(unittest.TestCase):

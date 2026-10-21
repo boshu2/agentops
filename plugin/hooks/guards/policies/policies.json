@@ -110,6 +110,38 @@
       "route_message": ".agents/ao/verdicts/ holds content-addressed evidence — the filename IS the SHA-256 of the file's own canonical content, and only the validate flow writes it. A hand edit breaks digest identity: the name keeps pointing at bytes that no longer hash to it, so every consumer reads a verdict that cannot verify. Don't patch the artifact — re-run validation and let it persist a fresh one: ao provenance store-verdict --root <subject-root> --evidence-root <explicit-non-Git-root> --draft <draft.json> --intent-source <intent> --subject-manifest <manifest.json> --author-context-id <author> --validator-context-id <validator> --freshness-source <runtime|caller> --freshness-attester-id <attester> --scope-result <PASS|FAIL|NOT_PROVEN>",
       "rationale": "The first policy guarding the PRODUCT's invariant rather than this repo's own artifacts. CLAUDE.md 'Validate once, fresh' and docs/architecture/rpi-traversal.md make a verdict.v2 artifact digest-named (sha256/<digest>.json), so hand-editing one is silent evidence forgery, not a typo fix. Sibling craft of core.provenance:ledger-hand-append. Destination position is enforced on cp/rsync/mv (the verdicts path must be the LAST token of the segment), so copying a verdict OUT for inspection never fires, and reads (cat/ls/jq with no redirect ONTO the store) never match. .agents/ao/intents/ stays deliberately out of scope: this policy guards one invariant and ships the evidence for that one; widening it needs its own fire evidence. In-place editors (sed -i, perl -pi/-ni, with or without a backup suffix) and deleters (rm, unlink, shred) are matched as flag-tokens so reads never fire (sed 's/-input//' <verdict> stays silent — bats-proven both directions). Remaining disclosed gap: the noclobber override redirect (>|), which needs its own shaping.",
       "value_proof": "declining fire-attempt rate in guardrail telemetry (token_class core.verdicts:hand-edit); retire on false-positive evidence"
+    },
+    {
+      "id": "core.policy:self-waive",
+      "predicate_class": "pure",
+      "mode": "route",
+      "matchers": [
+        {
+          "tools": [
+            "Bash"
+          ],
+          "field": "command",
+          "pattern": "(>>?[[:space:]]*[^[:space:];&|]*\\.agents/ao/policy-waivers)|(tee[[:space:]]+(-[^[:space:];&|]*[[:space:]]+)*[^[:space:];&|]*\\.agents/ao/policy-waivers)|((^|[;&|][[:space:]]*)(cp|rsync|mv|install)[[:space:]][^;&|]*[[:space:]][^[:space:];&|]*\\.agents/ao/policy-waivers[[:space:]]*([;&|]|$))"
+        },
+        {
+          "tools": [
+            "Bash"
+          ],
+          "field": "command",
+          "pattern": "((^|[;&|][[:space:]]*)sed[[:space:]]+([^;&|]*[[:space:]])?-i[^[:space:]]*[[:space:]][^;&|]*\\.agents/ao/policy-waivers)|((^|[;&|][[:space:]]*)perl[[:space:]]+([^;&|]*[[:space:]])?-(p|n)?i[^[:space:]]*[[:space:]][^;&|]*\\.agents/ao/policy-waivers)"
+        },
+        {
+          "tools": [
+            "Edit",
+            "Write"
+          ],
+          "field": "file_path",
+          "pattern": "(^|/)\\.agents/ao/policy-waivers$"
+        }
+      ],
+      "route_message": "A policy waiver is the operator's decision. Approve only if you asked for it. Operators can also launch with AOP_WAIVE=<id> or edit the file outside the agent.",
+      "rationale": "The dispatcher's waived() trusts every '<policy-id> <expiry-unix-epoch>' line in ${AGENTOPS_HOME:-~/.agents/ao}/policy-waivers, and no other policy covered writes to that file, so an agent could waive any deny policy by writing one line. Route (ask), not deny: a waiver the operator asked for must stay writable, and the dialog shows the operator the one documented agent path. This is evadable VISIBILITY, not tamper-proofing: it matches only the redirect (> or >>), tee, cp/rsync/mv/install with the waiver file as the LAST token, and sed -i / perl -pi shapes on the default .agents/ao/policy-waivers path, plus Edit/Write of that path. Other writers (an interpreter one-liner, ln, the >| redirect) and a relocated AGENTOPS_HOME or AOP_WAIVER_FILE never match, and a waiver naming this policy itself lets the write through with only a 'waived' telemetry line. Reads (cat/grep with no redirect onto the file) and copying the file OUT never match.",
+      "value_proof": "ask-fire count in guardrail telemetry (token_class core.policy:self-waive, decision ask); retire on false-positive evidence or when an owner-only waiver mechanism exists"
     }
   ]
 }

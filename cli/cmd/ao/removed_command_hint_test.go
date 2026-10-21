@@ -7,10 +7,13 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
+
+	"github.com/boshu2/agentops/cli/internal/gates"
 )
 
 // bareRoot returns a root command with no subcommands registered, so every
@@ -187,6 +190,31 @@ func TestRootHelpNamesNoRemovedVerbs(t *testing.T) {
 		needle := "ao " + verb
 		if strings.Contains(help, needle) {
 			t.Errorf("root help still pitches removed verb %q — a dev following --help hits an unknown-command error", needle)
+		}
+	}
+}
+
+// TestGateRepairHintsNameNoRemovedVerbs proves no registered gate's repair
+// hint tells the reader to run a verb the default build removed. A repair hint
+// is read at the moment a gate fails, so `ao <removed verb>` there strands the
+// reader on an unknown-command error (constraints.enforce once pointed at
+// `ao constraint`). It covers gate RepairHints only, not docs or other output.
+func TestGateRepairHintsNameNoRemovedVerbs(t *testing.T) {
+	checks := gates.Default.All()
+	if len(checks) == 0 {
+		t.Fatal("gates.Default is empty; the gate checks did not register, so this test would pass vacuously")
+	}
+	verbs := make([]string, 0, len(removedCommands))
+	for verb := range removedCommands {
+		verbs = append(verbs, verb)
+	}
+	sort.Strings(verbs)
+	for _, verb := range verbs {
+		mention := regexp.MustCompile(`(^|[^a-z-])ao ` + regexp.QuoteMeta(verb) + `([^a-z-]|$)`)
+		for _, c := range checks {
+			if hint := c.EffectiveRepairHint(); mention.MatchString(hint) {
+				t.Errorf("gate %s repair hint names removed verb `ao %s`: %q", c.ID, verb, hint)
+			}
 		}
 	}
 }

@@ -9,6 +9,7 @@
 ## How I tested
 
 <!-- How did you verify this works? -->
+<!-- If any commit carries a `Gate-Loosen-Reason:` or `Test-Removal-Reason:` trailer, repeat it on its own line in this description; this repository squash-merges with the PR body, so branch-commit trailers do not reach main. -->
 
 ## Checklist
 
