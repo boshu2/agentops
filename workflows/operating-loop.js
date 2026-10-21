@@ -12,15 +12,17 @@ export const meta = {
 // traversal's one-experiment contract, so nothing is translated automatically:
 // choosing the replacement shape is the caller's decision.
 //
-// - One bounded experiment: native implementation, checks and fresh judgment;
-//   the `rpi` skill (skills/rpi/SKILL.md) is optional guidance.
+// - One bounded experiment: native implementation and checks, with one fresh
+//   read only where a mistake is costly; the `rpi` skill (skills/rpi/SKILL.md)
+//   is optional guidance.
 // - Repository delivery: native Git and BD operations under the caller's
 //   repository policy, or a caller-selected factory via its coordinator.
 //
 // The former doctrine page moved to docs/architecture/rpi-traversal.md.
 throw new Error(
   'workflows/operating-loop.js is retired. ' +
-    'For one bounded experiment use native implementation, checks and fresh independent judgment; ' +
+    'For one bounded experiment use native implementation and checks, with one fresh read only where a mistake is costly ' +
+    '(see docs/agent-workflow-reference.md); ' +
     'the rpi skill (skills/rpi/SKILL.md) is optional guidance. ' +
     'For repository delivery use native Git and BD operations under the caller repository policy, ' +
     'or select a software factory and dispatch through its coordinator. ' +

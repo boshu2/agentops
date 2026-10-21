@@ -2,10 +2,11 @@
 
 `ao` supplies deterministic repository utilities and evidence inspection. It
 is the checks/linking CLI of the AgentOps operations layer. Native execution
-requires zero AgentOps skills; a fresh reviewer judges the result:
+requires zero AgentOps skills; checks and CI gate an ordinary change (see the
+[agent workflow reference](../docs/agent-workflow-reference.md)):
 
 ```text
-Accepted intent → native implementation and checks → fresh independent judgment → finish
+Accepted intent -> native implementation and checks -> one fresh read where a mistake is costly -> finish
 ```
 
 The CLI does not own retries, queues, work claims, Git delivery, release,

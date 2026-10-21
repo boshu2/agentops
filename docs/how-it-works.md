@@ -29,11 +29,15 @@ differently; make the translation explicit at their boundary.
 ## Implement and validate the same promise
 
 The implementer changes the relevant code, checks the accepted examples, and
-directly repairs known defects within scope. A fresh author-distinct reviewer
-reads the exact change and judges every acceptance criterion against evidence.
-For the Job example, the evidence must establish both the returned result and
-the absence of another side effect. Tests written after implementation cannot
-redefine what was requested.
+directly repairs known defects within scope. For an ordinary change those
+checks and CI are the gate. One fresh author-distinct reviewer reads the exact
+change only when the caller asks, a mistake cannot be cheaply undone after it
+lands, or no deterministic check covers the changed behavior; that reviewer
+answers one question against the evidence in one round. For the Job example,
+the evidence must establish both the returned result and the absence of another
+side effect. Tests written after implementation cannot redefine what was
+requested. The [agent workflow reference](agent-workflow-reference.md) states
+these steps.
 
 Planning, implementation, and validation are responsibilities, not a requirement
 to run three permanent agents. The author cannot issue its own binding PASS.
@@ -41,9 +45,10 @@ By default, the fresh reviewer uses the author's model family; another model
 or provider is an explicit choice. A different model alone does not establish
 independence or truth.
 
-PASS requires complete checked scope, distinct identities, attested freshness
-and evidence for acceptance. Failed acceptance is FAIL; missing proof remains
-NOT_PROVEN. A repair changes the subject and needs a new judgment of that content.
+A requested binding PASS requires complete checked scope, distinct identities,
+attested freshness and evidence for acceptance. Failed acceptance is FAIL;
+missing proof remains NOT_PROVEN and is reported with its gaps, not chased. A
+repair is confirmed by a check and does not start another review.
 
 ## Preserve useful work and evidence
 

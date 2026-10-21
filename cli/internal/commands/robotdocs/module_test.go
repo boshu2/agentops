@@ -72,15 +72,22 @@ func TestRenderHandbook_ContainsContractSections(t *testing.T) {
 	}
 }
 
+// conditionalReviewRule is the AGENTS.md / docs/agent-workflow-reference.md
+// review rule (#1189, ADR-0017 2026-10-03 amendment) as the handbook states it.
+const conditionalReviewRule = "Checks and CI gate an ordinary change; obtain one fresh author-distinct read only when the caller asks, a mistake cannot be cheaply undone, or no deterministic check covers the change."
+
+// requestedVerdictRule scopes NOT_PROVEN to a requested binding verdict.
+const requestedVerdictRule = "A requested binding verdict reports missing proof or unchecked acceptance as NOT_PROVEN."
+
 func TestRenderHandbookKeepsSkillsAndStartupOperationsOptional(t *testing.T) {
-	out := RenderHandbook(newTestRoot(t))
+	out := strings.Join(strings.Fields(RenderHandbook(newTestRoot(t))), " ")
 	for _, want := range []string{
 		"native coding agent",
-		"fresh independent judgment",
+		conditionalReviewRule,
 		"exact final change",
 		"unchanged acceptance",
 		"workflow skills are optional",
-		"NOT_PROVEN",
+		requestedVerdictRule,
 		"ao status --json",
 		"ao doctor --robot-triage",
 	} {
@@ -91,6 +98,11 @@ func TestRenderHandbookKeepsSkillsAndStartupOperationsOptional(t *testing.T) {
 	for _, forbidden := range []string{"read it once", "Run this first", "Canonical agent workflow", "no verdict = not done"} {
 		if strings.Contains(out, forbidden) {
 			t.Errorf("optional handbook introduced mandatory workflow %q", forbidden)
+		}
+	}
+	for _, retired := range []string{"checks alone do not prove completion", "checks alone is insufficient", "convergence law", "repair_rounds"} {
+		if strings.Contains(out, retired) {
+			t.Errorf("native handbook keeps retired review claim %q", retired)
 		}
 	}
 }
