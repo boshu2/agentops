@@ -35,7 +35,10 @@ supplied text. Planning produces no AgentOps packet.
 1. **One slice, not a roadmap.** Shape the narrowest change that produces an
    observable result end to end, through every layer it touches. No phases,
    no layer-by-layer breakdown, no backlog: later work stays one coarse line
-   each until new evidence makes it the next slice.
+   each until new evidence makes it the next slice. When several slices could
+   go first, prefer the smallest observable path that tests the approach's
+   riskiest dependency. Name any stand-in and what it cannot establish; a
+   demonstration with that stand-in is not proof of the real integration.
 2. **An example before any design.** Write at least one Given/When/Then with
    an observable result. Cover the boundary where a mistake is costly to
    undo, such as a repeated or external side effect, lost data or widened
@@ -79,6 +82,9 @@ only where it prevents a plausible scope mistake.
    exact snapshot of conversation intent, follow
    [resume and handoff](references/resume-and-handoff.md).
 2. Route only the uncertainty that could change the slice (table below).
+   If an interface choice drives that uncertainty, use the conditional
+   [caller-first design comparison](references/ground-truth-routing.md#compare-interfaces-from-the-callers-side)
+   before committing to a boundary.
 3. Fill the block. A mechanical cross-cutting migration that cannot stay
    working slice by slice uses expand, migrate, contract and states where
    integration is required. Include recapture of affected bound evidence where

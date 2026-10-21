@@ -18,21 +18,24 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 | [review](https://github.com/boshu2/agentops/blob/main/skills/review/SKILL.md) | Give advisory feedback on a plan, design or code change. Use when: asked for an opinion or a look-over, even informally. Not for acceptance; use Validate. |
 | [validate](https://github.com/boshu2/agentops/blob/main/skills/validate/SKILL.md) | Freshly judge whether a finished change and its claims meet original acceptance: PASS, FAIL or NOT_PROVEN. Use when: asked for a go/no-go, sign-off or independent verdict. |
 | [orchestrate](https://github.com/boshu2/agentops/blob/main/skills/orchestrate/SKILL.md) | Coordinate several workers: what idle agents do next, which finished work gets checked first, how to recover a dead one. Use when: managing multiple agents. |
-| [memory](https://github.com/boshu2/agentops/blob/main/skills/memory/SKILL.md) | Write, find or curate lessons and agent rules with stated evidence and limits. Use when: asked to remember something or write a rule into agent instructions. |
+| [memory](https://github.com/boshu2/agentops/blob/main/skills/memory/SKILL.md) | Find or curate supported lessons and agent rules. Use when: asked to remember, trace a corrected claim, audit instructions or write an agent rule. |
 
 ## Engineering specialists
 
 | Skill | Use it for |
 |---|---|
-| [doc](https://github.com/boshu2/agentops/blob/main/skills/doc/SKILL.md) | Write or update READMEs, docs, repo instructions and handoff notes, checked against source. Use when: documenting something, writing a README or leaving a session handoff. |
+| [architecture](https://github.com/boshu2/agentops/blob/main/skills/architecture/SKILL.md) | Compare interface designs and find structural friction. Use when: a change spreads across modules or a boundary is unclear. For code changes, use Refactor. |
+| [doc](https://github.com/boshu2/agentops/blob/main/skills/doc/SKILL.md) | Write source-checked docs, READMEs, change descriptions and handoff notes. Use when: documenting a change or leaving or resuming a session handoff. |
 | [domain](https://github.com/boshu2/agentops/blob/main/skills/domain/SKILL.md) | Settle what domain terms mean per context, and which repository conventions or language standards (Go, Python) apply. Use when: names disagree or a rename is proposed. |
+| [ergonomics](https://github.com/boshu2/agentops/blob/main/skills/ergonomics/SKILL.md) | Audit CLI, API, MCP or SDK discovery, first use and error recovery. Use when: designing an agent-facing tool or investigating misuse, including one command. |
 | [refactor](https://github.com/boshu2/agentops/blob/main/skills/refactor/SKILL.md) | Restructure or clean up code with no behavior change, proved by before-and-after checks. Use when: asked to clean up, extract, dedupe or simplify, even one function. |
-| [research](https://github.com/boshu2/agentops/blob/main/skills/research/SKILL.md) | Answer one cited question: how code works, or whether a repeated pattern deserves a rule. Use when: asked how, why, or whether to enforce a pattern. |
+| [research](https://github.com/boshu2/agentops/blob/main/skills/research/SKILL.md) | Answer one cited question about code, history, claims or patterns. Use when: asked how it works, why it changed, whether a claim holds or a pattern warrants a rule. |
 | [reverse-engineer](https://github.com/boshu2/agentops/blob/main/skills/reverse-engineer/SKILL.md) | Tear down a competitor's repo or product into a feature inventory and adoption choices. Use when: comparing us to another tool or asking what to steal. |
 | [security](https://github.com/boshu2/agentops/blob/main/skills/security/SKILL.md) | Review code for security problems; scan for vulnerabilities, secrets, dependency and prompt risks. Use when: asked whether code is safe to ship, even one small handler. |
 | [skill-builder](https://github.com/boshu2/agentops/blob/main/skills/skill-builder/SKILL.md) | Create, repair, audit or consolidate agent skills (SKILL.md packages). Use when: writing or fixing a skill, its description or structure. Not for one-off lessons; use Memory. |
 | [skill-eval](https://github.com/boshu2/agentops/blob/main/skills/skill-eval/SKILL.md) | Measure whether a skill helps by comparing runs with and without it. Use when: reading skill A/B results or deciding to keep, revise or remove one. |
 | [test](https://github.com/boshu2/agentops/blob/main/skills/test/SKILL.md) | Write or assess tests that prove behavior and would fail without the fix. Use when: writing tests, TDD, or asked whether a green test is enough. |
+| [triage](https://github.com/boshu2/agentops/blob/main/skills/triage/SKILL.md) | Turn incoming reports, external PRs and alerts into evidence-based decisions and agent-ready briefs. Use when: intake arrives. For accepted work, use Plan. |
 
 ## Deliberate planning and review strategies
 
@@ -64,12 +67,14 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 |---|---|---|---|---|---|
 | `agent-native` | meta | `keep_optional_adapter` | - | `role_dispatch`, `observe_workers`, `handoff`, `dispatch_once` | `manage_runtime_sessions`, `invoke_selected_executor` |
 | `agy-native` | cross-vendor | `keep_optional_adapter` | - | `dispatch_explicit_packet`, `provide_fresh_context` | `start_agy_session` |
+| `architecture` | judgment | `keep_specialist` | - | `locate_change_friction`, `compare_interface_designs`, `propose_module_boundaries` | - |
 | `claude-exec` | orchestration | `keep_optional_adapter` | - | `claude_exec` | `run_claude_process`, `permission_tiered_workspace_effects` |
 | `codex-exec` | orchestration | `keep_optional_adapter` | - | `codex_exec` | `run_codex_process`, `sandbox_tiered_workspace_and_network_effects` |
 | `council` | judgment | `keep_strategy` | - | `collect_independent_judgments`, `synthesize_disagreement`, `bounded_deliberation`, `duel_scored_ideas`, `answer_interview_panel` | `write_advisory_council_report` |
 | `craft-goal` | judgment | `keep_strategy` | - | `goal_prompt_design`, `goal_prompt_lint` | - |
 | `doc` | product | `keep_specialist` | - | `doc`, `initialize_missing_docs`, `write_session_handoff` | `write_documentation`, `write_requested_handoff`, `create_requested_evidence_directory` |
 | `domain` | knowledge | `keep_specialist` | - | `domain`, `clarify_domain_language`, `reconcile_domain_names` | `update_existing_domain_contracts` |
+| `ergonomics` | product | `keep_specialist` | - | `audit_interface_ergonomics`, `review_interface_design`, `exercise_tool_surface`, `check_error_contract` | `run_target_in_disposable_environment` |
 | `idea-genie` | execution | `keep_strategy` | - | `generate_evidenced_options`, `dueling_idea_genies` | `write_idea_portfolio` |
 | `implement` | execution | `keep` | - | `execute_one_experiment`, `collect_factual_evidence` | `modify_declared_subject`, `derive_subject_manifest` |
 | `interview` | execution | `keep_strategy` | - | `interview_caller`, `settle_caller_choices`, `write_acceptance_examples`, `settle_domain_terms` | `update_intent_source` |
@@ -89,5 +94,6 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 | `skill-builder` | meta | `keep_specialist` | - | `skill_builder`, `heal_skill`, `export_skill`, `distill_expertise` | `write_skill_source`, `write_build_report`, `regenerate_skill_projections`, `repair_skill_projections`, `write_converted_skill_projection`, `write_advisory_proposal` |
 | `skill-eval` | meta | `keep_specialist` | - | `author_seeded_probe`, `run_probe_tier`, `evaluate_skill_decision` | `write_probe_package`, `dispatch_probe_producer` |
 | `test` | execution | `keep_specialist` | - | `test` | `write_test_files`, `write_test_evidence`, `modify_source_files` |
+| `triage` | execution | `keep_specialist` | - | `observe_reported_behavior`, `find_duplicates_and_prior_decisions`, `classify_with_evidence`, `write_agent_ready_brief`, `reconcile_batch_by_id` | `write_authorized_tracker_updates` |
 | `using-gc` | execution | `keep_optional_adapter` | - | `dispatch_explicit_packet`, `observe_gc_runtime`, `inspect_pack_registries`, `drive_mayor_door` | `operate_gas_city`, `configure_codex_trust` |
 | `validate` | judgment | `keep` | - | `compute_subject_identity`, `judge_acceptance`, `return_validation_result`, `persist_verdict` | `write_verdict_artifact` |

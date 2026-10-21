@@ -1,0 +1,1 @@
+Execute /agentops:ergonomics on this command-line tool. Check whether an agent can discover it, read its output and recover from its errors, cite the exact command and output for each finding, and do not change files.

@@ -57,6 +57,33 @@
     },
     {
       "driven_by_skills": [
+        "architecture"
+      ],
+      "id": "skill:architecture:locate_change_friction",
+      "name": "locate_change_friction",
+      "path": "skills/architecture/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "architecture"
+      ],
+      "id": "skill:architecture:compare_interface_designs",
+      "name": "compare_interface_designs",
+      "path": "skills/architecture/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "architecture"
+      ],
+      "id": "skill:architecture:propose_module_boundaries",
+      "name": "propose_module_boundaries",
+      "path": "skills/architecture/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
         "claude-exec"
       ],
       "id": "skill:claude-exec:claude_exec",
@@ -188,6 +215,42 @@
       "id": "skill:domain:reconcile_domain_names",
       "name": "reconcile_domain_names",
       "path": "skills/domain/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "ergonomics"
+      ],
+      "id": "skill:ergonomics:audit_interface_ergonomics",
+      "name": "audit_interface_ergonomics",
+      "path": "skills/ergonomics/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "ergonomics"
+      ],
+      "id": "skill:ergonomics:review_interface_design",
+      "name": "review_interface_design",
+      "path": "skills/ergonomics/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "ergonomics"
+      ],
+      "id": "skill:ergonomics:exercise_tool_surface",
+      "name": "exercise_tool_surface",
+      "path": "skills/ergonomics/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "ergonomics"
+      ],
+      "id": "skill:ergonomics:check_error_contract",
+      "name": "check_error_contract",
+      "path": "skills/ergonomics/SKILL.md",
       "type": "skill"
     },
     {
@@ -615,6 +678,51 @@
     },
     {
       "driven_by_skills": [
+        "triage"
+      ],
+      "id": "skill:triage:observe_reported_behavior",
+      "name": "observe_reported_behavior",
+      "path": "skills/triage/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "triage"
+      ],
+      "id": "skill:triage:find_duplicates_and_prior_decisions",
+      "name": "find_duplicates_and_prior_decisions",
+      "path": "skills/triage/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "triage"
+      ],
+      "id": "skill:triage:classify_with_evidence",
+      "name": "classify_with_evidence",
+      "path": "skills/triage/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "triage"
+      ],
+      "id": "skill:triage:write_agent_ready_brief",
+      "name": "write_agent_ready_brief",
+      "path": "skills/triage/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "triage"
+      ],
+      "id": "skill:triage:reconcile_batch_by_id",
+      "name": "reconcile_batch_by_id",
+      "path": "skills/triage/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
         "using-gc"
       ],
       "id": "skill:using-gc:dispatch_explicit_packet",
@@ -690,19 +798,19 @@
     "cli_commands": 0,
     "gates": 0,
     "reference_impls": 0,
-    "skills": 76,
-    "total": 76
+    "skills": 88,
+    "total": 88
   },
   "cli_top_level_commands": [],
   "schema_version": 3,
   "summary": {
-    "capabilities": 76,
+    "capabilities": 88,
     "cli_commands": 0,
     "eval_files": 0,
     "hooks": 0,
     "job_types": 0,
     "knowledge_stores": 0,
-    "skills": 29,
+    "skills": 32,
     "workflows": 0
   },
   "surfaces": {
@@ -747,6 +855,21 @@
         "path": "skills/agy-native/",
         "reference_count": 0,
         "tier": "cross-vendor"
+      },
+      {
+        "capabilities": [
+          "locate_change_friction",
+          "compare_interface_designs",
+          "propose_module_boundaries"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "architecture",
+        "path": "skills/architecture/",
+        "reference_count": 1,
+        "tier": "judgment"
       },
       {
         "capabilities": [
@@ -829,7 +952,7 @@
         "has_skill_md": true,
         "name": "doc",
         "path": "skills/doc/",
-        "reference_count": 17,
+        "reference_count": 18,
         "tier": "product"
       },
       {
@@ -848,6 +971,24 @@
         "path": "skills/domain/",
         "reference_count": 2,
         "tier": "knowledge"
+      },
+      {
+        "capabilities": [
+          "audit_interface_ergonomics",
+          "review_interface_design",
+          "exercise_tool_surface",
+          "check_error_contract"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [
+          "run_target_in_disposable_environment"
+        ],
+        "has_references": true,
+        "has_skill_md": true,
+        "name": "ergonomics",
+        "path": "skills/ergonomics/",
+        "reference_count": 1,
+        "tier": "product"
       },
       {
         "capabilities": [
@@ -879,7 +1020,7 @@
         "has_skill_md": true,
         "name": "implement",
         "path": "skills/implement/",
-        "reference_count": 4,
+        "reference_count": 5,
         "tier": "execution"
       },
       {
@@ -917,7 +1058,7 @@
         "has_skill_md": true,
         "name": "memory",
         "path": "skills/memory/",
-        "reference_count": 5,
+        "reference_count": 6,
         "tier": "execution"
       },
       {
@@ -1175,7 +1316,26 @@
         "has_skill_md": true,
         "name": "test",
         "path": "skills/test/",
-        "reference_count": 10,
+        "reference_count": 11,
+        "tier": "execution"
+      },
+      {
+        "capabilities": [
+          "observe_reported_behavior",
+          "find_duplicates_and_prior_decisions",
+          "classify_with_evidence",
+          "write_agent_ready_brief",
+          "reconcile_batch_by_id"
+        ],
+        "disposition": "keep_specialist",
+        "effects": [
+          "write_authorized_tracker_updates"
+        ],
+        "has_references": false,
+        "has_skill_md": true,
+        "name": "triage",
+        "path": "skills/triage/",
+        "reference_count": 0,
         "tier": "execution"
       },
       {
