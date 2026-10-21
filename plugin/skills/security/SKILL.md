@@ -38,7 +38,7 @@ output_contract: 'stdout: security scan report'
 
 > **Purpose:** Find and report security weaknesses in code, scripts, authorized binaries, and repo-managed prompt surfaces, with honest coverage.
 
-Use this skill for a caller-requested security review of code, a repository scan, authorized binary assurance, dependency risk, secrets, or offline prompt-surface redteam.
+Use this skill for a caller-requested security review of code or of a plan or design before code exists, a repository scan, authorized binary assurance, dependency risk, secrets, or offline prompt-surface redteam.
 
 ## Critical Constraints
 
@@ -73,13 +73,13 @@ Apply these to every review, scripted or manual. They are the rules most often s
    concrete input, request, or command and observed the behavior; capture it.
    A finding reasoned from the code is suspected, even with a candidate input;
    give that input and rank it below proven findings.
-5. **Snapshot scope.** Name the exact snapshot (commit, or working tree on a
-   stated HEAD) and the path scope. List inputs you did not read separately as
-   unread, deleted or outside scope; none of them counts as clean. Keep impact
-   inside the snapshot: a finding that needs absent code, a future change or an
-   unread path is a hypothesis and is labeled so. When the remaining budget
-   cannot finish another full pass, stop opening new leads and report the hunt
-   as unconverged.
+5. **Snapshot scope.** Name the exact snapshot (commit, working tree on a
+   stated HEAD, or document revision) and the path scope. List inputs you did
+   not read separately as unread, deleted or outside scope; none of them counts
+   as clean. Keep impact inside the snapshot: a finding that needs absent code,
+   a future change or an unread path is a hypothesis and is labeled so. When
+   the remaining budget cannot finish another full pass, stop opening new leads
+   and report the hunt as unconverged.
 6. **Shipped scope for a share or publish question.** When asked whether
    content is safe to make public or hand to another party (a repository, an
    export, a package), the snapshot is what the recipient will receive: the
@@ -96,7 +96,7 @@ closer support for that finding.
 
 ```text
 target:   <paths, endpoints, or binary>; authorization: <boundary>
-snapshot: <commit | working tree on HEAD>; unread: <paths> | deleted: <paths> | outside scope: <paths>
+snapshot: <commit | working tree on HEAD | document revision>; unread: <paths> | deleted: <paths> | outside scope: <paths>
 findings: <id> <severity> <file:line> <class>: <what>
           proven: <input run> | suspected: <candidate input, why not run>
           path: <attacker input> -> <reachable behavior> -> <trust boundary> -> <impact>
@@ -115,6 +115,16 @@ behavior where that is safe. Repeat full passes until one complete pass adds no
 new finding and no new coverage gap; that quiet round is the stop condition. If
 the budget ends first, report the hunt as unconverged. The quiet-round rule
 applies only to the manual hunt.
+
+A plan, spec or design with no code yet gets the same hunt, aimed at what the
+document proposes. List the endpoints, data stores, integrations and inputs it
+adds, then report only weaknesses an attacker could use if it is built as
+written, such as a capability with no named actor or access decision; sensitive
+data whose handling in transit, at rest, in logs or at deletion is unstated; a
+third party or secret whose trust, storage, rotation or compromise behavior is
+unstated; or a stated choice, including how an input is handled, that is itself
+unsafe. Cite the section. A weakness in what the document proposes is inside
+its revision, not a rule-5 hypothesis; with nothing to run, each is suspected.
 
 ## Scripted scans
 

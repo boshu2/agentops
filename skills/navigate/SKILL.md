@@ -22,8 +22,9 @@ output_contract: 'wave checkpoint in the existing handoff or root epic: acceptan
 # Navigate
 
 Pick the next wave on a bead graph and keep the graph honest toward its frozen
-acceptance. The root epic holds acceptance; each child bead is one experiment
-with one RPI. Navigate never edits acceptance, dispatches, judges or closes:
+acceptance. The root epic holds acceptance; each child build bead is one
+experiment with one RPI; a decision bead goes to the resolver it names
+([Foggy epics](#foggy-epics)). Navigate never edits acceptance, dispatches, judges or closes:
 Craft Goal owns the prompt and HOLD, [Plan](../plan/SKILL.md) shapes a bead,
 [Orchestrate](../orchestrate/SKILL.md) dispatches, RPI runs,
 [Validate](../validate/SKILL.md) judges.
@@ -94,12 +95,15 @@ with the most decision-relevant information that meets the rules above and
 fits the declared wave budget; no budget means one bead. Prefer an early
 falsifier.
 
-Hand each bead to one RPI: through Orchestrate or Agent Native when delegation
-is authorized, one bead per worker, otherwise the caller's runtime. Its checks
-and CI are its result; it gets one fresh, author-distinct Validate only when
-the caller asks, a mistake cannot be cheaply undone after it lands, or no
-deterministic check covers the changed behavior, and a repair does not start
-another. Done when each picked bead has a one-line reason and a named handoff.
+Hand each build bead to one RPI: through Orchestrate or Agent Native when
+delegation is authorized, one bead per worker, otherwise the caller's runtime.
+Its checks and CI are its result; it gets one fresh, author-distinct Validate
+only when the caller asks, a mistake cannot be cheaply undone after it lands,
+or no deterministic check covers the changed behavior, and a repair does not
+start another. A [decision bead](#foggy-epics) goes to the resolver it names,
+never to an implementer; one that needs the caller's answer goes under
+decisions in the checkpoint. Done when each picked bead has a one-line reason
+and a named handoff.
 
 ## 3. Ratchet the graph
 
@@ -151,8 +155,11 @@ decisions, not build slices. Each open question becomes a decision bead whose
 answer is a choice, sized to one session, naming how it resolves: a cited
 fact (Research), a rough artifact the caller reacts to (Plan's probes and
 prototypes), a conversation with the caller (Interview), or a manual step that
-only unblocks a decision. A bead that needs the caller's own answer resolves
-only with the caller; never answer it on their behalf.
+only unblocks a decision. Give it the tracker's decision type, never a build or
+agent-ready label (with BD, `bd create --type decision`), so a worker pulling
+build work skips it: `bd ready --parent <epic> --exclude-type decision`. A bead
+that needs the caller's own answer resolves only with the caller; never answer
+it on their behalf.
 
 Track two lists with the root epic: in-scope questions not yet specific
 enough to become beads, which graduate as the frontier moves, and work ruled
@@ -171,6 +178,6 @@ decision beads count against that budget like any other.
 Report cycles among the epic's beads (`bd dep cycles`, filtered to them),
 beads tied to no criterion, `blocks` edges that are not real ordering,
 criteria with no observable result (an open decision the caller can settle
-with Interview; never rewrite one), closed beads with missing bytes and
-drifted terms. `bd graph <epic>` shows the shape. Change edges only on the
-caller's go-ahead.
+with Interview; never rewrite one), closed beads with missing bytes, decision
+beads typed as build work, and drifted terms. `bd graph <epic>` shows the
+shape. Change edges only on the caller's go-ahead.

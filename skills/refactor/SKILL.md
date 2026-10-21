@@ -53,6 +53,10 @@ Unless the caller explicitly excluded a surface, all of these must survive:
 - **Order and coverage.** Branch priority, default handling, evaluation count,
   side-effect order, and the set of tests that run. A pre-existing red that
   vanishes, or a test that stops running, is a behavior change.
+- **Protective checks.** Trust-boundary validation, data-loss guards, security
+  controls and accessibility affordances stay, even when another layer,
+  upstream or downstream, duplicates one or no test reaches it. The neutrality gates cannot see their
+  removal, so looking redundant is no reason to delete one.
 
 ## Procedure
 
@@ -64,7 +68,9 @@ Unless the caller explicitly excluded a surface, all of these must survive:
    source, build its baseline before edits and keep that binary and the
    comparison inputs.
 3. Apply one bounded transformation: extract, rename, inline, simplify,
-   encapsulate, move, or delete dead code. Judge it by what callers must
+   encapsulate, move, substitute existing code, or delete dead code; the
+   [refactoring catalog](references/behavior-preserving-simplification.md#refactoring-catalog)
+   holds per-pattern safety checks. Judge it by what callers must
    understand and where a domain rule must change, not by file size.
 4. A bug or suspicious inconsistency found on the way is reported separately
    (location, why it looks wrong) and left unfixed. Fixing it inside the

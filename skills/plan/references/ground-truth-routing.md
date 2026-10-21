@@ -27,7 +27,18 @@ Choose relevant ground truth, not a compulsory sequence:
 | Does an external substrate already provide the needed behavior? | Current vendor documentation and pinned stock behavior; run a vanilla quickstart only when it answers the named uncertainty. Compare proposed additions with native capabilities before rebuilding them. |
 | Can the repository's existing approach satisfy the example? | Trace its relevant behavior and try the simplest acceptance-relevant change or test. Retain evidence if it cannot meet the example. |
 | Can a new path work end to end? | A walking skeleton through the uncertain boundary, with an observable result. |
+| Does a proposed rule or state model hold up in cases hard to judge on paper? | A small pure model (plain functions, a reducer, or an explicit state machine when which actions are legal is in question) kept apart from any display. The caller or a domain expert drives it in domain terms with no setup, from one known starting state, through the ordinary case, a hard edge and an action that should be refused, seeing the labelled state after each step. Rules it confirms still face Implement's checks once moved into the real module. |
 | Which interaction does the caller want? | A small concrete mock-up and the caller's response; only the caller settles that preference. |
+
+For a mock-up or model the caller drives or reacts to, keep real whatever is
+being judged: a flow or state question needs something they can drive, a
+question of finish (palette, type, density) needs that finish, and placement
+can stay rough. Disposable work skips tests, abstraction and hardening, never
+the judged dimension. Say what to judge and what to ignore. When no available
+medium can show that dimension honestly, report the missing capability rather
+than offering a stand-in. Before handing it over, look at each option as
+rendered, not only that it loaded, and try every interaction you ask the
+caller to try; if you cannot see the result, say so.
 
 Return the observation, its source/configuration, limitations, and the decision
 or next question it supports. Preserve failed predictions as evidence. If a

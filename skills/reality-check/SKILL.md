@@ -50,6 +50,20 @@ of the report.
    Trace each hit to its callers before classifying it. A placeholder that a
    production path reaches makes the item a gap; a double used only by tests,
    or code nothing calls, does not.
+   A claim that work was pushed, merged, shipped or fixed in a named commit or
+   pull request has its delivery settled by reachability in current remote
+   state, not by a local ref, push output or saved status; whether the content
+   is still present at the target head and does what is claimed is checked as
+   above. Pushed means reachable from the named remote branch, or from the pull
+   request's current head in its own head repository, forks included. Merged
+   means reachable from the target branch the claim names, otherwise the
+   default branch head, or a pull request merged with that branch as its base;
+   a merge into another base does not confirm it. Shipped means present in
+   what the repository's release policy names (a tag, published release or
+   deployment), read from that source. Where squash or rebase broke ancestry,
+   compare the content with the target rather than assume an equivalent commit.
+   Check a supplied SHA or pull request number's form before it reaches a
+   command.
 3. When asked about a plan, compare proposed scope with the original goal;
    additions that lack authority are scope escalation the report cannot approve.
    Repeated measurements reuse the same question and criteria; a changed

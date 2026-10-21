@@ -65,6 +65,14 @@ undo cost.
 
 ## The third check: construct the failure
 
+Draw candidate failures from what the plan takes for granted, not from a
+generic risk list. Typical premises: a tool or service behaving as the plan
+describes, the work holding at volumes far above or below what it expects where
+volume matters, steps finishing in the stated order and time. Aim first at the decision other steps rest on, and
+at any one-way step whose deciding premise is inferred rather than cited. Name
+the fact that would show each premise false; when it can be looked up now, look
+it up instead of reporting the premise as a risk.
+
 For every candidate failure, attempt a concrete defeat: write the input,
 command sequence or repository state that would make the plan fail, and run or
 cite the check that shows whether the plan survives it. When execution is not

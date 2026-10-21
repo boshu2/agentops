@@ -76,6 +76,14 @@ dropped, that list is the guard. `--max-budget-usd` stops after the call that
 crosses it, and `--help` lists no turn cap, so bound a run by time and budget.
 `--no-session-persistence` keeps no transcript.
 
+A host shell tool may end a call sooner than `$SECS`, and that kill leaves
+`$OUT` empty because JSON is written only at exit. Before launch, compare the
+host tool's cap with `$SECS` plus the 10 s grace; when it is shorter, start the
+command as a host background job and wait for its exit through the host's
+completion notice or native wait. A run the host already killed was the one
+attempt: report it with `$OUT` empty. A quiet run is still working; the
+`timeout` bound ends it, not silence.
+
 ## Result
 
 JSON carries `result`, `is_error`, `session_id`, `total_cost_usd`,

@@ -42,7 +42,7 @@
         "worker-handoff",
         "per-packet-results"
       ],
-      "references_count": 5,
+      "references_count": 6,
       "tier": "meta",
       "user_invocable": true
     },
@@ -281,7 +281,7 @@
       ],
       "context_rel": [],
       "dependencies": [],
-      "description": "Write source-checked docs, READMEs, change descriptions and handoff notes. Use when: documenting a change or leaving or resuming a session handoff.",
+      "description": "Write source-checked docs, READMEs, change descriptions, handoffs and questionnaires. Use when: documenting a change, leaving or resuming a handoff, or drafting questions for someone other than the caller.",
       "disposition": "keep_specialist",
       "effects": [
         "write_documentation",
@@ -300,7 +300,7 @@
         "documentation",
         "session-handoff"
       ],
-      "references_count": 18,
+      "references_count": 19,
       "tier": "product",
       "user_invocable": true
     },
@@ -418,7 +418,7 @@
         "idea-portfolio.v1",
         "idea-challenge.v1"
       ],
-      "references_count": 2,
+      "references_count": 3,
       "tier": "execution",
       "user_invocable": true
     },
@@ -476,7 +476,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Interview you one question at a time, each with a recommendation, to settle a big outcome before agents work alone. Use when: selected by name.",
+      "description": "Interview you one question at a time, each choice with a recommendation, to settle a big outcome before agents work alone. Use when: selected by name.",
       "disposition": "keep_strategy",
       "effects": [
         "update_intent_source"
@@ -493,7 +493,7 @@
         "caller-outcome",
         "goal-acceptance"
       ],
-      "references_count": 0,
+      "references_count": 1,
       "tier": "execution",
       "user_invocable": true
     },
@@ -607,7 +607,7 @@
         "native-handoffs",
         "reconciled-feedback"
       ],
-      "references_count": 0,
+      "references_count": 1,
       "tier": "execution",
       "user_invocable": true
     },
@@ -801,7 +801,7 @@
         "codebase-recon.v1",
         "pattern-mining.v1"
       ],
-      "references_count": 3,
+      "references_count": 4,
       "tier": "execution",
       "user_invocable": true
     },
@@ -855,7 +855,7 @@
         "code-complete"
       ],
       "produces": [],
-      "references_count": 1,
+      "references_count": 2,
       "tier": "judgment",
       "user_invocable": true
     },
@@ -1018,7 +1018,7 @@
         "probe-package",
         "probe-result.v1"
       ],
-      "references_count": 3,
+      "references_count": 4,
       "tier": "meta",
       "user_invocable": true
     },
@@ -1051,7 +1051,7 @@
       "produces": [
         "test-evidence"
       ],
-      "references_count": 11,
+      "references_count": 12,
       "tier": "execution",
       "user_invocable": true
     },

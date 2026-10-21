@@ -81,7 +81,8 @@ Use these meanings in every proposal so the caller can compare them.
    the pain area touches, and cite file:line. Shallow-module signals: a
    pass-through layer; an interface about as complex as its implementation;
    callers that must call in a set order; one decision repeated across
-   modules; options added one caller at a time; tests that mock internals.
+   modules; options added one caller at a time; tests that mock internals; a
+   helper split out to be tested while the caller wiring it stays untested.
    Ask what callers would have to know if a suspect module disappeared:
    nothing new means it was a pass-through; the same rule reproduced in
    several callers means it earns its place. A signal becomes a finding only
@@ -102,8 +103,10 @@ Use these meanings in every proposal so the caller can compare them.
    at the new interface, and which stay; what sits behind the seam decides the
    [test placement](references/module-depth.md#seams-and-how-tests-cross-them).
 7. **Rank, return and stop.** Report the strongest proposals first in the shape
-   below. The caller chooses one; a single behavior-preserving transformation
-   goes to Refactor, anything larger or behavior-changing to Plan.
+   below, with a [migration](references/module-depth.md#migration-that-stays-working)
+   that keeps every step working. The caller chooses
+   one; a single behavior-preserving transformation goes to Refactor, anything
+   larger or behavior-changing to Plan.
 
 ## Shared code
 

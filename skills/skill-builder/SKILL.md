@@ -91,19 +91,28 @@ creates a blank source package. Neither imports another skill's content.
 `SKILL.md` with `metadata.authoring_state: scaffold`; helpers, references and
 assets are conditional on the actual behavior. Replace the placeholders and
 state applicability, inputs, authority, result, completion and failure in the
-layout that makes them clear. Remove the scaffold state only after authoring
-the behavior; strict source checks reject it. Removing it is an author
-assertion, not proof of semantic completeness.
+layout that makes them clear. An ending such as "hand off" or "then stop" can
+end the caller's turn when the skill runs inline; read
+[endings](references/authoring-doctrine.md#state-authority-and-a-usable-failure-path)
+before writing one. Remove the scaffold state only after authoring the
+behavior; strict source checks reject it. Removing it is an author assertion,
+not proof of semantic completeness.
 
-When repairing a skill after a miss, fix the condition rather than adding a
-case, keep each mechanism in the skill that owns it, and check a line's
-provenance before cutting it; see
-[changing existing text](references/authoring-doctrine.md#change-existing-text-at-its-owning-layer).
+Before editing a skill after a miss or a review finding, read
+[changing existing text](references/authoring-doctrine.md#change-existing-text-at-its-owning-layer);
+it decides when text stays unchanged, when a list stays explicit, and what to
+check before cutting a line.
 
 Edit `skills/<slug>/` as the source owner. Check the completed source with
 `scripts/heal.sh --check --strict skills/<slug>`, then regenerate its owned
 projections through the repository's owning commands. Inspect the generated
-diff; hand-edit no projection.
+diff; hand-edit no projection. A clean check says nothing about behavior: when
+an edit changes when the skill routes, what it asks, when it stops, what it
+commits or publishes or how it degrades, or cuts a line that recorded
+provenance protects, report that behavior as unmeasured unless a
+[Skill Eval](../skill-eval/SKILL.md) result measured that behavior, and name
+what was missing (a runner, a host or the caller's authorization). Typo, path
+and formatting edits need no such note.
 
 Creation is staged, not atomic. If a later stage fails, keep the created source
 and any report, capture the exit and diagnostic, and report source creation

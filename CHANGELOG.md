@@ -47,6 +47,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Memory traces corrected claims and audits instructions within existing
   authority. Postmortem checks what happened to earlier recommendations when
   those reports are among its inputs.
+- A second pass read every line of two public skill libraries closest to
+  AgentOps and checked each method against current skill text; 173 survived
+  and were folded into 27 skills, again in AgentOps terms. Implement confirms
+  the failing run executes the code in question, grounds each cause against
+  its strongest rival, and repairs a defect class rather than one instance.
+  Test derives expected values from a specification, never the code under
+  test, and pins untested code with characterization tests before changing
+  it. Review binds the subject to the merge base and holds a finding under
+  pushback unless new evidence arrives. Agent Native treats a capacity refusal
+  as backpressure, checks each worker's starting commit, and names the actions
+  a packet must not take. Doc writes a questionnaire when only another person
+  holds the answers and keeps one live statement instead of stacked updates.
+  Triage reads the whole thread and splits compound reports. Research checks
+  that a citation asserts the claim and that "nothing calls this" survives
+  re-exports and reflection. Smaller additions reach Plan, Interview, Council,
+  Domain, Idea Genie, Security, Skill Builder, Skill Eval and the rest. None
+  has been measured with Skill Eval.
 - The Claude Code plugin now installs from `plugin/`, a generated folder that
   holds only what the plugin loads: skills, agents, the policy hook dispatcher
   and Workflow tool scripts, plus the manifest and a new listing icon. The

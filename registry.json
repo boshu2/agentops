@@ -837,7 +837,7 @@
         "has_skill_md": true,
         "name": "agent-native",
         "path": "skills/agent-native/",
-        "reference_count": 5,
+        "reference_count": 6,
         "tier": "meta"
       },
       {
@@ -952,7 +952,7 @@
         "has_skill_md": true,
         "name": "doc",
         "path": "skills/doc/",
-        "reference_count": 18,
+        "reference_count": 19,
         "tier": "product"
       },
       {
@@ -1003,7 +1003,7 @@
         "has_skill_md": true,
         "name": "idea-genie",
         "path": "skills/idea-genie/",
-        "reference_count": 2,
+        "reference_count": 3,
         "tier": "execution"
       },
       {
@@ -1034,11 +1034,11 @@
         "effects": [
           "update_intent_source"
         ],
-        "has_references": false,
+        "has_references": true,
         "has_skill_md": true,
         "name": "interview",
         "path": "skills/interview/",
-        "reference_count": 0,
+        "reference_count": 1,
         "tier": "execution"
       },
       {
@@ -1090,11 +1090,11 @@
           "dispatch_authorized_workers",
           "update_native_handoffs"
         ],
-        "has_references": false,
+        "has_references": true,
         "has_skill_md": true,
         "name": "orchestrate",
         "path": "skills/orchestrate/",
-        "reference_count": 0,
+        "reference_count": 1,
         "tier": "execution"
       },
       {
@@ -1195,7 +1195,7 @@
         "has_skill_md": true,
         "name": "research",
         "path": "skills/research/",
-        "reference_count": 3,
+        "reference_count": 4,
         "tier": "execution"
       },
       {
@@ -1227,7 +1227,7 @@
         "has_skill_md": true,
         "name": "review",
         "path": "skills/review/",
-        "reference_count": 1,
+        "reference_count": 2,
         "tier": "judgment"
       },
       {
@@ -1299,7 +1299,7 @@
         "has_skill_md": true,
         "name": "skill-eval",
         "path": "skills/skill-eval/",
-        "reference_count": 3,
+        "reference_count": 4,
         "tier": "meta"
       },
       {
@@ -1316,7 +1316,7 @@
         "has_skill_md": true,
         "name": "test",
         "path": "skills/test/",
-        "reference_count": 11,
+        "reference_count": 12,
         "tier": "execution"
       },
       {
