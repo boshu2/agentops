@@ -56,6 +56,7 @@ hold; see [a held plan](references/stress-test.md#a-plan-the-caller-already-hold
    recommendation shown.
 
 ```text
+Settled: <what the last answer decided, or nothing yet>. Open: <count>.
 Q<n>: <the decision>. <the question, with 2 to 4 options when they exist>
 My recommendation: <answer>, because <source or reason>.
 Tradeoff: <the one cost that matters>

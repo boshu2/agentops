@@ -25,7 +25,7 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 | Skill | Use it for |
 |---|---|
 | [architecture](https://github.com/boshu2/agentops/blob/main/skills/architecture/SKILL.md) | Compare interface designs and find structural friction. Use when: a change spreads across modules or a boundary is unclear. For code changes, use Refactor. |
-| [doc](https://github.com/boshu2/agentops/blob/main/skills/doc/SKILL.md) | Write source-checked docs, READMEs, change descriptions, handoffs and questionnaires. Use when: documenting a change, leaving or resuming a handoff, or drafting questions for someone other than the caller. |
+| [doc](https://github.com/boshu2/agentops/blob/main/skills/doc/SKILL.md) | Write source-checked docs, READMEs, change descriptions and handoffs. Use when: documenting a change, leaving or resuming a handoff, or drafting a questionnaire for someone else. |
 | [domain](https://github.com/boshu2/agentops/blob/main/skills/domain/SKILL.md) | Settle what domain terms mean per context, and which repository conventions or language standards (Go, Python) apply. Use when: names disagree or a rename is proposed. |
 | [ergonomics](https://github.com/boshu2/agentops/blob/main/skills/ergonomics/SKILL.md) | Audit CLI, API, MCP or SDK discovery, first use and error recovery. Use when: designing an agent-facing tool or investigating misuse, including one command. |
 | [refactor](https://github.com/boshu2/agentops/blob/main/skills/refactor/SKILL.md) | Restructure or clean up code with no behavior change, proved by before-and-after checks. Use when: asked to clean up, extract, dedupe or simplify, even one function. |

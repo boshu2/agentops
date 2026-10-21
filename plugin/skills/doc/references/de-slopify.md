@@ -4,10 +4,10 @@
 > quality** method under [`doc`](../SKILL.md), not a general writing skill and
 > not a standalone AgentOps skill.
 
-Use it from `doc` (required for `--mode=readme` generate/rewrite) so READMEs and
-other repo docs stay concrete, scannable, and free of LLM prefab.
+Use it from `doc` (required when a README is generated or rewritten) so READMEs
+and other repo docs stay concrete, scannable, and free of LLM prefab.
 
-Use this reference from `doc` (especially `--mode=readme`) before reporting
+Use this reference from `doc` (especially for README work) before reporting
 completion.
 
 > **Core insight #1:** You cannot do this with regex or a script. It requires a
@@ -159,11 +159,12 @@ repository document match the surrounding idiom.
 
 - Before publishing a README, doc, or release note
 - After any AI-assisted writing session
-- During `doc --mode=readme` generate/rewrite (required) and validate (flag findings)
+- When `doc` generates or rewrites a README (required), or checks one without
+  rewriting it (flag findings)
 
-## Required from Doc readme mode
+## Required for README work in Doc
 
 After writing or rewriting `README.md`, run the full prompt above on the exact
-file and apply fixes before Step 5 deterministic checks. On `--validate`, report
-residual slop tells as evidence; do not silently rewrite unless the caller asked
-for rewrite.
+file and apply fixes before the deterministic checks (Step 5 of
+[README craft](readme-craft.md)). On a check-only request, report residual slop
+tells as evidence; do not silently rewrite unless the caller asked for a rewrite.

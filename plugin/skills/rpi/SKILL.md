@@ -87,6 +87,12 @@ mistake is costly, not a scheduler.
    expand the goal. Report them briefly only when useful; do not turn them into
    another work batch.
 
+These loop defaults (review only on the triggers in 5, one round in 6, one
+helper per stall below) are working assumptions about current models, not
+measured laws. Propose revising or retiring one as an owner-approved ADR-0017
+amendment, never mid-run, when a measured run shows the same outcome without it
+or a model change removes or moves the failure it guards against.
+
 ## Delegation and handoffs
 
 When delegation is authorized and useful, select the runtime's task-only
@@ -105,8 +111,20 @@ supply content identity and check facts, not duplicate evidence bundles.
 
 ## Causal stall and bounds
 
-Unknown cause, recurrence, no progress or a wrong objective admits
-at most one bounded fresh helper for that incident within authority and bounds.
+Name a stall by what you observed, never by a count:
+
+- Unknown cause: a check fails and neither its output nor the diff points to a
+  change or assumption you can name.
+- Recurrence: a check that passed after a repair fails again for the same cause.
+- No progress: the failing check's output and the diff are unchanged since the
+  previous attempt, or a delegated worker's last observed activity has not
+  changed since you last looked.
+- Wrong objective: a caller correction, or a check of the accepted example,
+  shows the work aims at something acceptance does not ask for.
+
+Any of the four admits at most one bounded fresh helper for that incident
+within authority and bounds; if it stays unresolved, the stalled Result names
+its observed fact.
 Give it the failed assumption, evidence and one discriminating question. Resume
 only with a different testable approach; an unhelpful answer ends the attempt.
 Do not chain helpers or rename the incident. Known failures get direct repair.

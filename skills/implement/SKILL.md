@@ -30,7 +30,13 @@ metadata:
 
 Implement the accepted outcome. Repair ordinary known defects directly. Use the existing
 intent; no Plan, Recall or Learn worksheet is owed for a clear edit. Implement
-owns source changes and factual checks; the runtime derives identity and receipts.
+owns source changes and factual checks. Read changed paths and content identity
+from Git or `ao provenance manifest`, not from memory. Copy the author context
+ID from the session, subagent or thread ID the runtime exposes, or use the
+identity the caller supplied and label it as supplied. Report it as unknown when
+neither exists, and never make one up. Copy check results from the command
+output. `ao` records these values only as caller-supplied flags and does not
+derive them.
 
 ## Rules that decide the result
 

@@ -156,8 +156,11 @@ scripts/security-gate.sh --mode full    # repository-wide
 
 Add `--require-tools` when skipped scanners would invalidate the assurance
 claim. **Checkpoint:** preserve the exit code and verify the reported
-`security-gate-summary.json` exists and parses before triage; report the result
-as incomplete unless the selected artifact validator and process both succeed.
+`security-gate-summary.json` passes the validator below before triage. Exit 2
+(`BLOCKED_CRITICAL`) and exit 3 (`BLOCKED_HIGH`) are completed scans with
+blocking findings, not failed runs. Report the result as incomplete when the
+validator fails, when the gate exits 4 (`--require-tools` and a scanner was
+missing or errored), or when it exits with any other nonzero code.
 
 Scheduled automation runs the full gate against the intended branch and retains its artifact directory. A failing scheduled run creates actionable tracked work; AgentOps itself does not supply the scheduler.
 
@@ -174,9 +177,20 @@ Scheduled automation runs the full gate against the intended branch and retains 
 
 **Filename convention:** repository gates require `security-gate-summary.json` (and raw `summary.json`); suite runs require `suite-summary.json`; redteam runs require `redteam/redteam-results.json`.
 
-**Serialization/schema format:** `security-gate-summary.json` is JSON with nonempty `mode`, `run_id`, `output_dir`, and `gate_status`, numeric `missing_tool_count`, boolean `require_tools`, and object `toolchain`.
+**Serialization/schema format:** `security-gate-summary.json` is JSON with nonempty `mode`, `run_id`, and `output_dir`, a `gate_status` of `PASS`, `WARN_QUALITY`, `BLOCKED_HIGH`, or `BLOCKED_CRITICAL`, numeric `missing_tool_count`, boolean `require_tools`, and object `toolchain`.
 
-**Validator command:** with `OUT=<security-gate-run-dir>`, run `jq -e '(.mode|type)=="string" and (.mode|length)>0 and (.run_id|type)=="string" and (.run_id|length)>0 and (.output_dir|type)=="string" and (.output_dir|length)>0 and .gate_status=="PASS" and (.missing_tool_count|type)=="number" and (.require_tools|type)=="boolean" and (.toolchain|type)=="object"' "$OUT/security-gate-summary.json" >/dev/null`.
+**Validator command:** with `OUT=<security-gate-run-dir>`, run `jq -e '(.mode|type)=="string" and (.mode|length)>0 and (.run_id|type)=="string" and (.run_id|length)>0 and (.output_dir|type)=="string" and (.output_dir|length)>0 and (.gate_status|IN("PASS","WARN_QUALITY","BLOCKED_HIGH","BLOCKED_CRITICAL")) and (.missing_tool_count|type)=="number" and (.require_tools|type)=="boolean" and (.toolchain|type)=="object"' "$OUT/security-gate-summary.json" >/dev/null`.
+
+The validator proves the artifact is complete, not that the scan was clean; a scan
+that found issues still passes it. Read the result from `gate_status`: `PASS`
+means the scanners that ran reported no blocking findings and no high-severity
+quality findings, `WARN_QUALITY` means only non-blocking quality findings,
+`BLOCKED_HIGH` means high-severity security findings, and `BLOCKED_CRITICAL`
+means critical findings, which in full mode also count failing pytest and go
+test runs and a pytest run that errored or could not start; read
+`toolchain.tools` and `toolchain.findings` for the cause. The gate
+writes `UNKNOWN` when the toolchain summary carried no status, and the validator
+rejects it.
 
 **Output:** the review report above; for scripted scans also the artifact
 path, command/exit code, mode, and gate status. Do not add an owner, next
