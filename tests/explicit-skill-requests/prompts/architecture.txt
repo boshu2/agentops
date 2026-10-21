@@ -1,0 +1,1 @@
+Execute /agentops:architecture on this module. Find where its structure makes change expensive, compare at least two interface designs with call-site sketches, and propose without editing code.

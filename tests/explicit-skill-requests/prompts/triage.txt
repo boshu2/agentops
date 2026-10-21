@@ -1,0 +1,1 @@
+Execute /agentops:triage on this incoming bug report. Reproduce or state what was tried, check for duplicates and prior decisions, classify it with evidence, and return a recommendation and an agent-ready brief without changing tracker state.
