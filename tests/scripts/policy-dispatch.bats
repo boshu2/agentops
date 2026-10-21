@@ -281,6 +281,73 @@ telemetry_lines() {
   [ -z "$output" ]
 }
 
+# ---------- policy (f): core.policy:self-waive --------------------------------
+#
+# waived() trusts every "<id> <expiry>" line in the waiver file, so an agent
+# that writes the file can waive any deny policy. Route (ask), not deny: the
+# operator still decides, and an operator-requested waiver stays writable.
+# Visibility, not tamper-proofing — only the documented write shapes match.
+
+# $1 = expected policy id; asserts exactly one ask JSON object naming it.
+assert_ask_for() {
+  [ "$status" -eq 0 ]
+  [ "$(printf '%s\n' "$output" | jq -s 'length')" -eq 1 ]
+  printf '%s\n' "$output" | jq -e '.hookSpecificOutput.permissionDecision == "ask"'
+  printf '%s\n' "$output" | jq -e --arg id "$1" '.hookSpecificOutput.permissionDecisionReason | contains($id)'
+}
+
+@test "FIRE route: Write of the waiver file asks, names core.policy:self-waive, telemetry decision=ask" {
+  HOME="$TMPDIR" run run_dispatch Write file_path "$TMPDIR/.agents/ao/policy-waivers"
+  assert_ask_for "core.policy:self-waive"
+  [ "$(telemetry_lines)" -eq 1 ]
+  run jq -r '.token_class + " " + .mode + " " + .decision' "$AGENTOPS_GUARDRAIL_TELEMETRY"
+  [ "$output" = "core.policy:self-waive route ask" ]
+}
+
+@test "FIRE route: >> append of a waiver line onto the waiver file asks" {
+  run run_dispatch Bash command 'echo "core.verdicts:hand-edit 9999999999" >> ~/.agents/ao/policy-waivers'
+  assert_ask_for "core.policy:self-waive"
+  run jq -r '.decision' "$AGENTOPS_GUARDRAIL_TELEMETRY"
+  [ "$output" = "ask" ]
+}
+
+@test "FIRE route: tee -a onto the waiver file asks" {
+  run run_dispatch Bash command 'printf "core.verdicts:hand-edit 9999999999\n" | tee -a ~/.agents/ao/policy-waivers'
+  assert_ask_for "core.policy:self-waive"
+  run jq -r '.decision' "$AGENTOPS_GUARDRAIL_TELEMETRY"
+  [ "$output" = "ask" ]
+}
+
+@test "FIRE route: cp of a prepared file ONTO the waiver file asks" {
+  run run_dispatch Bash command "cp /tmp/w $HOME/.agents/ao/policy-waivers"
+  assert_ask_for "core.policy:self-waive"
+}
+
+@test "FIRE route: sed -i in-place edit of the waiver file asks" {
+  run run_dispatch Bash command "sed -i 's/ 1700000000$/ 9999999999/' ~/.agents/ao/policy-waivers"
+  assert_ask_for "core.policy:self-waive"
+}
+
+@test "SILENT: reading the waiver file (cat) does not fire" {
+  run run_dispatch Bash command "cat ~/.agents/ao/policy-waivers"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+  [ "$(telemetry_lines)" -eq 0 ]
+}
+
+@test "SILENT: copying the waiver file OUT does not fire" {
+  run run_dispatch Bash command "cp ~/.agents/ao/policy-waivers /tmp/waivers.bak"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "SILENT: Edit of an unrelated file does not fire" {
+  run run_dispatch Edit file_path "$TMPDIR/.agents/ao/notes.md"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+  [ "$(telemetry_lines)" -eq 0 ]
+}
+
 # ---------- plugin layout -----------------------------------------------------
 
 @test "plugin layout: dispatcher resolves ../policies/policies.json without AOP_POLICIES" {
