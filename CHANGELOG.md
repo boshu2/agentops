@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   --check` fails when it is stale. The Codex plugin is unchanged.
 - The plugin no longer puts `bin/factory` and `bin/ralph` on the Bash `PATH`.
   They are operator tools; run them from a repository checkout.
+- The `implement-wave` workflow now runs its implementer lanes one at a time
+  in the caller's working tree, as `code-write` does, so a wave takes the sum
+  of its lane times. Lane scopes remain instructions rather than an enforced
+  boundary, and the workflow no longer claims strictly disjoint ownership.
+  Arguments and the result shape are unchanged. Worktree isolation is deferred.
 
 ## [3.10.0] - 2026-10-05
 
