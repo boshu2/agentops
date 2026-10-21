@@ -51,8 +51,9 @@ supplied text. Planning produces no AgentOps packet.
 
 ## Output
 
-Write this block into the caller's existing intent (tracker item or
-conversation). It is the whole plan.
+Write this block into the caller's existing intent when the request or
+existing authorization covers editing it (the conversation always does);
+otherwise return it as a proposed amendment. It is the whole plan.
 
 ```text
 Outcome:  <who observes what, in the repository's terms>
