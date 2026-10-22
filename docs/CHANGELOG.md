@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.11.0] - 2026-10-22
+
+AgentOps 3.11 adds three skills, bringing the menu to 32, and changes 28 of the
+29 existing skills, mostly by folding in methods from a survey of other public
+skill libraries, rewritten in AgentOps terms. None of these skill changes has been measured with
+Skill Eval or the plugin evaluator, so this release claims no improvement in
+outcomes. The Claude Code plugin now installs from a generated `plugin/`
+folder, and `ao`'s help and briefing text states the review rule that 3.9
+introduced. No command or skill name changes.
+
+See the [curated release notes](https://github.com/boshu2/agentops/blob/main/docs/releases/2026-10-22-v3.11.0-notes.md)
+for upgrade notes and known limits.
+
 ### Added
 
 - Three skills, bringing the menu to 32. Triage turns an incoming bug report,
@@ -16,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   expensive and compares interface designs before any code moves. Ergonomics
   checks whether an agent can discover a CLI, API or tool, read its output and
   recover from its errors. None has been measured with Skill Eval yet.
+- The plugin's guard asks before an agent writes the policy waiver file,
+  `~/.agents/ao/policy-waivers`, with a redirect, `tee`, a copy, an in-place
+  edit, or Edit or Write (`core.policy:self-waive`). Approve only a waiver you
+  asked for. It makes such writes visible; it is not tamper-proofing.
 
 ### Changed
 
@@ -91,6 +108,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   of its lane times. Lane scopes remain instructions rather than an enforced
   boundary, and the workflow no longer claims strictly disjoint ownership.
   Arguments and the result shape are unchanged. Worktree isolation is deferred.
+- `ao --help`, `ao quick-start`, `ao demo` and `ao robot-docs` now state the
+  review rule from 3.9: checks and CI gate an ordinary change, and one fresh
+  read happens only where a mistake is costly. The 3.10 binary still printed
+  the retired rule that every change needs a fresh judgment. ADR-0017 records
+  the rule as a dated amendment.
+- Doc, Implement, Security and Test gained optional references for developer
+  journeys, difficult failures, attacker-path evidence, exploratory QA, suite
+  audits and workload performance. Skill Eval chooses an evaluation by the
+  runtime the caller authorized and by what is being measured.
+- Agent Native's per-packet result and Orchestrate's status line report the
+  last observed activity, and RPI's closeout names a stall by category and the
+  fact observed. Plan writes into existing intent only with authority and
+  otherwise proposes an amendment. Using GC's Mayor template no longer pushes or
+  opens a PR unless publishing is authorized.
+- Validate's `summary` check fails when a lane is cancelled or times out, and a
+  full run fails on any skipped lane. The release publisher waits for a green
+  Validate run on the exact tagged commit, and `scripts/retag-release.sh` pushes
+  main before it changes any tag or release.
+- Two gates that could not fail, `always.mutation-route` and
+  `always.file-manifest-overlap`, are retired. The `constraints.enforce` repair
+  hint no longer names the removed `ao constraint` command.
+- Dependencies: Go toolchain 1.27.3, `golang.org/x/text` 0.43.0,
+  golangci-lint 2.14.0 and updated GitHub Action pins. The skill evaluator step
+  in CI stays on Python 3.14 because Harbor's `litellm` dependency has no
+  Python 3.15 release.
+
+### Fixed
+
+- `ao doctor fix` keeps the run ID, the actions it applied and the backup paths
+  in its error output when it cannot write its report. It still exits 74, so
+  you can inspect or undo before retrying.
+- Research no longer pre-approves Bash and unscoped Write through
+  `allowed-tools`. It asks for permission the way the other skills do.
+- The hooks tree no longer contains an `npx` launcher string, which the Claude
+  Code plugin marketplace validator reported as blocking.
+- The hook installer no longer says to prefix one command with
+  `AOP_WAIVE=<policy-id>`. That never waived dispatcher policies, because the
+  hook reads its own environment. Set `AOP_WAIVE` in the environment Claude is
+  launched with, or add a `<policy-id> <expiry-unix-epoch>` line to the waiver
+  file.
 
 ## [3.10.0] - 2026-10-05
 

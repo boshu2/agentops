@@ -162,3 +162,44 @@ func TestVersion_FallbackHasCuratedReleaseNotes(t *testing.T) {
 		t.Fatalf("found %d curated release-notes files matching %s, want exactly 1: %v", len(matches), pattern, matches)
 	}
 }
+
+// TestVersion_ReadmeUpgradeSectionLinksCurrentNotes guards the release-cut
+// invariant that the README's upgrade section sends readers to the notes for
+// the checked-in `version` fallback, and that the linked file exists.
+//
+// The upgrade section is where an upgrading user starts, and it is edited by
+// hand at every cut. Nothing else ties it to the release: the doc gates check
+// that links resolve, so a section still pointing at the previous release's
+// notes passes them while telling users about the wrong release.
+func TestVersion_ReadmeUpgradeSectionLinksCurrentNotes(t *testing.T) {
+	if strings.Contains(version, "-g") || strings.HasSuffix(version, "-dirty") {
+		t.Skipf("version %q is an ldflags-injected build-describe string, not the checked-in fallback", version)
+	}
+
+	root := findReleaseManifestRoot(t)
+	if root == "" {
+		t.Skip("not running inside an AgentOps checkout; no README to read")
+	}
+
+	raw, err := os.ReadFile(filepath.Join(root, "README.md"))
+	if err != nil {
+		t.Fatalf("read README.md: %v", err)
+	}
+	notesLinkRe := regexp.MustCompile(`\]\((docs/releases/\d{4}-\d{2}-\d{2}-v` + regexp.QuoteMeta(version) + `-notes\.md)\)`)
+	match := notesLinkRe.FindSubmatch(raw)
+	if match == nil {
+		t.Fatalf("README.md links no docs/releases/<date>-v%s-notes.md; the upgrade section still points at an earlier release", version)
+	}
+	if _, err := os.Stat(filepath.Join(root, filepath.FromSlash(string(match[1])))); err != nil {
+		t.Errorf("README.md links %s, which does not exist: %v", match[1], err)
+	}
+
+	parts := strings.SplitN(version, ".", 3)
+	if len(parts) < 2 {
+		t.Fatalf("version %q is not X.Y.Z", version)
+	}
+	minor := parts[0] + "." + parts[1]
+	if heading := "Upgrading to " + minor + "<"; !strings.Contains(string(raw), heading) {
+		t.Errorf("README.md has no %q upgrade heading for version %s", "Upgrading to "+minor, version)
+	}
+}
