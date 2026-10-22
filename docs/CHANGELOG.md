@@ -130,9 +130,10 @@ for upgrade notes and known limits.
   `always.file-manifest-overlap`, are retired. The `constraints.enforce` repair
   hint no longer names the removed `ao constraint` command.
 - Dependencies: Go toolchain 1.27.3, `golang.org/x/text` 0.43.0,
-  golangci-lint 2.14.0 and updated GitHub Action pins. The skill evaluator step
-  in CI stays on Python 3.14 because Harbor's `litellm` dependency has no
-  Python 3.15 release.
+  golangci-lint 2.14.0 and updated GitHub Action pins. Steps that install the
+  skill evaluator (in Validate, the nightly run and the release publisher) stay
+  on Python 3.14 because Harbor's `litellm` dependency has no Python 3.15
+  release.
 
 ### Fixed
 

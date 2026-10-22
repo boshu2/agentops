@@ -31,7 +31,7 @@
       "matchDepTypes": ["uses-with"],
       "matchCurrentValue": "3.14",
       "enabled": false,
-      "description": "The skill evaluator step in validate.yml stays on Python 3.14: harbor 0.22.0 depends on litellm>=1.92.0, which has no Python 3.15 release. Raise it by hand once litellm supports 3.15."
+      "description": "Steps that install the skill evaluator requirements (validate.yml, release.yml pre-publish-evidence, nightly.yml security-toolchain) stay on Python 3.14: harbor 0.22.0 depends on litellm>=1.92.0, which has no Python 3.15 release. Raise them by hand once litellm supports 3.15."
     }
   ],
   "vulnerabilityAlerts": {
