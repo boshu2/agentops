@@ -309,7 +309,7 @@ jobs:
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           # Evaluator dependencies require Python <3.15.
-          python-version: '3.15'
+          python-version: '3.14'
           update-environment: false
 
       - name: Calibrate skill evaluator without model calls
