@@ -24,6 +24,14 @@
       "matchPackageNames": ["harbor"],
       "enabled": false,
       "description": "Harbor version is a declared evaluator runtime identity (taskbank/README.md); bump prepare.py, README and requirements together by hand."
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "matchDepNames": ["python"],
+      "matchDepTypes": ["uses-with"],
+      "matchCurrentValue": "3.14",
+      "enabled": false,
+      "description": "The skill evaluator step in validate.yml stays on Python 3.14: harbor 0.22.0 depends on litellm>=1.92.0, which has no Python 3.15 release. Raise it by hand once litellm supports 3.15."
     }
   ],
   "vulnerabilityAlerts": {
