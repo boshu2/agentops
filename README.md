@@ -472,24 +472,26 @@ With Go installed: `go install github.com/boshu2/agentops/cli/cmd/ao@latest`.
 ## Updating and advanced setup
 
 <details>
-<summary><strong>Upgrading to 3.10</strong></summary>
+<summary><strong>Upgrading to 3.11</strong></summary>
 
+<a id="upgrading-to-311"></a>
 <a id="upgrading-to-310"></a>
 <a id="upgrading-to-39"></a>
 <a id="upgrading-to-38"></a>
 <a id="upgrading-to-37"></a>
 
-Version 3.10 keeps every 3.9 command and skill name. It rewrites the skill
-descriptions so skills load on plain requests, adds
-[`claude-exec`](skills/claude-exec/SKILL.md) and lets Validate run without `ao`.
-Read the [3.10 release notes](docs/releases/2026-10-05-v3.10.0-notes.md). Use the
+Version 3.11 keeps every 3.10 command and skill name. It adds
+[`triage`](skills/triage/SKILL.md), [`architecture`](skills/architecture/SKILL.md)
+and [`ergonomics`](skills/ergonomics/SKILL.md), and folds methods from other
+public skill libraries into 27 skills; none of that is measured yet.
+Read the [3.11 release notes](docs/releases/2026-10-22-v3.11.0-notes.md). Use the
 [plugin update instructions](docs/install-day2-ops.md#install-and-update-runtime-plugins)
 or, for npx installs, `npx skills@latest update` ([update notes](docs/install-day2-ops.md#update)).
 For Homebrew: `brew update && brew upgrade agentops`. In a source checkout, run
 `git pull --ff-only`, then rerun `ao skills link` with the selectors you used
-before, adding `--skill claude-exec` for the new skill; without selectors it
-links every skill. Start a new session afterward; new installs do not silently
-remove obsolete copies.
+before, adding `--skill triage --skill architecture --skill ergonomics` for the
+new skills; without selectors it links every skill. Start a new session
+afterward; new installs do not silently remove obsolete copies.
 
 **Upgrading from 3.8 or earlier:** version 3.9 removed ten bundled external tool
 skills, retired three delivery workflows, deleted the old curl installers and
