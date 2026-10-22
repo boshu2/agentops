@@ -78,8 +78,8 @@ PRs: [#1217](https://github.com/boshu2/agentops/pull/1217) a924dc363,
 | 11 | implement-wave-isolation | Next table | #1220 | Worktree lanes plus scope diff (deferred) | PASS |
 | 12 | validate-and-defaults | Next table + §5 rows | #1218 (and #1220 for plan, using-gc) | Precedence reversal; cross-family default; fail-closed hook | as #5 |
 
-"Fresh read" is the PR group's single author-distinct read. #1218 covered #5, #7,
-#10 and #12 together.
+"Fresh read" is the PR group's single author-distinct read. #1218 covered
+rows #5, #7, #10 and #12 together.
 
 ## 2. Decisions
 
