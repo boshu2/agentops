@@ -87,9 +87,10 @@ without restarting its interview or taking over caller choices.
    answering about an adjacent one; name any substitute the caller allowed.
 2. Inspect the smallest relevant sources and verify search hits against the
    actual source. External facts that change (versions, vendor behavior,
-   standards) need current primary sources. This skill pre-approves only local
-   tools: use the host's web tools when available and permitted; otherwise mark
-   the external claim unknown and name the source that would settle it.
+   standards) need current primary sources. This skill grants no tools of its
+   own: use the host's web tools when they are available and permitted;
+   otherwise mark the external claim unknown and name the source that would
+   settle it.
    Before an external search or outside service sees a query, strip host
    names, IP addresses, file paths, query fragments, account or customer
    identifiers and internal names; search on the generic error class with the

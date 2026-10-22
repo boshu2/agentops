@@ -7,7 +7,7 @@
 | Operations layer | The product category: the portable layer that makes heterogeneous agentic engineering systems interoperate semantically. |
 | Federated integration graph | The topology: caller-owned intent, source systems, agents, factories, checks, and judgments remain separate nodes joined by typed handoffs. |
 | Semantic work-and-proof protocol | The interoperability contract: exact intent, exact subject, evidence, fresh judgment, and honest outcomes. |
-| RPI traversal | The lean charter: on-demand Plan, Implement/direct repairs and checks, fresh final Validate, then the outcome report. |
+| RPI traversal | The lean charter: on-demand Plan, Implement/direct repairs and checks, one fresh Validate only on the named triggers (the caller asks, a mistake is costly to undo, or no deterministic check covers the change; otherwise checks and CI gate it), then the outcome report. |
 
 The traversal is RPI. The graph is the topology. The protocol defines
 interoperability. The operations layer is the product.
@@ -38,7 +38,7 @@ campaign. It is not the product category and not the global architecture.
 | Subject manifest | Deterministic content identity independent of Git. |
 | Fresh validator | A declared context identity distinct from the candidate author's identity. |
 | Verdict | `PASS`, `FAIL`, or `NOT_PROVEN` over one acceptance digest and one subject digest. |
-| RPI report | `NOT_PLANNED`, `NOT_BUILT`, or the semantic verdict, followed by stop. |
+| RPI report | `NOT_PLANNED`, `NOT_BUILT`, or the result with its judgment (none when checks and CI gate an ordinary change, otherwise the fresh validator's semantic verdict), followed by stop. |
 | Revision | A change to accepted outcome/scope requires caller authority; an evidence-driven approach revision within them does not. |
 | Strategy | Optional advice such as premortem, postmortem, council, or an idea genie. |
 | Adapter | Optional transport or runtime that cannot change core semantics. |

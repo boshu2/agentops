@@ -18,8 +18,8 @@ work-and-proof protocol between the nodes; it absorbs none of their state.
 | Fresh validator | A context distinct from the author | One `PASS \| FAIL \| NOT_PROVEN` over exact content | Optional `verdict.v2` for a declared consumer |
 
 The standard traversal across these nodes is the
-[RPI traversal](rpi-traversal.md): Plan -> Implement -> fresh Validate ->
-bounded repair to convergence -> report. Vocabulary is fixed in
+[RPI traversal](rpi-traversal.md): Plan -> Implement -> checks and CI ->
+one fresh Validate only where a mistake is costly -> report. Vocabulary is fixed in
 [the ubiquitous language](../contracts/ubiquitous-language.md).
 
 ## Responsibilities

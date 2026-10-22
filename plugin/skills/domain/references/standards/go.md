@@ -360,15 +360,17 @@ func TestRejectsPathTraversal(t *testing.T) {
 
 ### Before Committing Go Changes
 
+Run the repository's own build, vet and test commands from the Go module root. Without a wrapper, that is:
+
 ```bash
-cd cli && go build ./... && go vet ./... && go test ./...
+go build ./... && go vet ./... && go test ./...
 ```
 
-Or equivalently: `cd cli && make build && make test`
+When the repository wraps these in `make` targets or a CI script, run those instead; they may add flags such as `-race` or `-shuffle=on`, or lint steps the bare commands skip.
 
 ## HTTP Handler Security
 
-Go HTTP handlers in this codebase are localhost-only but should still follow defense-in-depth:
+Apply these patterns to every Go HTTP handler, whatever its exposure. A listener bound only to localhost still receives requests from other local processes and from pages open in the user's browser, so judge each risk by where the deployment actually listens and who can reach it:
 
 | Pattern | Risk | Fix |
 |---------|------|-----|
@@ -376,7 +378,7 @@ Go HTTP handlers in this codebase are localhost-only but should still follow def
 | `r.URL.Query().Get("param")` used in file paths | Path traversal | Reject `..`, `/`, `\` before use |
 | `fmt.Fprintf(w, userInput)` in HTML handler | XSS | Use `html/template` or `text/template` with escaping |
 | `filepath.Join(root, userInput)` | Path traversal | Validate input against allowlist pattern (e.g., `regexp`) |
-| `Access-Control-Allow-Origin: *` | CORS bypass | Acceptable for localhost-only; restrict for public APIs |
+| `Access-Control-Allow-Origin: *` | CORS bypass | Allow only the origins the deployment serves, including on localhost, since any page in the user's browser can reach a localhost listener; keep `*` only for responses that are public anyway |
 
 **Query parameter validation pattern:**
 
@@ -423,8 +425,6 @@ func gitBlobID(content []byte) string {
 ```
 
 The `G<NN>` codes differ by site: G505 flags the `crypto/sha1` import (blocklisted import), G401 flags the `sha1.New()` call (weak crypto primitive). Pass every code that fires on a given line.
-
-Canonical example in this repo: `cli/internal/drrebuild/drrebuild.go`.
 
 ## Future Features (Go 1.24+)
 

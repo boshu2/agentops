@@ -37,7 +37,9 @@ This supersedes RPI as the default entrypoint, not the exact-content judgment
 bar. A native goal carries continuity, BD carries work and handoffs, and the
 model chooses useful actions within accepted scope. AO provides deterministic
 tools on demand. A fresh author-distinct reviewer judges the final change;
-invoking the Validate skill is optional.
+invoking the Validate skill is optional. (Superseded by the Conditional-review
+amendment — 2026-10-03: the fresh read is owed only on its named triggers. The
+rest of this amendment stays active.)
 
 Keep the existing skill library and explicit full installations. Selective
 linking makes individual guidance available without requiring a bundle. RPI
@@ -70,6 +72,9 @@ directly. Use cheap checks, reserve finishing capacity, respect real native/call
 bounds, and obtain fresh author-distinct final validation. Same-family remains
 default, cross-model opt-in, with no fixed ten-minute cap. Exact subject,
 all acceptance, empty `not_checked` and prior findings remain required.
+(Superseded by the Conditional-review amendment — 2026-10-03: final validation
+is owed only on its named triggers, and the empty-`not_checked` bar applies to a
+requested binding verdict.)
 
 Unknown cause, recurrence, no progress or wrong objective warrants causal
 examination. A genuine stall gets at most one authorized bounded fresh helper
@@ -216,7 +221,15 @@ reproducible and cannot be judged.
 
 Restore the control flow the cut over-reached on, and only that.
 
-1. **Converge's criterion returns as RPI's repair phase**, bounded by the
+1. *Superseded by the Conditional-review amendment — 2026-10-03; kept for
+   provenance.* A review is one round and a repair is confirmed by a check,
+   not re-validated, so no repair-and-revalidate loop remains to bound: there
+   is no default `repair_rounds` and no convergence law, and
+   `skills/rpi/SKILL.md` carries neither (it honors only an explicit caller
+   repair-round bound). The Lean-harness amendment — 2026-09-09 had already
+   removed the default two-round stop.
+
+   **Converge's criterion returns as RPI's repair phase**, bounded by the
    convergence law from the plan. A repair round is admitted only while all
    hold:
    1. `rounds_used < repair_rounds` (caller-declared, default 2).
@@ -238,7 +251,13 @@ Restore the control flow the cut over-reached on, and only that.
    evidence, and stops. It owns no wave selection, retry, budget, queue, claim,
    lease, Git, closure, or next work.
 
-3. **Fresh same-family validation is the default**, as owned by
+3. *Superseded in part by the Conditional-review amendment — 2026-10-03.*
+   Fresh validation is no longer a default step: the checks and CI gate an
+   ordinary change, and one fresh read happens only on the amendment's named
+   triggers. When a read does happen, the same-family default and
+   caller-selected cross-family legs below still apply.
+
+   **Fresh same-family validation is the default**, as owned by
    `skills/validate/SKILL.md`. Cross-family validation is caller-selected under
    the active 2026-09-08 amendment. Dispatch uses the authorized bounded
    model-dispatch recipe; required unavailable diversity remains
@@ -282,6 +301,14 @@ and the Claude conveyor's cross-family leg is a caller-supplied read-only comman
 whose model family the script cannot verify and does not claim to.
 
 ## Consequences
+
+*Superseded in part by the Conditional-review amendment — 2026-10-03.* The
+first two bullets describe the 2026-09-03 repair loop, and the third bullet's
+last sentence assumes a default fresh review; they are kept for provenance. An
+ordinary change now ends on its checks and CI with no verdict, and a fresh
+read, when owed, is one round whose repairs are confirmed by checks rather than
+re-validated. The cost of a caller-selected cross-model leg and the last bullet
+still hold.
 
 - RPI can end in a repaired PASS instead of only a first-pass verdict, and the
   stopping rule is in the contract where a validator can check it, rather than

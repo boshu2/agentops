@@ -182,11 +182,64 @@ challenge. Do not manufacture panel ceremony.
 
 - **Artifact directory:** `.agents/scratch/ideas/<run-id>/`
 - **Filename:** `idea-challenge.json`
-- **Format:** `idea-challenge.v1` JSON with route-specific fields enforced by
-  the validator; it carries no readiness field or decision
+- **Format:** `idea-challenge.v1` JSON in one of the two shapes below; it
+  carries no readiness field or decision
 - **Validation command:** `scripts/validate-challenge.sh <idea-challenge.json>`
 - **Downstream handoff:** `handoff.owner` is exactly `plan`; Plan may accept,
   reject, or combine the advisory evidence
+
+A one-way packet:
+
+```json
+{
+  "schema_version": "idea-challenge.v1",
+  "door_class": "one-way",
+  "sealed_generation": true,
+  "perspectives": [
+    {"id": "P1", "context_id": "<native context id>", "proposal": "<mechanism, evidence, tradeoff>"},
+    {"id": "P2", "context_id": "<a different context id>", "proposal": "<mechanism, evidence, tradeoff>"}
+  ],
+  "cross_reviews": [{
+    "reviewer": "P1",
+    "subject": "P2",
+    "dimensions": {"evidence": "<finding>", "reversibility": "<finding>", "system_fit": "<finding>", "failure_modes": "<finding>", "cost": "<finding>"}
+  }],
+  "disagreements": ["<where the perspectives still differ>"],
+  "refutations": [{"claim": "<what was attacked>", "attempt": "<the concrete test>", "result": "<what the attempt showed>"}],
+  "handoff": {"owner": "plan", "artifact_dir": ".agents/scratch/ideas/<run-id>/"}
+}
+```
+
+It needs at least two perspectives, each with its own `id` and a distinct
+`context_id`; a perspective may also carry `model_identity` and its proposal.
+`cross_reviews`, `disagreements` and `refutations` each need at least one
+entry. Each cross-review names two different perspective ids and at least one
+dimension, and every dimension it lists holds a non-empty text finding; every
+disagreement is a non-empty string, and every refutation fills `claim`,
+`attempt` and `result`.
+Leave `requires_ntm` out of a one-way packet.
+
+A two-way packet keeps `sealed_generation` false and all four lists empty,
+adds `"requires_ntm": false` to record that no pane manager was needed, and
+names its route:
+
+```json
+{
+  "schema_version": "idea-challenge.v1",
+  "door_class": "two-way",
+  "sealed_generation": false,
+  "perspectives": [],
+  "cross_reviews": [],
+  "disagreements": [],
+  "refutations": [],
+  "requires_ntm": false,
+  "handoff": {"owner": "plan", "artifact_dir": ".agents/scratch/ideas/<run-id>/", "route": "single-fresh-context"}
+}
+```
+
+The two-way packet records the route, not the challenge, so pass the fresh
+challenge's findings to Plan beside it. The validator rejects any other
+top-level field, and `handoff` takes only `owner`, `artifact_dir` and `route`.
 
 ## References
 

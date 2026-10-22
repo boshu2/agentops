@@ -71,6 +71,7 @@ the new skill or file it wants:
 | Check package structure | `scripts/heal.sh --check [--strict] skills/<slug>` |
 | Repair owned projections | `scripts/heal.sh --fix skills/<slug>` |
 | Inspect audit evidence | `scripts/audit.sh [--profile canonical|portable|external-observation] [--json <path>] skills/<slug>` |
+| Merge overlapping skills | [Consolidate](#consolidate) |
 | Export to another platform | [Conversion](#conversion) |
 | Make repeated expertise reusable | [Distill expertise](#distill-expertise) |
 
@@ -129,6 +130,22 @@ behavior stay `NOT_PROVEN` because the audit runs no skill or trial. Exact check
 exit codes and the opt-in legacy schema live in [audit checks](references/audit-checks.md),
 [authoring doctrine](references/authoring-doctrine.md) and
 [Codex parity](references/codex-parity.md).
+
+## Consolidate
+
+Merge only when two skills own the same behavior; a shared passage or two is a
+cross-link, not a merge. Apply the decision rules above, then pick one owner:
+keep the skill with the stronger contract (clearer applicability, authority,
+result and failure path) and move into it only the rules the other has and it
+lacks. Before retiring the other name, search skills, references, goal prompts,
+workflows and docs for callers that invoke it by name and point each at the
+owner, then record the retired name and its new owner in `docs/MIGRATION.md`.
+Keep a skill that other skills or goals call by name until its retirement adds
+the slug to `REMOVED_SKILLS` in `scripts/check-cathedral-cut-conformance.py`,
+which fails if the skill comes back; never delete it without that tombstone.
+A merge can move routing, so report as unmeasured whether the requests the
+retired skill caught now reach the owner unless a routing or
+[Skill Eval](../skill-eval/SKILL.md) result measured it.
 
 ## Conversion
 

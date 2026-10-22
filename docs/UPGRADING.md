@@ -25,21 +25,25 @@ Three actions prevent broken workflows after upgrading:
    agents and scope). The 3.x curl installer scripts were removed. To track
    skills from source instead, see the next section.
 
-The semantic loop became (3.0 through 3.6):
+The current flow is:
 
 ```text
-RPI -> Plan -> Implement -> fresh Validate -> report and stop
+Accepted intent -> native implementation and checks -> one fresh read where a mistake is costly -> finish
 ```
 
-As of ADR-0017 (2026-09-03) a bounded repair phase follows Validate:
-`FAIL` or `NOT_PROVEN` with findings repairs and re-validates under the
-convergence law within the caller's `repair_rounds`; the single-pass line above
-is historical.
+(The 3.0 through 3.6 releases ran `RPI -> Plan -> Implement -> fresh Validate ->
+report and stop`. ADR-0017 then added a bounded repair phase. 3.9 makes the
+fresh read conditional, with one round and no re-review after a repair, so the
+convergence law and `repair_rounds` no longer apply.)
 
 AgentOps no longer owns retry, queue, work-claim, Git, closure, release, or
-delivery state. Plan shapes one behavior, Implement runs one bounded experiment,
-Validate judges the exact candidate from fresh context, and RPI reports the
-result once.
+delivery state. Plan shapes one behavior when intent is missing, Implement makes
+the change and repairs known defects directly, and the checks and CI gate an
+ordinary change. Validate judges the exact candidate from a fresh context only
+when the caller asks, a mistake cannot be cheaply undone after it lands, or no
+deterministic check covers the changed behavior; see the
+[agent workflow reference](agent-workflow-reference.md). RPI reports the result
+once.
 
 ### Optional: track skills from a source checkout
 

@@ -69,25 +69,25 @@
     },
     {
       "id": "docs-readme-oss-skill-validators",
-      "title": "doc skill validators pass across runtimes (README + OSS folded as modes)",
+      "title": "doc skill validator passes (README and OSS work absorbed into doc)",
       "kind": "command",
-      "objective": "Keep documentation authoring skills healthy across shared and Codex artifacts, including README validation (--mode=readme) and OSS documentation workflows (--mode=oss) now absorbed into doc.",
+      "objective": "Keep the documentation skill healthy, including the README and OSS documentation work now absorbed into doc as request shapes. Every runtime loads skills/ directly, so there is one validator.",
       "runtime": "shell",
       "timeout_seconds": 120,
       "inputs": {
         "cwd": "../..",
-        "shell": "bash skills/doc/scripts/validate.sh && bash skills-codex/doc/scripts/validate.sh"
+        "shell": "bash skills/doc/scripts/validate.sh"
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "Results: 5 passed, 0 failed"}
+        {"type": "stdout_contains", "value": "doc structure and resource boundaries: PASS"}
       ],
       "dimensions": ["correctness", "runtime_compatibility", "process_adherence"],
       "critical": true
     },
     {
       "id": "oss-docs-audit-json-behavior",
-      "title": "OSS docs audit emits valid tiered JSON (--mode=oss helper)",
+      "title": "OSS docs audit emits valid tiered JSON (OSS docs helper)",
       "kind": "command",
       "objective": "Behaviorally protect the OSS docs audit command's JSON mode so future doc tooling can consume project type, tier scores, and totals deterministically.",
       "runtime": "shell",

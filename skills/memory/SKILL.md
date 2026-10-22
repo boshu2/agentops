@@ -46,7 +46,11 @@ request to turn an incident into a rule for an instruction file:
    qualifies, save nothing and say why.
 2. **Size the claim to its evidence.** One incident supports a narrow
    observation scoped to the conditions it actually had. A universal rule needs
-   repeated independent occurrences and later reapplication.
+   repeated independent occurrences and later reapplication. When a recurring
+   correction is a mechanical slip that a lint rule, test or hook could catch,
+   propose that check alongside the prose rule or in its place, as
+   [Postmortem](../postmortem/SKILL.md) does for such a miss; a check fails
+   where a rule can only ask.
 3. **State all five fields:** applicability, action, support, limits and invalidation.
    Use the template below; an entry with no invalidation is incomplete. For an
    incident, applicability includes the exact error text or observable symptom,

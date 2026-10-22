@@ -14,7 +14,10 @@ The boundary has four facts:
 
 - the requested behavior and acceptance are explicit;
 - the exact subject is identified by content, not by a mutable branch name;
-- a distinct fresh context judges that subject against the acceptance;
+- the checks and CI gate an ordinary change; when the caller asks, a mistake
+  cannot be cheaply undone after it lands, or no deterministic check covers the
+  changed behavior, one distinct fresh context judges that subject against the
+  acceptance;
 - the result identifies checked and unchecked scope and can be persisted as a
   standalone content-addressed `verdict.v2` when a consumer requires it.
 

@@ -70,9 +70,9 @@
   "cases": [
     {
       "id": "rpi-skill-stop-contract",
-      "title": "Lean RPI owns authorized outcome through checks and fresh judgment",
+      "title": "Lean RPI owns authorized outcome through checks and, where a mistake is costly, fresh judgment",
       "kind": "artifact_check",
-      "objective": "Keep direct repair, fresh judgment and real bounds in the native charter without mandatory phase worksheets.",
+      "objective": "Keep direct repair, conditional fresh judgment and real bounds in the native charter without mandatory phase worksheets.",
       "expectations": [
         {
           "type": "artifact_contains",
@@ -87,7 +87,7 @@
         {
           "type": "artifact_contains",
           "target": "../../skills/rpi/SKILL.md",
-          "value": "Do not append a next action"
+          "value": "Stop at completed acceptance, cancellation, refusal, a spent real bound"
         }
       ],
       "dimensions": [
