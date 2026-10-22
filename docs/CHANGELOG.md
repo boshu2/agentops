@@ -9,9 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.11.0] - 2026-10-22
 
-AgentOps 3.11 adds three skills, bringing the menu to 32, and folds methods
-from a survey of other public skill libraries into 27 existing skills,
-rewritten in AgentOps terms. None of these skill changes has been measured with
+AgentOps 3.11 adds three skills, bringing the menu to 32, and changes 28 of the
+29 existing skills, mostly by folding in methods from a survey of other public
+skill libraries, rewritten in AgentOps terms. None of these skill changes has been measured with
 Skill Eval or the plugin evaluator, so this release claims no improvement in
 outcomes. The Claude Code plugin now installs from a generated `plugin/`
 folder, and `ao`'s help and briefing text states the review rule that 3.9
@@ -29,6 +29,10 @@ for upgrade notes and known limits.
   expensive and compares interface designs before any code moves. Ergonomics
   checks whether an agent can discover a CLI, API or tool, read its output and
   recover from its errors. None has been measured with Skill Eval yet.
+- The plugin's guard asks before an agent writes the policy waiver file,
+  `~/.agents/ao/policy-waivers`, with a redirect, `tee`, a copy, an in-place
+  edit, or Edit or Write (`core.policy:self-waive`). Approve only a waiver you
+  asked for. It makes such writes visible; it is not tamper-proofing.
 
 ### Changed
 
@@ -139,6 +143,11 @@ for upgrade notes and known limits.
   `allowed-tools`. It asks for permission the way the other skills do.
 - The hooks tree no longer contains an `npx` launcher string, which the Claude
   Code plugin marketplace validator reported as blocking.
+- The hook installer no longer says to prefix one command with
+  `AOP_WAIVE=<policy-id>`. That never waived dispatcher policies, because the
+  hook reads its own environment. Set `AOP_WAIVE` in the environment Claude is
+  launched with, or add a `<policy-id> <expiry-unix-epoch>` line to the waiver
+  file.
 
 ## [3.10.0] - 2026-10-05
 
