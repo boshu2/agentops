@@ -4,8 +4,8 @@ status: historical
 
 # Per-skill scorecard, 2026-10 snapshot
 
-Snapshot date 2026-10-21. Scores were assigned on the tree before PRs
-#1217-#1221 and were not re-scored. Every status, line number and count below
+Snapshot date 2026-10-21. Scores were assigned on the tree before
+PRs #1217-#1221 and were not re-scored. Every status, line number and count below
 was re-checked on `main` at a193b6bdf unless a row says otherwise. Overview and
 verdict: [README.md](README.md). Debate detail: [decisions.md](decisions.md).
 Each skill lives at `skills/<name>/SKILL.md`.
