@@ -23,12 +23,12 @@ graders:
 - name: c3
   type: llm
   criteria: |
-    The response says final sign-off must come from a fresh reviewer who is not the author; the author's confidence or green tests are not a binding PASS.
+    The response says that for this ordinary change the required checks and CI are the gate, and that a fresh review by someone other than the author is owed only on a named trigger: the caller asks for one, a mistake cannot be cheaply undone after it lands, or no deterministic check covers the changed behavior. The author's confidence is not evidence and is never a binding PASS. A response that requires a fresh reviewer's sign-off on every change does not meet this criterion.
 - name: c4
   type: llm
   criteria: |
-    The response says to rerun the required checks on the final change before that judgment.
+    The response says to rerun the required checks on the final change before finishing.
 - name: c5
   type: llm
   criteria: |
-    The response says the reviewer should be given the acceptance criteria and the exact change without the author's desired verdict.
+    When the response describes a fresh review (requested or triggered), it says the reviewer gets the acceptance criteria and the exact change without the author's desired verdict. A response that correctly owes no review for this ordinary change meets this criterion.

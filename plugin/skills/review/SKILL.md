@@ -39,9 +39,10 @@ zero mandatory skills. Neighbours: how a plan could fail is
   establish the acceptance criterion, and name what would: a fresh Validate
   context with the original acceptance and the exact subject (a new role in
   this conversation is not fresh). Never claim that validation occurred. For
-  example, asked to approve a schema migration so it can run tonight, return
-  the findings and add that approval needs a fresh acceptance read, which this
-  review has not given.
+  example, asked for a quick look at a schema migration that the caller will
+  run tonight if it looks good, with no one else checking, return the findings
+  and add that running it needs a fresh acceptance read, which this review has
+  not given.
 - **State the scope you inspected.** An excerpt is not the repository. A
   property promised for the whole system, such as who may change what or what
   is never lost, cannot be established from the one location shown; name the

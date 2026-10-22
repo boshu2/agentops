@@ -61,9 +61,12 @@ blocked and the delegation works whether or not the guard is installed.
 
 ## Codex native roles and enforcement
 
-Verified against installed `codex-cli 0.154.0` on 2026-09-12 (the authoring
-Desktop session reports 0.153.4). Codex has synchronous `PreToolUse` hooks that
-can refuse supported local tool calls with exit 2 and stderr. Shell tools,
+The hook behavior below was verified against installed `codex-cli 0.154.0` on
+2026-09-12. On 2026-10-21 the installed CLI was `codex-cli 0.156.1`, the
+version [Codex Exec](../../codex-exec/SKILL.md) names; it still lists `hooks`
+as a stable, enabled feature, but the hook calls were not re-run on it.
+Codex has synchronous `PreToolUse` hooks that can refuse supported local tool
+calls with exit 2 and stderr. Shell tools,
 including `exec_command`, arrive as `tool_name: "Bash"` and
 `tool_input.command`. This replaces the previous unverified assertion that
 Codex had no such hook. [Codex hook contract](https://learn.chatgpt.com/docs/hooks).

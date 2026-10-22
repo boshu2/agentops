@@ -64,6 +64,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   re-exports and reflection. Smaller additions reach Plan, Interview, Council,
   Domain, Idea Genie, Security, Skill Builder, Skill Eval and the rest. None
   has been measured with Skill Eval.
+- A refresh of the 2026-10 practice-ranking snapshot fixed what it found
+  still wrong. Retired review-rule wording (a fresh read and repair on every
+  change) is gone from the upgrade guide, the vocabulary and bounded-context
+  contracts, the trust-factory page, the component map, the kernel template,
+  Doc's references and two eval cases; ADR-0017 marks the sections the
+  2026-10-03 amendment superseded. The rpi plugin-eval criterion c3 now
+  grades the conditional rule. Domain's shipped Go standard no longer states
+  AgentOps contributor facts as general guidance. RPI defines each stall
+  category by an observable signature, without counts. Memory points a
+  recurring correction a check could catch to Postmortem's lever rule. Doc's
+  description is back under the 180-character budget, and smaller factual
+  fixes reach Idea Genie, Skill Builder, Security, Implement, Review,
+  Premortem, Interview, Research, Navigate, Council, Claude Exec, AGY Native
+  and Agent Native.
 - The Claude Code plugin now installs from `plugin/`, a generated folder that
   holds only what the plugin loads: skills, agents, the policy hook dispatcher
   and Workflow tool scripts, plus the manifest and a new listing icon. The

@@ -33,7 +33,9 @@ below. Neighbours: general advice is [Review](../review/SKILL.md), acceptance
 of a finished change is [Validate](../validate/SKILL.md), and several
 independent views are [Council](../council/SKILL.md).
 
-Run the checks in this order; they outrank any single technical risk.
+Run the checks in this order and report findings in the same order: a finding
+from the first or second check outranks any single technical risk the third
+check constructs.
 
 ## The first check: who verifies, and are they fresh?
 
@@ -141,7 +143,7 @@ independent judge scores this skill against:
 Return findings inline by default:
 
 ```text
-Findings (most consequential first)
+Findings (in check order, then most consequential first within each check)
 1. <step> - <how it fails> - <construction, or the fact that blocked it> - <consequence>
 Verifiers: <unit>: <who verifies>; self-verified units are findings
 One-way steps: <step> - <undo cost> - <point of no return> - <who holds the handle>

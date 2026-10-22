@@ -11,14 +11,14 @@ bounded_contexts:
   - id: BC2
     name: Judgment
     product_layer: "Independent semantic validation"
-    responsibility: "Bind acceptance and exact content identity to one fresh independent verdict."
+    responsibility: "When the caller asks, a mistake is costly to undo, or no deterministic check covers the change, bind acceptance and exact content identity to one fresh independent verdict; checks and CI gate an ordinary change."
     center_of_gravity: [validate, council, premortem, postmortem]
     ports: [ManifestPort, ValidatorPort, VerdictStorePort]
 
   - id: BC3
     name: Experiment
     product_layer: "Bounded-repair RPI"
-    responsibility: "Shape one behavior, run one bounded experiment, repair to convergence under the caller's bound, report one verdict."
+    responsibility: "Shape one behavior, implement it, repair known defects directly and confirm each repair with a check, obtain one fresh read only on the named triggers (the caller asks, a mistake is costly to undo, or no deterministic check covers the change), report one result."
     center_of_gravity: [rpi, plan, implement]
     ports: [PlanPort, ImplementPort, ValidatePort]
 

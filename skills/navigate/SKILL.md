@@ -21,13 +21,17 @@ output_contract: 'wave checkpoint in the existing handoff or root epic: acceptan
 
 # Navigate
 
-Pick the next wave on a bead graph and keep the graph honest toward its frozen
-acceptance. The root epic holds acceptance; each child build bead is one
-experiment with one RPI; a decision bead goes to the resolver it names
-([Foggy epics](#foggy-epics)). Navigate never edits acceptance, dispatches, judges or closes:
-Craft Goal owns the prompt and HOLD, [Plan](../plan/SKILL.md) shapes a bead,
-[Orchestrate](../orchestrate/SKILL.md) dispatches, RPI runs,
-[Validate](../validate/SKILL.md) judges.
+Pick the next wave (the ready beads run together next) on a bead graph and
+keep the graph honest toward its frozen acceptance. The root epic holds
+acceptance; each child build bead is one experiment, built by native
+execution (the caller's coding agent and shell), or by one run of the optional
+[RPI](../rpi/SKILL.md) charter when the goal or caller selects it; a decision
+bead goes to the resolver it names ([Foggy epics](#foggy-epics)). Navigate
+never edits acceptance, dispatches, judges or closes:
+Craft Goal owns the prompt and HOLD (the goal's stop on a declared trigger,
+so the cause can be examined before more work runs), [Plan](../plan/SKILL.md)
+shapes a bead, [Orchestrate](../orchestrate/SKILL.md) dispatches, native
+execution or RPI builds, [Validate](../validate/SKILL.md) judges.
 
 **One pass**, when a person asks what is next on an epic: steps 1 and 2 plus
 [hygiene](#hygiene), returning the wave in the step 4 shape instead of handing
@@ -44,13 +48,14 @@ one pass. **Each wave of a running goal:** steps 1 to 4.
 - **Stay disjoint.** Picked write and generated scopes overlap neither each
   other nor any in-flight bead; an overlapping ready bead waits.
 - **Ready is a tracker state.** An empty ready list does not prove completion;
-  a closed prerequisite with missing or stale bytes is not usable readiness.
+  a closed prerequisite with missing or stale bytes (the output it claims is
+  absent or out of date) is not usable readiness.
 
 ## Speak the domain
 
 - **BDD:** each criterion is a Given/When/Then example with an observable
   result. Each bead names the example it moves; a bead that lacks one gets
-  Plan first inside its RPI.
+  Plan before it is built.
 - **DDD:** the root epic defines each domain term once, in one line. Titles,
   examples, code and tests reuse that exact word. A synonym is a hygiene
   finding; [Domain](../domain/SKILL.md) settles disputes.
@@ -67,9 +72,9 @@ Edges: `parent-child` for membership, `blocks` only for real ordering, `related`
 for alternatives, `discovered-from` for provenance. A requested retrospective
 never `blocks` code judgment; both stay required.
 
-The tracker owns status and closing. BD is the example; any tracker with
+The tracker owns status and closing. BD (Beads) is the example; any tracker with
 status, dependencies and notes fits. With BD, run `bd context --json` before any
-write; BR is a different tool, never a fallback or alias for BD. `bv` rank is advice; live BD beats it and any saved plan.
+write; BR is a different tool, never a fallback or alias for BD. Beads Viewer (`bv`) rank is advice; live BD beats it and any saved plan.
 
 ## 1. Observe
 
@@ -95,8 +100,9 @@ with the most decision-relevant information that meets the rules above and
 fits the declared wave budget; no budget means one bead. Prefer an early
 falsifier.
 
-Hand each build bead to one RPI: through Orchestrate or Agent Native when
-delegation is authorized, one bead per worker, otherwise the caller's runtime.
+Hand each build bead to native execution, or to one RPI when the goal or
+caller selects it: through Orchestrate or Agent Native when delegation is
+authorized, one bead per worker, otherwise the caller's runtime.
 Its checks and CI are its result; it gets one fresh, author-distinct Validate
 only when the caller asks, a mistake cannot be cheaply undone after it lands,
 or no deterministic check covers the changed behavior, and a repair does not
@@ -116,7 +122,7 @@ Update its matrix row, then classify each discovery:
 |---|---|
 | Needed for frozen acceptance, within authority and budget | `bd create "<title>" --parent <epic> --deps discovered-from:<id> --acceptance "<example it serves>"` |
 | Useful later | note or link it outside the epic; never run it in this goal |
-| Changes acceptance, exceeds authority or budget | HOLD; the goal's breaker takes over |
+| Changes acceptance, exceeds authority or budget | HOLD; the goal's breaker (the HOLD triggers its prompt declares) takes over |
 
 A result ratchets when it proves part of acceptance, falsifies a live
 hypothesis with discriminating evidence, or resolves an uncertainty so the next

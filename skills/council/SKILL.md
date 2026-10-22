@@ -84,9 +84,11 @@ agreement on one.
    Preserve dissent and changes of position. Before each later round and before
    synthesis, recompute the step 1 subject digest by the same method: one
    sha256 over what Validate's [Subject](../validate/SKILL.md#subject) binds,
-   as `subject_digest` requires; if it changed,
-   name the change and rerun every participant on the new subject or return the
-   incomplete outcome, never folding views of the old subject in.
+   as `subject_digest` requires. When there is no file or candidate to bind, as
+   in a brainstorm, an open design question or an interview panel, hash the
+   frozen question text exactly as recorded in `question`. If the digest
+   changed, name the change and rerun every participant on the new subject or
+   return the incomplete outcome, never folding views of the old subject in.
 5. Return `council-report.v1` with a recommendation and its limits. Prefer one
    option only for a reason in the evidence; when options stay close, say
    either would serve and name the tradeoffs that separate them. Outside a

@@ -1,6 +1,6 @@
 ---
 name: doc
-description: "Write source-checked docs, READMEs, change descriptions, handoffs and questionnaires. Use when: documenting a change, leaving or resuming a handoff, or drafting questions for someone other than the caller."
+description: "Write source-checked docs, READMEs, change descriptions and handoffs. Use when: documenting a change, leaving or resuming a handoff, or drafting a questionnaire for someone else."
 practices:
 - wiki-knowledge-surface
 - code-complete
