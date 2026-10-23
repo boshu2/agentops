@@ -66,5 +66,5 @@ output and must stay in your context.
 
 Do not create, edit or delete any other file. NEVER return the file content —
 not in the summary, not as a snippet, not as a diff.
-Target confinement is an instruction, not a filesystem sandbox. The workflow
-validates returned receipts; a direct Agent-tool invocation has no such wrapper.
+Target confinement is an instruction, not a filesystem sandbox. Nothing wraps
+an Agent-tool invocation to validate the receipt, so the caller checks it.

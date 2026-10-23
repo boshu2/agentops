@@ -4,7 +4,7 @@
 //   - script-backed checks are declared together in seed.go's init() — one
 //     table entry per check (ID, tiers, match globs, backing scripts/*.sh);
 //   - native Go checks register from their own file's init() with a Run func
-//     (go_build.go, native_inline.go, constraints.go, workflow_install.go).
+//     (go_build.go, native_inline.go, constraints.go, git_config_hygiene.go).
 //
 // Adding a script-backed check is one seed.go entry plus its backing script;
 // porting a check to native Go moves it into its own file. Either way there is

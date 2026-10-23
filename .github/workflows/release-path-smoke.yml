@@ -16,8 +16,7 @@ name: release-path-smoke
 # release-snapshot-smoke.sh + tests/scripts/release-path-smoke.bats), so the
 # proof that the gate can FAIL is a proof about the path CI actually runs.
 #
-# Isolated from validate.yml on purpose (no shared job registry to drift), same
-# as workflow-scripts-syntax.yml.
+# Isolated from validate.yml on purpose (no shared job registry to drift).
 
 on:
   pull_request:

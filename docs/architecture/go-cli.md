@@ -49,9 +49,9 @@ not an unfinished carve-out:
   behind small consumer-owned ports implemented in
   `cli/internal/adapters/<family>`. These are the families with real domain
   logic or external effects worth isolating.
-- **The other twelve families run `module → app-seam`.** `demo`, `gc`,
+- **The other eleven families run `module → app-seam`.** `demo`, `gc`,
   `goals`, `init`, `provenance`, `quick-start`, `robot-docs`,
-  `session`, `skills`, `status`, `version`, and `workflows` call a focused app package
+  `session`, `skills`, `status` and `version` call a focused app package
   directly through the host seams and carry no dedicated adapters layer, because
   they have no effect boundary that a port would earn. Adding an adapters tier to
   an app-seam family is a deliberate non-goal until that family grows an effect
@@ -65,7 +65,7 @@ The published spine is pinned by `cmd/ao/default_spine_test.go` (plus
 <!-- spine:begin — keep in lockstep with approvedDefaultSpine in cmd/ao/default_spine_test.go; verified by TestGoCLIDocSpineMatchesApprovedSpine -->
 `capabilities` `config` `demo` `doctor` `gate` `gc` `goals`
 `init` `provenance` `quick-start` `robot-docs` `session` `skills`
-`status` `version` `workflows`
+`status` `version`
 <!-- spine:end -->
 
 `ao capabilities` emits the machine-readable contract;

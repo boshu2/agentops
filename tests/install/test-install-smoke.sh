@@ -39,7 +39,6 @@ echo ""
 # ── Keepers ──
 KEEP_SCRIPTS=(
     "scripts/install-bd.sh"
-    "scripts/install-workflows.sh"
     "scripts/install-installed-skill-edit-guard.sh"
 )
 
