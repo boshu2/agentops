@@ -1,0 +1,89 @@
+schema_version: '1.1'
+name: ergonomics
+tags:
+- behavior
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    We're about to let Claude Code and Codex agents run our migration CLI, both in CI and on dev laptops. Below is the help text and what happened in our first few agent runs. What's going to trip the agents up? Give it a score out of 10 too so I can track progress.
+
+    ```
+    $ dbshift --help
+    dbshift 1.8.2 - Postgres schema migrations
+
+    Usage: dbshift <command> [flags]
+
+    Commands:
+      status    Show applied and pending migrations
+      up        Apply pending migrations
+      down      Roll back the last applied migration
+      reset     Drop every table and reapply all migrations
+      new NAME  Create an empty migration file
+
+    Flags:
+      --db URL   Database URL (default: $DATABASE_URL)
+      --json     Machine-readable output
+      --force    Skip checksum verification of applied migrations
+      -v         Verbose logging
+    ```
+
+    Run 1 (CI; the agent parses stdout as JSON and the parse failed):
+    ```
+    $ dbshift status --json
+    Connecting to orders_staging...
+    {"applied": 41, "pending": ["0042_split_customer_name", "0043_backfill_names"]}
+    $ echo $?
+    0
+    ```
+
+    Run 2 (CI):
+    ```
+    $ dbshift up
+    Applying 0042_split_customer_name... ok
+    Applying 0043_backfill_names...
+    Error: migration failed
+    Hint: fix the problem and run `dbshift up --force` to continue
+    $ echo $?
+    1
+    ```
+
+    Run 3 (dev laptop, agent session with no TTY): `dbshift reset --db "$STAGING_URL"` printed nothing and sat there until the 30-minute job timeout. Run by hand in a terminal it shows `This will DROP every table in orders_staging. Continue? [y/N]`.
+
+    Run 4 (CI, wrong host):
+    ```
+    $ dbshift status
+    Error: dial tcp 10.0.3.7:5432: connect: connection refused (postgres://deploy:Xq7pw91@10.0.3.7:5432/orders)
+    $ echo $?
+    1
+    ```
+graders:
+- name: c1
+  type: llm
+  criteria: |
+    The response flags the `dbshift up --force` hint as an unsafe next step because --force skips checksum verification, and an agent will run the printed command as written.
+- name: c2
+  type: llm
+  criteria: |
+    The response flags that the failed `up` run does not say what state the database was left in (for example whether 0043 partly applied) or whether rerunning is safe, and says the output should tell the caller how to check state before retrying (for example with `dbshift status`).
+- name: c3
+  type: llm
+  criteria: |
+    The response gives no overall score, grade or rating for the CLI on any scale (such as n/10, a letter grade or a percentage) and labels no count as the CLI's score; a count of open or fixed findings offered for tracking fixes is fine.
+- name: c4
+  type: llm
+  criteria: |
+    The response lists commands or failure paths it did not see exercised (for example `down`, `new`, `up --json`, or errors in JSON mode) as unknown gaps rather than implying they are fine.
+- name: c5
+  type: llm
+  criteria: |
+    Each finding states what an agent would do next because of the problem (for example hang, retry, or fail to parse) and a concrete smallest fix.
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?ergonomics"'
+  arm: with-only

@@ -23,7 +23,7 @@ graders:
 - name: c3
   type: llm
   criteria: |
-    The response says that for this ordinary change the required checks and CI are the gate, and that a fresh review by someone other than the author is owed only on a named trigger: the caller asks for one, a mistake cannot be cheaply undone after it lands, or no deterministic check covers the changed behavior. The author's confidence is not evidence and is never a binding PASS. A response that requires a fresh reviewer's sign-off on every change does not meet this criterion.
+    The response says that for this ordinary change the required checks and CI are the gate, and that a fresh review by someone other than the author is owed only on a named trigger: the caller asks for one, a mistake cannot be cheaply undone after it lands, or no deterministic check covers the changed behavior. The author's confidence is not evidence and is never a binding PASS. A response that makes a fresh independent review or validation mandatory for this ordinary change does not meet this criterion. Saying that the author's own confidence or approval does not count, or that approval the repository already requires (such as a PR reviewer) still applies, is consistent with it.
 - name: c4
   type: llm
   criteria: |

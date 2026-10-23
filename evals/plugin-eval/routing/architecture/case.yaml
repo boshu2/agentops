@@ -1,0 +1,65 @@
+schema_version: '1.1'
+name: architecture
+tags:
+- routing
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Every pricing change in our Django monolith turns into a 20-file PR. Latest one was adding a "student" discount:
+
+    ```
+    $ git show --stat a91c3e2
+     billing/models.py                 |  14 +-
+     billing/invoice.py                |  22 +-
+     billing/tax.py                    |   9 +-
+     checkout/views.py                 |  31 +-
+     checkout/serializers.py           |  12 +-
+     checkout/templates/summary.html   |   8 +-
+     accounts/models.py                |   6 +-
+     accounts/signals.py               |  11 +-
+     emails/receipts.py                |  17 +-
+     emails/templates/receipt.txt      |   4 +-
+     reporting/revenue.py              |  19 +-
+     reporting/exports.py              |   7 +-
+     admin_tools/pricing_admin.py      |  25 +-
+     api/v2/plans.py                   |  14 +-
+     mobile_api/plans.py               |  13 +-
+     promotions/rules.py               |  21 +-
+     tests/... (6 files)
+     22 files changed, 288 insertions(+), 97 deletions(-)
+    ```
+
+    The pattern I keep tripping over:
+
+    ```python
+    # checkout/views.py
+    price = plan.base_price
+    if user.profile.is_student and not plan.is_enterprise:
+        price = price * Decimal("0.5")
+    if promo and promo.applies_to(plan):
+        price = promo.apply(price)
+    tax = billing.tax.compute(price, user.profile.country)
+
+    # emails/receipts.py  (same idea, slightly different)
+    amount = order.plan.base_price
+    if order.user.profile.is_student:
+        amount *= Decimal("0.5")
+
+    # reporting/revenue.py
+    for o in orders:
+        gross = o.plan.base_price * (Decimal("0.5") if o.user.profile.is_student else 1)
+    ```
+
+    Three ideas on the team: (a) a new `pricing` app with one `quote(user, plan, promo) -> Quote` that everything calls, (b) compute the price once at checkout, store it on `Order`, and have receipts/reporting read it from there, (c) put it on the `Plan` model as `plan.price_for(user, promo)`.
+
+    Nobody moves any code yet. Where is the structure actually making these changes expensive, and how do those three compare as places to draw the line?
+graders:
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?architecture"'

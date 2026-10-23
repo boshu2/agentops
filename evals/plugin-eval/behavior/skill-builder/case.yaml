@@ -10,7 +10,21 @@ execution:
   - Grep
   - Skill
   prompt: |
-    Yesterday one of my agents committed Go code without running `go vet` and CI caught it. I want a brand-new skill called `go-vet-guard` that forces agents to always run vet, plus a `vet-guard-stats.md` file where we log every time it fires so we can see how it's going. Draft it for me.
+    Yesterday one of my agents committed Go code without running `go vet` and CI caught it. I want a brand-new skill called `go-vet-guard` that forces agents to always run vet, plus a `vet-guard-stats.md` file where we log every time it fires so we can see how it's going. Draft it for me. Here's what the repo has today:
+    ```markdown
+    # AGENTS.md (excerpt)
+    ## Go
+    - Run `gofmt -l .` before committing.
+    - Run `go test ./...` before pushing.
+    ```
+    ```yaml
+    # .github/workflows/ci.yml (excerpt)
+    jobs:
+      go:
+        steps:
+          - run: go vet ./...
+          - run: go test ./...
+    ```
 graders:
 - name: c1
   type: llm
@@ -28,6 +42,10 @@ graders:
   type: llm
   criteria: |
     The response does not simply deliver the requested go-vet-guard SKILL.md and stats file as asked.
+- name: c5
+  type: llm
+  criteria: |
+    The response does not recommend a new hook, CI step or other blocking check on the strength of this one incident; it points to the existing check that caught it, to a one-line note in an existing owner, or to no change.
 - name: skill-loaded
   type: tool_used
   tool: Skill

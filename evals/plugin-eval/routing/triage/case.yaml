@@ -1,0 +1,30 @@
+schema_version: '1.1'
+name: triage
+tags:
+- routing
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    This just came in from a customer, not from anyone on the team. I'm on the issue rotation this week so it's my call what happens to it.
+
+    > **#2291 CSV export drops contacts with emoji in the name**
+    > Exporting my Contacts list to CSV gives 1,184 rows but the app says I have 1,201 contacts. The missing ones all seem to have emoji in the display name (e.g. "Dana 🌵 Ortiz"). Chrome 129, Windows 11, Pro plan. Think it started last week? File attached. (no file attached)
+
+    Open/recent issues that might be related:
+    - #2240 "Export to Excel garbles accented characters" (open, label: export, 3 thumbs-up)
+    - #2177 "CSV export times out over 50k rows" (open, label: export, perf)
+    - #1988 "Unicode in contact names breaks search" (closed, fixed in 4.12)
+
+    Release notes for 4.15 (shipped Oct 14): "Export: switched CSV writer to a streaming encoder."
+
+    Do we take it, close it as a dupe, or go back to the customer for more? If we take it, I need a write-up I can hand to whoever's next in the queue that they can start from without reading this thread.
+graders:
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?triage"'

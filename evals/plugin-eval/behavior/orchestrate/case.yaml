@@ -25,7 +25,7 @@ graders:
 - name: c2
   type: llm
   criteria: |
-    The response says exit 0 / branch pushed does not mean the work is accepted or done.
+    The response states explicitly that exit 0, a pushed branch or a worker's finished report does not make T3, T4 or T6 accepted or done; routing them to checks without saying so does not meet this criterion.
 - name: c3
   type: llm
   criteria: |

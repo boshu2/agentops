@@ -75,8 +75,9 @@ dispatch and when; this skill launches and observes.
   counted, sorted, deduplicated or compared; parsed prose is where counts drift.
 - **Prove integration before removal.** Before a caller-authorized removal of
   a finished worker's workspace, branch or stash, compare its content with the
-  integration target by patch or file diff, not by merged status: squash and
-  rebase hide ancestry. Preserve uncommitted, unique or unintegrated content in
+  integration target as it stands now, by patch or file diff, not by merged
+  status or by matching the commit that was merged: squash and rebase hide
+  ancestry. Preserve uncommitted, unique or unintegrated content in
   a recoverable form, such as an archive ref or bundle, first. Report what was
   kept, what was removed and the evidence for each.
 
