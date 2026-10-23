@@ -239,7 +239,7 @@ or proof of installed-host qualification.
 |---|---|
 | General feedback on a plan, design or change | New `review` gives supported advisory findings or an honest no-finding result with checked scope and gaps. It owns no acceptance, native work-state mutation or delivery. |
 | Acceptance request, including a near-match phrased as review | `validate` retains sole acceptance/verdict ownership and genuinely fresh exact-subject judgment. Review hands off original acceptance and the exact subject; ambiguity is clarified. |
-| Plan challenge, broader selected review or claim audit | Keep `premortem`, `council` and `reality-check`; Review selectively links their existing procedures and Plan's one shared optional challenge owner. |
+| Plan challenge, broader selected review or claim audit | Keep `premortem`, `council` and `reality-check` (Reality Check folded into Research on 2026-10-23); Review selectively links their existing procedures and Plan's one shared optional challenge owner. |
 | Engineering advice and prior evidence | Keep the relevant engineering specialists and `memory`; references create no compulsory chain, editing authority or curation. |
 | README, skill menu, catalog, registry and runtime projections | Add Review discovery and regenerate from canonical metadata. Existing explicit specialist routes remain available. |
 
@@ -278,7 +278,7 @@ This batch adds two optional goal entrypoints, bringing the source inventory to 
 
 | Existing request or consumer | Owner after this batch |
 |---|---|
-| Settle a big outcome with the caller before autonomous work | New `interview`: one question per turn with a labeled recommendation; acceptance as Given/When/Then, one domain term per concept. Human-invoked only; creates no goal or bead. |
+| Settle a big outcome with the caller before autonomous work | New `interview`: one question per turn with a labeled recommendation; acceptance as Given/When/Then, one domain term per concept. Human-invoked only (loads by name since 2026-10-23); creates no goal or bead. |
 | Pick a goal's next wave and keep its bead graph honest | New `navigate`: acceptance matrix, ready frontier, wave choice, verdicts and discoveries recorded on beads. It never dispatches, judges, closes or edits acceptance. |
 | Bead graph contract, ratchet definition and wave loop | Moved from `craft-goal` to `navigate`; Craft Goal keeps admission, envelopes, HOLD, the frozen prompt and its lint rubric. |
 
