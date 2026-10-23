@@ -47,9 +47,12 @@ Use this skill for a caller-requested security review of code or of a plan or de
 - Treat missing/error scanners as a coverage gap, never a clean finding; use `--require-tools` when complete tool coverage is required. **Why:** absent evidence is not evidence of absence.
 - Use the current agent and local shell; do not start another runtime or orchestration substrate unless explicitly requested. **Why:** repository scanning is a bounded operation, not permission to fan out.
 - Report findings and coverage gaps, then stop. Remediation, risk acceptance,
-  reruns, promotion, and any ship or merge call are caller decisions. Name each
-  finding's remediation class in a few words; do not write the patch, a plan,
-  an owner, or a priority.
+  reruns, promotion, and any ship or merge call are caller decisions. Asked
+  whether to ship, merge or deploy, give the findings and coverage, then say in
+  one line that the go/no-go on that evidence is the caller's; recommending
+  ship, hold or block in any wording is that decision. Name each finding's
+  remediation class in a few words; do not write the patch, a plan, an owner,
+  or a priority.
 
 ## What every review reports
 
