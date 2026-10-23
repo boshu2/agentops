@@ -14,7 +14,7 @@ var approvedDefaultSpine = map[string]bool{
 	"demo": true, "gate": true, "gc": true,
 	"goals": true, "init": true, "provenance": true, "quick-start": true,
 	"robot-docs": true, "session": true, "skills": true,
-	"status": true, "version": true, "workflows": true,
+	"status": true, "version": true,
 }
 
 var approvedDefaultChildren = map[string]map[string]bool{
@@ -29,7 +29,6 @@ var approvedDefaultChildren = map[string]map[string]bool{
 		"link": true, "list": true, "producers": true, "resolve": true,
 		"unlink": true,
 	},
-	"workflows": {"link": true, "unlink": true},
 }
 
 func TestDefaultSpineMatchesCathedralCutAllowlist(t *testing.T) {

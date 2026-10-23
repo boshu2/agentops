@@ -1,6 +1,6 @@
 ---
 name: postmortem
-description: 'Explain why a change, incident or session went as it did, separating proven causes from coincidence. Use when: a postmortem or retro is selected by name.'
+description: 'Explain why a change, incident or session went as it did, separating proven causes from coincidence. Use when: asked for a postmortem, retro or root-cause write-up.'
 practices:
 - sre
 - lean-startup
@@ -11,7 +11,6 @@ produces:
 context_rel: []
 skill_api_version: 1
 user-invocable: true
-disable-model-invocation: true
 metadata:
   capabilities: [postmortem]
   effects: [write_postmortem_report]

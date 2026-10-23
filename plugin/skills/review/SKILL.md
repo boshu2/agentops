@@ -17,6 +17,7 @@ metadata:
   effects: []
   canonical_status: canonical
   disposition: keep
+  triggers: ["check this change"]
 output_contract: 'advisory findings or an honest no-finding result, with source evidence, checked scope and gaps; no acceptance verdict'
 ---
 
@@ -27,7 +28,7 @@ existing conversation. Review does not accept the subject, issue `PASS`, `FAIL`
 or `NOT_PROVEN`, or author `verdict.v2`. A clear task can proceed directly with
 zero mandatory skills. Neighbours: how a plan could fail is
 [Premortem](../premortem/SKILL.md); whether a stated claim holds is
-[Reality Check](../reality-check/SKILL.md); an acceptance verdict is
+[Research](../research/SKILL.md#claimed-state-audit); an acceptance verdict is
 [Validate](../validate/SKILL.md); several independent views are
 [Council](../council/SKILL.md).
 

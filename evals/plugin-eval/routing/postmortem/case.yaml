@@ -1,0 +1,26 @@
+schema_version: '1.1'
+name: postmortem
+tags:
+- routing
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Can you give me a postmortem of Tuesday's billing slowdown? Here's the timeline from the incident channel:
+
+    - 09:12 deploy billing-svc v2.14 (adds an index on `invoices.customer_id`)
+    - 09:15 p99 on `GET /invoices` goes from 120 ms to 4 s
+    - 09:31 on-call rolls back to v2.13; latency stays high
+    - 09:58 DBA sees the index build still running, with lock waits piling up behind it
+    - 10:20 index build finishes; latency back to normal
+
+    Nobody touched the database by hand. Finance wants it by Friday.
+graders:
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?postmortem"'

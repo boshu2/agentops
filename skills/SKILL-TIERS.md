@@ -12,7 +12,7 @@
 
 ## judgment
 
-`architecture`, `council`, `craft-goal`, `postmortem`, `premortem`, `reality-check`, `review`, `validate`
+`architecture`, `council`, `craft-goal`, `postmortem`, `premortem`, `review`, `validate`
 
 ## knowledge
 
@@ -53,9 +53,8 @@
 | `plan` | execution | `keep` | - | `shape_intent`, `define_acceptance`, `bound_write_scope`, `resume_discovery` | `update_intent_source` |
 | `postmortem` | judgment | `keep_strategy` | - | `postmortem` | `write_postmortem_report` |
 | `premortem` | judgment | `keep_strategy` | - | `challenge_plan` | `write_advisory_plan_review` |
-| `reality-check` | judgment | `keep_strategy` | - | `compare_claim_to_evidence`, `measure_declared_goals`, `report_native_status` | `write_advisory_gap_report`, `write_goal_snapshot`, `write_requested_rendered_spec` |
 | `refactor` | execution | `keep_specialist` | - | `refactor` | `modify_source_files` |
-| `research` | execution | `keep_specialist` | - | `research`, `codebase_recon`, `pattern_mining` | `write_research_report`, `write_recon_pack`, `write_pattern_evidence` |
+| `research` | execution | `keep_specialist` | - | `research`, `codebase_recon`, `pattern_mining`, `compare_claim_to_evidence`, `measure_declared_goals`, `report_native_status` | `write_research_report`, `write_recon_pack`, `write_pattern_evidence`, `write_advisory_gap_report`, `write_goal_snapshot`, `write_requested_rendered_spec` |
 | `reverse-engineer` | execution | `keep_specialist` | - | `reverse_engineer` | `clone_upstream_repo`, `authorized_binary_execution`, `write_teardown_artifacts` |
 | `review` | judgment | `keep` | - | `review_advisory`, `identify_supported_findings`, `report_review_gaps` | - |
 | `rpi` | meta | `keep_strategy` | `plan`, `implement`, `validate` | `own_authorized_outcome`, `report` | `dispatch_core_phases` |

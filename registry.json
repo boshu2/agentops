@@ -480,33 +480,6 @@
     },
     {
       "driven_by_skills": [
-        "reality-check"
-      ],
-      "id": "skill:reality-check:compare_claim_to_evidence",
-      "name": "compare_claim_to_evidence",
-      "path": "skills/reality-check/SKILL.md",
-      "type": "skill"
-    },
-    {
-      "driven_by_skills": [
-        "reality-check"
-      ],
-      "id": "skill:reality-check:measure_declared_goals",
-      "name": "measure_declared_goals",
-      "path": "skills/reality-check/SKILL.md",
-      "type": "skill"
-    },
-    {
-      "driven_by_skills": [
-        "reality-check"
-      ],
-      "id": "skill:reality-check:report_native_status",
-      "name": "report_native_status",
-      "path": "skills/reality-check/SKILL.md",
-      "type": "skill"
-    },
-    {
-      "driven_by_skills": [
         "refactor"
       ],
       "id": "skill:refactor:refactor",
@@ -538,6 +511,33 @@
       ],
       "id": "skill:research:pattern_mining",
       "name": "pattern_mining",
+      "path": "skills/research/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "research"
+      ],
+      "id": "skill:research:compare_claim_to_evidence",
+      "name": "compare_claim_to_evidence",
+      "path": "skills/research/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "research"
+      ],
+      "id": "skill:research:measure_declared_goals",
+      "name": "measure_declared_goals",
+      "path": "skills/research/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "research"
+      ],
+      "id": "skill:research:report_native_status",
+      "name": "report_native_status",
       "path": "skills/research/SKILL.md",
       "type": "skill"
     },
@@ -810,7 +810,7 @@
     "hooks": 0,
     "job_types": 0,
     "knowledge_stores": 0,
-    "skills": 32,
+    "skills": 31,
     "workflows": 0
   },
   "surfaces": {
@@ -1147,25 +1147,6 @@
       },
       {
         "capabilities": [
-          "compare_claim_to_evidence",
-          "measure_declared_goals",
-          "report_native_status"
-        ],
-        "disposition": "keep_strategy",
-        "effects": [
-          "write_advisory_gap_report",
-          "write_goal_snapshot",
-          "write_requested_rendered_spec"
-        ],
-        "has_references": true,
-        "has_skill_md": true,
-        "name": "reality-check",
-        "path": "skills/reality-check/",
-        "reference_count": 2,
-        "tier": "judgment"
-      },
-      {
-        "capabilities": [
           "refactor"
         ],
         "disposition": "keep_specialist",
@@ -1183,19 +1164,25 @@
         "capabilities": [
           "research",
           "codebase_recon",
-          "pattern_mining"
+          "pattern_mining",
+          "compare_claim_to_evidence",
+          "measure_declared_goals",
+          "report_native_status"
         ],
         "disposition": "keep_specialist",
         "effects": [
           "write_research_report",
           "write_recon_pack",
-          "write_pattern_evidence"
+          "write_pattern_evidence",
+          "write_advisory_gap_report",
+          "write_goal_snapshot",
+          "write_requested_rendered_spec"
         ],
         "has_references": true,
         "has_skill_md": true,
         "name": "research",
         "path": "skills/research/",
-        "reference_count": 4,
+        "reference_count": 6,
         "tier": "execution"
       },
       {

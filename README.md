@@ -346,7 +346,7 @@ catalog: **[docs/SKILL-ROUTER.md](docs/SKILL-ROUTER.md)**.
 | Coordination | [`orchestrate`](skills/orchestrate/SKILL.md) [`agent-native`](skills/agent-native/SKILL.md) | Fresh workers per bead, disjoint scopes, integration |
 | On demand | [`research`](skills/research/SKILL.md) [`domain`](skills/domain/SKILL.md) [`test`](skills/test/SKILL.md) [`refactor`](skills/refactor/SKILL.md) [`review`](skills/review/SKILL.md) [`security`](skills/security/SKILL.md) [`doc`](skills/doc/SKILL.md) [`reverse-engineer`](skills/reverse-engineer/SKILL.md) [`triage`](skills/triage/SKILL.md) [`architecture`](skills/architecture/SKILL.md) [`ergonomics`](skills/ergonomics/SKILL.md) | Reached for when a specific question comes up |
 | Learning | [`memory`](skills/memory/SKILL.md) | Curated `.context/` pages safe to commit |
-| Judgment strategies | [`council`](skills/council/SKILL.md) [`premortem`](skills/premortem/SKILL.md) [`postmortem`](skills/postmortem/SKILL.md) [`reality-check`](skills/reality-check/SKILL.md) [`idea-genie`](skills/idea-genie/SKILL.md) | Multi-model councils (debates, idea duels, interview panels), idea brainstorms, plan challenges, postmortems and claim audits |
+| Judgment strategies | [`council`](skills/council/SKILL.md) [`premortem`](skills/premortem/SKILL.md) [`postmortem`](skills/postmortem/SKILL.md) [`idea-genie`](skills/idea-genie/SKILL.md) | Multi-model councils (debates, idea duels, interview panels), idea brainstorms, plan challenges and postmortems |
 | Runtimes and factories | [`codex-exec`](skills/codex-exec/SKILL.md) [`claude-exec`](skills/claude-exec/SKILL.md) [`agy-native`](skills/agy-native/SKILL.md) [`using-gc`](skills/using-gc/SKILL.md) | Selected executors and Gas City integration |
 | Skill craft | [`skill-builder`](skills/skill-builder/SKILL.md) [`skill-eval`](skills/skill-eval/SKILL.md) | Author skills and measure whether they help |
 
@@ -355,7 +355,7 @@ catalog: **[docs/SKILL-ROUTER.md](docs/SKILL-ROUTER.md)**.
 Every skill here is a folder with one `SKILL.md`: plain instructions an agent
 loads when a task calls for them. No skill depends on the full set, and coding
 with none of them still works. That makes the library easy to take apart, and
-you should. The 32 skills are a starting point for an operating model that fits
+you should. The 31 skills are a starting point for an operating model that fits
 your work.
 
 - **Start small.** Install two or three skills that match work you already do.
@@ -376,9 +376,7 @@ your work.
   library. `ao skills link` never replaces a skill it did not install.
 - **Change the workflows too.** The [operational loop](#the-operational-loop)
   and the [goal workflow](#goals) are defaults. Skip the steps your work does
-  not need, reorder them, or write your own. The Claude Code workflow scripts in
-  [`workflows/`](workflows/) link into a project with
-  [`ao workflows link`](docs/install-day2-ops.md#workflows-claude-code-only).
+  not need, reorder them, or write your own.
 - **Measure what you change.** `claude plugin eval` compares an agent with and
   without a plugin on the same request. To measure one edit, run the old and
   the new version as two plugins. [Skill Eval](skills/skill-eval/SKILL.md)
@@ -518,7 +516,7 @@ Skill installation does not install tool dependencies:
 | `plan` | `ao`, conditional | runs `ao provenance snapshot-intent` with an explicit evidence root when the intent source is not durable |
 | `implement` | `ao`, conditional | at an integration boundary whose changed paths affect bound evidence, runs `ao provenance evidence-orphans` |
 | `validate` | `ao`, optional | with `ao`, derives exact subject identity from a content manifest and uses `ao provenance store-verdict` when persistence is requested; without it, names the commit and changed paths |
-| `reality-check` | `ao`, conditional | inspect selected goal measurements with `ao goals` or evidence-store facts with `ao status` |
+| `research` | `ao`, conditional | inspect selected goal measurements with `ao goals` or evidence-store facts with `ao status` |
 | `using-gc` | `ao` | rig prep runs `ao gc prepare` and `ao gc check` |
 | `doc` | `ao`, optional | a requested continuity handoff may use `ao session handoff`/`rehydrate` |
 | `reverse-engineer` | `python3` | Phase 1's mechanical teardown runs `scripts/reverse_engineer.py` |

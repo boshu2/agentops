@@ -170,16 +170,30 @@ run_gate() {
   run env CODEX_SKILLS_ROOT="$sandbox/skills" bash "$GATE"
   [ "$status" -eq 0 ]
 
-  local flagged=0 skill_md skill
+  local checked=0 skill_md skill policy claude_explicit codex_explicit
   for skill_md in "$sandbox"/skills/*/SKILL.md; do
-    grep -q '^disable-model-invocation: true$' "$skill_md" || continue
-    flagged=$((flagged + 1))
+    checked=$((checked + 1))
     skill="$(basename "$(dirname "$skill_md")")"
-    mv "$sandbox/skills/$skill/agents/openai.yaml" "$sandbox/held.yaml"
+    policy="$sandbox/skills/$skill/agents/openai.yaml"
+    claude_explicit=no
+    codex_explicit=no
+    grep -q '^disable-model-invocation: true$' "$skill_md" && claude_explicit=yes
+    [[ -f "$policy" ]] && grep -Eq '^[[:space:]]*allow_implicit_invocation:[[:space:]]*false[[:space:]]*$' "$policy" && codex_explicit=yes
+    # A shipped skill is explicit-only on both hosts or on neither: Codex
+    # takes the policy from agents/openai.yaml, Claude from the frontmatter.
+    if [[ "$claude_explicit" != "$codex_explicit" ]]; then
+      echo "$skill: Claude explicit-only=$claude_explicit but Codex explicit-only=$codex_explicit" >&2
+      return 1
+    fi
+    [[ "$claude_explicit" == yes ]] || continue
+    mv "$policy" "$sandbox/held.yaml"
     run env CODEX_SKILLS_ROOT="$sandbox/skills" bash "$GATE"
     [ "$status" -ne 0 ]
     [[ "$output" == *"FAIL [$skill] disable-model-invocation: true needs agents/openai.yaml"* ]]
-    mv "$sandbox/held.yaml" "$sandbox/skills/$skill/agents/openai.yaml"
+    mv "$sandbox/held.yaml" "$policy"
   done
-  [ "$flagged" -gt 0 ]
+  # Decision 1a (2026-10-23) made every shipped skill model-loadable, so the
+  # live explicit-only set may be empty; the fixture tests above keep the
+  # missing-policy failure covered. This guards only against an empty walk.
+  [ "$checked" -gt 0 ]
 }

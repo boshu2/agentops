@@ -1,6 +1,12 @@
 # Codex context-budget design and evidence
 
 Status: implemented; observed runtime behavior and remaining limits below.
+Later change: the Claude `bulk-read` and `code-write` workflows were removed
+with every other AgentOps workflow. The plugin agents `agentops:bulk-reader`
+and `agentops:code-writer` and the Codex roles remain the delegation route.
+Workflow evidence below is history; the workflow test suite went with the
+workflows, and the code-writer status-capture template keeps its own test in
+`tests/scripts/code-writer-check-template.bats`.
 Original evidence cutoff: 2026-09-12. The 3.7.0 writer follow-up below records the 2026-09-13 repair and live results.
 Acceptance is the two-job caller request recorded in private BD `age-z25n`.
 The exact e32e88c verdict was written before this job began and posted at

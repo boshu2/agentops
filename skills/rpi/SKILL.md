@@ -1,6 +1,6 @@
 ---
 name: rpi
-description: 'Drive one accepted change through implementation and checks to done, with one fresh review only where a mistake is costly. Use when: selected by name.'
+description: 'Drive one accepted change through implementation and checks to done, with one fresh review only where a mistake is costly. Use when: asked to run or orchestrate work through RPI.'
 practices:
 - bdd-gherkin
 - tdd
@@ -21,7 +21,6 @@ context_rel:
   with: validate
 skill_api_version: 1
 user-invocable: true
-disable-model-invocation: true
 metadata:
   graph_root: true
   tier: meta

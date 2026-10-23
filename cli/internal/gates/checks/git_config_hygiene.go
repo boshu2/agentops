@@ -9,8 +9,8 @@ import "github.com/boshu2/agentops/cli/internal/gates"
 // pokki-deploy/v@v.com — mis-authors rebased commits). Both poisonings are
 // written by hook-leaked GIT_DIR redirecting "scoped" git writes into the
 // shared config, so the mutation lives in .git/ where changed-file routing can
-// never see it — always-run, no path globs, like workflow.install-drift. The
-// backing script is a <150ms config read, so it stays in the fast tier.
+// never see it — always-run, no path globs. The backing script is a <150ms
+// config read, so it stays in the fast tier.
 func init() {
 	gates.Register(gates.Check{
 		ID:       "always.git-config-hygiene",

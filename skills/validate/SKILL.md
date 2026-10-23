@@ -35,7 +35,7 @@ output_contract: 'PASS | FAIL | NOT_PROVEN with criteria, evidence, checked/not_
 Freshly judge one finished candidate against its original acceptance, return
 `PASS`, `FAIL`, or `NOT_PROVEN` with criterion-level evidence, and stop.
 Neighbours: advice or a second look is [Review](../review/SKILL.md); whether a
-stated claim holds is [Reality Check](../reality-check/SKILL.md). This file
+stated claim holds is [Research](../research/SKILL.md#claimed-state-audit). This file
 carries every rule the judgment needs. Linked files, including
 [RPI boundaries](../rpi/references/boundaries.md) and
 [mechanics](references/mechanics.md), add depth only: if one cannot be read,

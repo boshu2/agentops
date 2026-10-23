@@ -102,15 +102,12 @@ jobs:
               - 'scripts/**'
             bats:
               - '**/*.bats'
-              - 'workflows/**'
               - 'tests/fixtures/**'
             ci:
               - '.github/**'
             contracts:
               - 'schemas/**'
               - 'docs/contracts/**'
-              # Runtime workflow changes are contract-shaped inputs.
-              - '.claude/workflows/**'
               # redteam-pack target globs (ag-nl1u): every file the
               # security redteam pack
               # (skills/security/references/agentops-redteam-pack.json)

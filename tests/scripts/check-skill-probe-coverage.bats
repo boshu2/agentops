@@ -902,11 +902,12 @@ PY
     # path; native launcher availability must not repair evaluator drift.
     [ "$(json_field "$output" measured)" = "0" ]
     # Consolidation retired four judgment/product roots, Review added one, and
-    # Architecture (judgment) and Ergonomics (product) added two more.
+    # Architecture (judgment) and Ergonomics (product) added two more. Reality
+    # Check (judgment) then folded into Research (execution, 2026-10-23).
     # Pin every member and the count so denominator loss cannot earn coverage.
-    local expected_unmeasured="['architecture', 'council', 'craft-goal', 'doc', 'ergonomics', 'postmortem', 'premortem', 'reality-check', 'review', 'security', 'validate']"
-    [ "$(json_field "$output" gated_total)" = "11" ]
-    [ "$(json_field "$output" unmeasured_count)" = "11" ]
+    local expected_unmeasured="['architecture', 'council', 'craft-goal', 'doc', 'ergonomics', 'postmortem', 'premortem', 'review', 'security', 'validate']"
+    [ "$(json_field "$output" gated_total)" = "10" ]
+    [ "$(json_field "$output" unmeasured_count)" = "10" ]
     [ "$(json_field "$output" unmeasured)" = "$expected_unmeasured" ]
     [[ "$output" == *'"scorecard":"docs/evals/scorecards/2026-09-03/premortem-plan-shape-t2-low.json","eligible":false,"reason":"evidence-unverified"'* ]]
     [[ "$output" == *'"scorecard":"docs/evals/scorecards/2026-09-03/premortem-plan-shape-t2-xhigh.json","eligible":false,"reason":"evidence-unverified"'* ]]

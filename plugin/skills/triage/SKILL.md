@@ -33,10 +33,10 @@ accepted or likely-accepted work, a brief an agent can act on without this
 conversation. Triage is intake, before planning. It recommends; the maintainer
 decides. Neighbours: [Plan](../plan/SKILL.md) shapes accepted work into a
 slice; [Navigate](../navigate/SKILL.md) picks next work in an existing graph;
-[Research](../research/SKILL.md) answers one deep cited question;
-[Implement](../implement/SKILL.md) makes the fix; [Interview](../interview/SKILL.md)
-settles the caller's own intent; [Reality Check](../reality-check/SKILL.md)
-audits a claim that something is done.
+[Research](../research/SKILL.md) answers one deep cited question and
+[audits a claim](../research/SKILL.md#claimed-state-audit) that something is
+done; [Implement](../implement/SKILL.md) makes the fix;
+[Interview](../interview/SKILL.md) settles the caller's own intent.
 
 ## Rules an unaided triage misses
 
@@ -55,8 +55,8 @@ audits a claim that something is done.
   access route (CLI, connector, API) before calling a tracker unreachable.
   State each query, where it ran and its limit, such as "closed issues, title
   and body, first 50 results; labels not searched". A report that says a fix
-  already landed is a claim for [Reality Check](../reality-check/SKILL.md),
-  not a closure.
+  already landed is a claim for a
+  [Research claim audit](../research/SKILL.md#claimed-state-audit), not a closure.
 - **Separate the ask from the need.** Quote what the reporter asked for. Name
   the need from evidence: the workaround they use today or the failure you
   observed. Brief the need.

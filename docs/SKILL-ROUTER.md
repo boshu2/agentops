@@ -29,7 +29,7 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 | [domain](https://github.com/boshu2/agentops/blob/main/skills/domain/SKILL.md) | Settle what domain terms mean per context, and which repository conventions or language standards (Go, Python) apply. Use when: names disagree or a rename is proposed. |
 | [ergonomics](https://github.com/boshu2/agentops/blob/main/skills/ergonomics/SKILL.md) | Audit CLI, API, MCP or SDK discovery, first use and error recovery. Use when: designing an agent-facing tool or investigating misuse, including one command. |
 | [refactor](https://github.com/boshu2/agentops/blob/main/skills/refactor/SKILL.md) | Restructure or clean up code with no behavior change, proved by before-and-after checks. Use when: asked to clean up, extract, dedupe or simplify, even one function. |
-| [research](https://github.com/boshu2/agentops/blob/main/skills/research/SKILL.md) | Answer one cited question about code, history, claims or patterns. Use when: asked how it works, why it changed, whether a claim holds or a pattern warrants a rule. |
+| [research](https://github.com/boshu2/agentops/blob/main/skills/research/SKILL.md) | Answer one cited question on code, history, claims or patterns. Use when: asked how it works, why it changed, if a claim or done/shipped report holds, or a pattern warrants a rule. |
 | [reverse-engineer](https://github.com/boshu2/agentops/blob/main/skills/reverse-engineer/SKILL.md) | Tear down a competitor's repo or product into a feature inventory and adoption choices. Use when: comparing us to another tool or asking what to steal. |
 | [security](https://github.com/boshu2/agentops/blob/main/skills/security/SKILL.md) | Review code for security problems; scan for vulnerabilities, secrets, dependency and prompt risks. Use when: asked whether code is safe to ship, even one small handler. |
 | [skill-builder](https://github.com/boshu2/agentops/blob/main/skills/skill-builder/SKILL.md) | Create, repair, audit or consolidate agent skills (SKILL.md packages). Use when: writing or fixing a skill, its description or structure. Not for one-off lessons; use Memory. |
@@ -42,14 +42,13 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 | Skill | Use it for |
 |---|---|
 | [council](https://github.com/boshu2/agentops/blob/main/skills/council/SKILL.md) | Compare independent opinions from several models or contexts without inflating agreement. Use when: wanting a second opinion or debate, or summarizing several reviewers' results. |
-| [craft-goal](https://github.com/boshu2/agentops/blob/main/skills/craft-goal/SKILL.md) | Draft or lint a bounded long-running goal prompt with a finish line and hard limits. Use when: selected by name; one change goes to Plan. |
+| [craft-goal](https://github.com/boshu2/agentops/blob/main/skills/craft-goal/SKILL.md) | Draft or lint a bounded long-running goal prompt with a finish line and hard limits. Use when: asked to craft or lint a goal (a /goal prompt); one change goes to Plan. |
 | [idea-genie](https://github.com/boshu2/agentops/blob/main/skills/idea-genie/SKILL.md) | Brainstorm evidence-backed options for what to build, or stress-test an idea. Use when: deciding what to build next, comparing options or testing an idea. |
-| [interview](https://github.com/boshu2/agentops/blob/main/skills/interview/SKILL.md) | Interview you one question at a time, each choice with a recommendation, to settle a big outcome before agents work alone. Use when: selected by name. |
+| [interview](https://github.com/boshu2/agentops/blob/main/skills/interview/SKILL.md) | Interview you one question at a time, each choice with a recommendation, to settle a big outcome before agents work alone. Use when: asked to interview you about a goal or plan. |
 | [navigate](https://github.com/boshu2/agentops/blob/main/skills/navigate/SKILL.md) | Pick the next work in an epic or bead graph; closed is not proven. Use when: asked what is next or whether an epic is done. |
-| [postmortem](https://github.com/boshu2/agentops/blob/main/skills/postmortem/SKILL.md) | Explain why a change, incident or session went as it did, separating proven causes from coincidence. Use when: a postmortem or retro is selected by name. |
+| [postmortem](https://github.com/boshu2/agentops/blob/main/skills/postmortem/SKILL.md) | Explain why a change, incident or session went as it did, separating proven causes from coincidence. Use when: asked for a postmortem, retro or root-cause write-up. |
 | [premortem](https://github.com/boshu2/agentops/blob/main/skills/premortem/SKILL.md) | Find how a rollout plan could fail before committing to it. Use when: asked what could go wrong or to poke holes in a plan. |
-| [reality-check](https://github.com/boshu2/agentops/blob/main/skills/reality-check/SKILL.md) | Audit claims that work is done or shipped against the diff or repo. Use when: asked whether something really got done, even if it looks obvious. |
-| [rpi](https://github.com/boshu2/agentops/blob/main/skills/rpi/SKILL.md) | Drive one accepted change through implementation and checks to done, with one fresh review only where a mistake is costly. Use when: selected by name. |
+| [rpi](https://github.com/boshu2/agentops/blob/main/skills/rpi/SKILL.md) | Drive one accepted change through implementation and checks to done, with one fresh review only where a mistake is costly. Use when: asked to run or orchestrate work through RPI. |
 
 ## Explicit tool and runtime adapters
 
@@ -84,9 +83,8 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 | `plan` | execution | `keep` | - | `shape_intent`, `define_acceptance`, `bound_write_scope`, `resume_discovery` | `update_intent_source` |
 | `postmortem` | judgment | `keep_strategy` | - | `postmortem` | `write_postmortem_report` |
 | `premortem` | judgment | `keep_strategy` | - | `challenge_plan` | `write_advisory_plan_review` |
-| `reality-check` | judgment | `keep_strategy` | - | `compare_claim_to_evidence`, `measure_declared_goals`, `report_native_status` | `write_advisory_gap_report`, `write_goal_snapshot`, `write_requested_rendered_spec` |
 | `refactor` | execution | `keep_specialist` | - | `refactor` | `modify_source_files` |
-| `research` | execution | `keep_specialist` | - | `research`, `codebase_recon`, `pattern_mining` | `write_research_report`, `write_recon_pack`, `write_pattern_evidence` |
+| `research` | execution | `keep_specialist` | - | `research`, `codebase_recon`, `pattern_mining`, `compare_claim_to_evidence`, `measure_declared_goals`, `report_native_status` | `write_research_report`, `write_recon_pack`, `write_pattern_evidence`, `write_advisory_gap_report`, `write_goal_snapshot`, `write_requested_rendered_spec` |
 | `reverse-engineer` | execution | `keep_specialist` | - | `reverse_engineer` | `clone_upstream_repo`, `authorized_binary_execution`, `write_teardown_artifacts` |
 | `review` | judgment | `keep` | - | `review_advisory`, `identify_supported_findings`, `report_review_gaps` | - |
 | `rpi` | meta | `keep_strategy` | `plan`, `implement`, `validate` | `own_authorized_outcome`, `report` | `dispatch_core_phases` |

@@ -264,11 +264,13 @@ func TestScore_LiveCatalogAmbiguousCheckNeedsClarification(t *testing.T) {
 	}
 	// The 2026-09-21 intent contract replaced the old Validate trigger:
 	// generic checking needs advice-versus-acceptance clarification. Reality
-	// Check's "Establish the requested outcome" contract owns that boundary;
-	// discovery here does not authorize a claim audit or acceptance judgment.
+	// Check owned that route until it folded into Research (2026-10-23); the
+	// shared rule lives in Review's advice-or-acceptance reference, and Review
+	// asks once before advising. Discovery here does not authorize a claim
+	// audit or acceptance judgment.
 	got := Score("check this change", metas)
-	if len(got) == 0 || got[0].Name != "reality-check" {
-		t.Fatalf("ambiguous check: want reality-check clarification route, got %+v", got[:min(3, len(got))])
+	if len(got) == 0 || got[0].Name != "review" {
+		t.Fatalf("ambiguous check: want review clarification route, got %+v", got[:min(3, len(got))])
 	}
 }
 

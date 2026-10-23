@@ -1,6 +1,6 @@
 ---
 name: interview
-description: 'Interview you one question at a time, each choice with a recommendation, to settle a big outcome before agents work alone. Use when: selected by name.'
+description: 'Interview you one question at a time, each choice with a recommendation, to settle a big outcome before agents work alone. Use when: asked to interview you about a goal or plan.'
 practices: [bdd-gherkin, ddd-bounded-context, design-by-contract]
 hexagonal_role: domain
 consumes: [repo-context, native-work-state]
@@ -10,7 +10,6 @@ context_rel:
   with: craft-goal
 skill_api_version: 1
 user-invocable: true
-disable-model-invocation: true
 metadata:
   tier: execution
   dependencies: []

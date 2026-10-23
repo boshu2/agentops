@@ -13,10 +13,10 @@
     "codex-exec"
   ],
   "forbidden_leaks": [
-    "^(swarm|fitness|status|reality-check)$"
+    "^(swarm|fitness|status|reality-check|research)$"
   ],
   "min_provenance_density": 1.0,
   "max_tokens": 80,
-  "rationale": "Agent-native now owns explicit disjoint packet dispatch through the caller-selected runtime. Codex-exec executes one supplied command, while reality-check reports a claim or requested measurement; neither owns a batch of independent work packets.",
+  "rationale": "Agent-native now owns explicit disjoint packet dispatch through the caller-selected runtime. Codex-exec executes one supplied command, while research (which absorbed reality-check) reports a claim or requested measurement; neither owns a batch of independent work packets.",
   "notes": "Owner migrated from swarm when packet dispatch was consolidated into agent-native. The caller still requests concurrent dispatch with noncolliding write scopes; historical routing measurements retain their original subject."
 }

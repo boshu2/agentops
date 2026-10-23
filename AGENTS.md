@@ -24,7 +24,7 @@ See [the skill menu](docs/SKILL-ROUTER.md) for optional guidance. Plan states ob
 |---|---|
 | `cli/` | the Go `ao` tool |
 | `skills/` | the shipped product; one `SKILL.md` contract per skill, loaded directly by every runtime |
-| `workflows/` | Claude Code workflow scripts |
+| `agents/` | Claude Code plugin agents (`bulk-reader`, `code-writer`, `code-reviewer`, `researcher`) |
 | `scripts/check-*.sh` | the deterministic gates |
 | `tests/` | bats suites |
 | `schemas/` | evidence contracts (`*.schema.json`) |

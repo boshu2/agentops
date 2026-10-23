@@ -144,3 +144,8 @@ pass".
 The gate prints each set's effective eligibility on every run, for every row
 that names a scorecard, so a reader never has to take a scorecard's own
 `coverage_eligible` field for the answer.
+
+**2026-10-23.** Reality Check folded into Research, an execution-tier skill,
+so `reality-check` left the product/judgment denominator. Its two
+`LEGACY-UNVERIFIED` rows and the `reality-check-gap` probe directories stay
+as history; they never counted and do not transfer to Research.

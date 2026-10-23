@@ -106,7 +106,7 @@ authority.
 | Graph walk | Pick a goal's next wave and keep its bead graph honest | `navigate` | Wave checkpoint to caller or Goal |
 | Goal observation | Report durable state without steering | `status`, `handoff` | Facts to caller or Goal |
 | Intent evidence | Reduce uncertainty before one experiment is frozen | `research`, `codebase-recon`, `domain`, `standards`, `reverse-engineer` | Cited facts to Goal or Plan |
-| Option shaping | Generate, challenge, or route candidate hypotheses | `idea-genie`, `reality-check`, `automation-shape-routing` | Advisory options, gaps, or semantic route to caller, Goal, or Plan |
+| Option shaping | Generate, challenge, or route candidate hypotheses | `idea-genie`, `research` (claimed-state audit), `automation-shape-routing` | Advisory options, gaps, or semantic route to caller, Goal, or Plan |
 | Plan review | Challenge a frozen experiment intent (write-scope review is Plan's own step) | `premortem` | Findings to caller or Goal |
 | Implement method | Produce the candidate or focused factual evidence | `test`, `refactor`, `doc`, `scaffold`, `converter`, `skill-builder`, `workflow-builder` | Subject changes and receipts to Implement |
 | Validation evidence | Supply a bounded deterministic or specialist check | `security`, `test`, `standards`, `codebase-recon` | Evidence to one accountable Validate |

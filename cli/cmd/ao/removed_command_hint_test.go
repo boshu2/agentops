@@ -99,6 +99,15 @@ func TestRemovedCommandHint_TombstonedVerbs(t *testing.T) {
 				"never existed",
 			},
 		},
+		{
+			verb: "workflows",
+			wantFrag: []string{
+				`"workflows" was removed`,
+				"docs/MIGRATION.md",
+				"agentops:bulk-reader",
+				"agentops:code-writer",
+			},
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.verb, func(t *testing.T) {
@@ -226,7 +235,7 @@ func TestRemovedVerbsStayHinted(t *testing.T) {
 	for _, verb := range []string{
 		"pawl", "plan-pawl", "land", "done", "close", "governor", "yield",
 		"claim", "next-work", "state", "worktree", "validate", "converge",
-		"reconcile", "membrane", "crank", "flywheel",
+		"reconcile", "membrane", "crank", "flywheel", "workflows",
 	} {
 		err := fmt.Errorf("unknown command %q for %q", verb, "ao")
 		hint := removedCommandHint(bareRoot(), err)

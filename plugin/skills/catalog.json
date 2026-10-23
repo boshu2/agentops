@@ -1,6 +1,6 @@
 {
   "schema_version": "3",
-  "skill_count": 32,
+  "skill_count": 31,
   "skills": [
     {
       "canonical_status": "canonical",
@@ -251,7 +251,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Draft or lint a bounded long-running goal prompt with a finish line and hard limits. Use when: selected by name; one change goes to Plan.",
+      "description": "Draft or lint a bounded long-running goal prompt with a finish line and hard limits. Use when: asked to craft or lint a goal (a /goal prompt); one change goes to Plan.",
       "disposition": "keep_strategy",
       "effects": [],
       "graph_root": false,
@@ -476,7 +476,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Interview you one question at a time, each choice with a recommendation, to settle a big outcome before agents work alone. Use when: selected by name.",
+      "description": "Interview you one question at a time, each choice with a recommendation, to settle a big outcome before agents work alone. Use when: asked to interview you about a goal or plan.",
       "disposition": "keep_strategy",
       "effects": [
         "update_intent_source"
@@ -648,7 +648,7 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Explain why a change, incident or session went as it did, separating proven causes from coincidence. Use when: a postmortem or retro is selected by name.",
+      "description": "Explain why a change, incident or session went as it did, separating proven causes from coincidence. Use when: asked for a postmortem, retro or root-cause write-up.",
       "disposition": "keep_strategy",
       "effects": [
         "write_postmortem_report"
@@ -702,47 +702,6 @@
     {
       "canonical_status": "canonical",
       "capabilities": [
-        "compare_claim_to_evidence",
-        "measure_declared_goals",
-        "report_native_status"
-      ],
-      "consumes": [
-        "caller-question",
-        "native-source-evidence"
-      ],
-      "context_rel": [
-        {
-          "kind": "supplier-to",
-          "with": "plan"
-        }
-      ],
-      "dependencies": [],
-      "description": "Audit claims that work is done or shipped against the diff or repo. Use when: asked whether something really got done, even if it looks obvious.",
-      "disposition": "keep_strategy",
-      "effects": [
-        "write_advisory_gap_report",
-        "write_goal_snapshot",
-        "write_requested_rendered_spec"
-      ],
-      "graph_root": false,
-      "hexagonal_role": "domain",
-      "name": "reality-check",
-      "practices": [
-        "design-by-contract",
-        "evidence-based-engineering"
-      ],
-      "produces": [
-        "reality-check-report.v1",
-        "goal-measurement-report",
-        "native-status-snapshot"
-      ],
-      "references_count": 2,
-      "tier": "judgment",
-      "user_invocable": true
-    },
-    {
-      "canonical_status": "canonical",
-      "capabilities": [
         "refactor"
       ],
       "consumes": [
@@ -775,33 +734,49 @@
       "capabilities": [
         "research",
         "codebase_recon",
-        "pattern_mining"
+        "pattern_mining",
+        "compare_claim_to_evidence",
+        "measure_declared_goals",
+        "report_native_status"
       ],
       "consumes": [
-        "research-question"
+        "research-question",
+        "native-source-evidence"
       ],
-      "context_rel": [],
+      "context_rel": [
+        {
+          "kind": "supplier-to",
+          "with": "plan"
+        }
+      ],
       "dependencies": [],
-      "description": "Answer one cited question about code, history, claims or patterns. Use when: asked how it works, why it changed, whether a claim holds or a pattern warrants a rule.",
+      "description": "Answer one cited question on code, history, claims or patterns. Use when: asked how it works, why it changed, if a claim or done/shipped report holds, or a pattern warrants a rule.",
       "disposition": "keep_specialist",
       "effects": [
         "write_research_report",
         "write_recon_pack",
-        "write_pattern_evidence"
+        "write_pattern_evidence",
+        "write_advisory_gap_report",
+        "write_goal_snapshot",
+        "write_requested_rendered_spec"
       ],
       "graph_root": false,
       "hexagonal_role": "driving-adapter",
       "name": "research",
       "practices": [
         "pragmatic-programmer",
-        "ddd-bounded-context"
+        "ddd-bounded-context",
+        "evidence-based-engineering"
       ],
       "produces": [
         "research-report",
         "codebase-recon.v1",
-        "pattern-mining.v1"
+        "pattern-mining.v1",
+        "reality-check-report.v1",
+        "goal-measurement-report",
+        "native-status-snapshot"
       ],
-      "references_count": 4,
+      "references_count": 6,
       "tier": "execution",
       "user_invocable": true
     },
@@ -889,7 +864,7 @@
         "implement",
         "validate"
       ],
-      "description": "Drive one accepted change through implementation and checks to done, with one fresh review only where a mistake is costly. Use when: selected by name.",
+      "description": "Drive one accepted change through implementation and checks to done, with one fresh review only where a mistake is costly. Use when: asked to run or orchestrate work through RPI.",
       "disposition": "keep_strategy",
       "effects": [
         "dispatch_core_phases"

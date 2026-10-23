@@ -31,7 +31,7 @@ if [ "$1" = "api" ]; then
     */traffic/clones)
       [ "${GH_CLONES_BAD:-0}" -ne 0 ] && { echo '{}'; exit 0; }
       echo '{"count":43203,"uniques":10892}' ;;
-    */traffic/popular/paths)     echo '[{"path":"/r/blob/main/.claude/workflows/operating-loop.js","count":37,"uniques":18}]' ;;
+    */traffic/popular/paths)     echo '[{"path":"/r/blob/main/skills/rpi/SKILL.md","count":37,"uniques":18}]' ;;
     */traffic/popular/referrers) echo '[{"referrer":"reddit.com","count":204,"uniques":144}]' ;;
     repos/*)                     echo '{"stargazers_count":399,"forks_count":40,"subscribers_count":4,"open_issues_count":3}' ;;
   esac
@@ -51,7 +51,7 @@ run_capture() { ( cd "$FIX" && bash "$SCRIPT" "$@" ); }
     [ "$status" -eq 0 ]
     [[ "$output" == *'"stars":399'* ]]
     [[ "$output" == *'"views_14d":993'* ]]
-    [[ "$output" == *'operating-loop.js'* ]]
+    [[ "$output" == *'skills/rpi/SKILL.md'* ]]
     [[ "$output" == *'clones_note'* ]]
 }
 

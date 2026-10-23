@@ -1,6 +1,6 @@
 ---
 name: craft-goal
-description: 'Draft or lint a bounded long-running goal prompt with a finish line and hard limits. Use when: selected by name; one change goes to Plan.'
+description: 'Draft or lint a bounded long-running goal prompt with a finish line and hard limits. Use when: asked to craft or lint a goal (a /goal prompt); one change goes to Plan.'
 practices:
 - lean-startup
 - design-by-contract
@@ -16,7 +16,6 @@ context_rel:
 - kind: supplier-to
   with: plan
 user-invocable: true
-disable-model-invocation: true
 context:
   window: inherit
   intent:

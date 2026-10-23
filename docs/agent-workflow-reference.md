@@ -76,8 +76,8 @@ The [RPI charter](../skills/rpi/SKILL.md) is an explicitly selected workflow;
 native goals and direct coding do not require it. A skill earns its context
 cost by resolving a task-specific need, not by occupying a phase in a sequence.
 No new scheduler, command or process ledger is needed.
-Optional context-budget tooling (an opt-in read-budget hook plus bulk-read /
-code-write delegation) is described in
+Optional context-budget tooling (an opt-in read-budget hook plus the bulk-reader /
+code-writer agents) is described in
 [context-budget delegation](https://github.com/boshu2/agentops/blob/main/skills/agent-native/references/context-budget-delegation.md).
 
 For exact intent snapshots, subject manifests, evidence storage, scope and

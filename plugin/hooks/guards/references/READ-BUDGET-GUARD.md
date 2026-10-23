@@ -162,8 +162,7 @@ First fire in a session (full):
 → Read a slice: Read(file_path, offset, limit) with limit ≤ <B>, or Bash: sed -n '1,<B>p' <path> / grep -n <pattern> <path>.
 → Or delegate the whole file to a cheap reader that returns line-referenced bullets and keeps the bytes out of this context:
     Agent tool: subagent_type "agentops:bulk-reader", prompt "<question>\nfiles: <path>"
-    Workflow: agentops:bulk-read { question: "<question>", files: ["<path>"] }
-    These names require the AgentOps plugin. Use bare names only when the runtime lists standalone definitions or links under those names.
+    This name requires the AgentOps plugin, which ships the bulk-reader agent. Use the bare name bulk-reader only when the runtime lists a standalone definition or link under it.
 Waive once: AOP_WAIVE=core.context:unbounded-read (hook env, or a prefix on the Bash command). Raise the budget: AOP_READ_BUDGET_LINES=<N> in the hook env (an operator setting, not a command prefix).
 ```
 
@@ -195,22 +194,22 @@ a raw path. Methodology and the pre-registered KEEP/CUT rule:
 ## The delegation pairing
 
 The guard's second arrow points at the delegation layer; without it the guard
-only says "no". Three bounded, one-shot, cheap-model delegations ship next to
-it — Claude Code plugin agents and Workflow-tool conveyors; the caller sees
-bullets or a receipt, never bytes, and nothing is kept between calls:
+only says "no". Two bounded, one-shot, cheap-model delegations ship next to it
+as Claude Code plugin agents (`agents/` in the plugin); the caller sees bullets
+or a receipt, never bytes, and nothing is kept between calls:
 
 | Piece | What the caller gets |
 |---|---|
-| `agents/bulk-reader.md` — subagent `agentops:bulk-reader` (`Read`/`Grep`/`Glob`/`Bash`, no `Write`/`Edit`, haiku) | line-referenced bullets (`path:line`, at most 40 unless the caller sets another cap), no prose |
-| `workflows/bulk-read.js` — `agentops:bulk-read { question, files, root?, model?, maxBullets?, budgetLines? }` | one reader per file in parallel; `{question, files:[{file, bullets, lines_covered, complete, note?, error?}], bullets_total}` |
-| `workflows/code-write.js` with subagent `agentops:code-writer` (`agents/code-writer.md`) — `agentops:code-write { items:[{key, spec, reference, target, check?}] }` | metadata-only realpath/stat preflight for batches, then sequential writers; bounded receipts (`written`, `lines`, `check_ok`, `summary`), no check output; a reference file is REQUIRED |
+| `agents/bulk-reader.md` — subagent `agentops:bulk-reader` (`Read`/`Grep`/`Glob`/`Bash`, no `Write`/`Edit`, haiku) | line-referenced bullets (`path:line`, at most 40 unless the caller sets another cap) with per-file coverage, no prose |
+| `agents/code-writer.md` — subagent `agentops:code-writer` (`Read`/`Write`/`Edit`/`Grep`/`Glob`/`Bash`, haiku) | one target written from a spec plus a REQUIRED reference file; a bounded JSON receipt (`target`, `written`, `lines`, `check_ran`, `check_ok`, `summary`), no file content and no check output |
 
-These invocation names require the AgentOps plugin. Bare names apply only to
-standalone definitions or links when the runtime actually lists those names.
-The plugin adds the prefix; source agent names and workflow `meta.name` stay bare.
+Invoke each with the Agent tool: a reader takes a question and a `files:` list,
+a writer one target per call. These invocation names require the AgentOps plugin. Bare names
+apply only to standalone definitions or links when the runtime actually lists
+those names. The plugin adds the prefix; source agent names stay bare.
 
 Guard compatibility: the reader and writer prompts read in **slices** (`Read`
-with `offset` + `limit ≤ budgetLines`), never an unbounded
+with `offset` + `limit` at most the budget), never an unbounded
 `Read`/`cat`/`head`/`tail`. Readers start at offset 1 and continue through EOF;
 the limit is per call, and the bullet cap does not limit coverage. Truncated
 responses require smaller slices from the first unread line, not an EOF claim.
@@ -221,13 +220,16 @@ an exemption, it is a reader that obeys the same rule. A follow-up question
 about the same file costs another delegation, not another copy of the file in
 this context.
 
-Malformed worker replies produce explicit errors. Missing reader receipts leave coverage unknown (`lines_covered: null`); missing writer receipts leave write and check state unknown, never proving that no file changed. Metadata preflight and target-only edits still require worker compliance; the Workflow surface is not a filesystem sandbox.
+Nothing wraps an Agent-tool call to validate the reply, so the caller checks it.
+A reply without coverage leaves coverage unknown; a missing or malformed writer
+receipt leaves write and check state unknown, never proving that no file
+changed. Target-only edits remain an agent instruction; an agent's tools are
+not a filesystem sandbox.
 
 A receipt or a bullet list is a runtime fact, not validation. Whatever a writer
 lands still gets fresh, author-distinct judgment like any other change. Pattern
 and doctrine in AgentOps terms:
-[context-budget delegation](../../../skills/agent-native/references/context-budget-delegation.md);
-workflow install and args: `workflows/README.md` in the repository checkout.
+[context-budget delegation](../../../skills/agent-native/references/context-budget-delegation.md).
 
 ## Opt-in install
 

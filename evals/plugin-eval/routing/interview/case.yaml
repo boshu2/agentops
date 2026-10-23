@@ -1,0 +1,18 @@
+schema_version: '1.1'
+name: interview
+tags:
+- routing
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Interview me about this before anyone writes code. I want every pull request in our monorepo to get an automatic agent review that blocks the merge on real bugs but never on style. We're 14 engineers on GitHub Actions, mostly Go and TypeScript, and two of the teams already ignore the linter bot.
+graders:
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?interview"'

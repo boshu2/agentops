@@ -13,7 +13,7 @@ GOALS.yaml / GOALS.md fitness specification subsystem: load, validate, measure, 
 
 - **Owner:** agentopsd extraction track (epic `agentops-tqc`).
 - **Operator-facing artifact:** `GOALS.md` at repo root (with `GOALS.yaml` as the legacy format). Either is valid input; `goals.go` parses both into a unified `GoalFile`.
-- **Skill surface:** consumed by `skills/reality-check/SKILL.md` as optional measurement context.
+- **Skill surface:** consumed by `skills/research/SKILL.md` (claimed-state audit; references/goals.md) as optional measurement context.
 
 ## Read the owner for the change
 

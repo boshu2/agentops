@@ -22,7 +22,9 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FILES=(
   "AGENTS.md"
   "docs/architecture/primitive-chains.md"
-  "skills/reality-check/SKILL.md"
+  # Native status and goal measurement moved here with Reality Check.
+  "skills/research/SKILL.md"
+  "skills/research/references/status.md"
   # Requested documentation setup and handoffs now belong to doc; ordinary
   # sessions have no mandatory bootstrap or context-loading command.
   "skills/doc/SKILL.md"

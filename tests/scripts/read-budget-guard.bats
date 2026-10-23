@@ -193,15 +193,18 @@ require_negative_head() {
   [[ "$output" != *"→ Read a slice"* ]]
 }
 
-@test "FIRE: the first fire names the plugin-qualified Agent and Workflow delegation doors" {
+@test "FIRE: the first fire names the plugin-qualified bulk-reader agent and no workflow" {
   run run_read "$WORK/big.txt" "f-full-msg"
   [ "$status" -eq 2 ]
   [[ "$output" == *"bulk-reader"* ]]
   [[ "$output" == *"→ Read a slice: Read(file_path, offset, limit) with limit ≤ 350"* ]]
   [[ "$output" == *"→ Or delegate the whole file to a cheap reader"* ]]
-  [[ "$output" == *"Agent tool: subagent_type \"agentops:bulk-reader\""* ]]
-  [[ "$output" == *"Workflow: agentops:bulk-read { question: \"<question>\", files: [\"$WORK/big.txt\"] }"* ]]
-  [[ "$output" == *"Use bare names only when the runtime lists standalone definitions or links under those names."* ]]
+  [[ "$output" == *"Agent tool: subagent_type \"agentops:bulk-reader\", prompt \"<question>\\nfiles: $WORK/big.txt\""* ]]
+  [[ "$output" == *"This name requires the AgentOps plugin, which ships the bulk-reader agent."* ]]
+  [[ "$output" == *"Use the bare name bulk-reader only when the runtime lists a standalone definition or link under it."* ]]
+  [[ "$output" != *"Workflow"* ]]
+  [[ "$output" != *"agentops:bulk-read "* ]]
+  [[ "$output" != *"agentops:bulk-read {"* ]]
   [[ "$output" == *"Waive once: AOP_WAIVE=$POLICY"* ]]
   [[ "$output" == *"AOP_READ_BUDGET_LINES="* ]]
 }

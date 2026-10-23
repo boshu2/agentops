@@ -63,6 +63,8 @@ REMOVED_SKILLS = {
     "learn", "toil-mining", "bootstrap", "handoff", "scaffold", "workflow-builder",
     "automation-shape-routing", "crank", "converter", "operationalize", "standards",
     "fitness", "status", "route", "human-only-skills", "swarm",
+    # 2026-10-23: Reality Check folded into Research's claimed-state audit.
+    "reality-check",
 }
 REMOVED_MORTEM_ALIASES = {
     "pre-mortem", "pre_mortem", "post-mortem", "post_mortem",
