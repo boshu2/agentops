@@ -1,0 +1,101 @@
+schema_version: '1.1'
+name: architecture
+tags:
+- behavior
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Our notification code is getting expensive to touch and I want to sort it out before we add WhatsApp next quarter. Adding push last month took three PRs across four files, and we still missed the marketing opt-in check on the push path: opted-out users got marketing pushes for two days.
+
+    My plan: a CHANNELS dict in notify/config.py (name, max length, cost per message) that every module imports, and since email_blocked and sms_blocked are literally the same code, merge them into one is_quiet_hour(). Is that the right shape, or would you structure it differently? Here's everything that touches channels:
+
+    ```python
+    # notify/dispatch.py
+    def dispatch(user, event):
+        channel = user.prefs.channel              # "email" | "sms" | "push"
+        if channel == "email":
+            if event.marketing and not user.prefs.marketing_opt_in:
+                return
+            if event.marketing and quiet_hours.email_blocked(user.local_hour()):
+                return queue.defer(user, event)
+            email.send(user.address, templates.render(event, "email"))
+        elif channel == "sms":
+            if event.marketing and not user.prefs.marketing_opt_in:
+                return
+            if event.marketing and quiet_hours.sms_blocked(user.local_hour()):
+                return queue.defer(user, event)
+            sms.send(user.phone, templates.render(event, "sms"))
+        elif channel == "push":
+            push.send(user.device_token, templates.render(event, "push"))
+        audit.log_delivery(user, event, channel)
+
+    # notify/quiet_hours.py
+    def email_blocked(hour):
+        # product choice: no marketing email 21:00-08:00 local; PM wants this to become a user setting
+        return hour >= 21 or hour < 8
+
+    def sms_blocked(hour):
+        # legal (TCPA): no marketing texts before 8am or after 9pm, recipient's local time
+        return hour >= 21 or hour < 8
+
+    # notify/templates.py
+    MAX_LEN = {"sms": 160, "push": 120}
+
+    def render(event, channel):
+        text = TEMPLATES[event.name][channel]
+        limit = MAX_LEN.get(channel)
+        return text if limit is None else text[:limit]
+
+    # notify/audit.py
+    COST_CENTS = {"email": 0, "sms": 2, "push": 0}
+
+    def log_delivery(user, event, channel):
+        db.insert("deliveries", user_id=user.id, event=event.name,
+                  channel=channel, cost_cents=COST_CENTS[channel])
+
+    # accounts/prefs.py
+    VALID_CHANNELS = {"email", "sms", "push"}
+
+    def set_channel(user, channel):
+        if channel not in VALID_CHANNELS:
+            raise ValueError(f"unknown channel: {channel}")
+        user.prefs.channel = channel
+
+    # tests/test_dispatch.py
+    def test_marketing_sms_deferred_at_night(mocker):
+        mocker.patch("notify.dispatch.quiet_hours.sms_blocked", return_value=True)
+        defer = mocker.patch("notify.dispatch.queue.defer")
+        dispatch(make_user(channel="sms"), make_event(marketing=True))
+        defer.assert_called_once()
+    ```
+graders:
+- name: c1
+  type: llm
+  criteria: |
+    The response compares at least two different designs for where per-channel knowledge lives (the user's CHANNELS dict can be one of them) and also an explicit option of leaving the code as it is, stating what leaving it would cost.
+- name: c2
+  type: llm
+  criteria: |
+    The response advises keeping email_blocked and sms_blocked separate rather than merging them into one function, because one is a product choice the PM plans to make configurable and the other is a legal rule, so they will change for different reasons.
+- name: c3
+  type: llm
+  criteria: |
+    The response names the existing test that patches quiet_hours.sms_blocked and queue.defer and says it would be replaced by a test through the new interface.
+- name: c4
+  type: llm
+  criteria: |
+    The response gives a step-by-step migration in which the new shape is added beside the old and callers move over before the old code is removed, and it names the step after which reversing the change is no longer cheap.
+- name: c5
+  type: llm
+  criteria: |
+    The response says it worked only from the pasted code and the user's description, without change history, and names at least one thing it did not inspect that could change the advice (for example other code that branches on channel names, the consumer of deferred messages, or stored delivery rows).
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?architecture"'
+  arm: with-only

@@ -19,6 +19,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   says the audit gives none. On its plugin-eval case, findings carrying both
   lines went from 0 of 6 runs to 6 of 6, listed unexercised paths from 3 to 6,
   and replies with no score from 4 to 6.
+- Navigate retypes a decision already filed as build work
+  (`bd update <id> --type decision --remove-label agent-ready`), and treats a
+  default, a recommendation or filing the caller's question as ruled-out work
+  as answering it on the caller's behalf. On a new harder eval case, retyping
+  the disguised decision went from 1 of 3 runs to 2 of 3 and leaving the
+  caller's question open from 0 of 3 to 3 of 3.
+- Agent Native compares a lane's content with the integration target as it
+  stands now before removing it, not with the commit that was merged. On a new
+  harder eval case that check went from 1 of 3 runs to 2 of 3.
+- The plugin-eval suite covers all 32 skills: behavior and routing cases for
+  Triage, Architecture and Ergonomics are added. Criteria for RPI, Doc,
+  Orchestrate, Codex Exec and AGY Native that failed every arm by design or
+  read two ways are reworded, and Skill Builder's case now shows the existing
+  owner and CI step and scores the rule against a new hook from one incident.
 
 ### Fixed
 

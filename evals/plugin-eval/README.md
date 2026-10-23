@@ -7,8 +7,8 @@ differently from one without it. They run with Claude Code's own evaluator,
 
 | Suite | Cases | Question | Arms |
 |---|---|---|---|
-| `behavior/` | 29, one per skill | Does the answer follow the practice the skill teaches? Each case has 4 or 5 criteria and also records whether the skill loaded. | with the plugin and without it |
-| `routing/` | 25, one per skill the model can load by itself | Does the matching skill load on a request that never names it? | plugin only |
+| `behavior/` | 32, one per skill | Does the answer follow the practice the skill teaches? Each case has 4 or 5 criteria and also records whether the skill loaded. | with the plugin and without it |
+| `routing/` | 28, one per skill the model can load by itself | Does the matching skill load on a request that never names it? | plugin only |
 
 A case is one `case.yaml`: a request a user would type, the criteria, and a
 `skill-loaded` check on the Skill tool call. The routing requests were written
@@ -41,7 +41,7 @@ by Git.
 
 Every run is a full Claude Code session on your account. On Claude Opus 5.5 a
 run cost about $0.13 to generate (168 runs for $21.25 on 2026-10-04). The
-behavior suite is 174 runs at the default three per case; routing is 75.
+behavior suite is 192 runs at the default three per case; routing is 84.
 
 ## Grade
 

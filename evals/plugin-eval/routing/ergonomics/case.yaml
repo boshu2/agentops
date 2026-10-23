@@ -1,0 +1,58 @@
+schema_version: '1.1'
+name: ergonomics
+tags:
+- routing
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    We're about to let Claude and Codex agents call our internal deploy CLI `shipit` directly instead of a human clicking through the web UI. This is everything they'd get:
+
+    ```
+    $ shipit --help
+    shipit 2.3.1
+    Usage: shipit [OPTIONS] COMMAND
+
+    Commands:
+      push     Deploy a build
+      status   Show status
+      rb       Roll back
+      cfg      Config stuff
+
+    Run `shipit COMMAND -h` for more.
+    ```
+
+    ```
+    $ shipit push api-gateway
+    ⠋ Uploading artifact...
+    ✔ Uploaded (14.2 MB)
+    ⠙ Waiting for health checks... 3/5
+    ✔ Deployed api-gateway@b7f19c to prod-us-east  🎉
+    ```
+
+    ```
+    $ shipit status api-gateway
+    SERVICE       ENV            VERSION   HEALTH    SINCE
+    api-gateway   prod-us-east   b7f19c    ok        4m
+    api-gateway   prod-eu-west   a02e44    degraded  2h
+    ```
+
+    ```
+    $ shipit rb api-gateway
+    Error: something went wrong (code 7)
+    $ echo $?
+    0
+    ```
+
+    No `--json` anywhere, `rb -h` prints nothing, and `push` goes to whatever env is in `~/.shipit/config` unless you pass `--env`.
+
+    Before we wire this in: could an agent actually work out how to use it, read what comes back reliably, and recover when it fails? What trips it up first?
+graders:
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?ergonomics"'

@@ -162,10 +162,12 @@ answer is a choice, sized to one session, naming how it resolves: a cited
 fact (Research), a rough artifact the caller reacts to (Plan's probes and
 prototypes), a conversation with the caller (Interview), or a manual step that
 only unblocks a decision. Give it the tracker's decision type, never a build or
-agent-ready label (with BD, `bd create --type decision`), so a worker pulling
-build work skips it: `bd ready --parent <epic> --exclude-type decision`. A bead
-that needs the caller's own answer resolves only with the caller; never answer
-it on their behalf.
+agent-ready label (with BD, `bd create --type decision`, or
+`bd update <id> --type decision --remove-label agent-ready` for a decision
+already filed as build work), so a worker pulling build work skips it:
+`bd ready --parent <epic> --exclude-type decision`. A question that needs the
+caller's own answer resolves only with the caller; never answer it on their
+behalf, whether by a default, a recommendation or filing it as ruled-out work.
 
 Track two lists with the root epic: in-scope questions not yet specific
 enough to become beads, which graduate as the frontier moves, and work ruled

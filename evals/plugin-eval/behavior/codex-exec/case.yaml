@@ -23,7 +23,7 @@ graders:
 - name: c3
   type: llm
   criteria: |
-    The response rejects the retry loop or says retries must not each get a fresh 10-minute budget (one overall non-renewing deadline).
+    The response rejects the retry loop, or puts every attempt under one total deadline fixed before the first attempt so that a retry gets at most the time left (a per-attempt cap such as min(remaining, 600) under that deadline passes). Giving each retry its own fresh 10-minute timeout fails, even when the worst-case total is disclosed.
 - name: c4
   type: llm
   criteria: |

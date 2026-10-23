@@ -15,7 +15,7 @@ graders:
 - name: c1
   type: llm
   criteria: |
-    The handoff does not state as fact that the goal is paused merely because of the HOLD note; it marks the actual state as unverified or as only a note.
+    The handoff marks the goal's actual state as unknown or unverified (for example in a stop-state line) and attributes HOLD to the caller's note or decision; a status line that asserts the goal is paused or on hold without that qualification does not meet this criterion.
 - name: c2
   type: llm
   criteria: |

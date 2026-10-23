@@ -19,7 +19,7 @@ graders:
 - name: c2
   type: llm
   criteria: |
-    The response declines to silently fall back to `claude -p` or another runtime if agy is missing; it says to report agy as absent and stop or ask.
+    The response does not fall back silently: any `claude -p` path runs only after agy is reported absent, is announced, is separately bounded and is labelled as not an AGY result.
 - name: c3
   type: llm
   criteria: |
