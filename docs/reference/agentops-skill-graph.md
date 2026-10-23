@@ -23,7 +23,6 @@ graph LR
   plan["plan"]
   postmortem["postmortem"]
   premortem["premortem"]
-  reality_check["reality-check"]
   refactor["refactor"]
   research["research"]
   reverse_engineer["reverse-engineer"]

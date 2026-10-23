@@ -10,7 +10,7 @@
     {
       "title": "Build and review",
       "description": "Clarify a change, implement it, and check the result. Choose these independently; Validate requires the ao CLI.",
-      "skills": ["plan", "implement", "review", "validate", "doc", "domain", "security", "reality-check", "triage", "architecture", "ergonomics"]
+      "skills": ["plan", "implement", "review", "validate", "doc", "domain", "security", "triage", "architecture", "ergonomics"]
     },
     {
       "title": "Explore and learn",

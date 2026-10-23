@@ -1,7 +1,7 @@
 # Goal measurement
 
-Loaded by [Reality Check](../SKILL.md) when the caller asks to measure declared
-goals.
+Loaded by [Research](../SKILL.md) in a claimed-state audit when the caller asks
+to measure declared goals.
 
 Inspect the declared goals source; prefer `GOALS.md` when it and legacy YAML
 both exist (`ao goals` auto-detects `GOALS.md` first). Preserve directive and

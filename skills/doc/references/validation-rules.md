@@ -82,7 +82,7 @@ another owner's state.
 | A feature is deployed or running | Read authorized native deployment state; a declaration or template alone is insufficient. |
 | A configuration value is the default | Compare with the versioned configuration source. |
 | A status observation is current | State when and against which source it was observed; use an existing freshness requirement if one applies. |
-| A change landed, merged or is fixed | Read through an authorized interface whether the pull request merged with the default branch as its base, or check that the upstream default branch reaches the fix; where squash or rebase broke ancestry, compare content (see [Reality Check](../../reality-check/SKILL.md)). A local checkout may predate the merge. When neither is possible, date the claim and say it was not verified. |
+| A change landed, merged or is fixed | Read through an authorized interface whether the pull request merged with the default branch as its base, or check that the upstream default branch reaches the fix; where squash or rebase broke ancestry, compare content (see [Research's claimed-state audit](../../research/SKILL.md#claimed-state-audit)). A local checkout may predate the merge. When neither is possible, date the claim and say it was not verified. |
 
 For status prose, distinguish observed, planned and unverified facts. A date
 records an observation, not a universal validity period. There is no generic

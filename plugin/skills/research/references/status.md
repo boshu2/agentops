@@ -1,7 +1,7 @@
 # Native status
 
-Loaded by [Reality Check](../SKILL.md) when the caller asks for a status
-snapshot.
+Loaded by [Research](../SKILL.md) in a claimed-state audit when the caller asks
+for a status snapshot.
 
 Use `ao status` for the local evidence-store view, or
 `ao status --evidence-root <dir>` for a protected external store. It validates

@@ -1,5 +1,5 @@
 schema_version: '1.1'
-name: reality-check
+name: research-claim-check
 tags:
 - routing
 execution:
@@ -33,4 +33,4 @@ graders:
 - name: skill-loaded
   type: tool_used
   tool: Skill
-  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?reality-check"'
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?research"'
