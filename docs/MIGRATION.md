@@ -53,6 +53,7 @@ the same exact-content, author-distinct judgment bar without invoking them.
 | `ao flywheel` | The CLI surface remains retired; existing `flywheel:` config sections still parse and are ignored. The optional Memory skill can review useful episodes and curate topic pages. They do not automatically compute compounding or claim benefit without later work. |
 | `ao eval` | The offline eval surface was retired unconsumed (no gate, workflow, or script ran it); use a repository-selected evaluator and record the result as generic `ao provenance` evidence. |
 | `ao redact` | Its only declared caller (the compile skill's render-write) never existed. Use owner-authorized disclosure review before storage; removing or replacing this command does not authorize reading restricted sources. |
+| `ao workflows` (`link`, `unlink`) | Removed with the AgentOps workflows. Use the Claude Code plugin agents `agentops:bulk-reader` and `agentops:code-writer` through the Agent tool. Links it made under a project's `.claude/workflows/` now point at deleted files; delete them by hand ([Removed workflows](install-day2-ops.md#removed-workflows-claude-code)). |
 
 These names are no longer registered commands. Invoking one fails as an
 unknown command (exit 1) and prints the matching replacement pointer from the
@@ -143,7 +144,7 @@ apply, and host loading is qualified separately from package presence.
 | `cc-hooks` | removed | AgentOps-native guard scripts now live under `hooks/guards/`; the Claude plugin retains its existing guards. No hook-configuration skill is bundled. |
 | `codex-exec` | keep | [Codex Exec](https://github.com/boshu2/agentops/blob/main/skills/codex-exec/SKILL.md): one selected headless Codex process. |
 | `council` | keep | [Council](https://github.com/boshu2/agentops/blob/main/skills/council/SKILL.md): selected independent perspectives; advice does not supply acceptance. |
-| `craft-goal` | keep | [Craft Goal](https://github.com/boshu2/agentops/blob/main/skills/craft-goal/SKILL.md): explicitly selected persistent-goal guidance; native goals retain continuity. |
+| `craft-goal` | keep | [Craft Goal](https://github.com/boshu2/agentops/blob/main/skills/craft-goal/SKILL.md): persistent-goal guidance loaded when the caller names it; native goals retain continuity. |
 | `dcg` | external | Obtain the tool and its guidance from its author; see [recommendations](https://github.com/boshu2/agentops/blob/main/README.md#recommended-tools-and-skills). |
 | `doc` | keep | [Doc](https://github.com/boshu2/agentops/blob/main/skills/doc/SKILL.md): requested source-grounded documents and continuity handoffs. |
 | `domain` | keep | [Domain](https://github.com/boshu2/agentops/blob/main/skills/domain/SKILL.md): domain vocabulary, rule boundaries and repository conventions. |
@@ -156,11 +157,11 @@ apply, and host loading is qualified separately from package presence.
 | `postmortem` | keep | [Postmortem](https://github.com/boshu2/agentops/blob/main/skills/postmortem/SKILL.md): requested outcome analysis, separate from code acceptance. |
 | `premortem` | keep | [Premortem](https://github.com/boshu2/agentops/blob/main/skills/premortem/SKILL.md): selected fresh plan challenge; Plan owns the shared challenge exchange. |
 | `rch` | external | Obtain the tool and its guidance from its author; see [recommendations](https://github.com/boshu2/agentops/blob/main/README.md#recommended-tools-and-skills). |
-| `reality-check` | keep | [Reality Check](https://github.com/boshu2/agentops/blob/main/skills/reality-check/SKILL.md): compare shipped-feature, repository or goal claims with evidence. |
+| `reality-check` | removed | Folded into [Research](https://github.com/boshu2/agentops/blob/main/skills/research/SKILL.md#claimed-state-audit) on 2026-10-23: its claimed-state audit compares done, shipped, fixed or wired-in claims, goal measurements and native status with evidence, item by item and with no verdict. `reality-check-report.v1` keeps its name; check it with `skills/research/scripts/claim-audit/validate-output.sh`. |
 | `refactor` | keep | [Refactor](https://github.com/boshu2/agentops/blob/main/skills/refactor/SKILL.md): structural simplification while preserving behavior. |
 | `research` | keep | [Research](https://github.com/boshu2/agentops/blob/main/skills/research/SKILL.md): cited source investigation and pattern evidence. |
 | `reverse-engineer` | keep | [Reverse Engineer](https://github.com/boshu2/agentops/blob/main/skills/reverse-engineer/SKILL.md): authorized external-system teardown and adoption choices. |
-| `rpi` | keep | [RPI](https://github.com/boshu2/agentops/blob/main/skills/rpi/SKILL.md): explicitly selected outcome-to-judgment charter; unchanged hard dependency graph. |
+| `rpi` | keep | [RPI](https://github.com/boshu2/agentops/blob/main/skills/rpi/SKILL.md): outcome-to-judgment charter loaded when the caller names it; unchanged hard dependency graph. |
 | `sbh` | external | Obtain the tool and its guidance from its author; see [recommendations](https://github.com/boshu2/agentops/blob/main/README.md#recommended-tools-and-skills). |
 | `security` | keep | [Security](https://github.com/boshu2/agentops/blob/main/skills/security/SKILL.md): concrete exposure review and selected scans. |
 | `skill-builder` | keep | [Skill Builder](https://github.com/boshu2/agentops/blob/main/skills/skill-builder/SKILL.md): skill authoring, repair, projections and exports. |
@@ -193,11 +194,19 @@ integrated candidate. Structural checks establish no efficacy or host-load claim
 | `standards` | `domain` for repository conventions and their existing owners. |
 | `converter`, `operationalize` | `skill-builder` for exports and supported expertise proposals. |
 | `swarm` | `agent-native` for explicitly selected delegation; use the native runtime for ordinary execution. |
-| `fitness`, `status` | `reality-check` for a requested comparison of claims with evidence; CLI status remains available. |
+| `fitness`, `status` | `research` (claimed-state audit) for a requested comparison of claims with evidence; CLI status remains available. |
 | `scope`, `product` | `plan` for missing acceptance/scope; `domain` for vocabulary; `doc` for a requested product document. |
 | `goals` | Use the native goal/tracker; `craft-goal` remains optional guidance for an explicitly selected persistent-goal workflow. |
 | `scaffold`, `workflow-builder` | Implement the requested repository change natively; use `skill-builder` only when the output is a skill. No generic workflow generator replaces these names. |
 | `anti-ceremony`, `automation-shape-routing`, `shared` | No standalone invocation. The operating contract retains the artifact-creation boundary, runtime choice stays with the caller, and surviving skills link their needed references. |
+
+### Folded 2026-10-23
+
+| Retired skill | Current owner or migration |
+|---|---|
+| `reality-check` | `research`. Its claimed-state audit checks a done, shipped, fixed or wired-in claim item by item (confirmed, gap or unverifiable) with no verdict; health snapshots, `ao goals` measurement and `ao status` snapshots moved with it. A durable report keeps the `reality-check-report.v1` format. Acceptance verdicts stay with `validate`. |
+
+RPI, Postmortem, Interview and Craft Goal no longer set `disable-model-invocation`; they load when the caller names them in plain words, and the slash commands still work.
 
 ### Unified discovery batch
 
@@ -319,7 +328,6 @@ commands remain covered by the breaking-boundary table above, not aliases.
 | [`ao skills`](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md#ao-skills) | keep; [skills composition](https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/skills_composition.go) | Catalog discovery/checks and selected or full owned source links. Orchestrate is another catalog entry, not a command. |
 | [`ao status`](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md#ao-status) | keep; [status composition](https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/status_composition.go) | Evidence-store facts; tracker/runtime retain live work state. |
 | [`ao version`](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md#ao-version) | keep; [version composition](https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/version_composition.go) | Installed CLI version identity. |
-| [`ao workflows`](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md#ao-workflows) | keep; [workflows composition](https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/workflows_composition.go) | Owned project-local Claude workflow links/unlinks. |
 
 ## Install migration
 
@@ -360,7 +368,7 @@ ships `./skills`, the tree `ao skills link` and `npx skills` already install.
 The [host/install contract](contracts/multi-runtime-tier-charter.md#host-and-install-surface-mapping)
 owns host scope and qualification. This migration table records the disposition
 of its consumers plus the repository's standalone installers and optional
-roles/hooks/workflows. **Keep** preserves the declared behavior and all upgrade,
+roles and hooks. **Keep** preserves the declared behavior and all upgrade,
 cold-resume, collision and recovery obligations; it does not silently retire an
 untested promise. Every live claim still needs evidence on the final installation.
 
@@ -378,8 +386,7 @@ untested promise. Every live claim still needs evidence on the final installatio
 | Claude agent roles and optional Codex context roles | keep; [Claude agents](../agents/), [Codex role sources](../skills/agent-native/agents/) and [role installer](https://github.com/boshu2/agentops/blob/main/scripts/install-codex-context-agents.sh) | Preserve role identity and explicit Codex activation, backups and unrelated configuration. Installing skills does not activate Codex roles. |
 | Claude policy dispatcher | keep; [plugin hooks](https://github.com/boshu2/agentops/blob/main/hooks/hooks.json), [source wrapper](https://github.com/boshu2/agentops/blob/main/scripts/install-policy-dispatch.sh) and [packaged owner](https://github.com/boshu2/agentops/blob/main/hooks/guards/scripts/install-hooks.sh) | The dispatcher is automatically active when installed through the Claude plugin; source/copy installation uses the existing owner-selected installer. Native zero-skill work remains hookless. |
 | Read-budget and installed-skill edit guards | keep; [Claude read guard](https://github.com/boshu2/agentops/blob/main/scripts/install-read-budget-guard.sh), [Codex read guard](https://github.com/boshu2/agentops/blob/main/scripts/install-codex-read-budget-guard.sh), [edit guard](https://github.com/boshu2/agentops/blob/main/scripts/install-installed-skill-edit-guard.sh) | Preserve separate opt-in installation, Codex trust review, backups and documented enforcement limits. |
-| Claude named workflows | keep; [canonical workflows](../workflows/), [`ao workflows`](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md#ao-workflows), [user-level installer](https://github.com/boshu2/agentops/blob/main/scripts/install-workflows.sh) | Keep project-local owned-link refusal semantics. The user-level installer retains its distinct backed-up replacement semantics; do not assume the two installers are interchangeable. |
-| Retired Claude workflows | retired tombstones: `bdd-foundry`, `ship-beads`, `bead-crank`, `operating-loop` | Each name fails with a migration message before doing any work. State accepted behavior in the conversation or a bead instead of `bdd-foundry`; deliver with native Git and BD under your repository's policy, or through a selected factory's coordinator, instead of `ship-beads` and `bead-crank`. Replace a copied (not linked) installed file from the AgentOps checkout: `bash scripts/install-workflows.sh` with only the retired file names you have (for example `bdd-foundry.js`) for `~/.claude/workflows` (a differing file is backed up first; without file names it installs every workflow), or remove the old file and run `ao workflows link --into <project>/.claude/workflows` for another project. |
+| Claude named workflows | retire; deleted: `workflows/` (the nine scripts `audit-dimensions`, `verify-fixes`, `implement-wave`, `bulk-read`, `code-write` and the retired `bdd-foundry`, `ship-beads`, `bead-crank`, `operating-loop` tombstones), the plugin's `workflows/` folder, `ao workflows`, `scripts/install-workflows.sh` and the `workflow.install-drift` gate | Instead of `bulk-read` use the plugin agent `agentops:bulk-reader`, and instead of `code-write` use `agentops:code-writer` (Agent tool, one target per call). Use Validate instead of `verify-fixes`, Review (or Council for several independent lenses) instead of `audit-dimensions`, and Implement per item with Orchestrate and Validate instead of `implement-wave`. The four retired names keep their earlier migration: state acceptance in the conversation or a bead, implement natively, and deliver with Git and BD under your repository's policy or through a selected factory's coordinator. Links in `~/.claude/workflows/` or a project's `.claude/workflows/` now point at deleted files and a copied file keeps running old code; delete them by hand ([Removed workflows](install-day2-ops.md#removed-workflows-claude-code)). |
 | Optional BD binary installer | keep; [install-bd.sh](https://github.com/boshu2/agentops/blob/main/scripts/install-bd.sh) | Installs selected native BD; does not create or replace the repository's work store. |
 | Optional MS post-merge index hook | retired | Obtain MS maintenance guidance from [upstream](https://github.com/Dicklesworthstone/meta_skill). AgentOps no longer ships an MS index hook installer. |
 | Legacy 3.x skill curl/PowerShell installers | retire; deleted: `install.sh`, `install-claude.sh`, `install-codex.sh`, `install-agy.sh`, `install-opencode.sh`, `install-codex.ps1` | Their raw URLs now 404; see the breaking boundary below. `install-ao.ps1` is a retained CLI installer, not this retired skill installer. |

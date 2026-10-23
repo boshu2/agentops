@@ -181,9 +181,9 @@ skill](https://code.claude.com/docs/en/skills)):
 Setting both would make the skill unreachable, so never do that.
 
 **The set-it rule.** Model invocation is load-bearing whenever *anything else*
-reaches for the skill. Before setting the key, check all four surfaces and keep
+reaches for the skill. Before setting the key, check all three surfaces and keep
 the evidence: `ao skills consumers <slug>` and `ao skills graph` (declared
-`dependencies` / `consumes`), `workflows/*.js`, other skills' `SKILL.md` bodies
+`dependencies` / `consumes`), other skills' `SKILL.md` bodies
 (a `See Also` entry or a "routes to `<slug>`" sentence counts as a reach), and
 `evals/routing-probes/templates.json` (an `applicable` entry means a probe is
 measuring whether the *model* routes there — disabling model invocation makes
