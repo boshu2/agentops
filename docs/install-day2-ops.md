@@ -310,14 +310,12 @@ longer listed.
 
 Use these instead:
 
-| Removed workflow | Use instead |
-|---|---|
-| `bulk-read` | the plugin agent `agentops:bulk-reader` through the Agent tool |
-| `code-write` | the plugin agent `agentops:code-writer` through the Agent tool, one target per call |
-| `verify-fixes` | the [Validate](../skills/validate/SKILL.md) skill for a fresh verdict on claimed fixes |
-| `audit-dimensions` | the [Review](../skills/review/SKILL.md) skill, or [Council](../skills/council/SKILL.md) for several independent lenses |
-| `implement-wave` | the [Implement](../skills/implement/SKILL.md) skill per item, [Orchestrate](../skills/orchestrate/SKILL.md) for several workers, then Validate |
-| `bdd-foundry`, `ship-beads`, `bead-crank`, `operating-loop` (already retired) | native execution: state acceptance in the conversation or a BD bead, implement and check natively, and deliver with Git and BD under your repository's policy |
+- `bulk-read`: the plugin agent `agentops:bulk-reader` through the Agent tool.
+- `code-write`: the plugin agent `agentops:code-writer` through the Agent tool, one target per call.
+- `verify-fixes`: the [Validate](../skills/validate/SKILL.md) skill for a fresh verdict on claimed fixes.
+- `audit-dimensions`: the [Review](../skills/review/SKILL.md) skill, or [Council](../skills/council/SKILL.md) for several independent lenses.
+- `implement-wave`: the [Implement](../skills/implement/SKILL.md) skill per item, [Orchestrate](../skills/orchestrate/SKILL.md) for several workers, then Validate.
+- `bdd-foundry`, `ship-beads`, `bead-crank`, `operating-loop` (already retired): state acceptance in the conversation or a BD bead, implement and check natively, and deliver with Git and BD under your repository's policy.
 
 See [context-budget delegation](../skills/agent-native/references/context-budget-delegation.md)
 for how the reader and writer agents keep file bytes out of your context.
