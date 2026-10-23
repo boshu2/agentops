@@ -28,11 +28,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Agent Native compares a lane's content with the integration target as it
   stands now before removing it, not with the commit that was merged. On a new
   harder eval case that check went from 1 of 3 runs to 2 of 3.
-- The plugin-eval suite covers all 32 skills: behavior and routing cases for
+- The plugin-eval suite covers every skill: behavior and routing cases for
   Triage, Architecture and Ergonomics are added. Criteria for RPI, Doc,
   Orchestrate, Codex Exec and AGY Native that failed every arm by design or
   read two ways are reworded, and Skill Builder's case now shows the existing
   owner and CI step and scores the rule against a new hook from one incident.
+- RPI, Postmortem, Interview and Craft Goal load when you ask for them by name
+  in plain words ("run this through RPI", "give me a postmortem", "interview
+  me", "craft a goal"), not only by slash command, and Codex can select them
+  too. They were slash-only, so a request like "orchestrate this through RPI"
+  could not load RPI.
+- Reality Check is folded into Research. A claim that work is done, shipped or
+  wired in now gets Research's claimed-state audit: the same per-item
+  confirmed, gap or unverifiable ledger with no verdict, plus goal measurement
+  and status snapshots. On Claude Opus 5.5 Reality Check showed no content gain
+  (1.00 vs 1.00 without the plugin, 12/12 vs 12/12 on a harder case) and loaded
+  in 4 of 22 runs. Existing `reality-check-report.v1` reports still validate
+  with `skills/research/scripts/claim-audit/validate-output.sh`. 32 skills
+  become 31.
+
+### Removed
+
+- The AgentOps Claude Code workflows. The plugin no longer ships Workflow tool
+  scripts, and the canonical `workflows/` directory is gone with all nine
+  scripts: `audit-dimensions`, `verify-fixes`, `implement-wave`, `bulk-read`,
+  `code-write` and the retired `bdd-foundry`, `ship-beads`, `bead-crank` and
+  `operating-loop` tombstones. `ao workflows link` and `unlink`,
+  `scripts/install-workflows.sh` and the `workflow.install-drift` gate are
+  removed too. `ao workflows` now fails as an unknown command and names the
+  plugin agents `agentops:bulk-reader` and `agentops:code-writer`; the
+  read-budget guard names the reader agent and no longer offers
+  `agentops:bulk-read`. Links left under `.claude/workflows/` point at deleted
+  files; docs/MIGRATION.md lists what to use instead and how to clean up.
+  None of 991 plugin-eval runs used a workflow, and the nine entries took
+  3,099 characters at the top of the model's skill listing.
 
 ### Fixed
 

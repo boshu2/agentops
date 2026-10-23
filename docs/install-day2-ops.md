@@ -51,7 +51,7 @@ requirements. Most need nothing beyond the coding agent; these need more:
 | `plan` | `ao`, conditional | runs `ao provenance snapshot-intent` with an explicit evidence root when the intent source is not durable |
 | `implement` | `ao`, conditional | at an integration boundary whose changed paths affect bound evidence, runs `ao provenance evidence-orphans` |
 | `validate` | `ao`, optional | with `ao`, derives exact subject identity from a content manifest and uses `ao provenance store-verdict` when persistence is requested; without it, names the commit and changed paths |
-| `reality-check` | `ao`, conditional | inspect selected goal measurements with `ao goals` or evidence-store facts with `ao status` |
+| `research` | `ao`, conditional | inspect selected goal measurements with `ao goals` or evidence-store facts with `ao status` |
 | `using-gc` | `ao` | rig prep runs `ao gc prepare` and `ao gc check` |
 | `doc` | `ao`, optional | a requested continuity handoff may use `ao session handoff`/`rehydrate` |
 | `reverse-engineer` | `python3` | Phase 1's mechanical teardown runs `scripts/reverse_engineer.py` |
@@ -300,37 +300,37 @@ no longer needed. If Homebrew installed the CLI, use `brew uninstall agentops`.
 it has no `--skill` selector. Preview its complete removal set first, and retain
 your selected-skill list for any subsequent relink.
 
-## Workflows (Claude Code only)
+## Removed workflows (Claude Code)
 
-The canonical `workflows/` directory (a sibling of `skills/`) holds workflow
-scripts for the Claude Code Workflow tool — multi-agent orchestration conveyors
-such as `implement-wave` and `verify-fixes`. Workflows are a Claude-only
-runtime adapter; other runtimes ignore them.
+AgentOps no longer ships Claude Code Workflow tool scripts. The canonical
+`workflows/` directory, the plugin's `workflows/` folder, the `ao workflows` <!-- ao-resolve: ignore -->
+command and `scripts/install-workflows.sh` were removed. After you update the
+plugin, names such as `agentops:bulk-read` and `agentops:code-write` are no
+longer listed.
 
-Install or update the links from the canonical checkout, inside the project
-where you want them available:
+Use these instead:
+
+- `bulk-read`: the plugin agent `agentops:bulk-reader` through the Agent tool.
+- `code-write`: the plugin agent `agentops:code-writer` through the Agent tool, one target per call.
+- `verify-fixes`: the [Validate](../skills/validate/SKILL.md) skill for a fresh verdict on claimed fixes.
+- `audit-dimensions`: the [Review](../skills/review/SKILL.md) skill, or [Council](../skills/council/SKILL.md) for several independent lenses.
+- `implement-wave`: the [Implement](../skills/implement/SKILL.md) skill per item, [Orchestrate](../skills/orchestrate/SKILL.md) for several workers, then Validate.
+- `bdd-foundry`, `ship-beads`, `bead-crank`, `operating-loop` (already retired): state acceptance in the conversation or a BD bead, implement and check natively, and deliver with Git and BD under your repository's policy.
+
+See [context-budget delegation](../skills/agent-native/references/context-budget-delegation.md)
+for how the reader and writer agents keep file bytes out of your context.
+
+Links made by `ao workflows link` (in a project's `.claude/workflows/`) or by <!-- ao-resolve: ignore -->
+`scripts/install-workflows.sh` (in `~/.claude/workflows/`) now point at deleted
+files. List the broken links, then delete the ones that came from AgentOps:
 
 ```bash
-ao workflows link
+find ~/.claude/workflows <project>/.claude/workflows -maxdepth 1 -type l \
+  ! -exec test -e {} \; -print
 ```
 
-Uninstall:
-
-```bash
-ao workflows unlink --dry-run
-ao workflows unlink
-```
-
-The command links each canonical `workflows/` script into the project-local
-`.claude/workflows/` directory, where the Claude Code harness resolves named
-workflows. It carries the same semantics as `ao skills link`: idempotent
-relinking, and it refuses to replace real files, foreign links, or user-owned
-entries — a reported conflict requires operator judgment, never silent
-replacement. `ao workflows unlink` removes only links that point back into the
-checkout.
-
-Claude Code snapshots its named-workflow registry at session start, so newly
-linked workflows appear in the next session, not a session already running.
+A copied (not linked) AgentOps workflow file keeps running its old code until
+you delete it.
 
 ## Cold resume
 

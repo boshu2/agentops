@@ -1,7 +1,7 @@
 {
   "image": "codex",
   "schema_version": "skill-image.v1",
-  "skill_count": 32,
+  "skill_count": 31,
   "skills": [
     {
       "disposition": "keep_optional_adapter",
@@ -97,11 +97,6 @@
       "disposition": "keep_strategy",
       "path": "skills/premortem/",
       "slug": "premortem"
-    },
-    {
-      "disposition": "keep_strategy",
-      "path": "skills/reality-check/",
-      "slug": "reality-check"
     },
     {
       "disposition": "keep_specialist",

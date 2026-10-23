@@ -113,7 +113,7 @@ The repository brief supplies acceptance, source boundaries and required checks.
 continuity; the caller's tracker keeps work and handoffs.
 
 The existing skill library remains optional. Select guidance when a task needs
-it; an explicit RPI workflow packages these operations:
+it; RPI, which loads when the caller names it, packages these operations:
 
 | Skill | Responsibility |
 |---|---|

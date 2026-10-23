@@ -1,0 +1,18 @@
+schema_version: '1.1'
+name: craft-goal
+tags:
+- routing
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Craft a goal for this that I can paste into /goal and leave running overnight: move our 40 remaining `moment.js` call sites over to `date-fns`. Every existing test has to stay green, and nothing in `packages/billing` gets touched.
+graders:
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?craft-goal"'

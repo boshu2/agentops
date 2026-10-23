@@ -7,13 +7,24 @@ differently from one without it. They run with Claude Code's own evaluator,
 
 | Suite | Cases | Question | Arms |
 |---|---|---|---|
-| `behavior/` | 32, one per skill | Does the answer follow the practice the skill teaches? Each case has 4 or 5 criteria and also records whether the skill loaded. | with the plugin and without it |
-| `routing/` | 28, one per skill the model can load by itself | Does the matching skill load on a request that never names it? | plugin only |
+| `behavior/` | 32, covering 31 skills | Does the answer follow the practice the skill teaches? Each case has 4 or 5 criteria and also records whether the skill loaded. | with the plugin and without it |
+| `routing/` | 32, covering 31 skills | Does the matching skill load on a request a user would type? | plugin only |
+
+Research has two cases in each suite: `research` and `research-claim-check`,
+the case Reality Check had before it folded into Research on 2026-10-23. Its
+prompt and criteria are unchanged; its `skill-loaded` check now expects
+Research.
 
 A case is one `case.yaml`: a request a user would type, the criteria, and a
-`skill-loaded` check on the Skill tool call. The routing requests were written
-by an agent that had not seen the skill descriptions, and were not used to tune
-them. The behavior requests were.
+`skill-loaded` check on the Skill tool call. Most routing requests never name
+the skill; they were written by an agent that had not seen the skill
+descriptions, and were not used to tune them. The behavior requests were.
+The `rpi`, `postmortem`, `interview` and `craft-goal` routing cases are the
+exception: those skills load when the user asks for them by name, so their
+requests name them in plain words ("run this through RPI", "interview me").
+The author of those descriptions wrote these four requests in the same change,
+so they check that naming the skill loads it; they do not measure blind
+routing.
 
 The deterministic half of routing (which skill `ao skills find` ranks first)
 lives in [`routing-probes/`](../routing-probes/README.md).
@@ -41,7 +52,7 @@ by Git.
 
 Every run is a full Claude Code session on your account. On Claude Opus 5.5 a
 run cost about $0.13 to generate (168 runs for $21.25 on 2026-10-04). The
-behavior suite is 192 runs at the default three per case; routing is 84.
+behavior suite is 192 runs at the default three per case; routing is 96.
 
 ## Grade
 
@@ -81,13 +92,16 @@ the evaluator reports it beside the score; in a single-arm run it is the score.
   moves a five-criterion case by 0.07. Treat a delta under about 0.15 as noise.
 - **The criteria come from each skill's own rules.** A pass shows the rule
   landed on that request. It does not show a better outcome on a real task.
-- **Four skills are user-only** (`craft-goal`, `interview`, `postmortem`,
-  `rpi`). Their cases invoke them by slash command, so the arm without the
-  plugin sees an unknown command.
+- **Four behavior cases use a slash command** (`craft-goal`, `interview`,
+  `postmortem`, `rpi`). These skills were user-only until 2026-10-23 and now
+  also load when named in plain words; their behavior cases still start with
+  `/agentops:<name>`, so the arm without the plugin sees an unknown command.
 
 ## Changing a case
 
-- Write the request the way a user would type it. Never name the skill.
+- Write the request the way a user would type it. Never name the skill,
+  except in a routing case for a skill whose description says to load it when
+  named.
 - Write each criterion as one statement a reader can check against the answer.
 - Fix the criteria before you run. Do not edit a criterion to make a run pass.
 - Do not copy a case's scenario into the skill it tests. A skill that quotes its

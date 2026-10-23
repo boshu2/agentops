@@ -94,7 +94,6 @@ scripts/check-test-isolation.sh
 scripts/check-tip-verdict-ci.sh
 scripts/check-verdict-close-rate.sh
 scripts/check-wave-ownership-disjoint.sh
-scripts/check-workflow-drift.sh
 scripts/check-workflow-governance.sh
 scripts/check-workflow-no-retired-tracker.sh
 scripts/check-worktree-disposition.sh
@@ -137,7 +136,6 @@ scripts/ingest-ci-deterministic-catches.sh
 scripts/install-bd.sh
 scripts/install-installed-skill-edit-guard.sh
 scripts/install-pre-push-gate.sh
-scripts/install-workflows.sh
 scripts/intake.sh
 scripts/land-lane-flaky-retry.sh
 scripts/land-lane-run.sh
@@ -235,7 +233,6 @@ scripts/validate-skill-schema.sh
 scripts/validate-skill-triggers.sh
 scripts/validate-sku-catalog-drift.sh
 scripts/validate-swarm-evidence.sh
-scripts/validate-workflow-install.sh
 scripts/verified-rebase.sh
 scripts/verify-buildtags.sh
 scripts/verify-gate-claim.sh

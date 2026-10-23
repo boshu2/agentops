@@ -8,8 +8,10 @@
 # skills/ (which scripts, tests and `ao skills link` read) stays where it is.
 #
 # Ownership inside plugin/:
-#   generated here  plugin/{skills,hooks,agents,workflows}/  from the same-named
-#                   canonical trees at the repo root. Do not edit them by hand.
+#   generated here  plugin/{skills,hooks,agents}/  from the same-named canonical
+#                   trees at the repo root. Do not edit them by hand. The plugin
+#                   ships no Workflow tool scripts: the AgentOps workflows were
+#                   removed, and plugin/agents/ carries the delegation route.
 #   hand-owned      plugin/.claude-plugin/plugin.json  (the plugin manifest; the
 #                   release version lives here) and plugin/.claude-plugin/icon.png
 #                   (directory listing icon, rendered from docs/assets/logo.svg).
@@ -28,13 +30,14 @@
 # Usage: scripts/regen-plugin-tree.sh [--check]
 #   (no flag)  rewrite the generated folders, then enforce the limits
 #   --check    exit 1 with a drift summary when plugin/ is stale; writes nothing
-set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$ROOT"
+# The shared preamble sets strict mode and REPO_ROOT.
+# shellcheck source=scripts/lib/preamble.sh disable=SC1007,SC1091
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/preamble.sh"
+cd "$REPO_ROOT" || exit 1
 
 PLUGIN_DIR="plugin"
-COMPONENTS=(skills hooks agents workflows)
+COMPONENTS=(skills hooks agents)
 MAX_FILES=512
 MAX_BYTES=$((256 * 1024))
 
@@ -42,7 +45,7 @@ mode=regen
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --check) mode=check ;;
-    -h|--help) sed -n '2,30p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,32p' "$0"; exit 0 ;;
     *) echo "usage: $0 [--check]" >&2; exit 2 ;;
   esac
   shift

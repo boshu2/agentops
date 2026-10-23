@@ -1,0 +1,25 @@
+schema_version: '1.1'
+name: rpi
+tags:
+- routing
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Run this one through RPI, start to finish. Ticket EXP-88: the nightly export job dies on the first S3 503 and the whole run has to be redone by hand.
+
+    Acceptance:
+    1. A 503 or connection reset on `upload_part()` in `jobs/export.py` is retried up to 3 times with backoff before the job fails.
+    2. A 403 still fails the job immediately.
+    3. The existing export tests stay green.
+
+    I've already agreed the scope with the team, so no need to re-plan it with me.
+graders:
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?rpi"'

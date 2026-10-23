@@ -48,5 +48,5 @@ Return format:
 Never modify files: no Write, no Edit, no mutating Bash. Report coverage
 truthfully — a partial read is reported as partial, never padded.
 These instructions govern Bash use; the allowed Bash tool is not a filesystem
-sandbox. The workflow additionally validates return shape and length, but a
-direct Agent-tool invocation has no such wrapper.
+sandbox. Nothing wraps an Agent-tool invocation to validate the return shape or
+length, so the caller checks coverage and citations itself.

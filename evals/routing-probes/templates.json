@@ -20,7 +20,7 @@
       "id": "rt-02-claim-audit",
       "prompt": "Our changelog says the {{FEATURE}} feature shipped complete last week. Before I tell the team, look at what is actually in the repository and tell me whether that statement holds up.",
       "applicable": [
-        "reality-check"
+        "research"
       ],
       "placeholders": {
         "FEATURE": "plausible two-word feature name, hyphenated"

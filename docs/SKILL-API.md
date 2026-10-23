@@ -181,14 +181,17 @@ skill](https://code.claude.com/docs/en/skills)):
 Setting both would make the skill unreachable, so never do that.
 
 **The set-it rule.** Model invocation is load-bearing whenever *anything else*
-reaches for the skill. Before setting the key, check all four surfaces and keep
+reaches for the skill. Before setting the key, check all three surfaces and keep
 the evidence: `ao skills consumers <slug>` and `ao skills graph` (declared
-`dependencies` / `consumes`), `workflows/*.js`, other skills' `SKILL.md` bodies
+`dependencies` / `consumes`), other skills' `SKILL.md` bodies
 (a `See Also` entry or a "routes to `<slug>`" sentence counts as a reach), and
 `evals/routing-probes/templates.json` (an `applicable` entry means a probe is
 measuring whether the *model* routes there — disabling model invocation makes
 that probe structurally unmeasurable). A skill reached by any of those stays
-model-invoked.
+model-invoked. So does a skill people ask for by name in plain words: with the
+key set, a request to "orchestrate this through RPI" was refused on 2026-10-23
+because Claude could not load the skill; only the slash command worked. No
+shipped skill sets the key since then.
 
 Runtime treatment of explicit invocation is defined in
 `docs/contracts/codex-skill-api.md`. The generated `docs/SKILL-ROUTER.md`
@@ -225,7 +228,7 @@ machine-readable form (`ao skills list`).
 
 | Tier | Purpose | Skills that declare it |
 |------|---------|------------------------|
-| `judgment` | Legacy internal tier name for validation and review gates | anti-ceremony, council, craft-goal, one-way-door, postmortem, premortem, reality-check, validate |
+| `judgment` | Legacy internal tier name for validation and review gates | anti-ceremony, council, craft-goal, one-way-door, postmortem, premortem, validate |
 | `execution` | Single-task implementation and runtime adapters | idea-genie, implement, interview, memory, navigate, orchestrate, plan, refactor, research, reverse-engineer, test, using-gc |
 | `orchestration` | Multi-skill coordination | claude-exec, codex-exec |
 | `session` | Session lifecycle | bootstrap, handoff, status |
