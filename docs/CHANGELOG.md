@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Security, asked whether to ship, merge or deploy, reports findings and
+  coverage and says in one line that the go/no-go is the caller's; recommending
+  ship, hold or block in any wording is that decision. On its plugin-eval case
+  the no-ship-call criterion went from 1 of 6 runs to 5 of 6, with the other
+  criteria unchanged or higher.
+- Ergonomics keeps the labelled `agent consequence:` and `smallest fix:` lines
+  under every finding even in a conversational reply, and, asked for a score,
+  says the audit gives none. On its plugin-eval case, findings carrying both
+  lines went from 0 of 6 runs to 6 of 6, listed unexercised paths from 3 to 6,
+  and replies with no score from 4 to 6.
+
+### Fixed
+
+- Craft Goal's goal-prompt template said "One bead is one RPI experiment",
+  contradicting the 3.11 rule that only a build bead is one RPI and a decision
+  bead resolves through the method Navigate names for it. The template now says
+  the same thing as the skill.
+
 ## [3.11.0] - 2026-10-22
 
 AgentOps 3.11 adds three skills, bringing the menu to 32, and changes 28 of the
