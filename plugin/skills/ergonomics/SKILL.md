@@ -143,7 +143,11 @@ refusal names it. A partial failure says what completed.
 
 Most consequential first: failure reported as success, a secret echoed, a hang
 on a prompt, an unsafe next step, a blind retry after a mutation; then missing
-next steps, recovery and context; then discovery and naming. Do not pad.
+next steps, recovery and context; then discovery and naming. Do not pad. Keep
+the labelled `agent consequence:` and `smallest fix:` lines under every
+finding, even in a conversational reply; a help or discovery item without a
+concrete agent consequence is not a finding. Unexercised paths still go under
+`Not exercised`.
 
 ```text
 Surface: <tool and version, or design doc>; mode: plan | live; environment: <sandbox setup | n/a>
@@ -158,7 +162,9 @@ First success: <steps and guesses from a clean environment> | not attempted (<re
 ```
 
 A clean result reads "no findings in the exercised scope", lists that scope and
-carries no score or verdict.
+carries no score or verdict. Asked for a score, say in one line that the audit
+gives none and point to the findings instead; a count of passing checks
+presented as the score is still a score.
 
 ## It's working if
 
