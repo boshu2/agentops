@@ -13,7 +13,26 @@
     },
     {
       "matchManagers": ["github-actions"],
-      "groupName": "github-actions"
+      "matchUpdateTypes": ["digest", "pin", "minor", "patch"],
+      "groupName": "github-actions",
+      "schedule": ["before 6am on monday"]
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "matchPackageNames": ["anthropics/claude-code-action"],
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "matchDepNames": ["go", "golang"],
+      "matchDatasources": ["golang-version", "docker"],
+      "groupName": "go toolchain",
+      "description": "One PR for the go.mod go/toolchain directives, golang Docker tags and setup-go go-version."
+    },
+    {
+      "matchManagers": ["pip_requirements"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "python deps",
+      "schedule": ["before 6am on monday"]
     },
     {
       "matchUpdateTypes": ["lockFileMaintenance"],
@@ -28,8 +47,15 @@
     {
       "matchManagers": ["github-actions"],
       "matchDepNames": ["python"],
+      "groupName": "python runtime",
+      "automerge": false,
+      "description": "Python interpreter bumps in workflows never automerge and stay out of the github-actions group: evaluator steps depend on litellm supporting the new version."
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "matchDepNames": ["python"],
       "matchDepTypes": ["uses-with"],
-      "matchCurrentValue": "3.14",
+      "matchCurrentValue": "/^3\\.14(\\..*)?$/",
       "enabled": false,
       "description": "Steps that install the skill evaluator requirements (validate.yml, release.yml pre-publish-evidence, nightly.yml security-toolchain) stay on Python 3.14: harbor 0.22.0 depends on litellm>=1.92.0, which has no Python 3.15 release. Raise them by hand once litellm supports 3.15."
     }

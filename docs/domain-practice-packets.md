@@ -60,7 +60,7 @@ above them.
 | `ao context assemble` | Builds a phase-scoped briefing from goals, history, intel, task, and protocol. |
 | `ao context packet` | Shows ranked findings, planning rules, premortem checks, and next-work context. |
 | `/council` | Turns the packet into a shared evidence frame for independent judges. |
-| `/provenance` and `/trace` | Reconstruct where packet claims came from and how they moved through later artifacts. |
+| `/research` and `/memory` | Reconstruct where packet claims came from (Research answers history and claim questions) and trace a corrected claim through later artifacts (Memory). |
 | RPI execution packet | Carries the accepted objective, plan path, contract surfaces, validation lanes, and done criteria across discovery, implementation, and validation. |
 | `.agents/` | Local engineering wiki: traces, handoffs, verdicts, learnings, and run packets. |
 
