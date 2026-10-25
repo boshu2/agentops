@@ -387,40 +387,36 @@ your work.
 
 A skill is a page of instructions, so the test is whether an agent does anything
 differently with it installed. AgentOps runs that test on Claude Code's own
-evaluator, `claude plugin eval`: one realistic request per skill, three runs
-with the plugin and three without, each answer graded against four or five
-criteria taken from the practice the skill teaches. For Test, one criterion is
-that a regression test is shown failing without the fix.
+evaluator, `claude plugin eval`: one realistic request per skill, graded against
+four or five criteria taken from the practice the skill teaches. For Test, one
+criterion is that a regression test is shown failing without the fix.
 
-On Claude Opus 5.5, measured 2026-10-05:
+On Claude Opus 5.5, measured 2026-10-22 and 2026-10-23 over five rounds:
 
-| | No plugin | AgentOps 3.9.0 | AgentOps 3.10 |
+| | No plugin | AgentOps 3.10 | AgentOps 3.11 |
 |---|---:|---:|---:|
-| Practice criteria met on 28 requests | 269 of 372 (72%) | 292 of 372 (78%) | 349 of 372 (94%) |
-| Matching skill loaded on a blind request | | 11 of 48 runs | 29 of 48 runs |
+| Practice criteria met on 29 requests | 265 of 387 (68%) | 363 of 387 (94%) | 704 of 774 (91%) |
+| Matching skill loaded on its own request | | 62 of 75 runs | 104 of 150 runs |
 
-Fourteen of the 29 skills moved their case by 0.15 or more. Craft Goal, Claude
-Exec, Plan, Memory and Skill Builder gained the most. The other 15 made no
-measurable difference, and for eight of those the agent already met every
-criterion with no plugin.
+Sixteen of the 32 skills moved their case by 0.15 or more. Claude Exec, Skill
+Builder, Plan, Craft Goal and Using GC gained the most. Seven cases had no room
+to move: the agent met every criterion with no plugin.
 
 Read the limits before you quote these numbers:
 
-- One request per skill, three runs, one model. A difference under 0.15 is
-  noise.
-- The 28 requests in the first row were also used to tune the 3.10
-  descriptions, which flatters 3.10. The blind requests in the second row were
-  written without sight of the descriptions.
+- One request per skill, six runs with the plugin and three without, one
+  model. A difference under 0.15 is noise.
 - The criteria come from each skill's own rules. A pass shows the rule landed on
   that request. It says nothing about the outcome of a real task, and an earlier
   [coding pilot](PRODUCT.md#evidence-and-claim-limits) found no end-to-end
   difference.
-- Loading is the weak point. Nine skills did not load on a request they had
-  never seen, and Implement does not load on a quick fix. Name the skill when
-  you want its rules applied.
+- Loading is the weak point. 3.11 loads its skills less often than 3.10 did,
+  and Implement and Research never load on their own. Four tested causes do not
+  explain it. Name the skill when you want its rules applied: RPI, Postmortem,
+  Interview and Craft Goal loaded on 22 of 24 requests that named them.
 
-The [full report](docs/evals/2026-10-05-plugin-eval-opus-5-5.md) has every case,
-the method and what was rerun. The cases live in
+The [full report](docs/evals/2026-10-22-plugin-eval-opus-5-5.md) has every case,
+each round's rule and result, and what was rerun. The cases live in
 [`evals/plugin-eval/`](evals/plugin-eval/README.md): run them against your own
 changes, or copy the layout to test your own skills.
 

@@ -149,3 +149,36 @@ that names a scorecard, so a reader never has to take a scorecard's own
 so `reality-check` left the product/judgment denominator. Its two
 `LEGACY-UNVERIFIED` rows and the `reality-check-gap` probe directories stay
 as history; they never counted and do not transfer to Research.
+
+**2026-10-24. Thirteen probe groups retired.** On the owner's call, the probe
+directories under `evals/skill-probes/` and the scorecards under
+`docs/evals/scorecards/` were removed for every group that `skill.probe-headroom`
+classified SATURATED and for every group whose skill no longer exists. Their
+rows above stay as history and still do not count. Nothing current was removed:
+the coverage headline before and after is 0 of 10 product/judgment skills
+measured (the two 2026-09-03 `premortem` INERT rows no longer verify because
+the evaluator wrapper changed after capture).
+
+| Group | Reason | Last commit holding the bytes |
+|---|---|---|
+| `crank-luna` | SATURATED; skill `crank` retired in #1133 | 51f5d6447 |
+| `one-way-door-batch-t2` | SATURATED; skill `one-way-door` retired in #1133 | e69144d6d |
+| `reality-check-gap`, `reality-check-gap-v2` | SATURATED; skill folded into Research in #1235 | 51f5d6447 |
+| `security-coverage-gap`, `security-coverage-gap-v2` | SATURATED | 51f5d6447 |
+| `validate-not-proven`, `validate-not-proven-v2` | SATURATED | 51f5d6447 |
+| `standards-go-conventions` | skill `standards` retired in #1133 | 51f5d6447 |
+| `crank` | skill retired in #1133; ledger row only, no scorecard | 8b5560909 |
+| `graphify-tool-preference` | probed an external skill; ledger row only, no scorecard | 8b5560909 |
+| `anti-ceremony-creation-gate`, `anti-ceremony-creation-gate-v2` | skill `operationalize` retired in #1133 | f3c6d0ecf |
+
+Every directory listed was last present in full at commit 8b5560909. The
+`anti-ceremony-creation-gate-v2` discriminator moved to
+`tests/fixtures/skill-probes/anti-ceremony-discriminator.sh` because two bats
+suites use it as a test input. Still in the corpus: `council-caller-challenge-t2`,
+`premortem-plan-shape-t2`, `premortem-self-validation` and
+`validate-seeded-closeout-t2`, with their scorecards.
+
+The current measurement of the shipped skills is the `claude plugin eval`
+suite, not this ledger: see
+[the 2026-10-22 report](../../docs/evals/2026-10-22-plugin-eval-opus-5-5.md).
+This ledger stays the instrument for canonical-skill behavioral probes.

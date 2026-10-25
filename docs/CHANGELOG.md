@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The [2026-10-22 plugin evaluation report](https://github.com/boshu2/agentops/blob/main/docs/evals/2026-10-22-plugin-eval-opus-5-5.md):
+  five rounds of `claude plugin eval` on Claude Opus 5.5 against AgentOps 3.11,
+  with each round's pre-registered rule and result. It is the current evidence
+  for the shipped skills; the 2026-10-05 report stays as the record of 3.9.0
+  against 3.10. Its scorecards are in `evals/plugin-eval/scorecards/`.
+
 ### Changed
 
 - Security, asked whether to ship, merge or deploy, reports findings and
@@ -62,6 +70,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   files; docs/MIGRATION.md lists what to use instead and how to clean up.
   None of 991 plugin-eval runs used a workflow, and the nine entries took
   3,099 characters at the top of the model's skill listing.
+
+- Thirteen retired behavioral probe groups and their scorecards under
+  `docs/evals/scorecards/`: eight the `skill.probe-headroom` gate classified
+  SATURATED (`crank-luna`, `one-way-door-batch-t2`, `reality-check-gap`,
+  `reality-check-gap-v2`, `security-coverage-gap`, `security-coverage-gap-v2`,
+  `validate-not-proven`, `validate-not-proven-v2`) and five whose skill no
+  longer exists (`crank`, `graphify-tool-preference`,
+  `standards-go-conventions`, `anti-ceremony-creation-gate`,
+  `anti-ceremony-creation-gate-v2`). `evals/skill-probes/LEDGER.md` keeps their
+  rows and names the commit that holds the bytes. The anti-ceremony
+  discriminator the harness tests use moved to
+  `tests/fixtures/skill-probes/anti-ceremony-discriminator.sh`.
 
 ### Fixed
 

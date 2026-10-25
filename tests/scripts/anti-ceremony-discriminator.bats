@@ -2,7 +2,7 @@
 
 setup() {
   REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
-  DISC="$REPO_ROOT/evals/skill-probes/anti-ceremony-creation-gate-v2/discriminator.sh"
+  DISC="$REPO_ROOT/tests/fixtures/skill-probes/anti-ceremony-discriminator.sh"
   TRANSCRIPT="$BATS_TEST_TMPDIR/transcript.txt"
 }
 

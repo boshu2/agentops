@@ -1,0 +1,3564 @@
+{
+ "date": "2026-10-22 to 2026-10-23",
+ "model": "claude-opus-5-5",
+ "evaluator": "claude plugin eval (Claude Code 2.1.309)",
+ "grader": "claude-opus-5-5, one call per response (evals/plugin-eval/grade.py)",
+ "report": "docs/evals/2026-10-22-plugin-eval-opus-5-5.md",
+ "note": "Rounds 2 to 5 of the 3.11 plugin evaluation, as written by each round's analyzer. Round 1 is in 2026-10-22-opus-5-5.json. Counts only; no prompt or response text.",
+ "round2": {
+  "rows": [
+   {
+    "skill": "agent-native",
+    "user_only": false,
+    "content_r1": {
+     "rate_311": 1.0,
+     "rate_none": 1.0,
+     "delta": 0.0,
+     "delta_ci": [
+      -0.11351339476145195,
+      0.2038833035964871
+     ],
+     "fisher_p": 1.0,
+     "aa_gap": 0.0,
+     "rate_310_stored": 1.0,
+     "verdict_r1": "revise (loading)",
+     "why_r1": "loaded 3/6; content not measured",
+     "per_criterion_311_of6": [
+      6,
+      6,
+      6,
+      6,
+      6
+     ]
+    },
+    "headroom": 0.0,
+    "rerun_310": {
+     "rate": 1.0,
+     "met": 15,
+     "total": 15,
+     "loaded": 3,
+     "runs": 3,
+     "diff_311_minus_310_today": 0.0
+    },
+    "loading_behavior": {
+     "r1_311": "3/6",
+     "310_today": "3/3",
+     "310_stored": "2/3"
+    },
+    "routing": {
+     "r1": [
+      2,
+      3
+     ],
+     "r2": [
+      2,
+      2
+     ],
+     "r3": [
+      2,
+      2
+     ],
+     "total": [
+      6,
+      7
+     ],
+     "class": "routes",
+     "310_stored": [
+      2,
+      2
+     ]
+    },
+    "forced": {
+     "rate": 1.0,
+     "met": 15,
+     "total": 15,
+     "per_of3": [
+      3,
+      3,
+      3,
+      3,
+      3
+     ],
+     "minus_none": 0.0,
+     "ci": [
+      -0.2,
+      0.2
+     ]
+    },
+    "readout": [
+     {
+      "lane": "loading",
+      "cause": "variance_or_drift",
+      "confidence": "medium",
+      "fix_survived": false
+     }
+    ]
+   },
+   {
+    "skill": "agy-native",
+    "user_only": false,
+    "content_r1": {
+     "rate_311": 0.7666666666666667,
+     "rate_none": 0.8,
+     "delta": -0.033333333333333326,
+     "delta_ci": [
+      -0.25181668672291624,
+      0.2437046162031442
+     ],
+     "fisher_p": 1.0,
+     "aa_gap": 0.06666666666666676,
+     "rate_310_stored": 0.8,
+     "verdict_r1": "revise",
+     "why_r1": "criterion c2 missed in >=4 of 6 runs",
+     "per_criterion_311_of6": [
+      6,
+      0,
+      5,
+      6,
+      6
+     ]
+    },
+    "headroom": 0.2,
+    "rerun_310": {
+     "rate": 0.8,
+     "met": 12,
+     "total": 15,
+     "loaded": 3,
+     "runs": 3,
+     "diff_311_minus_310_today": -0.033
+    },
+    "loading_behavior": {
+     "r1_311": "6/6",
+     "310_today": "3/3",
+     "310_stored": "3/3"
+    },
+    "routing": {
+     "r1": [
+      3,
+      3
+     ],
+     "r2": [
+      2,
+      2
+     ],
+     "r3": [
+      2,
+      2
+     ],
+     "total": [
+      7,
+      7
+     ],
+     "class": "routes",
+     "310_stored": [
+      2,
+      2
+     ]
+    },
+    "readout": [
+     {
+      "lane": "misses",
+      "cause": "criterion_flawed_or_by_design",
+      "confidence": "high",
+      "fix_survived": true
+     }
+    ]
+   },
+   {
+    "skill": "architecture",
+    "user_only": false,
+    "content_r1": {
+     "rate_311": 0.3333333333333333,
+     "rate_none": 0.26666666666666666,
+     "delta": 0.06666666666666665,
+     "delta_ci": [
+      -0.22284306854407682,
+      0.30511982637429763
+     ],
+     "fisher_p": 0.7425299470379452,
+     "aa_gap": 0.13333333333333336,
+     "rate_310_stored": null,
+     "verdict_r1": "revise (loading)",
+     "why_r1": "loaded 0/6; content not measured",
+     "per_criterion_311_of6": [
+      0,
+      6,
+      4,
+      0,
+      0
+     ]
+    },
+    "headroom": 0.73,
+    "loading_behavior": {
+     "r1_311": "0/6",
+     "310_today": null,
+     "310_stored": null
+    },
+    "routing": {
+     "r1": [
+      3,
+      3
+     ],
+     "r2": [
+      2,
+      2
+     ],
+     "r3": [
+      2,
+      2
+     ],
+     "total": [
+      7,
+      7
+     ],
+     "class": "routes",
+     "310_stored": null
+    },
+    "forced": {
+     "rate": 1.0,
+     "met": 15,
+     "total": 15,
+     "per_of3": [
+      3,
+      3,
+      3,
+      3,
+      3
+     ],
+     "minus_none": 0.733,
+     "ci": [
+      0.41,
+      0.89
+     ]
+    },
+    "readout": [
+     {
+      "lane": "loading",
+      "cause": "description_does_not_match_request",
+      "confidence": "low",
+      "fix_survived": false
+     }
+    ]
+   },
+   {
+    "skill": "claude-exec",
+    "user_only": false,
+    "content_r1": {
+     "rate_311": 0.9666666666666667,
+     "rate_none": 0.2,
+     "delta": 0.7666666666666666,
+     "delta_ci": [
+      0.48167825486581844,
+      0.8990627182111223
+     ],
+     "fisher_p": 1.8840863236059296e-07,
+     "aa_gap": 0.06666666666666665,
+     "rate_310_stored": 0.9333333333333333,
+     "verdict_r1": "retain",
+     "why_r1": "loaded 6/6; within noise bar of no-plugin and 3.10",
+     "per_criterion_311_of6": [
+      6,
+      6,
+      5,
+      6,
+      6
+     ]
+    },
+    "headroom": 0.8,
+    "rerun_310": {
+     "rate": 0.8,
+     "met": 12,
+     "total": 15,
+     "loaded": 3,
+     "runs": 3,
+     "diff_311_minus_310_today": 0.167
+    },
+    "loading_behavior": {
+     "r1_311": "6/6",
+     "310_today": "3/3",
+     "310_stored": "3/3"
+    },
+    "routing": {
+     "r1": [
+      3,
+      3
+     ],
+     "r2": [
+      2,
+      2
+     ],
+     "r3": [
+      2,
+      2
+     ],
+     "total": [
+      7,
+      7
+     ],
+     "class": "routes",
+     "310_stored": [
+      2,
+      2
+     ]
+    },
+    "readout": [
+     {
+      "lane": "retained",
+      "cause": "no_problem_found",
+      "confidence": "medium",
+      "fix_survived": false
+     }
+    ]
+   },
+   {
+    "skill": "codex-exec",
+    "user_only": false,
+    "content_r1": {
+     "rate_311": 0.8333333333333334,
+     "rate_none": 0.75,
+     "delta": 0.08333333333333337,
+     "delta_ci": [
+      -0.16716935496234048,
+      0.3827866661532365
+     ],
+     "fisher_p": 0.6639468690702087,
+     "aa_gap": 0.0,
+     "rate_310_stored": 0.9166666666666666,
+     "verdict_r1": "revise",
+     "why_r1": "criterion c3 missed in >=4 of 6 runs",
+     "per_criterion_311_of6": [
+      6,
+      6,
+      2,
+      6
+     ]
+    },
+    "headroom": 0.25,
+    "rerun_310": {
+     "rate": 0.8333333333333334,
+     "met": 10,
+     "total": 12,
+     "loaded": 3,
+     "runs": 3,
+     "diff_311_minus_310_today": 0.0
+    },
+    "loading_behavior": {
+     "r1_311": "6/6",
+     "310_today": "3/3",
+     "310_stored": "3/3"
+    },
+    "routing": {
+     "r1": [
+      3,
+      3
+     ],
+     "r2": [
+      2,
+      2
+     ],
+     "r3": [
+      2,
+      2
+     ],
+     "total": [
+      7,
+      7
+     ],
+     "class": "routes",
+     "310_stored": [
+      2,
+      2
+     ]
+    },
+    "readout": [
+     {
+      "lane": "misses",
+      "cause": "skill_text_gap",
+      "confidence": "medium",
+      "fix_survived": false
+     },
+     {
+      "lane": "vs310",
+      "cause": "variance_or_drift",
+      "confidence": "high",
+      "fix_survived": false
+     }
+    ]
+   },
+   {
+    "skill": "council",
+    "user_only": false,
+    "content_r1": {
+     "rate_311": 1.0,
+     "rate_none": 0.75,
+     "delta": 0.25,
+     "delta_ci": [
+      0.037921665464858534,
+      0.5323053370816634
+     ],
+     "fisher_p": 0.03081232492997199,
+     "aa_gap": 0.0,
+     "rate_310_stored": 1.0,
+     "verdict_r1": "revise (loading)",
+     "why_r1": "loaded 0/6; content not measured",
+     "per_criterion_311_of6": [
+      6,
+      6,
+      6,
+      6
+     ]
+    },
+    "headroom": 0.25,
+    "rerun_310": {
+     "rate": 1.0,
+     "met": 12,
+     "total": 12,
+     "loaded": 0,
+     "runs": 3,
+     "diff_311_minus_310_today": 0.0
+    },
+    "loading_behavior": {
+     "r1_311": "0/6",
+     "310_today": "0/3",
+     "310_stored": "0/3"
+    },
+    "routing": {
+     "r1": [
+      3,
+      3
+     ],
+     "r2": [
+      2,
+      2
+     ],
+     "r3": [
+      2,
+      2
+     ],
+     "total": [
+      7,
+      7
+     ],
+     "class": "routes",
+     "310_stored": [
+      2,
+      2
+     ]
+    },
+    "forced": {
+     "rate": 1.0,
+     "met": 12,
+     "total": 12,
+     "per_of3": [
+      3,
+      3,
+      3,
+      3
+     ],
+     "minus_none": 0.25,
+     "ci": [
+      -0.04,
+      0.53
+     ]
+    },
+    "readout": [
+     {
+      "lane": "loading",
+      "cause": "criterion_flawed_or_by_design",
+      "confidence": "medium",
+      "fix_survived": false
+     }
+    ]
+   },
+   {
+    "skill": "craft-goal",
+    "user_only": true,
+    "content_r1": {
+     "rate_311": 1.0,
+     "rate_none": 0.4166666666666667,
+     "delta": 0.5833333333333333,
+     "delta_ci": [
+      0.2856094795266749,
+      0.8067396875653927
+     ],
+     "fisher_p": 9.487666034155598e-05,
+     "aa_gap": 0.0,
+     "rate_310_stored": 1.0,
+     "verdict_r1": "retain",
+     "why_r1": "loaded 6/6; within noise bar of no-plugin and 3.10",
+     "per_criterion_311_of6": [
+      6,
+      6,
+      6,
+      6
+     ]
+    },
+    "headroom": 0.58,
+    "rerun_310": {
+     "rate": 1.0,
+     "met": 12,
+     "total": 12,
+     "loaded": 0,
+     "runs": 3,
+     "diff_311_minus_310_today": 0.0
+    },
+    "loading_behavior": {
+     "r1_311": "slash",
+     "310_today": null,
+     "310_stored": null
+    },
+    "routing": null,
+    "methods": {
+     "rate_311": 1.0,
+     "rate_310": 0.3333333333333333,
+     "rate_none": 0.4,
+     "per_311_of3": [
+      3,
+      3,
+      3,
+      3,
+      3
+     ],
+     "per_310_of3": [
+      0,
+      0,
+      2,
+      3,
+      0
+     ],
+     "per_none_of3": [
+      0,
+      1,
+      2,
+      3,
+      0
+     ],
+     "diff_311_310": 0.667,
+     "diff_ci": [
+      0.34,
+      0.85
+     ],
+     "fisher_p": 0.0
+    },
+    "readout": [
+     {
+      "lane": "retained",
+      "cause": "no_problem_found",
+      "confidence": "high",
+      "fix_survived": false
+     }
+    ]
+   },
+   {
+    "skill": "doc",
+    "user_only": false,
+    "content_r1": {
+     "rate_311": 0.7916666666666666,
+     "rate_none": 0.6666666666666666,
+     "delta": 0.125,
+     "delta_ci": [
+      -0.15189322645781544,
+      0.4243826345216454
+     ],
+     "fisher_p": 0.44282816574905826,
+     "aa_gap": 0.08333333333333337,
+     "rate_310_stored": 0.8333333333333334,
+     "verdict_r1": "revise",
+     "why_r1": "criterion c1 missed in >=4 of 6 runs",
+     "per_criterion_311_of6": [
+      1,
+      6,
+      6,
+      6
+     ]
+    },
+    "headroom": 0.33,
+    "rerun_310": {
+     "rate": 1.0,
+     "met": 12,
+     "total": 12,
+     "loaded": 3,
+     "runs": 3,
+     "diff_311_minus_310_today": -0.208
+    },
+    "loading_behavior": {
+     "r1_311": "6/6",
+     "310_today": "3/3",
+     "310_stored": "3/3"
+    },
+    "routing": {
+     "r1": [
+      0,
+      3
+     ],
+     "r2": [
+      0,
+      2
+     ],
+     "r3": [
+      0,
+      2
+     ],
+     "total": [
+      0,
+      7
+     ],
+     "class": "does not route",
+     "310_stored": [
+      0,
+      2
+     ]
+    },
+    "readout": [
+     {
+      "lane": "misses",
+      "cause": "skill_text_gap",
+      "confidence": "medium",
+      "fix_survived": false
+     },
+     {
+      "lane": "vs310",
+      "cause": "variance_or_drift",
+      "confidence": "medium",
+      "fix_survived": false
+     }
+    ]
+   },
+   {
+    "skill": "domain",
+    "user_only": false,
+    "content_r1": {
+     "rate_311": 1.0,
+     "rate_none": 0.8,
+     "delta": 0.19999999999999996,
+     "delta_ci": [
+      0.027773728121185115,
+      0.45185448924055294
+     ],
+     "fisher_p": 0.03206483439041578,
+     "aa_gap": 0.0,
+     "rate_310_stored": 1.0,
+     "verdict_r1": "retain",
+     "why_r1": "loaded 6/6; within noise bar of no-plugin and 3.10",
+     "per_criterion_311_of6": [
+      6,
+      6,
+      6,
+      6,
+      6
+     ]
+    },
+    "headroom": 0.2,
+    "rerun_310": {
+     "rate": 1.0,
+     "met": 15,
+     "total": 15,
+     "loaded": 3,
+     "runs": 3,
+     "diff_311_minus_310_today": 0.0
+    },
+    "loading_behavior": {
+     "r1_311": "6/6",
+     "310_today": "3/3",
+     "310_stored": "3/3"
+    },
+    "routing": {
+     "r1": [
+      3,
+      3
+     ],
+     "r2": [
+      2,
+      2
+     ],
+     "r3": [
+      2,
+      2
+     ],
+     "total": [
+      7,
+      7
+     ],
+     "class": "routes",
+     "310_stored": [
+      2,
+      2
+     ]
+    },
+    "readout": []
+   },
+   {
+    "skill": "ergonomics",
+    "user_only": false,
+    "content_r1": {
+     "rate_311": 0.6,
+     "rate_none": 0.2,
+     "delta": 0.39999999999999997,
+     "delta_ci": [
+      0.09228641503019425,
+      0.6012994595814007
+     ],
+     "fisher_p": 0.013968075227292471,
+     "aa_gap": 0.0,
+     "rate_310_stored": null,
+     "verdict_r1": "revise",
+     "why_r1": "criterion c5 missed in >=4 of 6 runs",
+     "per_criterion_311_of6": [
+      6,
+      5,
+      3,
+      3,
+      1
+     ]
+    },
+    "headroom": 0.8,
+    "loading_behavior": {
+     "r1_311": "6/6",
+     "310_today": null,
+     "310_stored": null
+    },
+    "routing": {
+     "r1": [
+      3,
+      3
+     ],
+     "r2": [
+      2,
+      2
+     ],
+     "r3": [
+      2,
+      2
+     ],
+     "total": [
+      7,
+      7
+     ],
+     "class": "routes",
+     "310_stored": null
+    },
+    "readout": [
+     {
+      "lane": "misses",
+      "cause": "skill_text_gap",
+      "confidence": "medium",
+      "fix_survived": true
+     }
+    ]
+   },
+   {
+    "skill": "idea-genie",
+    "user_only": false,
+    "content_r1": {
+     "rate_311": 0.9666666666666667,
+     "rate_none": 0.5333333333333333,
+     "delta": 0.43333333333333335,
+     "delta_ci": [
+      0.1772842549076044,
+      0.6671110553650497
+     ],
+     "fisher_p": 0.0009254560109860585,
+     "aa_gap": 0.06666666666666665,
+     "rate_310_stored": 1.0,
+     "verdict_r1": "retain",
+     "why_r1": "loaded 6/6; within noise bar of no-plugin and 3.10",
+     "per_criterion_311_of6": [
+      6,
+      6,
+      5,
+      6,
+      6
+     ]
+    },
+    "headroom": 0.47,
+    "rerun_310": {
+     "rate": 1.0,
+     "met": 15,
+     "total": 15,
+     "loaded": 3,
+     "runs": 3,
+     "diff_311_minus_310_today": -0.033
+    },
+    "loading_behavior": {
+     "r1_311": "6/6",
+     "310_today": "3/3",
+     "310_stored": "3/3"
+    },
+    "routing": {
+     "r1": [
+      2,
+      3
+     ],
+     "r2": [
+      0,
+      2
+     ],
+     "r3": [
+      0,
+      2
+     ],
+     "total": [
+      2,
+      7
+     ],
+     "class": "request-sensitive",
+     "310_stored": [
+      2,
+      2
+     ]
+    },
+    "readout": []
+   },
+   {
+    "skill": "implement",
+    "user_only": false,
+    "content_r1": {
+     "rate_311": 0.5,
+     "rate_none": 0.4166666666666667,
+     "delta": 0.08333333333333331,
+     "delta_ci": [
+      -0.23930595625958923,
+      0.37385777421411776
+     ],
+     "fisher_p": 0.7317315535780496,
+     "aa_gap": 0.0,
+     "rate_310_stored": 0.5,
+     "verdict_r1": "revise (loading)",
+     "why_r1": "loaded 0/6; content not measured",
+     "per_criterion_311_of6": [
+      4,
+      6,
+      0,
+      2
+     ]
+    },
+    "headroom": 0.58,
+    "rerun_310": {
+     "rate": 0.6666666666666666,
+     "met": 8,
+     "total": 12,
+     "loaded": 0,
+     "runs": 3,
+     "diff_311_minus_310_today": -0.167
+    },
+    "loading_behavior": {
+     "r1_311": "0/6",
+     "310_today": "0/3",
+     "310_stored": "0/3"
+    },
+    "routing": {
+     "r1": [
+      0,
+      3
+     ],
+     "r2": [
+      0,
+      2
+     ],
+     "r3": [
+      0,
+      2
+     ],
+     "total": [
+      0,
+      7
+     ],
+     "class": "does not route",
+     "310_stored": [
+      0,
+      2
+     ]
+    },
+    "forced": {
+     "rate": 1.0,
+     "met": 12,
+     "total": 12,
+     "per_of3": [
+      3,
+      3,
+      3,
+      3
+     ],
+     "minus_none": 0.583,
+     "ci": [
+      0.22,
+      0.81
+     ]
+    },
+    "methods": {
+     "rate_311": 0.6666666666666666,
+     "rate_310": 0.4,
+     "rate_none": 0.26666666666666666,
+     "per_311_of3": [
+      0,
+      3,
+      3,
+      3,
+      1
+     ],
+     "per_310_of3": [
+      0,
+      3,
+      0,
+      0,
+      3
+     ],
+     "per_none_of3": [
+      0,
+      3,
+      0,
+      0,
+      1
+     ],
+     "diff_311_310": 0.267,
+     "diff_ci": [
+      -0.08,
+      0.54
+     ],
+     "fisher_p": 0.272
+    },
+    "readout": [
+     {
+      "lane": "loading",
+      "cause": "criterion_flawed_or_by_design",
+      "confidence": "high",
+      "fix_survived": false
+     }
+    ]
+   },
+   {
+    "skill": "interview",
+    "user_only": true,
+    "content_r1": {
+     "rate_311": 1.0,
+     "rate_none": 0.5833333333333334,
+     "delta": 0.41666666666666663,
+     "delta_ci": [
+      0.1540874734971484,
+      0.6804886891575758
+     ],
+     "fisher_p": 0.0021008403361344537,
+     "aa_gap": 0.0,
+     "rate_310_stored": 1.0,
+     "verdict_r1": "retain",
+     "why_r1": "loaded 6/6; within noise bar of no-plugin and 3.10",
+     "per_criterion_311_of6": [
+      6,
+      6,
+      6,
+      6
+     ]
+    },
+    "headroom": 0.42,
+    "rerun_310": {
+     "rate": 1.0,
+     "met": 12,
+     "total": 12,
+     "loaded": 0,
+     "runs": 3,
+     "diff_311_minus_310_today": 0.0
+    },
+    "loading_behavior": {
+     "r1_311": "slash",
+     "310_today": null,
+     "310_stored": null
+    },
+    "routing": null,
+    "methods": {
+     "rate_311": 1.0,
+     "rate_310": 0.5833333333333334,
+     "rate_none": 0.6666666666666666,
+     "per_311_of3": [
+      3,
+      3,
+      3,
+      3
+     ],
+     "per_310_of3": [
+      2,
+      0,
+      2,
+      3
+     ],
+     "per_none_of3": [
+      2,
+      1,
+      3,
+      2
+     ],
+     "diff_311_310": 0.417,
+     "diff_ci": [
+      0.09,
+      0.68
+     ],
+     "fisher_p": 0.037
+    },
+    "readout": [
+     {
+      "lane": "retained",
+      "cause": "no_problem_found",
+      "confidence": "high",
+      "fix_survived": false
+     }
+    ]
+   },
+   {
+    "skill": "memory",
+    "user_only": false,
+    "content_r1": {
+     "rate_311": 0.5666666666666667,
+     "rate_none": 0.2,
+     "delta": 0.36666666666666664,
+     "delta_ci": [
+      0.06015641086723933,
+      0.5721794546847316
+     ],
+     "fisher_p": 0.02739453066059108,
+     "aa_gap": 0.06666666666666665,
+     "rate_310_stored": 1.0,
+     "verdict_r1": "revise (loading)",
+     "why_r1": "loaded 2/6; content not measured",
+     "per_criterion_311_of6": [
+      6,
+      6,
+      2,
+      1,
+      2
+     ]
+    },
+    "headroom": 0.8,
+    "rerun_310": {
+     "rate": 0.8,
+     "met": 12,
+     "total": 15,
+     "loaded": 3,
+     "runs": 3,
+     "diff_311_minus_310_today": -0.233
+    },
+    "loading_behavior": {
+     "r1_311": "2/6",
+     "310_today": "3/3",
+     "310_stored": "3/3"
+    },
+    "routing": {
+     "r1": [
+      3,
+      3
+     ],
+     "r2": [
+      2,
+      2
+     ],
+     "r3": [
+      1,
+      2
+     ],
+     "total": [
+      6,
+      7
+     ],
+     "class": "routes",
+     "310_stored": [
+      2,
+      2
+     ]
+    },
+    "forced": {
+     "rate": 0.9333333333333333,
+     "met": 14,
+     "total": 15,
+     "per_of3": [
+      3,
+      3,
+      3,
+      2,
+      3
+     ],
+     "minus_none": 0.733,
+     "ci": [
+      0.39,
+      0.87
+     ]
+    },
+    "readout": [
+     {
+      "lane": "loading",
+      "cause": "description_changed_in_3_11",
+      "confidence": "medium",
+      "fix_survived": false
+     },
+     {
+      "lane": "vs310",
+      "cause": "description_changed_in_3_11",
+      "confidence": "medium",
+      "fix_survived": false
+     }
+    ]
+   },
+   {
+    "skill": "navigate",
+    "user_only": false,
+    "content_r1": {
+     "rate_311": 1.0,
+     "rate_none": 1.0,
+     "delta": 0.0,
+     "delta_ci": [
+      -0.11351339476145195,
+      0.2038833035964871
+     ],
+     "fisher_p": 1.0,
+     "aa_gap": 0.0,
+     "rate_310_stored": 1.0,
+     "verdict_r1": "retain",
+     "why_r1": "loaded 6/6; within noise bar of no-plugin and 3.10",
+     "per_criterion_311_of6": [
+      6,
+      6,
+      6,
+      6,
+      6
+     ]
+    },
+    "headroom": 0.0,
+    "rerun_310": {
+     "rate": 1.0,
+     "met": 15,
+     "total": 15,
+     "loaded": 3,
+     "runs": 3,
+     "diff_311_minus_310_today": 0.0
+    },
+    "loading_behavior": {
+     "r1_311": "6/6",
+     "310_today": "3/3",
+     "310_stored": "3/3"
+    },
+    "routing": {
+     "r1": [
+      0,
+      3
+     ],
+     "r2": [
+      2,
+      2
+     ],
+     "r3": [
+      2,
+      2
+     ],
+     "total": [
+      4,
+      7
+     ],
+     "class": "request-sensitive",
+     "310_stored": [
+      0,
+      2
+     ]
+    },
+    "methods": {
+     "rate_311": 1.0,
+     "rate_310": 0.5333333333333333,
+     "rate_none": 0.5333333333333333,
+     "per_311_of3": [
+      3,
+      3,
+      3,
+      3,
+      3
+     ],
+     "per_310_of3": [
+      2,
+      0,
+      3,
+      0,
+      3
+     ],
+     "per_none_of3": [
+      1,
+      2,
+      3,
+      0,
+      2
+     ],
+     "diff_311_310": 0.467,
+     "diff_ci": [
+      0.17,
+      0.7
+     ],
+     "fisher_p": 0.006
+    },
+    "readout": [
+     {
+      "lane": "retained",
+      "cause": "no_problem_found",
+      "confidence": "high",
+      "fix_survived": false
+     }
+    ]
+   },
+   {
+    "skill": "orchestrate",
+    "user_only": false,
+    "content_r1": {
+     "rate_311": 0.8333333333333334,
+     "rate_none": 0.8333333333333334,
+     "delta": 0.0,
+     "delta_ci": [
+      -0.22614213562309304,
+      0.2985662524088591
+     ],
+     "fisher_p": 1.0,
+     "aa_gap": 0.0,
+     "rate_310_stored": 0.8333333333333334,
+     "verdict_r1": "retain",
+     "why_r1": "loaded 6/6; within noise bar of no-plugin and 3.10",
+     "per_criterion_311_of6": [
+      6,
+      3,
+      6,
+      5
+     ]
+    },
+    "headroom": 0.17,
+    "rerun_310": {
+     "rate": 0.75,
+     "met": 9,
+     "total": 12,
+     "loaded": 3,
+     "runs": 3,
+     "diff_311_minus_310_today": 0.083
+    },
+    "loading_behavior": {
+     "r1_311": "6/6",
+     "310_today": "3/3",
+     "310_stored": "3/3"
+    },
+    "routing": {
+     "r1": [
+      3,
+      3
+     ],
+     "r2": [
+      2,
+      2
+     ],
+     "r3": [
+      2,
+      2
+     ],
+     "total": [
+      7,
+      7
+     ],
+     "class": "routes",
+     "310_stored": [
+      2,
+      2
+     ]
+    },
+    "readout": []
+   },
+   {
+    "skill": "plan",
+    "user_only": false,
+    "content_r1": {
+     "rate_311": 0.8666666666666667,
+     "rate_none": 0.26666666666666666,
+     "delta": 0.6000000000000001,
+     "delta_ci": [
+      0.2989143319867388,
+      0.7769314835223731
+     ],
+     "fisher_p": 0.00011396046156997023,
+     "aa_gap": 0.1333333333333333,
+     "rate_310_stored": 1.0,
+     "verdict_r1": "retain",
+     "why_r1": "loaded 5/6; within noise bar of no-plugin and 3.10",
+     "per_criterion_311_of6": [
+      5,
+      5,
+      6,
+      4,
+      6
+     ]
+    },
+    "headroom": 0.73,
+    "rerun_310": {
+     "rate": 1.0,
+     "met": 15,
+     "total": 15,
+     "loaded": 3,
+     "runs": 3,
+     "diff_311_minus_310_today": -0.133
+    },
+    "loading_behavior": {
+     "r1_311": "5/6",
+     "310_today": "3/3",
+     "310_stored": "3/3"
+    },
+    "routing": {
+     "r1": [
+      3,
+      3
+     ],
+     "r2": [
+      2,
+      2
+     ],
+     "r3": [
+      2,
+      2
+     ],
+     "total": [
+      7,
+      7
+     ],
+     "class": "routes",
+     "310_stored": [
+      2,
+      2
+     ]
+    },
+    "methods": {
+     "rate_311": 0.9333333333333333,
+     "rate_310": 0.5333333333333333,
+     "rate_none": 0.5333333333333333,
+     "per_311_of3": [
+      3,
+      2,
+      3,
+      3,
+      3
+     ],
+     "per_310_of3": [
+      0,
+      0,
+      3,
+      2,
+      3
+     ],
+     "per_none_of3": [
+      1,
+      1,
+      3,
+      0,
+      3
+     ],
+     "diff_311_310": 0.4,
+     "diff_ci": [
+      0.08,
+      0.64
+     ],
+     "fisher_p": 0.035
+    },
+    "readout": [
+     {
+      "lane": "vs310",
+      "cause": "variance_or_drift",
+      "confidence": "high",
+      "fix_survived": false
+     },
+     {
+      "lane": "retained",
+      "cause": "no_problem_found",
+      "confidence": "medium",
+      "fix_survived": false
+     }
+    ]
+   },
+   {
+    "skill": "postmortem",
+    "user_only": true,
+    "content_r1": {
+     "rate_311": 1.0,
+     "rate_none": 1.0,
+     "delta": 0.0,
+     "delta_ci": [
+      -0.13797620655132803,
+      0.24249400955309786
+     ],
+     "fisher_p": 1.0,
+     "aa_gap": 0.0,
+     "rate_310_stored": 1.0,
+     "verdict_r1": "retain",
+     "why_r1": "loaded 6/6; within noise bar of no-plugin and 3.10",
+     "per_criterion_311_of6": [
+      6,
+      6,
+      6,
+      6
+     ]
+    },
+    "headroom": 0.0,
+    "rerun_310": {
+     "rate": 1.0,
+     "met": 12,
+     "total": 12,
+     "loaded": 0,
+     "runs": 3,
+     "diff_311_minus_310_today": 0.0
+    },
+    "loading_behavior": {
+     "r1_311": "slash",
+     "310_today": null,
+     "310_stored": null
+    },
+    "routing": null,
+    "methods": {
+     "rate_311": 1.0,
+     "rate_310": 0.9333333333333333,
+     "rate_none": 0.9333333333333333,
+     "per_311_of3": [
+      3,
+      3,
+      3,
+      3,
+      3
+     ],
+     "per_310_of3": [
+      3,
+      3,
+      3,
+      2,
+      3
+     ],
+     "per_none_of3": [
+      3,
+      3,
+      2,
+      3,
+      3
+     ],
+     "diff_311_310": 0.067,
+     "diff_ci": [
+      -0.14,
+      0.3
+     ],
+     "fisher_p": 1.0
+    },
+    "readout": [
+     {
+      "lane": "retained",
+      "cause": "no_problem_found",
+      "confidence": "high",
+      "fix_survived": false
+     }
+    ]
+   },
+   {
+    "skill": "premortem",
+    "user_only": false,
+    "content_r1": {
+     "rate_311": 1.0,
+     "rate_none": 0.8333333333333334,
+     "delta": 0.16666666666666663,
+     "delta_ci": [
+      -0.01599665378933854,
+      0.4480308646118112
+     ],
+     "fisher_p": 0.10476190476190476,
+     "aa_gap": 0.0,
+     "rate_310_stored": 1.0,
+     "verdict_r1": "retain",
+     "why_r1": "loaded 6/6; within noise bar of no-plugin and 3.10",
+     "per_criterion_311_of6": [
+      6,
+      6,
+      6,
+      6
+     ]
+    },
+    "headroom": 0.17,
+    "rerun_310": {
+     "rate": 1.0,
+     "met": 12,
+     "total": 12,
+     "loaded": 3,
+     "runs": 3,
+     "diff_311_minus_310_today": 0.0
+    },
+    "loading_behavior": {
+     "r1_311": "6/6",
+     "310_today": "3/3",
+     "310_stored": "3/3"
+    },
+    "routing": {
+     "r1": [
+      3,
+      3
+     ],
+     "r2": [
+      2,
+      2
+     ],
+     "r3": [
+      2,
+      2
+     ],
+     "total": [
+      7,
+      7
+     ],
+     "class": "routes",
+     "310_stored": [
+      2,
+      2
+     ]
+    },
+    "methods": {
+     "rate_311": 0.9333333333333333,
+     "rate_310": 0.8666666666666667,
+     "rate_none": 0.8,
+     "per_311_of3": [
+      3,
+      3,
+      2,
+      3,
+      3
+     ],
+     "per_310_of3": [
+      1,
+      3,
+      3,
+      3,
+      3
+     ],
+     "per_none_of3": [
+      2,
+      3,
+      1,
+      3,
+      3
+     ],
+     "diff_311_310": 0.067,
+     "diff_ci": [
+      -0.18,
+      0.32
+     ],
+     "fisher_p": 1.0
+    },
+    "readout": [
+     {
+      "lane": "retained",
+      "cause": "no_problem_found",
+      "confidence": "high",
+      "fix_survived": false
+     }
+    ]
+   },
+   {
+    "skill": "reality-check",
+    "user_only": false,
+    "content_r1": {
+     "rate_311": 1.0,
+     "rate_none": 1.0,
+     "delta": 0.0,
+     "delta_ci": [
+      -0.11351339476145195,
+      0.2038833035964871
+     ],
+     "fisher_p": 1.0,
+     "aa_gap": 0.0,
+     "rate_310_stored": 1.0,
+     "verdict_r1": "revise (loading)",
+     "why_r1": "loaded 2/6; content not measured",
+     "per_criterion_311_of6": [
+      6,
+      6,
+      6,
+      6,
+      6
+     ]
+    },
+    "headroom": 0.0,
+    "rerun_310": {
+     "rate": 1.0,
+     "met": 15,
+     "total": 15,
+     "loaded": 3,
+     "runs": 3,
+     "diff_311_minus_310_today": 0.0
+    },
+    "loading_behavior": {
+     "r1_311": "2/6",
+     "310_today": "3/3",
+     "310_stored": "3/3"
+    },
+    "routing": {
+     "r1": [
+      0,
+      3
+     ],
+     "r2": [
+      1,
+      2
+     ],
+     "r3": [
+      0,
+      2
+     ],
+     "total": [
+      1,
+      7
+     ],
+     "class": "request-sensitive",
+     "310_stored": [
+      0,
+      2
+     ]
+    },
+    "forced": {
+     "rate": 1.0,
+     "met": 15,
+     "total": 15,
+     "per_of3": [
+      3,
+      3,
+      3,
+      3,
+      3
+     ],
+     "minus_none": 0.0,
+     "ci": [
+      -0.2,
+      0.2
+     ]
+    },
+    "readout": [
+     {
+      "lane": "loading",
+      "cause": "variance_or_drift",
+      "confidence": "high",
+      "fix_survived": false
+     }
+    ]
+   },
+   {
+    "skill": "refactor",
+    "user_only": false,
+    "content_r1": {
+     "rate_311": 1.0,
+     "rate_none": 0.75,
+     "delta": 0.25,
+     "delta_ci": [
+      0.037921665464858534,
+      0.5323053370816634
+     ],
+     "fisher_p": 0.03081232492997199,
+     "aa_gap": 0.0,
+     "rate_310_stored": 1.0,
+     "verdict_r1": "revise (loading)",
+     "why_r1": "loaded 3/6; content not measured",
+     "per_criterion_311_of6": [
+      6,
+      6,
+      6,
+      6
+     ]
+    },
+    "headroom": 0.25,
+    "rerun_310": {
+     "rate": 1.0,
+     "met": 12,
+     "total": 12,
+     "loaded": 3,
+     "runs": 3,
+     "diff_311_minus_310_today": 0.0
+    },
+    "loading_behavior": {
+     "r1_311": "3/6",
+     "310_today": "3/3",
+     "310_stored": "2/3"
+    },
+    "routing": {
+     "r1": [
+      0,
+      3
+     ],
+     "r2": [
+      1,
+      2
+     ],
+     "r3": [
+      1,
+      2
+     ],
+     "total": [
+      2,
+      7
+     ],
+     "class": "request-sensitive",
+     "310_stored": [
+      0,
+      2
+     ]
+    },
+    "forced": {
+     "rate": 1.0,
+     "met": 12,
+     "total": 12,
+     "per_of3": [
+      3,
+      3,
+      3,
+      3
+     ],
+     "minus_none": 0.25,
+     "ci": [
+      -0.04,
+      0.53
+     ]
+    },
+    "readout": [
+     {
+      "lane": "loading",
+      "cause": "variance_or_drift",
+      "confidence": "medium",
+      "fix_survived": false
+     }
+    ]
+   },
+   {
+    "skill": "research",
+    "user_only": false,
+    "content_r1": {
+     "rate_311": 1.0,
+     "rate_none": 1.0,
+     "delta": 0.0,
+     "delta_ci": [
+      -0.13797620655132803,
+      0.24249400955309786
+     ],
+     "fisher_p": 1.0,
+     "aa_gap": 0.0,
+     "rate_310_stored": 1.0,
+     "verdict_r1": "revise (loading)",
+     "why_r1": "loaded 0/6; content not measured",
+     "per_criterion_311_of6": [
+      6,
+      6,
+      6,
+      6
+     ]
+    },
+    "headroom": 0.0,
+    "rerun_310": {
+     "rate": 1.0,
+     "met": 12,
+     "total": 12,
+     "loaded": 2,
+     "runs": 3,
+     "diff_311_minus_310_today": 0.0
+    },
+    "loading_behavior": {
+     "r1_311": "0/6",
+     "310_today": "2/3",
+     "310_stored": "2/3"
+    },
+    "routing": {
+     "r1": [
+      0,
+      3
+     ],
+     "r2": [
+      0,
+      2
+     ],
+     "r3": [
+      0,
+      2
+     ],
+     "total": [
+      0,
+      7
+     ],
+     "class": "does not route",
+     "310_stored": [
+      0,
+      2
+     ]
+    },
+    "forced": {
+     "rate": 1.0,
+     "met": 12,
+     "total": 12,
+     "per_of3": [
+      3,
+      3,
+      3,
+      3
+     ],
+     "minus_none": 0.0,
+     "ci": [
+      -0.24,
+      0.24
+     ]
+    },
+    "methods": {
+     "rate_311": 0.9333333333333333,
+     "rate_310": 0.9333333333333333,
+     "rate_none": 0.8,
+     "per_311_of3": [
+      3,
+      3,
+      2,
+      3,
+      3
+     ],
+     "per_310_of3": [
+      3,
+      3,
+      2,
+      3,
+      3
+     ],
+     "per_none_of3": [
+      3,
+      3,
+      0,
+      3,
+      3
+     ],
+     "diff_311_310": 0.0,
+     "diff_ci": [
+      -0.24,
+      0.24
+     ],
+     "fisher_p": 1.0
+    },
+    "readout": [
+     {
+      "lane": "loading",
+      "cause": "description_changed_in_3_11",
+      "confidence": "low",
+      "fix_survived": false
+     }
+    ]
+   },
+   {
+    "skill": "reverse-engineer",
+    "user_only": false,
+    "content_r1": {
+     "rate_311": 1.0,
+     "rate_none": 0.8666666666666667,
+     "delta": 0.1333333333333333,
+     "delta_ci": [
+      -0.015313664239292507,
+      0.3788198305398056
+     ],
+     "fisher_p": 0.10606060606060606,
+     "aa_gap": 0.0,
+     "rate_310_stored": 1.0,
+     "verdict_r1": "retain",
+     "why_r1": "loaded 6/6; within noise bar of no-plugin and 3.10",
+     "per_criterion_311_of6": [
+      6,
+      6,
+      6,
+      6,
+      6
+     ]
+    },
+    "headroom": 0.13,
+    "rerun_310": {
+     "rate": 1.0,
+     "met": 15,
+     "total": 15,
+     "loaded": 3,
+     "runs": 3,
+     "diff_311_minus_310_today": 0.0
+    },
+    "loading_behavior": {
+     "r1_311": "6/6",
+     "310_today": "3/3",
+     "310_stored": "3/3"
+    },
+    "routing": {
+     "r1": [
+      3,
+      3
+     ],
+     "r2": [
+      2,
+      2
+     ],
+     "r3": [
+      2,
+      2
+     ],
+     "total": [
+      7,
+      7
+     ],
+     "class": "routes",
+     "310_stored": [
+      2,
+      2
+     ]
+    },
+    "readout": []
+   },
+   {
+    "skill": "review",
+    "user_only": false,
+    "content_r1": {
+     "rate_311": 0.9583333333333334,
+     "rate_none": 0.9166666666666666,
+     "delta": 0.04166666666666674,
+     "delta_ci": [
+      -0.13305858148425537,
+      0.3143754951326049
+     ],
+     "fisher_p": 1.0,
+     "aa_gap": 0.08333333333333337,
+     "rate_310_stored": 1.0,
+     "verdict_r1": "revise (loading)",
+     "why_r1": "loaded 0/6; content not measured",
+     "per_criterion_311_of6": [
+      6,
+      6,
+      6,
+      5
+     ]
+    },
+    "headroom": 0.08,
+    "rerun_310": {
+     "rate": 1.0,
+     "met": 12,
+     "total": 12,
+     "loaded": 0,
+     "runs": 3,
+     "diff_311_minus_310_today": -0.042
+    },
+    "loading_behavior": {
+     "r1_311": "0/6",
+     "310_today": "0/3",
+     "310_stored": "0/3"
+    },
+    "routing": {
+     "r1": [
+      0,
+      3
+     ],
+     "r2": [
+      0,
+      2
+     ],
+     "r3": [
+      2,
+      2
+     ],
+     "total": [
+      2,
+      7
+     ],
+     "class": "request-sensitive",
+     "310_stored": [
+      0,
+      2
+     ]
+    },
+    "forced": {
+     "rate": 1.0,
+     "met": 12,
+     "total": 12,
+     "per_of3": [
+      3,
+      3,
+      3,
+      3
+     ],
+     "minus_none": 0.083,
+     "ci": [
+      -0.17,
+      0.35
+     ]
+    },
+    "methods": {
+     "rate_311": 0.7333333333333333,
+     "rate_310": 0.6,
+     "rate_none": 0.6,
+     "per_311_of3": [
+      3,
+      0,
+      3,
+      3,
+      2
+     ],
+     "per_310_of3": [
+      3,
+      0,
+      3,
+      3,
+      0
+     ],
+     "per_none_of3": [
+      3,
+      0,
+      3,
+      3,
+      0
+     ],
+     "diff_311_310": 0.133,
+     "diff_ci": [
+      -0.19,
+      0.42
+     ],
+     "fisher_p": 0.7
+    },
+    "readout": [
+     {
+      "lane": "loading",
+      "cause": "unknown",
+      "confidence": "medium",
+      "fix_survived": false
+     }
+    ]
+   },
+   {
+    "skill": "rpi",
+    "user_only": true,
+    "content_r1": {
+     "rate_311": 0.9,
+     "rate_none": 0.6,
+     "delta": 0.30000000000000004,
+     "delta_ci": [
+      0.04483942578241046,
+      0.5511947457920133
+     ],
+     "fisher_p": 0.04245801761997242,
+     "aa_gap": 0.19999999999999996,
+     "rate_310_stored": 0.8,
+     "verdict_r1": "retain",
+     "why_r1": "loaded 6/6; within noise bar of no-plugin and 3.10",
+     "per_criterion_311_of6": [
+      6,
+      6,
+      4,
+      6,
+      5
+     ]
+    },
+    "headroom": 0.4,
+    "rerun_310": {
+     "rate": 0.9333333333333333,
+     "met": 14,
+     "total": 15,
+     "loaded": 0,
+     "runs": 3,
+     "diff_311_minus_310_today": -0.033
+    },
+    "loading_behavior": {
+     "r1_311": "slash",
+     "310_today": null,
+     "310_stored": null
+    },
+    "routing": null,
+    "methods": {
+     "rate_311": 0.9333333333333333,
+     "rate_310": 0.6,
+     "rate_none": 0.8,
+     "per_311_of3": [
+      3,
+      3,
+      3,
+      3,
+      2
+     ],
+     "per_310_of3": [
+      3,
+      0,
+      2,
+      3,
+      1
+     ],
+     "per_none_of3": [
+      3,
+      0,
+      3,
+      3,
+      3
+     ],
+     "diff_311_310": 0.333,
+     "diff_ci": [
+      0.03,
+      0.58
+     ],
+     "fisher_p": 0.08
+    },
+    "readout": [
+     {
+      "lane": "vs310",
+      "cause": "criterion_flawed_or_by_design",
+      "confidence": "high",
+      "fix_survived": true
+     },
+     {
+      "lane": "retained",
+      "cause": "no_problem_found",
+      "confidence": "medium",
+      "fix_survived": false
+     }
+    ]
+   },
+   {
+    "skill": "security",
+    "user_only": false,
+    "content_r1": {
+     "rate_311": 0.7333333333333333,
+     "rate_none": 0.4,
+     "delta": 0.33333333333333326,
+     "delta_ci": [
+      0.03260243778875349,
+      0.570588744643922
+     ],
+     "fisher_p": 0.049746786710713184,
+     "aa_gap": 0.13333333333333341,
+     "rate_310_stored": 0.8666666666666667,
+     "verdict_r1": "revise",
+     "why_r1": "criterion c5 missed in >=4 of 6 runs",
+     "per_criterion_311_of6": [
+      6,
+      6,
+      6,
+      3,
+      1
+     ]
+    },
+    "headroom": 0.6,
+    "rerun_310": {
+     "rate": 0.8,
+     "met": 12,
+     "total": 15,
+     "loaded": 3,
+     "runs": 3,
+     "diff_311_minus_310_today": -0.067
+    },
+    "loading_behavior": {
+     "r1_311": "6/6",
+     "310_today": "3/3",
+     "310_stored": "3/3"
+    },
+    "routing": {
+     "r1": [
+      0,
+      3
+     ],
+     "r2": [
+      0,
+      2
+     ],
+     "r3": [
+      0,
+      2
+     ],
+     "total": [
+      0,
+      7
+     ],
+     "class": "does not route",
+     "310_stored": [
+      0,
+      2
+     ]
+    },
+    "readout": [
+     {
+      "lane": "misses",
+      "cause": "skill_text_gap",
+      "confidence": "medium",
+      "fix_survived": true
+     },
+     {
+      "lane": "vs310",
+      "cause": "variance_or_drift",
+      "confidence": "medium",
+      "fix_survived": false
+     }
+    ]
+   },
+   {
+    "skill": "skill-builder",
+    "user_only": false,
+    "content_r1": {
+     "rate_311": 0.75,
+     "rate_none": 0.08333333333333333,
+     "delta": 0.6666666666666666,
+     "delta_ci": [
+      0.3308181294025527,
+      0.813600487797327
+     ],
+     "fisher_p": 0.000233063191906351,
+     "aa_gap": 0.16666666666666674,
+     "rate_310_stored": 0.6666666666666666,
+     "verdict_r1": "revise",
+     "why_r1": "criterion c2 missed in >=4 of 6 runs",
+     "per_criterion_311_of6": [
+      4,
+      2,
+      6,
+      6
+     ]
+    },
+    "headroom": 0.92,
+    "rerun_310": {
+     "rate": 0.75,
+     "met": 9,
+     "total": 12,
+     "loaded": 3,
+     "runs": 3,
+     "diff_311_minus_310_today": 0.0
+    },
+    "loading_behavior": {
+     "r1_311": "6/6",
+     "310_today": "3/3",
+     "310_stored": "3/3"
+    },
+    "routing": {
+     "r1": [
+      3,
+      3
+     ],
+     "r2": [
+      1,
+      2
+     ],
+     "r3": [
+      2,
+      2
+     ],
+     "total": [
+      6,
+      7
+     ],
+     "class": "routes",
+     "310_stored": [
+      2,
+      2
+     ]
+    },
+    "readout": [
+     {
+      "lane": "misses",
+      "cause": "criterion_flawed_or_by_design",
+      "confidence": "medium",
+      "fix_survived": false
+     },
+     {
+      "lane": "vs310",
+      "cause": "variance_or_drift",
+      "confidence": "high",
+      "fix_survived": false
+     }
+    ]
+   },
+   {
+    "skill": "skill-eval",
+    "user_only": false,
+    "content_r1": {
+     "rate_311": 0.9666666666666667,
+     "rate_none": 0.8,
+     "delta": 0.16666666666666663,
+     "delta_ci": [
+      -0.01924812307625884,
+      0.4200099126397451
+     ],
+     "fisher_p": 0.10077519379844961,
+     "aa_gap": 0.06666666666666665,
+     "rate_310_stored": 1.0,
+     "verdict_r1": "retain",
+     "why_r1": "loaded 4/6; within noise bar of no-plugin and 3.10",
+     "per_criterion_311_of6": [
+      6,
+      5,
+      6,
+      6,
+      6
+     ]
+    },
+    "headroom": 0.2,
+    "rerun_310": {
+     "rate": 1.0,
+     "met": 15,
+     "total": 15,
+     "loaded": 3,
+     "runs": 3,
+     "diff_311_minus_310_today": -0.033
+    },
+    "loading_behavior": {
+     "r1_311": "4/6",
+     "310_today": "3/3",
+     "310_stored": "3/3"
+    },
+    "routing": {
+     "r1": [
+      3,
+      3
+     ],
+     "r2": [
+      2,
+      2
+     ],
+     "r3": [
+      2,
+      2
+     ],
+     "total": [
+      7,
+      7
+     ],
+     "class": "routes",
+     "310_stored": [
+      2,
+      2
+     ]
+    },
+    "readout": [
+     {
+      "lane": "retained",
+      "cause": "variance_or_drift",
+      "confidence": "medium",
+      "fix_survived": false
+     }
+    ]
+   },
+   {
+    "skill": "test",
+    "user_only": false,
+    "content_r1": {
+     "rate_311": 1.0,
+     "rate_none": 1.0,
+     "delta": 0.0,
+     "delta_ci": [
+      -0.13797620655132803,
+      0.24249400955309786
+     ],
+     "fisher_p": 1.0,
+     "aa_gap": 0.0,
+     "rate_310_stored": 1.0,
+     "verdict_r1": "revise (loading)",
+     "why_r1": "loaded 1/6; content not measured",
+     "per_criterion_311_of6": [
+      6,
+      6,
+      6,
+      6
+     ]
+    },
+    "headroom": 0.0,
+    "rerun_310": {
+     "rate": 1.0,
+     "met": 12,
+     "total": 12,
+     "loaded": 0,
+     "runs": 3,
+     "diff_311_minus_310_today": 0.0
+    },
+    "loading_behavior": {
+     "r1_311": "1/6",
+     "310_today": "0/3",
+     "310_stored": "2/3"
+    },
+    "routing": {
+     "r1": [
+      1,
+      3
+     ],
+     "r2": [
+      0,
+      2
+     ],
+     "r3": [
+      0,
+      2
+     ],
+     "total": [
+      1,
+      7
+     ],
+     "class": "request-sensitive",
+     "310_stored": [
+      1,
+      2
+     ]
+    },
+    "forced": {
+     "rate": 1.0,
+     "met": 12,
+     "total": 12,
+     "per_of3": [
+      3,
+      3,
+      3,
+      3
+     ],
+     "minus_none": 0.0,
+     "ci": [
+      -0.24,
+      0.24
+     ]
+    },
+    "readout": [
+     {
+      "lane": "loading",
+      "cause": "variance_or_drift",
+      "confidence": "medium",
+      "fix_survived": false
+     }
+    ]
+   },
+   {
+    "skill": "triage",
+    "user_only": false,
+    "content_r1": {
+     "rate_311": 0.4,
+     "rate_none": 0.4,
+     "delta": 0.0,
+     "delta_ci": [
+      -0.28734387103104525,
+      0.26825745597043965
+     ],
+     "fisher_p": 1.0,
+     "aa_gap": 0.0,
+     "rate_310_stored": null,
+     "verdict_r1": "revise (loading)",
+     "why_r1": "loaded 0/6; content not measured",
+     "per_criterion_311_of6": [
+      6,
+      0,
+      0,
+      0,
+      6
+     ]
+    },
+    "headroom": 0.6,
+    "loading_behavior": {
+     "r1_311": "0/6",
+     "310_today": null,
+     "310_stored": null
+    },
+    "routing": {
+     "r1": [
+      3,
+      3
+     ],
+     "r2": [
+      0,
+      2
+     ],
+     "r3": [
+      0,
+      2
+     ],
+     "total": [
+      3,
+      7
+     ],
+     "class": "request-sensitive",
+     "310_stored": null
+    },
+    "forced": {
+     "rate": 0.9333333333333333,
+     "met": 14,
+     "total": 15,
+     "per_of3": [
+      3,
+      3,
+      3,
+      2,
+      3
+     ],
+     "minus_none": 0.533,
+     "ci": [
+      0.2,
+      0.74
+     ]
+    },
+    "readout": [
+     {
+      "lane": "loading",
+      "cause": "description_does_not_match_request",
+      "confidence": "low",
+      "fix_survived": false
+     }
+    ]
+   },
+   {
+    "skill": "using-gc",
+    "user_only": false,
+    "content_r1": {
+     "rate_311": 1.0,
+     "rate_none": 0.5,
+     "delta": 0.5,
+     "delta_ci": [
+      0.21775731016983063,
+      0.7462184038374761
+     ],
+     "fisher_p": 0.0004743833017077799,
+     "aa_gap": 0.0,
+     "rate_310_stored": 1.0,
+     "verdict_r1": "retain",
+     "why_r1": "loaded 6/6; within noise bar of no-plugin and 3.10",
+     "per_criterion_311_of6": [
+      6,
+      6,
+      6,
+      6
+     ]
+    },
+    "headroom": 0.5,
+    "rerun_310": {
+     "rate": 1.0,
+     "met": 12,
+     "total": 12,
+     "loaded": 3,
+     "runs": 3,
+     "diff_311_minus_310_today": 0.0
+    },
+    "loading_behavior": {
+     "r1_311": "6/6",
+     "310_today": "3/3",
+     "310_stored": "3/3"
+    },
+    "routing": {
+     "r1": [
+      3,
+      3
+     ],
+     "r2": [
+      2,
+      2
+     ],
+     "r3": [
+      2,
+      2
+     ],
+     "total": [
+      7,
+      7
+     ],
+     "class": "routes",
+     "310_stored": [
+      2,
+      2
+     ]
+    },
+    "readout": [
+     {
+      "lane": "retained",
+      "cause": "no_problem_found",
+      "confidence": "high",
+      "fix_survived": false
+     }
+    ]
+   },
+   {
+    "skill": "validate",
+    "user_only": false,
+    "content_r1": {
+     "rate_311": 1.0,
+     "rate_none": 1.0,
+     "delta": 0.0,
+     "delta_ci": [
+      -0.13797620655132803,
+      0.24249400955309786
+     ],
+     "fisher_p": 1.0,
+     "aa_gap": 0.0,
+     "rate_310_stored": 1.0,
+     "verdict_r1": "retain",
+     "why_r1": "loaded 6/6; within noise bar of no-plugin and 3.10",
+     "per_criterion_311_of6": [
+      6,
+      6,
+      6,
+      6
+     ]
+    },
+    "headroom": 0.0,
+    "rerun_310": {
+     "rate": 1.0,
+     "met": 12,
+     "total": 12,
+     "loaded": 3,
+     "runs": 3,
+     "diff_311_minus_310_today": 0.0
+    },
+    "loading_behavior": {
+     "r1_311": "6/6",
+     "310_today": "3/3",
+     "310_stored": "3/3"
+    },
+    "routing": {
+     "r1": [
+      0,
+      3
+     ],
+     "r2": [
+      0,
+      2
+     ],
+     "r3": [
+      0,
+      2
+     ],
+     "total": [
+      0,
+      7
+     ],
+     "class": "does not route",
+     "310_stored": [
+      0,
+      2
+     ]
+    },
+    "methods": {
+     "rate_311": 1.0,
+     "rate_310": 0.9333333333333333,
+     "rate_none": 1.0,
+     "per_311_of3": [
+      3,
+      3,
+      3,
+      3,
+      3
+     ],
+     "per_310_of3": [
+      3,
+      3,
+      2,
+      3,
+      3
+     ],
+     "per_none_of3": [
+      3,
+      3,
+      3,
+      3,
+      3
+     ],
+     "diff_311_310": 0.067,
+     "diff_ci": [
+      -0.14,
+      0.3
+     ],
+     "fisher_p": 1.0
+    },
+    "readout": [
+     {
+      "lane": "retained",
+      "cause": "no_problem_found",
+      "confidence": "high",
+      "fix_survived": false
+     }
+    ]
+   }
+  ],
+  "round2_evaluator_cost_seen_usd": 51.81
+ },
+ "round3": {
+  "ablation": {
+   "control": {
+    "reality-check": [
+     1,
+     6,
+     0
+    ],
+    "refactor": [
+     5,
+     6,
+     0
+    ],
+    "agent-native": [
+     1,
+     6,
+     0
+    ],
+    "memory": [
+     4,
+     6,
+     0
+    ],
+    "skill-eval": [
+     5,
+     6,
+     0
+    ]
+   },
+   "v1": {
+    "reality-check": [
+     0,
+     6,
+     0
+    ],
+    "refactor": [
+     3,
+     6,
+     0
+    ],
+    "agent-native": [
+     4,
+     6,
+     0
+    ],
+    "memory": [
+     3,
+     6,
+     0
+    ],
+    "skill-eval": [
+     6,
+     6,
+     0
+    ]
+   },
+   "v2": {
+    "reality-check": [
+     2,
+     6,
+     0
+    ],
+    "refactor": [
+     3,
+     6,
+     0
+    ],
+    "agent-native": [
+     6,
+     6,
+     0
+    ],
+    "memory": [
+     5,
+     6,
+     0
+    ],
+    "skill-eval": [
+     6,
+     6,
+     0
+    ]
+   }
+  },
+  "pooled_identical": {
+   "control": [
+    7,
+    18
+   ],
+   "v1": [
+    7,
+    18
+   ],
+   "v2": [
+    11,
+    18
+   ]
+  },
+  "seeded": {
+   "research-r1": [
+    0,
+    3,
+    0
+   ],
+   "implement-r3": [
+    0,
+    3,
+    0
+   ],
+   "implement-r2": [
+    0,
+    3,
+    0
+   ],
+   "research-r3": [
+    0,
+    3,
+    0
+   ],
+   "implement-r1": [
+    0,
+    3,
+    0
+   ],
+   "plan-r1": [
+    3,
+    3,
+    0
+   ],
+   "research-r2": [
+    0,
+    3,
+    0
+   ],
+   "implement-beh": [
+    0,
+    3,
+    0
+   ]
+  },
+  "cost": 15.878370100000003
+ },
+ "round4": {
+  "cost": 21.77,
+  "crowding": {
+   "loads": {
+    "full": [
+     2,
+     6
+    ],
+    "no-architecture": [
+     3,
+     6
+    ],
+    "no-triage": [
+     3,
+     6
+    ],
+    "no-ergonomics": [
+     4,
+     6
+    ],
+    "no-three-unrelated": [
+     6,
+     6
+    ]
+   },
+   "verdict": "listing length"
+  },
+  "desc_triage": {
+   "C": [
+    0,
+    3
+   ],
+   "D": [
+    0,
+    3
+   ]
+  },
+  "desc_architecture": {
+   "C": [
+    0,
+    6
+   ],
+   "D": [
+    0,
+    6
+   ]
+  },
+  "desc_refactor": {
+   "C": [
+    2,
+    6
+   ],
+   "D": [
+    4,
+    6
+   ]
+  },
+  "desc_review-r3": {
+   "C": [
+    2,
+    2
+   ],
+   "D": [
+    2,
+    2
+   ]
+  },
+  "triage_new": {
+   "C": [
+    1,
+    6
+   ],
+   "D": [
+    3,
+    6
+   ]
+  },
+  "arch_routing_D": [
+   7,
+   7
+  ],
+  "steal": {
+   "plan": {
+    "own_loads": [
+     1,
+     1
+    ],
+    "skills_called": [
+     "agentops:plan"
+    ]
+   },
+   "plan-r2": {
+    "own_loads": [
+     1,
+     1
+    ],
+    "skills_called": [
+     "agentops:plan"
+    ]
+   },
+   "plan-r3": {
+    "own_loads": [
+     1,
+     1
+    ],
+    "skills_called": [
+     "agentops:plan"
+    ]
+   },
+   "navigate": {
+    "own_loads": [
+     0,
+     1
+    ],
+    "skills_called": []
+   },
+   "navigate-r2": {
+    "own_loads": [
+     1,
+     1
+    ],
+    "skills_called": [
+     "agentops:navigate"
+    ]
+   },
+   "navigate-r3": {
+    "own_loads": [
+     1,
+     1
+    ],
+    "skills_called": [
+     "agentops:navigate"
+    ]
+   }
+  },
+  "triage_adopt": false,
+  "architecture_adopt": false,
+  "harder": {
+   "validate": {
+    "forced": {
+     "met": 12,
+     "total": 12,
+     "per": [
+      3,
+      3,
+      3,
+      3
+     ]
+    },
+    "none": {
+     "met": 12,
+     "total": 12,
+     "per": [
+      3,
+      3,
+      3,
+      3
+     ]
+    },
+    "natural": {
+     "met": 12,
+     "total": 12,
+     "per": [
+      3,
+      3,
+      3,
+      3
+     ]
+    },
+    "rate_forced": 1.0,
+    "rate_none": 1.0,
+    "useful": false,
+    "natural_loads": [
+     0,
+     3
+    ],
+    "misses_forced": [],
+    "delta": 0.0,
+    "delta_ci": [
+     -0.24249400955309786,
+     0.24249400955309786
+    ]
+   },
+   "review": {
+    "forced": {
+     "met": 6,
+     "total": 12,
+     "per": [
+      2,
+      0,
+      2,
+      2
+     ]
+    },
+    "none": {
+     "met": 4,
+     "total": 12,
+     "per": [
+      1,
+      1,
+      2,
+      0
+     ]
+    },
+    "natural": {
+     "met": 1,
+     "total": 12,
+     "per": [
+      0,
+      0,
+      1,
+      0
+     ]
+    },
+    "rate_forced": 0.5,
+    "rate_none": 0.3333333333333333,
+    "useful": true,
+    "natural_loads": [
+     0,
+     3
+    ],
+    "misses_forced": [
+     "c2"
+    ],
+    "delta": 0.16666666666666669,
+    "delta_ci": [
+     -0.20323076828588038,
+     0.4808826953988831
+    ]
+   },
+   "research": {
+    "forced": {
+     "met": 9,
+     "total": 9,
+     "per": [
+      3,
+      3,
+      3
+     ]
+    },
+    "none": {
+     "met": 9,
+     "total": 9,
+     "per": [
+      3,
+      3,
+      3
+     ]
+    },
+    "natural": {
+     "met": 9,
+     "total": 9,
+     "per": [
+      3,
+      3,
+      3
+     ]
+    },
+    "rate_forced": 1.0,
+    "rate_none": 1.0,
+    "useful": false,
+    "natural_loads": [
+     0,
+     3
+    ],
+    "misses_forced": [],
+    "delta": 0.0,
+    "delta_ci": [
+     -0.299145051727044,
+     0.299145051727044
+    ]
+   },
+   "navigate": {
+    "forced": {
+     "met": 9,
+     "total": 15,
+     "per": [
+      3,
+      1,
+      2,
+      3,
+      0
+     ]
+    },
+    "none": {
+     "met": 3,
+     "total": 15,
+     "per": [
+      0,
+      0,
+      0,
+      1,
+      2
+     ]
+    },
+    "natural": {
+     "met": 8,
+     "total": 15,
+     "per": [
+      2,
+      2,
+      0,
+      3,
+      1
+     ]
+    },
+    "rate_forced": 0.6,
+    "rate_none": 0.2,
+    "useful": true,
+    "natural_loads": [
+     2,
+     3
+    ],
+    "misses_forced": [
+     "c2",
+     "c5"
+    ],
+    "delta": 0.39999999999999997,
+    "delta_ci": [
+     0.05035402265009831,
+     0.639753402466761
+    ]
+   },
+   "postmortem": {
+    "forced": {
+     "met": 12,
+     "total": 12,
+     "per": [
+      3,
+      3,
+      3,
+      3
+     ]
+    },
+    "none": {
+     "met": 9,
+     "total": 12,
+     "per": [
+      3,
+      3,
+      3,
+      0
+     ]
+    },
+    "natural": {
+     "met": 9,
+     "total": 12,
+     "per": [
+      3,
+      3,
+      3,
+      0
+     ]
+    },
+    "rate_forced": 1.0,
+    "rate_none": 0.75,
+    "useful": false,
+    "natural_loads": [
+     0,
+     3
+    ],
+    "misses_forced": [],
+    "delta": 0.25,
+    "delta_ci": [
+     -0.04110673484830707,
+     0.5323053370816634
+    ]
+   },
+   "reality-check": {
+    "forced": {
+     "met": 12,
+     "total": 12,
+     "per": [
+      3,
+      3,
+      3,
+      3
+     ]
+    },
+    "none": {
+     "met": 12,
+     "total": 12,
+     "per": [
+      3,
+      3,
+      3,
+      3
+     ]
+    },
+    "natural": {
+     "met": 11,
+     "total": 12,
+     "per": [
+      3,
+      3,
+      3,
+      2
+     ]
+    },
+    "rate_forced": 1.0,
+    "rate_none": 1.0,
+    "useful": false,
+    "natural_loads": [
+     0,
+     3
+    ],
+    "misses_forced": [],
+    "delta": 0.0,
+    "delta_ci": [
+     -0.24249400955309786,
+     0.24249400955309786
+    ]
+   },
+   "test": {
+    "forced": {
+     "met": 15,
+     "total": 15,
+     "per": [
+      3,
+      3,
+      3,
+      3,
+      3
+     ]
+    },
+    "none": {
+     "met": 15,
+     "total": 15,
+     "per": [
+      3,
+      3,
+      3,
+      3,
+      3
+     ]
+    },
+    "natural": {
+     "met": 15,
+     "total": 15,
+     "per": [
+      3,
+      3,
+      3,
+      3,
+      3
+     ]
+    },
+    "rate_forced": 1.0,
+    "rate_none": 1.0,
+    "useful": false,
+    "natural_loads": [
+     0,
+     3
+    ],
+    "misses_forced": [],
+    "delta": 0.0,
+    "delta_ci": [
+     -0.2038833035964871,
+     0.2038833035964871
+    ]
+   },
+   "agent-native": {
+    "forced": {
+     "met": 10,
+     "total": 12,
+     "per": [
+      3,
+      3,
+      1,
+      3
+     ]
+    },
+    "none": {
+     "met": 9,
+     "total": 12,
+     "per": [
+      3,
+      3,
+      0,
+      3
+     ]
+    },
+    "natural": {
+     "met": 8,
+     "total": 12,
+     "per": [
+      3,
+      3,
+      0,
+      2
+     ]
+    },
+    "rate_forced": 0.8333333333333334,
+    "rate_none": 0.75,
+    "useful": false,
+    "natural_loads": [
+     0,
+     3
+    ],
+    "misses_forced": [
+     "c3"
+    ],
+    "delta": 0.08333333333333337,
+    "delta_ci": [
+     -0.24086660233942264,
+     0.3899679015256853
+    ]
+   }
+  }
+ },
+ "round5": {
+  "cost": 20.45,
+  "panel": {
+   "agent-native": {
+    "C": [
+     5,
+     12
+    ],
+    "N": [
+     6,
+     12
+    ],
+    "N_also_reality_research_C": null
+   },
+   "implement": {
+    "C": [
+     0,
+     6
+    ],
+    "N": [
+     0,
+     6
+    ],
+    "N_also_reality_research_C": null
+   },
+   "research": {
+    "C": [
+     0,
+     6
+    ],
+    "N": [
+     0,
+     6
+    ],
+    "N_also_reality_research_C": null
+   },
+   "memory": {
+    "C": [
+     3,
+     6
+    ],
+    "N": [
+     6,
+     6
+    ],
+    "N_also_reality_research_C": null
+   },
+   "refactor": {
+    "C": [
+     3,
+     6
+    ],
+    "N": [
+     5,
+     6
+    ],
+    "N_also_reality_research_C": null
+   },
+   "skill-eval": {
+    "C": [
+     4,
+     6
+    ],
+    "N": [
+     4,
+     6
+    ],
+    "N_also_reality_research_C": null
+   },
+   "architecture": {
+    "C": [
+     0,
+     6
+    ],
+    "N": [
+     0,
+     6
+    ],
+    "N_also_reality_research_C": null
+   },
+   "triage": {
+    "C": [
+     0,
+     6
+    ],
+    "N": [
+     0,
+     6
+    ],
+    "N_also_reality_research_C": null
+   },
+   "plan": {
+    "C": [
+     5,
+     6
+    ],
+    "N": [
+     6,
+     6
+    ],
+    "N_also_reality_research_C": null
+   },
+   "navigate": {
+    "C": [
+     6,
+     6
+    ],
+    "N": [
+     6,
+     6
+    ],
+    "N_also_reality_research_C": null
+   },
+   "reality-check": {
+    "C": [
+     3,
+     6
+    ],
+    "N": [
+     0,
+     6
+    ],
+    "N_also_reality_research_C": [
+     0,
+     6
+    ]
+   }
+  },
+  "B1": {
+   "pass": false,
+   "fisher_p": 1.0
+  },
+  "B2": {
+   "C": [
+    21,
+    54
+   ],
+   "N": [
+    27,
+    54
+   ],
+   "diff": 0.1111111111111111,
+   "ci": [
+    -0.074234865455087,
+    0.28614948370601856
+   ],
+   "pass": true
+  },
+  "B3": {
+   "implement": {
+    "C": [
+     0,
+     6
+    ],
+    "N": [
+     0,
+     6
+    ]
+   },
+   "research": {
+    "C": [
+     0,
+     6
+    ],
+    "N": [
+     0,
+     6
+    ]
+   }
+  },
+  "B4": {
+   "N_research": [
+    0,
+    6
+   ],
+   "C_reality_check": [
+    3,
+    6
+   ],
+   "pass": false
+  },
+  "B5": {
+   "fire": {
+    "rpi": [
+     6,
+     6
+    ],
+    "postmortem": [
+     6,
+     6
+    ],
+    "interview": [
+     6,
+     6
+    ],
+    "craft-goal": [
+     4,
+     6
+    ]
+   },
+   "fire_pass": true,
+   "unnamed_runs_loading_byname": 0,
+   "hits": [],
+   "quiet_pass": true
+  },
+  "errors": {
+   "agent-native": [
+    0,
+    0
+   ],
+   "implement": [
+    0,
+    0
+   ],
+   "research": [
+    0,
+    0
+   ],
+   "memory": [
+    0,
+    0
+   ],
+   "refactor": [
+    0,
+    0
+   ],
+   "skill-eval": [
+    0,
+    0
+   ],
+   "architecture": [
+    0,
+    0
+   ],
+   "triage": [
+    0,
+    0
+   ],
+   "plan": [
+    0,
+    0
+   ],
+   "navigate": [
+    0,
+    0
+   ],
+   "reality-check": [
+    0,
+    0
+   ]
+  }
+ }
+}
