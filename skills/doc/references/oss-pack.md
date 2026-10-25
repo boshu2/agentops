@@ -19,9 +19,9 @@ style guidelines below).
 
 ## Audit and project type
 
-Run this skill's `scripts/audit-oss-docs.sh --json` (in the AgentOps checkout,
-`skills/doc/scripts/audit-oss-docs.sh`) with the audited repository as the
-working directory; it audits the current directory. It reports the project
+Run `bash "<skill-dir>/scripts/audit-oss-docs.sh" --json` with the audited
+repository as the working directory (`<skill-dir>` is defined in
+[SKILL.md](../SKILL.md)); it audits the current directory. It reports the project
 type, the detected languages and per-tier presence scores as JSON. Use the type
 it reports; it checks operator markers before `cmd/`, because operators also
 have `cmd/`. Its types are `operator`, `helm`, `cli-go`, `cli-python`,

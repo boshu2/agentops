@@ -12,13 +12,6 @@ produces:
 context_rel: []
 skill_api_version: 1
 user-invocable: true
-context:
-  window: fork
-  intent:
-    mode: task
-  sections:
-    exclude:
-    - HISTORY
 metadata:
   dependencies: []
   capabilities: [reverse_engineer]
@@ -73,12 +66,22 @@ skill exists to prevent.
 
 ## Phase 1 — teardown
 
+`<skill-dir>` is the directory that contains this SKILL.md. Claude Code shows it
+as "Base directory for this skill"; Codex lists this skill's SKILL.md path; in
+an AgentOps source checkout it is `skills/reverse-engineer`. Replace
+`<skill-dir>` with that absolute path before running a command. The working
+directory stays the user's repository. If the host did not show where this
+skill is installed, use the directory of the SKILL.md you read. If you cannot
+determine it, do not guess a path or run a same-named script from the current
+repository; say the bundled script is unavailable and build the inventory and
+steal-map by hand as in docs-only mode below.
+
 With an authorized clone or binary, the script clones (pinned), scans the
 CLI/config/artifact surface, writes the inventory, registry and specs, and
 validates the teardown:
 
 ```bash
-python3 skills/reverse-engineer/scripts/reverse_engineer.py <product> --mode=repo \
+python3 "<skill-dir>/scripts/reverse_engineer.py" <product> --mode=repo \
   --upstream-repo="https://github.com/org/repo.git" --upstream-ref=v1.0.0 \
   --output-dir=".agents/scratch/reverse-engineer/<product>/"
 ```
@@ -86,7 +89,7 @@ python3 skills/reverse-engineer/scripts/reverse_engineer.py <product> --mode=rep
 The clone lands in `.tmp/<product>/` under the current directory unless
 `--local-clone-dir` names another place; keep it out of your commits. Binary
 mode requires `--authorized`; without authorization for a real binary, run
-this skill's `scripts/self_test.sh`, which builds a demo binary (needs Go). Flags, the full
+`bash "<skill-dir>/scripts/self_test.sh"`, which builds a demo binary (needs Go). Flags, the full
 output list, fixtures and tests are in [the invocation reference](references/invocation.md).
 
 Without code access (only a README, docs site or landing page), skip the
@@ -133,7 +136,7 @@ After authoring `steal-map.md`, validate the complete output with
 numeric flag `0|1`):
 
 ```bash
-bash skills/reverse-engineer/scripts/validate-output.sh \
+bash "<skill-dir>/scripts/validate-output.sh" \
   --output-dir "$output_dir" --phase complete \
   --security-audit "$security_audit" --sbom "$sbom" \
   --upstream-ref-set "$upstream_ref_set"

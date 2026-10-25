@@ -19,7 +19,7 @@ metadata:
   effects: [write_idea_portfolio]
   canonical_status: canonical
   disposition: keep_strategy
-output_contract: idea-portfolio.v1 JSON validated by skills/idea-genie/scripts/validate-output.sh (elicit mode), or idea-challenge.v1 JSON validated by skills/idea-genie/scripts/validate-challenge.sh (duel mode)
+output_contract: idea-portfolio.v1 JSON validated by this skill's scripts/validate-output.sh (elicit mode), or idea-challenge.v1 JSON validated by this skill's scripts/validate-challenge.sh (duel mode)
 ---
 
 # Idea Genie
@@ -45,6 +45,16 @@ scored multi-member duel, where members score each other's ideas, is
 Both validators live in this skill's `scripts/` directory and need `jq`.
 Without `jq`, check the fields by hand against the shape and say the validator
 did not run.
+
+`<skill-dir>` is the directory that contains this SKILL.md. Claude Code shows it
+as "Base directory for this skill"; Codex lists this skill's SKILL.md path; in
+an AgentOps source checkout it is `skills/idea-genie`. Replace `<skill-dir>`
+with that absolute path before running a command. The working directory stays
+the user's repository. If the host did not show where this skill is installed,
+use the directory of the SKILL.md you read. If you cannot determine it, do not
+guess a path or run a same-named script from the current repository; say the
+bundled script is unavailable and check the fields by hand against the shape,
+as without `jq`.
 
 ## Elicit mode
 
@@ -124,7 +134,8 @@ while there are candidates. When every idea overlaps or lacks support, set
 The validator rejects any other field, so no rank or winner rides along. For a
 person, render the same fields as a short list, one block per candidate. When
 a file is wanted, write `.agents/scratch/ideas/<run-id>/idea-portfolio.json`
-and run `scripts/validate-output.sh` on it before returning it to the caller.
+and check it with `bash "<skill-dir>/scripts/validate-output.sh" <path>` before
+returning it to the caller.
 
 ## Duel mode
 
@@ -176,8 +187,8 @@ findings, with no packet, panel, pane manager or model-family rule.
    Keep disagreements, failed refutations and minority reasoning explicit, so
    the caller sees the alternatives a synthesis would erase.
 5. Return the packet below. When a file is wanted, write
-   `.agents/scratch/ideas/<run-id>/idea-challenge.json` and run
-   `scripts/validate-challenge.sh` on it.
+   `.agents/scratch/ideas/<run-id>/idea-challenge.json` and check it with
+   `bash "<skill-dir>/scripts/validate-challenge.sh" <path>`.
 
 ```json
 {

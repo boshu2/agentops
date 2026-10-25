@@ -40,12 +40,6 @@ Then create `skills/your-skill-name/SKILL.md` using the current frontmatter cont
 name: your-skill-name
 description: 'What this skill does. Triggers: "trigger phrase", "other phrase".'
 skill_api_version: 1
-context:
-  window: fork
-  intent:
-    mode: task
-  sections:
-    exclude: [HISTORY]
 metadata:
   tier: execution
 ---

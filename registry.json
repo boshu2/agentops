@@ -952,7 +952,7 @@
         "has_skill_md": true,
         "name": "doc",
         "path": "skills/doc/",
-        "reference_count": 17,
+        "reference_count": 14,
         "tier": "product"
       },
       {
@@ -1020,7 +1020,7 @@
         "has_skill_md": true,
         "name": "implement",
         "path": "skills/implement/",
-        "reference_count": 5,
+        "reference_count": 4,
         "tier": "execution"
       },
       {
@@ -1112,7 +1112,7 @@
         "has_skill_md": true,
         "name": "plan",
         "path": "skills/plan/",
-        "reference_count": 4,
+        "reference_count": 3,
         "tier": "execution"
       },
       {
@@ -1123,11 +1123,11 @@
         "effects": [
           "write_requested_postmortem_report"
         ],
-        "has_references": true,
+        "has_references": false,
         "has_skill_md": true,
         "name": "postmortem",
         "path": "skills/postmortem/",
-        "reference_count": 1,
+        "reference_count": 0,
         "tier": "judgment"
       },
       {
@@ -1142,7 +1142,7 @@
         "has_skill_md": true,
         "name": "premortem",
         "path": "skills/premortem/",
-        "reference_count": 2,
+        "reference_count": 1,
         "tier": "judgment"
       },
       {
@@ -1157,7 +1157,7 @@
         "has_skill_md": true,
         "name": "refactor",
         "path": "skills/refactor/",
-        "reference_count": 2,
+        "reference_count": 1,
         "tier": "execution"
       },
       {
@@ -1246,7 +1246,7 @@
         "has_skill_md": true,
         "name": "security",
         "path": "skills/security/",
-        "reference_count": 7,
+        "reference_count": 5,
         "tier": "product"
       },
       {
@@ -1305,7 +1305,7 @@
         "has_skill_md": true,
         "name": "test",
         "path": "skills/test/",
-        "reference_count": 11,
+        "reference_count": 10,
         "tier": "execution"
       },
       {

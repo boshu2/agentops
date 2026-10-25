@@ -38,9 +38,16 @@ the skill implicitly.
 - Keep host-only tool names and installed-skill paths (`~/.claude/...`,
   `~/.codex/...`) out of the shared flow. When a step differs by host, say which
   host the sentence is for.
+- Name a bundled file by a literal `<skill-dir>` that SKILL.md defines once
+  before its first command, and run scripts through their interpreter,
+  for example `bash "<skill-dir>/scripts/x.sh"`. Not `${CLAUDE_SKILL_DIR}`:
+  Codex and reference files leave it unexpanded, so the command runs
+  `/scripts/x.sh`.
 - A skill that documents several runtimes names each one plainly.
 
 ## Check
+
+AgentOps source checkout only, from the repository root:
 
 ```bash
 bash scripts/validate-codex-api-conformance.sh

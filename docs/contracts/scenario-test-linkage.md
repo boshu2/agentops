@@ -100,5 +100,6 @@ gated on changes to `skills/**`, `**/*.sh`, or `.github/**`.
 | ~~`skills/goals/references/goals.feature`~~ (stale row: the feature file was already absent from the tree before 2026-07-29; the skill is now `fitness`) | `tests/e2e/goals-measure-scenarios.sh`, `goals-trace-chain.sh` still execute against the `ao goals` CLI |
 | ~~`skills/scenario/references/scenario.feature`~~ (removed: `scenario` folded into `eval-outcomes`, 2026-06-12) | `tests/e2e/goals-scenarios-link.sh` |
 
-The remaining 68 files are allowlisted in `scripts/.scenario-linkage-allow` with
-the standing goal to drain the list as skills gain executing tests.
+As of age-pv2j.37 (2026-10-25) the allowlist is empty: each feature file links
+to an executing test. A new documentation-only file needs a tracking bead before
+it is listed.

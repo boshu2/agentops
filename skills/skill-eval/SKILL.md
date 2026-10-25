@@ -88,8 +88,8 @@ and its native results own the measurements.
 
 | Caller decision | Measurement | What it can establish |
 |---|---|---|
-| Does a natural request load this skill? | When Claude is explicitly authorized, `claude plugin eval --ablation none --no-publish` with a `tool_used: Skill` grader (the AgentOps `evals/plugin-eval/routing` suite). The [routing probes](../../evals/routing-probes/README.md) are weaker: v1 needs an opt-in telemetry hook, v2 grades `ao skills find` ranking, not loading | Natural-request loading on the observed host/catalog; not whether loading helps |
-| Does supplied skill text change a specific observable act? | Behavioral probe with the available authorized Codex adapter in `scripts/probe-skill.sh` | Behavior change under forced source injection; not routing, correct code or productivity |
+| Does a natural request load this skill? | When Claude is explicitly authorized, `claude plugin eval --ablation none --no-publish` with a `tool_used: Skill` grader (the AgentOps `evals/plugin-eval/routing` suite). The [routing probes](https://github.com/boshu2/agentops/blob/main/evals/routing-probes/README.md) (AgentOps source checkout only) are weaker: v1 needs an opt-in telemetry hook, v2 grades `ao skills find` ranking, not loading | Natural-request loading on the observed host/catalog; not whether loading helps |
+| Does supplied skill text change a specific observable act? | Behavioral probe with the available authorized Codex adapter in the AgentOps source checkout's `scripts/probe-skill.sh` | Behavior change under forced source injection; not routing, correct code or productivity |
 | Does the installed plugin change graded answers end to end? | `claude plugin eval` against its no-plugin baseline, only when explicitly authorized and available | Routing and content together on the selected cases |
 | Does this package or version improve engineering outcomes at acceptable cost? | Repository-selected controlled coding comparison, such as `evals/skills-rpi` | Endpoint outcomes and cost on selected tasks; independent completion only when required exact-subject evidence exists |
 | Does a qualified memory update help later work? | Separate frozen-versus-updated memory transfer test | Narrow later-task reuse evidence with skill and runtime held fixed |
@@ -134,19 +134,21 @@ to claude.ai and writes results under the plugin's eval directory: pass
 `--no-publish`, and point `--output-dir`, `--json` and `--report` at
 caller-selected storage. Confirm flags with `claude plugin eval --help`. In an
 AgentOps checkout, run the suites as
-[`evals/plugin-eval/README.md`](../../evals/plugin-eval/README.md) shows and
+[`evals/plugin-eval/README.md`](https://github.com/boshu2/agentops/blob/main/evals/plugin-eval/README.md) shows and
 grade with its `grade.py`: the default Haiku judge failed every criterion of
 correct `validate` responses there.
 
-`scripts/probe-skill.sh` runs small behavioral probes through the Codex adapter
+In an AgentOps source checkout, `scripts/probe-skill.sh` runs small behavioral
+probes through the Codex adapter
 (`scripts/lib/codex-exec.sh`), only when Codex and its isolation support are
 available and authorized. It injects the exact SKILL.md bytes (or a declared
 prelude), so it measures the text's effect on one act, not routing or an
 installed package. Neither runner's result substitutes for the other. Commands,
 replay limits and headroom classes are in [behavioral probes](references/behavioral-probes.md).
 
-The probe runner, `evals/`, the probe gates and every link that leaves the
-`skills/` tree exist only in an AgentOps source checkout. Elsewhere, use the
+The probe runner, `evals/`, the probe gates and every github.com/boshu2/agentops
+link in this skill are AgentOps source checkout only; installed skills do not
+ship them. Elsewhere, use the
 caller's authorized existing runner if it supports the question and record its
 identity and limits; with none, report the measurement unsupported rather than
 installing or starting a replacement.
@@ -218,8 +220,8 @@ none counts as demonstrated skill benefit.
 
 ## References
 
-- Behavioral runner and conventions: [`scripts/probe-skill.sh`](../../scripts/probe-skill.sh), [`evals/skill-probes/README.md`](../../evals/skill-probes/README.md), [seeding](references/seeding.md).
-- Plugin A/B suites and grader: [`evals/plugin-eval/README.md`](../../evals/plugin-eval/README.md).
-- Behavioral verdicts and non-verdict incidents: [`LEDGER.md`](../../evals/skill-probes/LEDGER.md), [`RUNBOOK.md`](../../evals/skill-probes/RUNBOOK.md).
-- Existing coverage and headroom gates: [`check-skill-probe-coverage.sh`](../../scripts/check-skill-probe-coverage.sh), [`check-skill-probe-headroom.sh`](../../scripts/check-skill-probe-headroom.sh).
-- Evidence and overclaim limits: ADR-0011, ADR-0016 and [`RPI traversal`](../../docs/architecture/rpi-traversal.md).
+- Behavioral runner and conventions: [`scripts/probe-skill.sh`](https://github.com/boshu2/agentops/blob/main/scripts/probe-skill.sh), [`evals/skill-probes/README.md`](https://github.com/boshu2/agentops/blob/main/evals/skill-probes/README.md), [seeding](references/seeding.md).
+- Plugin A/B suites and grader: [`evals/plugin-eval/README.md`](https://github.com/boshu2/agentops/blob/main/evals/plugin-eval/README.md).
+- Behavioral verdicts and non-verdict incidents: [`LEDGER.md`](https://github.com/boshu2/agentops/blob/main/evals/skill-probes/LEDGER.md), [`RUNBOOK.md`](https://github.com/boshu2/agentops/blob/main/evals/skill-probes/RUNBOOK.md).
+- Existing coverage and headroom gates: [`check-skill-probe-coverage.sh`](https://github.com/boshu2/agentops/blob/main/scripts/check-skill-probe-coverage.sh), [`check-skill-probe-headroom.sh`](https://github.com/boshu2/agentops/blob/main/scripts/check-skill-probe-headroom.sh).
+- Evidence and overclaim limits: ADR-0011, ADR-0016 and [`RPI traversal`](https://github.com/boshu2/agentops/blob/main/docs/architecture/rpi-traversal.md).

@@ -37,7 +37,7 @@
       "timeout_seconds": 120,
       "inputs": {
         "cwd": "../..",
-        "shell": "bash skills/security/scripts/validate.sh && bash skills-codex/security/scripts/validate.sh && bash tests/scripts/test-security-suite-redteam.sh"
+        "shell": "bash skills/security/scripts/validate.sh && bash tests/scripts/test-security-suite-redteam.sh"
       },
       "expectations": [
         {"type": "exit_code", "value": 0},

@@ -13,13 +13,6 @@ produces:
 context_rel: []
 skill_api_version: 1
 user-invocable: true
-context:
-  window: fork
-  intent:
-    mode: task
-  sections:
-    exclude:
-    - HISTORY
 metadata:
   capabilities: [refactor]
   effects: [modify_source_files]
@@ -139,5 +132,4 @@ because reverting it now costs more than living with it.
 ## References
 
 - [Behavior-preserving simplification](references/behavior-preserving-simplification.md) — refactoring catalog and per-pattern safety checks
-- [Behavior scenarios](references/refactor.feature) — documentation only; no test runs them
 - [Upstream capability reference](https://github.com/mattpocock/skills/blob/main/skills/engineering/codebase-design/SKILL.md) — Matt Pocock; original AgentOps adaptation.
