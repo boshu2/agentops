@@ -69,7 +69,7 @@ the new skill or file it wants:
 |---|---|
 | Create a source package | `scripts/build.sh from-scratch <slug>`, `from-template <slug> --like <existing-slug>` or `absorb-external <slug> --from <path>` |
 | Check package structure | `scripts/heal.sh --check [--strict] skills/<slug>` |
-| Repair owned projections | `scripts/heal.sh --fix skills/<slug>` |
+| Repair the skill mesh | `scripts/heal.sh --fix skills/<slug>` |
 | Inspect audit evidence | `scripts/audit.sh [--profile canonical\|portable\|external-observation] [--json <path>] skills/<slug>` |
 | Merge overlapping skills | [Consolidate](#consolidate) |
 | Export to another platform | [Conversion](#conversion) |
@@ -109,10 +109,12 @@ it decides when text stays unchanged, when a list stays explicit, and what to
 check before cutting a line.
 
 Edit `skills/<slug>/` as the source owner. Check the completed source with
-`scripts/heal.sh --check --strict skills/<slug>`, then regenerate its owned
-projections with `scripts/heal.sh --fix skills/<slug>`, or all of them with the
-repository's `scripts/regen-all.sh`. Inspect the generated diff; hand-edit no
-projection. A clean check says nothing about behavior: when an edit changes
+`scripts/heal.sh --check --strict skills/<slug>`. In an AgentOps source
+checkout, run `bash scripts/regen-all.sh` from the repository root to regenerate
+every owned projection, including `plugin/skills/`. Running
+`scripts/heal.sh --fix skills/<slug>` regenerates only the skill mesh and leaves
+plugin copies unchanged. Inspect the generated diff; hand-edit no projection.
+A clean check says nothing about behavior: when an edit changes
 when the skill routes, what it asks, when it stops, what it commits or
 publishes or how it degrades, or cuts a line that recorded provenance protects,
 report that behavior as unmeasured unless a [Skill Eval](../skill-eval/SKILL.md)

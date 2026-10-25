@@ -111,9 +111,12 @@ Number each choice Q<n> when first listed. As an item changes, Open and
 Deferred included, append its line to the intent source (root epic, issue or
 conversation) if the request or existing authorization covers editing it (the
 conversation always does); otherwise show it for the caller to append. The
-last line per Q<n> or term is current. A Navigate checkpoint in the epic notes
-or open child build beads mean a goal runs; if unsure, ask. While one runs,
-append no changed criterion or term; list it under Open in the conversation
+last line per Q<n> or term is current. Before treating acceptance as frozen by
+a running goal, confirm its current state from the native goal runtime or the
+caller. A saved Navigate checkpoint or open child build beads alone do not
+establish a running goal. If that state is unknown and matters to the proposed
+update, ask. While a goal runs, append no changed criterion or term; list it
+under Open in the conversation
 as an acceptance change for the caller to hold and re-craft. In BD:
 
 ```bash
