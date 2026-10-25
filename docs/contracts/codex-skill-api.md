@@ -239,7 +239,7 @@ word a step.
 | `Grep` tool | `rg` | "search for" |
 | `Glob` tool | `glob_file_search` | "find files matching" |
 | `Agent(subagent_type="Explore")` | Explorer agent role | "use a read-only helper" |
-| `Skill(skill="name")` or `/name` | `$name` | the skill's name or a link to it |
+| `Skill(skill="<name>")` or `/<name>` | `$<name>` | the skill's name or a link to it |
 | `TaskCreate` / `TaskList` / `TaskUpdate` | No equivalent (`todo_write`/`update_plan` not available, empirically verified) | native work tracking, named generically |
 | `TeamCreate` / `TeamDelete` | No equivalent | omit |
 | `SendMessage` | `send_input` for brief follow-up only | "send a follow-up" |
