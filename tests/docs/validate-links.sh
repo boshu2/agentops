@@ -17,6 +17,8 @@ declare -A generated_paths
 generated_paths["$REPO_ROOT/docs/cli/index.md"]=1
 generated_paths["$REPO_ROOT/docs/cli/commands.md"]=1
 generated_paths["$REPO_ROOT/docs/cli/hooks.md"]=1
+# Changelog page rendered from the root CHANGELOG.md (docs/_hooks/gen_changelog.py)
+generated_paths["$REPO_ROOT/docs/CHANGELOG.md"]=1
 # Skill catalog + index (from docs/_hooks/gen_skill_pages.py)
 generated_paths["$REPO_ROOT/docs/skills/index.md"]=1
 generated_paths["$REPO_ROOT/docs/skills/catalog.md"]=1

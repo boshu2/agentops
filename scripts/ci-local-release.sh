@@ -61,7 +61,7 @@ Options:
                        eval/HIL/digital-twin/readiness). Local-env checks (worktree-disposition,
                        MemRL) are advisory, not failures. Run the full gate before the actual tag.
   --fast               Skip heavy checks (race tests, security gate, SBOM, hook integration)
-  --release-version V  Record artifacts against the target release version (for release audits)
+  --release-version V  Record artifacts against the target release version
   --readiness-mode M   official|advisory|fast (default: official only with --release-version)
   --hil-target SPEC    Add HIL target evidence; repeatable (local:<name>:<cmd> or ssh:<name>:<host>:<cmd>)
   --hil-waiver TEXT    Record an explicit HIL waiver for release readiness
@@ -336,7 +336,7 @@ run_markdownlint() {
     while IFS= read -r file; do
         [[ -f "$file" ]] || continue
         case "$file" in
-            docs/audits/*|docs/plans/*|docs/releases/*|docs/learnings/*|docs/evidence/*|docs/decisions/*|docs/handoffs/*)
+            docs/audits/*|docs/releases/*|docs/learnings/*|docs/decisions/*|docs/handoffs/*)
                 continue
                 ;;
         esac

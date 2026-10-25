@@ -25,7 +25,7 @@ docs_scope_live_files() {
   local root="${DOCS_ROOT:-.}"
   ( cd "$root" && find docs -name '*.md' \
       -not -path 'docs/adr/*' \
-      -not -path 'docs/audits/*' -not -path 'docs/plans/*' -not -path 'docs/brainstorms/*' \
+      -not -path 'docs/audits/*' -not -path 'docs/brainstorms/*' \
       -not -path 'docs/council*/*' -not -path 'docs/handoffs/*' -not -path 'docs/learnings/*' \
       -not -path 'docs/evidence/*' -not -path 'docs/releases/*' -not -path 'docs/convergence/*' \
       -not -path 'docs/rescope/*' -not -path 'docs/reduction/*' -not -path 'docs/migration-trackers/*' \

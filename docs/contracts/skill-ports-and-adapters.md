@@ -168,9 +168,9 @@ Core membership comes from the hard dependency graph rather than a
 `option_shaping` seam rather than `experiment_select`.
 
 The overhaul will encode system placement as generated metadata rather than a
-second handwritten inventory. Until that encoding lands, the canonical
-placement matrix lives in the
-[active overhaul plan](../plans/2026-07-24-skill-system-overhaul.md), while existing
+second handwritten inventory. The repository keeps no handwritten placement
+matrix in the meantime (the last draft is in the historical
+[2026-07-24 overhaul plan](https://github.com/boshu2/agentops/blob/7de636720/docs/plans/2026-07-24-skill-system-overhaul.md)), and existing
 `dependencies`, `context_rel`, `consumes`, and `produces` retain their current
 meanings:
 

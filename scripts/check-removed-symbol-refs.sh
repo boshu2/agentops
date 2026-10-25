@@ -83,7 +83,6 @@ fi
 PATHS=(
     "."
     ":(exclude)CHANGELOG.md"
-    ":(exclude)docs/CHANGELOG.md"
     ":(exclude)docs/releases/**"
     ":(exclude).agents/**"
     ":(exclude)worktrees/**"
