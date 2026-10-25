@@ -19,7 +19,10 @@ on:
   # The pull-request `summary` check gates merges to main. A v* tag run is the
   # exact-SHA release verdict that release.yml waits for before publishing. A
   # manual (workflow_dispatch) run is a full verdict request and never path-filters.
+  # A push to main (including a direct push) is validated against its previous
+  # commit through the same `changes` path filter, so unaffected lanes skip.
   push:
+    branches: [main]
     tags:
       - 'v*'
   workflow_dispatch:

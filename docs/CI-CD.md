@@ -29,7 +29,7 @@ pull request, merge queue, or another delivery process.
 
 | Workflow | Purpose |
 |---|---|
-| `.github/workflows/validate.yml` | Pull-request merge gate (`summary`) and exact-SHA release prerequisite |
+| `.github/workflows/validate.yml` | Pull-request merge gate (`summary`), path-filtered push-to-main check, and exact-SHA release prerequisite |
 | `.github/workflows/release.yml` | Repository-owned tagged release publication |
 | `.github/workflows/nightly.yml` | Scheduled deterministic regression and security coverage |
 

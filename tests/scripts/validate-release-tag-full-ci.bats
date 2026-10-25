@@ -142,7 +142,7 @@ run_summary() {
     [[ "$output" == *"- correctness"* ]]
 }
 
-@test "changes forces a full run on manual dispatch and not on pull requests" {
+@test "changes forces a full run on manual dispatch and not on pull requests or main pushes" {
     extract_run changes "Detect release tag push or merge-queue (force full run)" "$BATS_TEST_TMPDIR/detect.sh"
 
     : > "$BATS_TEST_TMPDIR/dispatch.out"
@@ -158,9 +158,16 @@ run_summary() {
     [ "$status" -eq 0 ]
     run grep -Fx "release=false" "$BATS_TEST_TMPDIR/pr.out"
     [ "$status" -eq 0 ]
+
+    : > "$BATS_TEST_TMPDIR/main.out"
+    run env GITHUB_REF=refs/heads/main GITHUB_EVENT_NAME=push \
+        GITHUB_OUTPUT="$BATS_TEST_TMPDIR/main.out" bash -e "$BATS_TEST_TMPDIR/detect.sh"
+    [ "$status" -eq 0 ]
+    run grep -Fx "release=false" "$BATS_TEST_TMPDIR/main.out"
+    [ "$status" -eq 0 ]
 }
 
-@test "validate.yml keeps tag-only pushes, the summary needs and exposes the full flag" {
+@test "validate.yml runs on main and tag pushes, the summary needs and exposes the full flag" {
     run python3 -c '
 import sys
 
@@ -171,7 +178,7 @@ with open(sys.argv[1], encoding="utf-8") as handle:
 workflow = yaml.safe_load(text)
 # PyYAML (YAML 1.1) reads the bare `on` key as boolean True.
 triggers = workflow.get("on", workflow.get(True))
-assert triggers["push"] == {"tags": ["v*"]}, triggers["push"]
+assert triggers["push"] == {"branches": ["main"], "tags": ["v*"]}, triggers["push"]
 jobs = workflow["jobs"]
 assert jobs["summary"]["needs"] == ["changes", "go-gate-shadow", "correctness", "security"], jobs["summary"]["needs"]
 assert jobs["changes"]["outputs"]["full"] == "${{ steps.release.outputs.release }}", jobs["changes"]["outputs"]
