@@ -19,11 +19,6 @@
 # do NOT edit those to burn them down.
 #
 # Comments (#...) and blank lines are ignored. Keep this list sorted.
-docs/contracts/codex-skill-api.md
-docs/domain-practice-packets.md
-docs/evals/age-9a9-corpus-free-sandbox-isolation.md
-docs/profiles/COMPARISON.md
-docs/runbooks/path-rationalization.md
-docs/standards/olympus-engineering-standards.md
-docs/standards/README.md
-docs/templates/command.template.md
+docs/contracts/codex-skill-api.md  # `/skills` is Codex's built-in skills menu, not an AgentOps skill
+docs/evals/age-9a9-corpus-free-sandbox-isolation.md  # `/tmp` is a filesystem path; dated eval record
+docs/runbooks/path-rationalization.md  # `/bin` is a filesystem path in a PATH allowlist
