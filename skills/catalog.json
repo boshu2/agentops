@@ -21,6 +21,10 @@
         {
           "kind": "customer-of",
           "with": "claude-exec"
+        },
+        {
+          "kind": "customer-of",
+          "with": "agy-native"
         }
       ],
       "dependencies": [],
@@ -300,7 +304,7 @@
         "documentation",
         "session-handoff"
       ],
-      "references_count": 19,
+      "references_count": 17,
       "tier": "product",
       "user_invocable": true
     },
@@ -329,7 +333,7 @@
       "produces": [
         "domain-language-guidance"
       ],
-      "references_count": 2,
+      "references_count": 3,
       "tier": "knowledge",
       "user_invocable": true
     },
@@ -651,7 +655,7 @@
       "description": "Explain why a change, incident or session went as it did, separating proven causes from coincidence. Use when: asked for a postmortem, retro or root-cause write-up.",
       "disposition": "keep_strategy",
       "effects": [
-        "write_postmortem_report"
+        "write_requested_postmortem_report"
       ],
       "graph_root": false,
       "hexagonal_role": "domain",
@@ -661,7 +665,7 @@
         "lean-startup"
       ],
       "produces": [
-        "postmortem-report.md"
+        "postmortem-analysis"
       ],
       "references_count": 1,
       "tier": "judgment",
@@ -867,14 +871,13 @@
       "description": "Drive one accepted change through implementation and checks to done, with one fresh review only where a mistake is costly. Use when: asked to run or orchestrate work through RPI.",
       "disposition": "keep_strategy",
       "effects": [
-        "dispatch_core_phases"
+        "modify_authorized_subject",
+        "dispatch_conditional_validator"
       ],
       "graph_root": true,
       "hexagonal_role": "domain",
       "name": "rpi",
       "practices": [
-        "bdd-gherkin",
-        "tdd",
         "design-by-contract"
       ],
       "produces": [
@@ -955,16 +958,17 @@
         "converted-skill",
         "operationalization-proposal"
       ],
-      "references_count": 11,
+      "references_count": 10,
       "tier": "meta",
       "user_invocable": true
     },
     {
       "canonical_status": "canonical",
       "capabilities": [
-        "author_seeded_probe",
-        "run_probe_tier",
-        "evaluate_skill_decision"
+        "evaluate_skill_decision",
+        "select_skill_measurement",
+        "read_skill_ab_results",
+        "author_seeded_probe"
       ],
       "consumes": [
         "skill-source-package"
@@ -980,7 +984,7 @@
       "disposition": "keep_specialist",
       "effects": [
         "write_probe_package",
-        "dispatch_probe_producer"
+        "dispatch_authorized_trials"
       ],
       "graph_root": false,
       "hexagonal_role": "supporting",
@@ -990,8 +994,8 @@
         "ab-testing"
       ],
       "produces": [
-        "probe-package",
-        "probe-result.v1"
+        "skill-maintenance-recommendation",
+        "probe-package"
       ],
       "references_count": 4,
       "tier": "meta",
@@ -1026,7 +1030,7 @@
       "produces": [
         "test-evidence"
       ],
-      "references_count": 12,
+      "references_count": 11,
       "tier": "execution",
       "user_invocable": true
     },
@@ -1075,18 +1079,17 @@
     {
       "canonical_status": "canonical",
       "capabilities": [
-        "dispatch_explicit_packet",
         "observe_gc_runtime",
         "inspect_pack_registries",
         "drive_mayor_door"
       ],
       "consumes": [
-        "explicit-packets"
+        "accepted-intent"
       ],
       "context_rel": [
         {
-          "kind": "partnership",
-          "with": "agent-native"
+          "kind": "supplier-to",
+          "with": "orchestrate"
         }
       ],
       "dependencies": [],
@@ -1106,7 +1109,7 @@
       "produces": [
         "gas-city-runtime-evidence"
       ],
-      "references_count": 1,
+      "references_count": 2,
       "tier": "execution",
       "user_invocable": true
     },

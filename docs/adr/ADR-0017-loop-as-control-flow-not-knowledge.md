@@ -28,7 +28,11 @@ author-distinct final validation with all acceptance and an empty
 failure was review cost exceeding the cost of the work: a reviewer asked to
 find problems always finds one, so mandatory review plus re-validation after
 every repair could not converge. This amendment changes when review is owed;
-it claims no measured quality effect.
+it claims no measured quality effect. The loop defaults it sets (review only on
+the named triggers, one round, one helper per stall) are working assumptions
+about current models, not measured laws; propose revising or retiring one as an
+owner-approved amendment when a measured run shows the same outcome without it
+or a model change removes or moves the failure it guards against.
 
 ## Active native-default amendment — 2026-09-10
 

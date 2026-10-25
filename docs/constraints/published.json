@@ -4,11 +4,11 @@
     {
       "id": "std-nosemgrep-qualified",
       "finding_id": "",
-      "title": "Qualified nosemgrep does not suppress \u2014 use a bare // nosemgrep",
+      "title": "Retired 2026-10-25: qualified nosemgrep does suppress; bare form also allowed",
       "source": "standards",
       "source_type": "go-convention",
       "detectability": "mechanical",
-      "status": "active",
+      "status": "retired",
       "compiled_at": "2026-06-22T00:00:00Z",
       "applies_to": {
         "path_globs": [
@@ -20,14 +20,14 @@
         "kind": "regex",
         "mode": "match",
         "pattern": "nosemgrep:",
-        "message": "qualified 'nosemgrep: <rule>' does NOT suppress semgrep \u2014 only a bare '// nosemgrep' does (go.md). Remove the ': <rule>'."
+        "message": "retired 2026-10-25: 'nosemgrep: <rule-id>' suppresses the named rule and a bare 'nosemgrep' suppresses every rule on the line (semgrep 1.168.0, verified with a local rule); the earlier claim that the qualified form does not suppress was false. Prefer the qualified form (go.md)."
       },
       "file": ""
     },
     {
       "id": "std-shellcheck-disable-inline",
       "finding_id": "",
-      "title": "shellcheck disable inline '-- comment' is invalid \u2014 put it on a separate line",
+      "title": "shellcheck disable inline '-- comment' is invalid — put it on a separate line",
       "source": "standards",
       "source_type": "shell-convention",
       "detectability": "mechanical",
@@ -42,7 +42,7 @@
         "kind": "regex",
         "mode": "match",
         "pattern": "shellcheck disable=[A-Z0-9, ]+[ \\t]+--",
-        "message": "a 'shellcheck disable=<codes> -- comment' INLINE is invalid \u2014 the '--' comment must be on a SEPARATE line (go.md/shellcheck)."
+        "message": "a 'shellcheck disable=<codes> -- comment' INLINE is invalid — the '--' comment must be on a SEPARATE line (go.md/shellcheck)."
       },
       "file": ""
     }

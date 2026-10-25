@@ -1,4 +1,5 @@
-# Executable spec for Doc's OSS pack — OSS documentation scaffold/audit (BC4 Factory).
+# Documentation-only scenarios for Doc's OSS pack (listed in scripts/.scenario-linkage-allow;
+# no test executes them) — OSS documentation scaffold/audit.
 # The OSS pack prepares a repo for open-source release: it AUDITS which standard docs exist/are
 # missing (reading the repo), SCAFFOLDS the missing ones without clobbering, and tailors content
 # to the project type. Hexagon: supporting (doc factory); consumes repo-context (audit reads the repo); produces

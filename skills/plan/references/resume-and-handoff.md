@@ -54,20 +54,19 @@ tool catalogs and retrieved inputs.
 
 ## Code plus a retrospective
 
-When the caller requests both, distinguish code acceptance, delivery facts and
-the later analysis in the same intent. Code judgment consumes acceptance and
-checks; the retrospective consumes the known outcome and judgment. Keep both
-deliverables required for the overall goal without making either depend on
-its own conclusion.
+When the caller requests both, keep code acceptance and the later analysis
+separate in the same intent: code judgment uses acceptance and checks, the
+retrospective uses the known outcome, and both stay required.
 
 ## Exact intent identity
 
 Use runtime-derived source identity and digest. If conversation intent needs
-an exact snapshot, the existing command
-`ao provenance snapshot-intent --source - --evidence-root <explicit-root>`
-writes it to caller-selected protected external non-Git storage. Missing
-routing permits neither a workspace fallback nor a second planning artifact.
-Preserve legacy proof.
+an exact snapshot, the `ao` CLI (not shipped with the plugin) writes it to
+caller-selected protected external non-Git storage:
+`ao provenance snapshot-intent --source - --evidence-root <explicit-root>`.
+Without `ao` or a routed root, say that no exact snapshot was taken and keep
+the intent in the conversation or tracker; never write a workspace copy or a
+second planning artifact. Preserve legacy proof.
 
 ## Sources
 

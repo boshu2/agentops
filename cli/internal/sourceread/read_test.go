@@ -79,7 +79,7 @@ func newFixture(t *testing.T, content []byte) *fixture {
 		t.Setenv("AGENTOPS_CONTEXT_"+k, "")
 	}
 	fact, _ := json.Marshal(config.ContextFact{Type: "context.route.v1", FactID: "route", Route: &r})
-	native := &nativeFixture{native: config.NativeContext{BDVersion: "1.2.2", SchemaVersion: 1, Backend: "dolt", ProjectID: "project", BeadsDir: source}, comments: []config.AnchorComment{{ID: "1", IssueID: "anchor", Text: string(fact)}}}
+	native := &nativeFixture{native: config.NativeContext{BDVersion: "1.3.1", SchemaVersion: 1, Backend: "dolt", ProjectID: "project", BeadsDir: source}, comments: []config.AnchorComment{{ID: "1", IssueID: "anchor", Text: string(fact)}}}
 	f := &fixture{t: t, root: root, route: r, policy: p, native: native, service: Service{Gateway: native}, options: Options{File: file, StartByte: 0, MaxBytes: 16, Context: config.ContextRequest{SourceID: source, ProjectID: "project", OwnerScope: "owner", TaskRef: "task", ModelRef: "model", DestinationRef: "destination", ConsumerRoot: consumer, NativeDirectory: consumer, Overrides: config.ContextConfig{AccessPolicyRef: r.AccessPolicyRef}}}}
 	f.savePolicy()
 	return f

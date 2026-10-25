@@ -7,7 +7,9 @@ complete candidate.
 ## Core contract checks
 
 ```bash
-python3 -m unittest discover -s skills/validate/tests
+python3 -m unittest discover -s skills/validate/tests -p 'test_validate.py'
+bash scripts/check-verdict-contract-corpus.sh
+AO_BIN=cli/bin/ao python3 -m unittest discover -s skills/validate/tests -p 'test_evidence_cli.py'  # after cd cli && make build
 ./scripts/check-cathedral-cut-conformance.py
 python3 scripts/check-skill-mesh.py
 cd cli && go test ./...

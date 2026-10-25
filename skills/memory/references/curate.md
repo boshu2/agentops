@@ -1,23 +1,24 @@
 # Curate / qualify / retire
 
 Maintain caller-selected reviewed Markdown topic pages in project `.context/`
-or an external bundle. BD remains
-the work/status/handoff owner, Git the content-history owner, and native/CASS
-systems the episode owner. Existing docs, ADRs and code retain their declared
-authority. Link those owners; do not duplicate policy, build a second tracker
-or copy raw history. A small authored `README.md` topic map is a navigation aid,
-not a work/status index; keep it only as useful to the selected pages.
-This lean operation accepts public or already-cleared inputs only; it supplies
-no native isolation for restricted sources.
+or an external bundle under Memory's
+[one authority per fact](../SKILL.md#one-authority-per-fact) and
+[access rules](../SKILL.md#access-storage-and-honest-limits): link owners, do
+not duplicate policy, build a second tracker or copy raw history. A small
+authored `README.md` topic map is a navigation aid, not a work/status index;
+keep it only as useful to the selected pages.
 
-1. Find the existing topic page and inspect its current claims and review
-   evidence before editing. Reuse/update it instead of a lesson-per-session
-   file. If no relevant page exists and the caller selected a destination,
-   create one topic page only for a concrete reusable claim and consumer.
+1. Find the existing topic page and inspect its current claims before editing,
+   with any review verdict for them in a store the caller named; if there is
+   none, treat those claims as unreviewed. Reuse/update it instead of a
+   lesson-per-session file. If no relevant page exists and the caller selected
+   a destination, create one topic page only for a concrete reusable claim and
+   consumer.
    Do not scaffold empty directories, import private material or create a store
    automatically. Ordinary filesystem reads of cleared project pages need
    neither BD nor AO; native source operations retain their own requirements.
-2. Draft the smallest change in protected external non-Git staging. Each entry
+2. Draft the smallest change inline in your reply, or in storage outside Git
+   that the caller named; never in the repository before review. Each entry
    gives applicability, action, support, limits and invalidation. Cite exact
    source identities sufficient to inspect evidence without copying private
    material. Keep unrelated claims and useful rare constraints.
@@ -68,11 +69,10 @@ no native isolation for restricted sources.
    existing Git authority. Read back exact bytes and confirm that citations
    and withdrawal facts remain available. Do not commit/push unless authorized.
    If review, routing or permission is missing, return the supported gap with
-   the protected draft; do not invent an alternate memory destination. Project
-   placement does not move drafts or review proof into the checkout. The optional
-   `ao config context` route supports an explicitly bound canonical direct
-   `<consumer>/.context` or an external bundle; it requires native BD and retains
-   policy and identity bindings. A resolved route does not approve page admission.
+   the draft inline; do not invent an alternate memory destination. Project
+   placement does not move drafts or review proof into the checkout. A resolved
+   `ao config context` route ([Find / recall](recall.md)) does not approve page
+   admission.
 
 Ordinary Markdown is sufficient. If the caller selects the existing OKF profile,
 use [its profile](learn/okf-page-profile.md) and
@@ -88,6 +88,5 @@ create the file or point a checked-in file at an external bundle.
 
 Return the changed claim and why, its limits and exact review evidence, any
 reported regression, conflict or follow-up, or no-change. Curation can remove
-rules. It cannot alter earlier product verdicts or claim benefit until later
-task evidence shows helpful reuse. A page admitted for one owner/destination is
-not authorized for another.
+rules; it cannot alter earlier verdicts or claim benefit (Memory rule 5). A page
+admitted for one owner/destination is not authorized for another.

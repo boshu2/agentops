@@ -1,4 +1,5 @@
-# Executable spec for the refactor skill — one behavior-preserving transformation (supporting role).
+# Behavior scenarios for the refactor skill (documentation only: no test runs them, and
+# scripts/.scenario-linkage-allow lists this file) — one behavior-preserving transformation.
 # refactor applies ONE caller-selected structural transformation, runs the focused check plus the
 # smallest justified regression check, and reports the diff, commands, results, and behavior not
 # checked. It does not commit, revert, retry, validate, or route subsequent work — a red result is

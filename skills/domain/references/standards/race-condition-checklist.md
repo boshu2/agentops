@@ -48,7 +48,7 @@ Domain-specific checklist for concurrent, parallel, or multi-process code.
 
 ### Testing
 - [ ] Concurrent tests exist (multiple goroutines/threads hitting same code)
-- [ ] Race detector enabled in CI (`go test -race`, `PYTHONFAULTHANDLER=1`)
+- [ ] Race detector enabled in CI (`go test -race`)
 - [ ] Stress tests for hot paths (100+ concurrent operations)
 - [ ] Deterministic ordering tests (verify no output depends on scheduling)
 

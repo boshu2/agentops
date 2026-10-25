@@ -24,11 +24,12 @@ Flags override AGENTOPS_CONTEXT_* variables, then project and home configuration
 AGENTOPS_CONFIG selects only that file. No roots or policies have defaults.
 An existing schema_version 1 policy must bind the requested source, project,
 owner, task, model, destination and exact storage roots. This selects policy;
-it does not attest native access enforcement (T39).
+it does not attest native access enforcement.
 The bundle may be external or the canonical direct <consumer-root>/.context.
 Staging and evidence must remain outside Git and disjoint from consumer and bundle.
 Plain reading of selected cleared project Markdown needs neither BD nor AO.
-Native BD 1.2.2 must support context schema 1, show --json and direct comments --json.
+Native BD 1.x from 1.2.2 on (bd context --json bd_version) must serve context
+schema 1, show --json and direct comments --json; other versions fail closed.
 Missing, conflicting, malformed or incomplete inputs fail before any write.
 --recover reads context.route.v1 from the same independently selected anchor;
 it never creates replacement configuration, knowledge or work.`,

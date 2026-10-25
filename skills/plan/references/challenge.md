@@ -14,6 +14,8 @@ unknowns need observations, and caller choices need the caller.
    [model-dispatch](../../agent-native/references/model-dispatch.md) for actual
    authorization, same-family default, explicit cross-model selection and real
    remaining bounds. Method selection itself grants no dispatch authority.
+   Without it, do not stand in as your own challenger: mark the claim as
+   inference and return it with the check that would settle it.
 2. The challenger gives the strongest counterexample or contrary evidence,
    identifies the assumption it attacks, and names what would change its view.
    Unsupported possibilities remain hypotheses; seek a concrete defeating
@@ -52,5 +54,4 @@ required; a cheaper challenge cannot replace them.
 Challenge produces advisory evidence. Agreement is neither caller approval nor
 independent confirmation of correctness. It cannot issue acceptance, change
 work ownership, admit context, close work or replace fresh author-distinct
-Validate over exact content and unchanged acceptance. No general improvement
-in outcomes or resource use is claimed without comparable task evidence.
+Validate over exact content and unchanged acceptance.

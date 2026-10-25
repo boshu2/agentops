@@ -22,7 +22,6 @@ skills/doc/references/doc.feature
 skills/doc/references/oss-docs.feature
 skills/doc/references/readme.feature
 skills/postmortem/references/postmortem.feature
-skills/memory/references/learn/learn.feature
 skills/premortem/references/premortem.feature
 skills/refactor/references/refactor.feature
 skills/reverse-engineer/references/reverse-engineer.feature

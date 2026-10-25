@@ -104,10 +104,11 @@ relabelling a necessary finding as optional. Non-goals remain in accepted intent
 bounded proof in criterion reasoning, and residual risk in the report.
 
 Classify commands before running them. Mutating checks (regeneration, sync,
-formatting) run against a disposable copy or committed subject, never overwrite
-the judged working tree. The reviewer does not re-run checks the author ran on
-the exact subject or that CI will run; rerun a proof only for a risk-critical
-claim that has no receipt. Structure alone cannot prove behavior.
+formatting) run against a disposable copy (a fresh worktree or clone at the
+committed SHA), never overwrite the judged working tree. The reviewer does not
+re-run checks the author ran on the exact subject or that CI will run; rerun a
+proof only for a risk-critical claim that has no receipt. Structure alone cannot
+prove behavior.
 Changes to checks, fixtures, tolerances or specifications must satisfy original
 intent; weakening the oracle to get green is FAIL.
 

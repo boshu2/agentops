@@ -63,11 +63,14 @@ loading exactly, so the drop is not Claude Code drift.
   on Opus 5.5; it does not show they have none. `navigate` is the one clear
   harder-case gain (+0.40 [+0.05, +0.64]).
 - **Fixes were kept only when a rerun with the edited text met a bar set in
-  advance.** Six did (security, ergonomics, craft-goal's template, two for
-  navigate, one for agent-native) and shipped in
+  advance.** Five did (security, ergonomics, two for navigate, one for
+  agent-native) and shipped in
   [#1233](https://github.com/boshu2/agentops/pull/1233) and
-  [#1234](https://github.com/boshu2/agentops/pull/1234). Two did not (a
-  skill-builder wording change, a review fix) and were dropped. Two new
+  [#1234](https://github.com/boshu2/agentops/pull/1234). Craft-goal's
+  template correction (a decision bead is not an RPI) also shipped in
+  [#1233](https://github.com/boshu2/agentops/pull/1233) as a consistency fix
+  with no rerun. Two did not (a skill-builder wording change, a review fix)
+  and were dropped. Two new
   descriptions (triage, architecture) missed their adoption bar and were not
   shipped.
 - **Naming a skill works.** After #1235, `rpi`, `postmortem`, `interview` and
@@ -366,8 +369,8 @@ Check had shown no content gain.
 
 ## Decisions taken from these results
 
-- [#1233](https://github.com/boshu2/agentops/pull/1233): the security,
-  ergonomics and craft-goal fixes above.
+- [#1233](https://github.com/boshu2/agentops/pull/1233): the security and
+  ergonomics fixes above, and the unmeasured craft-goal template correction.
 - [#1234](https://github.com/boshu2/agentops/pull/1234): the navigate and
   agent-native fixes; cases for triage, architecture and ergonomics; the
   reworded criteria. The suite now covers every skill.

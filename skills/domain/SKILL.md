@@ -59,26 +59,21 @@ vocabulary or rule boundary and returns it to the existing intent.
    distinction would change behavior or ownership; a lookup needs no interview.
 6. **Update the owner; add no glossary by default.** When refinement is
    authorized, update the existing owner with the meaning, context and example.
-   Admit a term only when a newcomer to the context would need it defined and
-   it is a concept of its own, not a property of another entry or a general
-   programming word. Each entry stands alone: one sentence of meaning,
-   behavioral rules (lifecycle, ownership) only where they exist, and any
-   project term it relies on defined as well. Record behavior, not today's
-   values, dates, owners, status or links. Keep a useful alias from another
-   context as an explicit translation; list a synonym retired within this
-   context on the surviving entry as a word to avoid. Without an owner, return
-   the proposal in the caller's intent or conversation rather than creating a
-   new glossary file.
-7. **Propose a decision record only when it earns one.** When settling a
-   boundary or rename becomes a design decision, propose an ADR only if it is
-   costly to reverse, would puzzle a later reader without its context, and
-   chose between real alternatives for stated reasons. Missing any of the
-   three, the owner update and its example are enough. Use the repository's
-   decision-record format when it has one; otherwise propose a short title and
-   one to three sentences of context, choice and reason, adding status,
-   rejected options or consequences only when a later reader needs them. Keep
-   the vocabulary owner free of implementation detail; that belongs in the
-   decision or code.
+   Without an owner, return the proposal in the caller's intent or conversation
+   rather than creating a new glossary file. Admit a term only when a newcomer
+   needs it and it is a concept of its own, not a property of another entry or
+   a general programming word. An entry gives one sentence of meaning plus any
+   lifecycle or ownership rules, defines the project terms it uses, and records
+   behavior, not current values, dates, owners or status. Keep another
+   context's alias as a translation; mark a retired synonym on the surviving
+   entry as a word to avoid.
+7. **Propose a decision record only when it earns one.** When a boundary or
+   rename becomes a design decision, propose an ADR only if it is costly to
+   reverse, would puzzle a later reader without its context, and chose between
+   real alternatives for stated reasons; otherwise the owner update and its
+   example are enough. Use the repository's decision-record format, or a short
+   title and one to three sentences of context, choice and reason. Keep
+   implementation detail out of the vocabulary owner.
 
 Return vocabulary work in this shape, then stop once the next change can be
 named and judged consistently:
@@ -98,14 +93,9 @@ judgment. Keep the original term when a substitute would move responsibility.
 
 ### AgentOps terms
 
-When AgentOps is the subject, its owners remain
-`docs/contracts/ubiquitous-language.md` and, for responsibilities and ports,
-`docs/contracts/bounded-contexts.yaml`. Return their exact definitions and
-source paths. Do not apply AgentOps vocabulary to an unrelated caller domain.
-The operations layer, federated integration graph, semantic work-and-proof
-protocol and RPI traversal retain their distinct meanings in the live contract.
-Queue, claim, lease, close, land, release and delivery remain caller-system
-responsibilities. Vocabulary edits do not authorize those transitions.
+Only when AgentOps itself is the subject, load its owners from
+[AgentOps terms](references/agentops-terms.md). Do not apply AgentOps
+vocabulary to an unrelated caller domain.
 
 ## Standards lookup
 

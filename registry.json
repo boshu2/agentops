@@ -644,26 +644,35 @@
       "driven_by_skills": [
         "skill-eval"
       ],
-      "id": "skill:skill-eval:author_seeded_probe",
-      "name": "author_seeded_probe",
-      "path": "skills/skill-eval/SKILL.md",
-      "type": "skill"
-    },
-    {
-      "driven_by_skills": [
-        "skill-eval"
-      ],
-      "id": "skill:skill-eval:run_probe_tier",
-      "name": "run_probe_tier",
-      "path": "skills/skill-eval/SKILL.md",
-      "type": "skill"
-    },
-    {
-      "driven_by_skills": [
-        "skill-eval"
-      ],
       "id": "skill:skill-eval:evaluate_skill_decision",
       "name": "evaluate_skill_decision",
+      "path": "skills/skill-eval/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "skill-eval"
+      ],
+      "id": "skill:skill-eval:select_skill_measurement",
+      "name": "select_skill_measurement",
+      "path": "skills/skill-eval/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "skill-eval"
+      ],
+      "id": "skill:skill-eval:read_skill_ab_results",
+      "name": "read_skill_ab_results",
+      "path": "skills/skill-eval/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "skill-eval"
+      ],
+      "id": "skill:skill-eval:author_seeded_probe",
+      "name": "author_seeded_probe",
       "path": "skills/skill-eval/SKILL.md",
       "type": "skill"
     },
@@ -719,15 +728,6 @@
       "id": "skill:triage:reconcile_batch_by_id",
       "name": "reconcile_batch_by_id",
       "path": "skills/triage/SKILL.md",
-      "type": "skill"
-    },
-    {
-      "driven_by_skills": [
-        "using-gc"
-      ],
-      "id": "skill:using-gc:dispatch_explicit_packet",
-      "name": "dispatch_explicit_packet",
-      "path": "skills/using-gc/SKILL.md",
       "type": "skill"
     },
     {
@@ -952,7 +952,7 @@
         "has_skill_md": true,
         "name": "doc",
         "path": "skills/doc/",
-        "reference_count": 19,
+        "reference_count": 17,
         "tier": "product"
       },
       {
@@ -969,7 +969,7 @@
         "has_skill_md": true,
         "name": "domain",
         "path": "skills/domain/",
-        "reference_count": 2,
+        "reference_count": 3,
         "tier": "knowledge"
       },
       {
@@ -1121,7 +1121,7 @@
         ],
         "disposition": "keep_strategy",
         "effects": [
-          "write_postmortem_report"
+          "write_requested_postmortem_report"
         ],
         "has_references": true,
         "has_skill_md": true,
@@ -1224,7 +1224,8 @@
         ],
         "disposition": "keep_strategy",
         "effects": [
-          "dispatch_core_phases"
+          "modify_authorized_subject",
+          "dispatch_conditional_validator"
         ],
         "has_references": true,
         "has_skill_md": true,
@@ -1268,19 +1269,20 @@
         "has_skill_md": true,
         "name": "skill-builder",
         "path": "skills/skill-builder/",
-        "reference_count": 11,
+        "reference_count": 10,
         "tier": "meta"
       },
       {
         "capabilities": [
-          "author_seeded_probe",
-          "run_probe_tier",
-          "evaluate_skill_decision"
+          "evaluate_skill_decision",
+          "select_skill_measurement",
+          "read_skill_ab_results",
+          "author_seeded_probe"
         ],
         "disposition": "keep_specialist",
         "effects": [
           "write_probe_package",
-          "dispatch_probe_producer"
+          "dispatch_authorized_trials"
         ],
         "has_references": true,
         "has_skill_md": true,
@@ -1303,7 +1305,7 @@
         "has_skill_md": true,
         "name": "test",
         "path": "skills/test/",
-        "reference_count": 12,
+        "reference_count": 11,
         "tier": "execution"
       },
       {
@@ -1327,7 +1329,6 @@
       },
       {
         "capabilities": [
-          "dispatch_explicit_packet",
           "observe_gc_runtime",
           "inspect_pack_registries",
           "drive_mayor_door"
@@ -1341,7 +1342,7 @@
         "has_skill_md": true,
         "name": "using-gc",
         "path": "skills/using-gc/",
-        "reference_count": 1,
+        "reference_count": 2,
         "tier": "execution"
       },
       {

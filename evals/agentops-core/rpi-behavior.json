@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "id": "agentops-core.rpi-behavior",
-  "name": "AgentOps Lean RPI and Optional Adapter Canary",
-  "description": "Offline structural canary for the lean charter and optional finite repair adapter; native behavior needs task trials.",
+  "name": "AgentOps Lean RPI Canary",
+  "description": "Offline structural canary for the lean RPI charter; native behavior needs task trials.",
   "practices": [
     "llm-eval-harness",
     "agile-manifesto"

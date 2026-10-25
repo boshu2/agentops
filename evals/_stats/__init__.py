@@ -2,12 +2,13 @@
 
 Implements paired cluster-bootstrap with PCG64 RNG, deterministic
 bootstrap_seed derivation, percentile-method CIs, bootstrap_inputs_hash,
-power-derived n_required, and the 5-verdict decision tree per
-~/.agents/evals/SCHEMA.md §6.5.
+power-derived n_required, and the 5-verdict decision tree per §6.5 of
+the eval-substrate schema (an operator-local spec outside this repository,
+kept at ~/.agents/evals/SCHEMA.md).
 
 This package is the single source of truth for "Suite verdict computation."
-Both `ao eval suite verdict` (Go CLI) and `ao eval doctor` (Day-5 verifier)
-shell out to its CLI entrypoint to avoid two implementations diverging.
+Callers outside Python use its CLI entrypoint (cli.py) rather than a second
+implementation.
 """
 
 from .seed import derive_bootstrap_seed

@@ -26,7 +26,7 @@ state that produced it, not only at the line that changed. A test that calls
 the repaired function directly can go red on the local symptom while the
 reported chain still breaks. When no reachable interface can trigger that
 chain, do not write a shallower stand-in. Use the original reproduction as the
-before/after check, list the missing regression test under `unchecked`, and
+before/after check, list the missing regression test under `not_checked`, and
 report the missing seam as a structural finding for
 [Architecture](../../architecture/SKILL.md).
 
@@ -44,7 +44,7 @@ Name that green-while-red case, then show the check catches it: break the real
 path in a disposable copy and confirm the check goes red through the same
 invocation the protected run uses. A negative control that fails only in an
 easier context proves only that context. When the contexts cannot be matched,
-report the difference as a limit of the check under `unchecked`.
+report the difference as a limit of the check under `not_checked`.
 
 ## Output judged for meaning
 

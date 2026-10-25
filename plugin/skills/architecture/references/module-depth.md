@@ -6,22 +6,26 @@ skill root.
 
 ## Gathering evidence from history
 
-These reads are read-only. Pick a window that matches the pain (the last
-release, the last quarter) and report it with the result. Scope `<path>` to
-the area under suspicion when one is known.
+These reads are read-only. Pick a window that matches the pain and report it
+with the result: `<window>` is `--since='3 months ago'` for a period, or
+`<tag>..HEAD` for the last release (`--since` takes a date; given a tag it
+filters nothing). Scope `<path>` to the area under suspicion when one is known.
 
 ```bash
 # Churn: files changed most often in the window.
-git log --since=<window> --format= --name-only -- <path> | sort | uniq -c | sort -rn | head -20
+git log <window> --format= --name-only -- <path> | sort | uniq -c | sort -rn | head -20
 
 # Co-change: file pairs that land in the same commit (pairs seen 3+ times).
-git log --since=<window> --format='@%h' --name-only -- <path> \
+# The pathspec selects commits; --full-diff keeps every file they touched,
+# so partners outside <path> show up.
+git log <window> --full-diff --format='@%h' --name-only -- <path> \
   | awk 'function flush(){for(i in f)for(j in f)if(i<j)p[i" "j]++; delete f}
          /^@/{flush(); next} NF{f[$0]=1}
          END{flush(); for(k in p)if(p[k]>2)print p[k], k}' | sort -rn | head -20
 
-# Fix clusters: files touched by commits whose subject says fix.
-git log --since=<window> -i --grep='^fix' --format= --name-only -- <path> | sort | uniq -c | sort -rn | head -20
+# Fix clusters: files touched by commits whose subject starts with fix.
+git log <window> --format='@%s' --name-only -- <path> \
+  | awk '/^@/{fix = tolower($0) ~ /^@fix/; next} fix && NF' | sort | uniq -c | sort -rn | head -20
 ```
 
 Read the numbers as leads. Generated files, lockfiles, changelogs and mass

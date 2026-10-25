@@ -369,3 +369,31 @@ func TestShellExecBitsGateIsAdvisoryAndRoutesShellSurfaces(t *testing.T) {
 		}
 	}
 }
+
+func TestVerdictCorpusGateRoutesOnEveryLegItRuns(t *testing.T) {
+	check, ok := gates.Default.Get("contract.verdict-corpus")
+	if !ok {
+		t.Fatal("contract.verdict-corpus gate is not registered")
+	}
+	if !check.Blocking || !check.Tiers.Has(gates.Fast) {
+		t.Fatalf("contract.verdict-corpus must be blocking in the fast tier; blocking=%v tiers=%v", check.Blocking, check.Tiers)
+	}
+	// One path per leg check-verdict-contract-corpus.sh executes: the Python
+	// reference under skills/validate/tests, the Go reader and the evidence
+	// writer whose TestGoldenCorpus* tests it runs, and the shared corpus.
+	for _, want := range []string{
+		"skills/validate/tests/validate.py",
+		"skills/validate/tests/check_contract_corpus.py",
+		"cli/internal/verdictcheck/verdictcheck.go",
+		"cli/internal/evidence/store.go",
+		"tests/fixtures/verdict-contract/cases/pass.json",
+		"schemas/verdict.v2.schema.json",
+	} {
+		if !gates.PathMatchesAny(check.Match, want) {
+			t.Errorf("contract.verdict-corpus must route on %q; match globs = %v", want, check.Match)
+		}
+	}
+	if gates.PathMatchesAny(check.Match, "skills/validate/SKILL.md") {
+		t.Errorf("contract.verdict-corpus must not route on skill prose; match globs = %v", check.Match)
+	}
+}

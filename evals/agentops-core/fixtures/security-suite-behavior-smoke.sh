@@ -89,6 +89,71 @@ SH
   chmod +x "$path"
 }
 
+# Runs longer than one 0.2s network sample and opens no socket, so any
+# endpoint observed would come from other processes on the host.
+write_network_quiet_fixture() {
+  local path="$1"
+  cat >"$path" <<'SH'
+#!/usr/bin/env bash
+set -eu
+sleep 1
+if [ "${1:-}" = "help" ] || [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ] || [ "${2:-}" = "--help" ] || [ "${2:-}" = "-h" ] || [ "${2:-}" = "help" ]; then
+  cat <<'EOF_HELP'
+AgentOps fixture
+
+Usage: ao-fixture [command]
+
+Available Commands:
+  status      Show status
+
+Flags:
+  -h, --help  help for ao-fixture
+EOF_HELP
+  exit 0
+fi
+case "${1:-}" in
+  status) echo "status ok" ;;
+  *) echo "unknown"; exit 1 ;;
+esac
+SH
+  chmod +x "$path"
+}
+
+# Cobra grouped help: command groups under custom titles, then the footer.
+write_grouped_help_fixture() {
+  local path="$1"
+  cat >"$path" <<'SH'
+#!/usr/bin/env bash
+set -eu
+if [ "${1:-}" = "help" ] || [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ] || [ "${2:-}" = "--help" ] || [ "${2:-}" = "-h" ] || [ "${2:-}" = "help" ]; then
+  cat <<'EOF_HELP'
+AgentOps fixture
+
+Usage:
+  ao-fixture [command]
+
+Getting Started:
+  init        Create directories
+
+Core Commands:
+  status      Show status
+
+Flags:
+  -h, --help  help for ao-fixture
+
+Use "ao-fixture [command] --help" for more information about a command.
+EOF_HELP
+  exit 0
+fi
+case "${1:-}" in
+  init) echo "init ok" ;;
+  status) echo "status ok" ;;
+  *) echo "unknown"; exit 1 ;;
+esac
+SH
+  chmod +x "$path"
+}
+
 write_policy_fixture() {
   local path="$1"
   cat >"$path" <<'JSON'
@@ -198,8 +263,41 @@ JSON
     test -s "$TMP_ROOT/redteam/redteam/redteam-results.md"
     echo "security-suite-redteam-ok"
     ;;
+  network-quiet)
+    fixture="$TMP_ROOT/ao-fixture"
+    write_network_quiet_fixture "$fixture"
+    run_security_suite \
+      --binary "$fixture" \
+      --out-dir "$TMP_ROOT/out" \
+      --policy-file "$REPO_ROOT/skills/security/references/policy-example.json" \
+      --max-depth 1 \
+      --total-timeout 15 \
+      --per-cmd-timeout 3 \
+      --timeout 5
+    jq -e '.network_endpoints_observed == []' "$TMP_ROOT/out/dynamic/dynamic-analysis.json" >/dev/null
+    jq -e '[.findings[] | select(.code == "network_denylisted")] == []' "$TMP_ROOT/out/policy/policy-verdict.json" >/dev/null
+    echo "security-suite-network-quiet-ok"
+    ;;
+  grouped-help)
+    fixture="$TMP_ROOT/ao-fixture"
+    policy="$TMP_ROOT/policy.json"
+    write_grouped_help_fixture "$fixture"
+    write_policy_fixture "$policy"
+    run_security_suite \
+      --binary "$fixture" \
+      --out-dir "$TMP_ROOT/out" \
+      --policy-file "$policy" \
+      --fail-on-policy-fail \
+      --max-depth 1 \
+      --total-timeout 15 \
+      --per-cmd-timeout 2 \
+      --timeout 3
+    jq -e '.top_level_commands | index("status")' "$TMP_ROOT/out/contract/contract.json" >/dev/null
+    jq -e '.verdict == "PASS"' "$TMP_ROOT/out/policy/policy-verdict.json" >/dev/null
+    echo "security-suite-grouped-help-ok"
+    ;;
   *)
-    echo "usage: $0 policy-pass|policy-fail|baseline-removed|redteam-repo" >&2
+    echo "usage: $0 policy-pass|policy-fail|baseline-removed|redteam-repo|network-quiet|grouped-help" >&2
     exit 2
     ;;
 esac

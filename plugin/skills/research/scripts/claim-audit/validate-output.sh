@@ -11,6 +11,8 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 2
 fi
 
+# coverage is the per-item ledger: at least one row, and every confirmed or gap
+# row cites evidence. An unverifiable row may name what would settle it.
 jq -e '
   def text: type == "string" and length > 0;
   ((keys - ["schema_version","claim","findings","coverage"]) | length == 0)
@@ -24,15 +26,16 @@ jq -e '
         or .category == "incomplete-evidence" or .category == "changed-assumption")
       and (.statement | text)
       and (.evidence | type == "array" and length > 0 and all(.[]; text))))
-  and (if has("coverage") then
-        (.coverage
-          | type == "array"
-          and all(.[];
-            ((keys - ["goal","disposition","evidence"]) | length == 0)
-            and (.goal | text)
-            and (.disposition == "confirmed" or .disposition == "gap" or .disposition == "unverifiable")
-            and (.evidence | (. == null) or (type == "array" and all(.[]; text)))))
-      else true end)
+  and (.coverage
+    | type == "array" and length > 0
+    and all(.[];
+      . as $row
+      | ((keys - ["goal","disposition","evidence"]) | length == 0)
+      and ($row.goal | text)
+      and ($row.disposition == "confirmed" or $row.disposition == "gap" or $row.disposition == "unverifiable")
+      and (if $row.disposition == "unverifiable"
+           then ((has("evidence") | not) or ($row.evidence | type == "array" and all(.[]; text)))
+           else ($row.evidence | type == "array" and length > 0 and all(.[]; text)) end)))
 ' "$1" >/dev/null || {
   echo "invalid reality-check-report.v1 artifact: $1" >&2
   exit 1

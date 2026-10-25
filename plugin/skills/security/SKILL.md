@@ -67,9 +67,9 @@ Apply these to every review, scripted or manual. They are the rules most often s
    or inherited instead of verified is the **borrowed identity** failure mode
    and a finding.
 3. **Per-class coverage ledger.** Walk every applicable class in
-   [the OWASP checklist](references/owasp-checklist.md) (the attack pack for
-   prompt surfaces), plus fail-open and identity, and give each a result:
-   finding, clean, or not assessed. An unvisited class is a gap, never a clean.
+   [the class checklist](references/owasp-checklist.md), plus fail-open,
+   identity and any class the surface needs that the list lacks, and give each
+   a result: finding, clean, or not assessed. An unvisited class is a gap, never a clean.
    Chasing one lead to the exclusion of the taxonomy is the **first-scent
    fixation** failure mode.
 4. **Proven versus suspected.** A finding is proven only when you ran a
@@ -144,28 +144,12 @@ Each selected scan runs once per request; a rerun is a new caller decision.
   record each one that is absent as a coverage gap, and do the manual hunt.
 - **Redteam pack:** the bundled [attack pack](references/agentops-redteam-pack.json)
   targets AgentOps control surfaces. In another repository its cases fail with
-  "no files matched target globs"; that is a pack mismatch, not a finding.
-- Read [the suite runbook](references/security-suite-runbook.md) before binary,
-  policy, baseline, or redteam work.
-
-This is the canonical security runbook. Suite policy gating produces machine-consumable outputs, including `policy/policy-verdict.json` when a policy file is supplied.
-
-### Repository gate
-
-```bash
-scripts/security-gate.sh --mode quick   # changed scope
-scripts/security-gate.sh --mode full    # repository-wide
-```
-
-Add `--require-tools` when skipped scanners would invalidate the assurance
-claim. **Checkpoint:** preserve the exit code and verify the reported
-`security-gate-summary.json` passes the validator below before triage. Exit 2
-(`BLOCKED_CRITICAL`) and exit 3 (`BLOCKED_HIGH`) are completed scans with
-blocking findings, not failed runs. Report the result as incomplete when the
-validator fails, when the gate exits 4 (`--require-tools` and a scanner was
-missing or errored), or when it exits with any other nonzero code.
-
-Scheduled automation runs the full gate against the intended branch and retains its artifact directory. A failing scheduled run creates actionable tracked work; AgentOps itself does not supply the scheduler.
+  "no files matched target globs"; that is a pack mismatch, not a finding. A
+  PASS shows the controls are written down, not that an agent resists them.
+- Read [the suite runbook](references/security-suite-runbook.md) before gate,
+  binary, policy, baseline, or redteam work. It holds the commands, the gate's
+  exit codes, the artifact contracts, and the limits of the dynamic run, which
+  is sampled and not isolated.
 
 ### Triage
 
@@ -176,67 +160,15 @@ Scheduled automation runs the full gate against the intended branch and retains 
 
 ## Output Specification
 
-**Artifact directory:** repository gates write `${SECURITY_GATE_OUTPUT_DIR:-${TMPDIR:-/tmp}/agentops-security}/<run-id>/`; composable-suite and redteam runs use their explicit `--out-dir`.
+- **Artifact directory:** suite and redteam runs write under their explicit
+  `--out-dir`; the repository gate's directory is in the runbook.
+- **Filename convention:** `security-gate-summary.json` (gate),
+  `suite-summary.json` (suite), `redteam/redteam-results.json` (redteam).
+- **Serialization/schema format:** JSON. **Validator command:** the gate
+  summary's field contract and `jq` check are in the runbook; a summary that
+  fails it makes the result incomplete.
 
-**Filename convention:** repository gates require `security-gate-summary.json` (and raw `summary.json`); suite runs require `suite-summary.json`; redteam runs require `redteam/redteam-results.json`.
-
-**Serialization/schema format:** `security-gate-summary.json` is JSON with nonempty `mode`, `run_id`, and `output_dir`, a `gate_status` of `PASS`, `WARN_QUALITY`, `BLOCKED_HIGH`, or `BLOCKED_CRITICAL`, numeric `missing_tool_count`, boolean `require_tools`, and object `toolchain`.
-
-**Validator command:** with `OUT=<security-gate-run-dir>`, run `jq -e '(.mode|type)=="string" and (.mode|length)>0 and (.run_id|type)=="string" and (.run_id|length)>0 and (.output_dir|type)=="string" and (.output_dir|length)>0 and (.gate_status|IN("PASS","WARN_QUALITY","BLOCKED_HIGH","BLOCKED_CRITICAL")) and (.missing_tool_count|type)=="number" and (.require_tools|type)=="boolean" and (.toolchain|type)=="object"' "$OUT/security-gate-summary.json" >/dev/null`.
-
-The validator proves the artifact is complete, not that the scan was clean; a scan
-that found issues still passes it. Read the result from `gate_status`: `PASS`
-means the scanners that ran reported no blocking findings and no high-severity
-quality findings, `WARN_QUALITY` means only non-blocking quality findings,
-`BLOCKED_HIGH` means high-severity security findings, and `BLOCKED_CRITICAL`
-means critical findings, which in full mode also count failing pytest and go
-test runs and a pytest run that errored or could not start; read
-`toolchain.tools` and `toolchain.findings` for the cause. The gate
-writes `UNKNOWN` when the toolchain summary carried no status, and the validator
-rejects it.
-
-**Output:** the review report above; for scripted scans also the artifact
-path, command/exit code, mode, and gate status. Do not add an owner, next
-action, approval, release, ship, or retry decision.
-
-## Quality Checklist
-
-- [ ] Target and authorization boundary are explicit; collection stayed within them.
-- [ ] Every applicable class has a result; unvisited classes are listed as not assessed.
-- [ ] Scanner availability and skipped/error coverage are visible in the report.
-- [ ] Findings include severity, location, proven-or-suspected evidence, attacker path, relevant control outcome, and a remediation class, with no patch, plan, owner, or priority.
-- [ ] Artifacts contain no newly exposed secrets or unredacted sensitive payloads.
-- [ ] The report distinguishes a passing scan from permission to promote, ship, or release.
-- [ ] Suppressions, policy changes, baselines, and risk acceptance require explicit judgment.
-- [ ] The report stops after evidence and contains no continuation decision.
-
-## Validation
-
-Run the skill and redteam validators:
-
-```bash
-bash skills/security/scripts/validate.sh
-bash tests/scripts/test-security-suite-redteam.sh
-```
-
-For a bounded suite smoke test, use an owned binary and a temporary output directory as shown in [the suite runbook](references/security-suite-runbook.md).
-
-## Troubleshooting
-
-| Problem | Response |
-|---------|----------|
-| Scanner missing/error | Record the coverage gap; install it or rerun with `--require-tools` when required |
-| Local/CI mismatch | Compare scanner versions, config, mode, and both artifact directories |
-| Suspected false positive | Reproduce narrowly; document any authorized suppression and its owner |
-| Suite/baseline failure | Inspect the named compare/policy artifact; never refresh baseline reflexively |
-| Redteam failure after wording change | Decide whether the control regressed or the attack-pack matcher needs intentional revision |
-
-## Reference Documents
-
-- [references/attacker-path-evidence.md](references/attacker-path-evidence.md) — finding reachability, controls, and evidence limits
-- [references/security-suite-runbook.md](references/security-suite-runbook.md) — binary/policy/baseline/redteam commands and artifacts
-- [references/security.feature](references/security.feature) — repository-gate executable spec
-- [references/security-suite.feature](references/security-suite.feature) — composable-suite executable spec
-- [references/owasp-checklist.md](references/owasp-checklist.md) — OWASP Top 10 review
-- [references/agentops-redteam-pack.json](references/agentops-redteam-pack.json) — offline attack pack
-- [references/policy-example.json](references/policy-example.json) — starter policy
+**Downstream handoff:** the review report above; for scripted scans also the
+artifact path, command and exit code, mode, and gate status. The
+report stops after evidence: no owner, next action, approval, release, ship,
+or retry decision, and no newly exposed secret or unredacted sensitive payload.

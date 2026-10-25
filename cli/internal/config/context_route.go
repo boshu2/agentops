@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/boshu2/agentops/cli/internal/evidencepath"
@@ -52,6 +53,36 @@ type NativeContext struct {
 	Backend       string `json:"backend"`
 	ProjectID     string `json:"project_id"`
 	BeadsDir      string `json:"beads_dir"`
+}
+
+// SupportedBDRange names the native BD releases the context route reads. BD
+// 1.2.2 is the oldest release verified to serve context schema 1, show --json
+// and direct comments --json; later 1.x releases keep that contract. A new
+// major version fails closed until it is verified.
+const SupportedBDRange = ">= 1.2.2, < 2.0.0"
+
+// SupportedBDVersion reports whether a `bd context --json` bd_version string
+// is a plain MAJOR.MINOR.PATCH release inside SupportedBDRange.
+func SupportedBDVersion(version string) bool {
+	parts := strings.Split(version, ".")
+	if len(parts) != 3 {
+		return false
+	}
+	var n [3]int
+	for i, part := range parts {
+		if part == "" || strings.Trim(part, "0123456789") != "" {
+			return false
+		}
+		value, err := strconv.Atoi(part)
+		if err != nil {
+			return false
+		}
+		n[i] = value
+	}
+	if n[0] != 1 {
+		return false
+	}
+	return n[1] > 2 || (n[1] == 2 && n[2] >= 2)
 }
 
 type AnchorComment struct {
@@ -316,7 +347,10 @@ func readContextAnchor(ctx context.Context, gateway ContextGateway, req ContextR
 	if err != nil {
 		return nil, 0, err
 	}
-	if native.BDVersion != "1.2.2" || native.SchemaVersion != 1 || native.Backend != "dolt" || native.ProjectID != req.ProjectID || nativeSource != source {
+	if !SupportedBDVersion(native.BDVersion) {
+		return nil, 0, fmt.Errorf("unsupported native BD version %q: need BD %s", native.BDVersion, SupportedBDRange)
+	}
+	if native.SchemaVersion != 1 || native.Backend != "dolt" || native.ProjectID != req.ProjectID || nativeSource != source {
 		return nil, 0, fmt.Errorf("native project/source identity mismatch or unsupported context")
 	}
 	comments, err := gateway.AnchorComments(ctx, req.NativeDirectory, anchor)

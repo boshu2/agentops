@@ -1,9 +1,11 @@
 # Codex parity
 
 Codex loads the canonical `skills/<name>/` package directly. The Codex plugin
-manifest points at `./skills`, and `ao skills link` links the same directories
-into `~/.codex/skills`. There is no generated Codex copy, no override layer and
-no `prompt.md`, so one source package has to read correctly on every host.
+manifest points at `./skills`; a source checkout can instead link the same
+directories into `~/.codex/skills` with `ao skills link`. Use one route per
+host, since both together list every skill twice. There is no generated Codex
+copy, no override layer and no `prompt.md`, so one source package has to read
+correctly on every host.
 
 ## What Codex reads
 

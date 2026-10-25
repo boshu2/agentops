@@ -33,6 +33,23 @@ type BuildReport struct {
 
 var buildSlug = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
 
+// ExitProjectionIncomplete is the process status for a ProjectionError. It is
+// distinct from exit 1 (invalid creation input or an existing destination) so
+// a caller never reruns creation against the retained source.
+const ExitProjectionIncomplete = 3
+
+// ProjectionError reports that the source package was created but its owned
+// projections did not regenerate. It deliberately does not wrap the generator's
+// exit error, so the child's status never becomes the process status.
+type ProjectionError struct {
+	Cause string
+}
+
+// Error names the failed stage and the retained-source recovery rule.
+func (e *ProjectionError) Error() string {
+	return "projection incomplete: " + e.Cause + "; source retained, do not rerun creation"
+}
+
 // Build creates only a blank source package; external content is never imported.
 func Build(opts BuildOptions, out io.Writer) (result *BuildReport, resultErr error) {
 	if !buildSlug.MatchString(opts.Slug) {
@@ -125,7 +142,7 @@ Static checks do not establish semantic completeness or effectiveness.
 		cmd.Stdout = out
 		cmd.Stderr = out
 		if err = cmd.Run(); err != nil {
-			return report, fmt.Errorf("projection incomplete: %w", err)
+			return report, &ProjectionError{Cause: err.Error()}
 		}
 		report.StructureCheckPass = true
 		if err = writeBuildReport(reportFile, report); err != nil {

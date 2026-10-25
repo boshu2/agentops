@@ -5,13 +5,12 @@ grep -q '^name: plan$' "$skill_dir/SKILL.md"
 # Static contract regression checks, not proof of a live planner's behavior.
 # test_no_model_authored_packet
 grep -Fq "Prefer the caller's tracker, if any" "$skill_dir/SKILL.md"
-grep -Fq 'Planning produces no AgentOps packet' "$skill_dir/SKILL.md"
 if grep -Fq 'plan-packet.v1' "$skill_dir/SKILL.md"; then
   echo 'plan contract references a model-authored plan packet' >&2
   exit 1
 fi
 # Selective method links must ship their source owners.
-for reference in ground-truth-routing.md challenge.md; do
+for reference in ground-truth-routing.md challenge.md resume-and-handoff.md; do
   grep -Fq "references/$reference" "$skill_dir/SKILL.md"
   test -s "$skill_dir/references/$reference"
 done

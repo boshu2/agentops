@@ -22,7 +22,10 @@ when phrased as "review this".
 ## Ambiguous requests
 
 Generic checking or readiness language ("can you check this?", "is it ready?")
-selects none of the three by itself. Supplied acceptance criteria say what to
+selects none of the three by itself. A request for a look, once-over, opinion
+or second look already names advice, even when the caller will act on the
+result ("quick look before I close the ticket?"): return the findings and say
+they are not acceptance. Supplied acceptance criteria say what to
 inspect, not which kind of judgment the caller wants. When the request and
 settled context leave the purpose open, ask one question: advisory findings or
 an acceptance judgment? Wait for the answer. Do not return findings, a verdict

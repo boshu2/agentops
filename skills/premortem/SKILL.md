@@ -41,10 +41,14 @@ check constructs.
 
 Test the plan's evidence shape before any technical risk: for every unit of
 work, who verifies it, and is the verifying context distinct from the one that
-authored it? A plan whose closure step is "the implementer runs its own tests
-and closes" contains no independent judgment anywhere. Self-graded green is the
-classic false-done, and it ranks first because it silently converts every other
-failure into a shipped one.
+authored it? CI and existing deterministic checks the author did not write
+count as distinct verifiers, and for an ordinary unit they are enough
+([Validate](../validate/SKILL.md#when-a-fresh-judgment-is-worth-it)). Two
+shapes are findings: a unit graded only by checks its author wrote, as in a
+closure step "the implementer runs its own tests and closes"; and a unit
+Validate lists as costly with no fresh author-distinct read. Report each shape
+once, listing its units. Self-graded green is the classic false-done, and it
+ranks first because it silently converts every other failure into a shipped one.
 
 ## The second check: which steps are one-way doors?
 
@@ -59,21 +63,22 @@ twentieth.
 The named failure mode is **reversibility asserted, not traced**: a rollback
 section that says "fully reversible" while one step revokes a credential,
 force-pushes or publishes. A material irreversible action outside existing
-caller authority is a finding; trace actual undo cost and authorization with
-[Plan](../plan/SKILL.md). Prior authorization remains valid: do not demand
-repeated approval at the crossing or call every uncertain detail irreversible.
-Stop condition: every step carries a mark, and every one-way mark carries its
-undo cost.
+caller authority is a finding; [Plan's Who decides](../plan/SKILL.md#who-decides)
+owns undo cost and authorization, and prior authorization stays valid, so do
+not demand repeated approval at the crossing or call every uncertain detail
+irreversible. Stop condition: every step carries a mark, and every one-way mark
+carries its undo cost.
 
 ## The third check: construct the failure
 
 Draw candidate failures from what the plan takes for granted, not from a
 generic risk list. Typical premises: a tool or service behaving as the plan
 describes, the work holding at volumes far above or below what it expects where
-volume matters, steps finishing in the stated order and time. Aim first at the decision other steps rest on, and
-at any one-way step whose deciding premise is inferred rather than cited. Name
-the fact that would show each premise false; when it can be looked up now, look
-it up instead of reporting the premise as a risk.
+volume matters, steps finishing in the stated order and time, and acceptance,
+edge behavior, scope and dependencies being complete. Aim first at the decision
+other steps rest on, and at any one-way step whose deciding premise is inferred
+rather than cited. Name the fact that would show each premise false; when it
+can be looked up now, look it up instead of reporting the premise as a risk.
 
 For every candidate failure, attempt a concrete defeat: write the input,
 command sequence or repository state that would make the plan fail, and run or
@@ -89,54 +94,39 @@ blocking fact is deleted, not softened.
 ## Workflow
 
 1. Resolve the existing intent source and inspect its acceptance, non-goals,
-   evidence requirements and declared write scope. Its digest is the SHA-256 of
-   the exact intent text as supplied (for example `shasum -a 256 plan.md`).
+   evidence requirements and declared write scope.
 2. Judge from a context that did not write the plan, following the shared
    challenge method for identity, model selection, authorization and bounds. A
    plan the caller wrote can be judged here, with the caller as author. If this
    context wrote the plan and no fresh context can be started, run the checks
    anyway, state that the independence leg is missing, and return inline
    findings; never describe them as independent.
-3. Run the three checks, then test acceptance completeness, edge behavior,
-   scope and dependencies against cited repository facts. For integration or
+3. Run the three checks against cited repository facts. For integration or
    extension plans where anchoring on the working design is the risk, add the
    [derivation-diff challenge](references/derivation-diff.md).
 4. Return one complete, bounded set of concrete findings with checked and
-   not-checked scope.
-5. Stop. The caller decides whether to revise the plan or invoke RPI.
-
-Council or Dueling Idea Genies may be caller-supplied evidence, but Premortem
-requires neither and cannot turn consensus into approval.
-
-## Prompt
-
-```text
-Premortem this plan before I implement: bead ag-4f21 proposes rewriting
-`scripts/regen-all.sh` to call `ao gate check` instead of shelling out to
-the Python generators, touching cli/internal/gates/regen.go. Plan and
-acceptance are in the bead. Find concrete ways it fails.
-```
+   not-checked scope, then stop: the caller decides whether to revise the plan
+   or invoke RPI.
 
 ## It's working if
 
-Observable in the trace, without reading the prose, and the rubric a fresh
-independent judge scores this skill against:
+Observable in the output:
 
-- Every unit of work carries a named verifier, and any unit verified by the
-  context that authored it comes back as a finding.
-- Every step carries a two-way or one-way mark, and each one-way mark names its
-  undo cost and its point of no return.
-- Every reported finding cites a defeat attempt (the input, command or
-  repository state constructed) or the fact that blocked the construction.
-- The finding set is bounded: a review that flags every step has reported
-  nothing.
+- each unit names its verifier, and each self-verification shape is one
+  finding listing its units;
+- each step is marked, and each one-way mark names its undo cost and point of
+  no return;
+- each finding cites a defeat attempt or the fact that blocked it;
+- the set is bounded: a review that flags every step has reported nothing.
 
 ## Boundary
 
-- Emit advisory findings, no verdict of any version, readiness, admission, or permission.
-- Do not implement, validate the candidate, retry, repair, schedule, claim,
-  change acceptance, operate Git, close work, release, or deliver.
-- Any plan edit creates a new subject for a later caller-initiated Premortem.
+Emit advisory findings, no verdict of any version, readiness, admission or
+permission. Do not implement, validate the candidate, retry, repair, schedule,
+claim, change acceptance, operate Git, close work, release or deliver. Council
+or Dueling Idea Genies may be caller-supplied evidence, but Premortem requires
+neither and cannot turn consensus into approval. Any plan edit creates a new
+subject for a later caller-initiated Premortem.
 
 ## Output
 
@@ -145,16 +135,20 @@ Return findings inline by default:
 ```text
 Findings (in check order, then most consequential first within each check)
 1. <step> - <how it fails> - <construction, or the fact that blocked it> - <consequence>
-Verifiers: <unit>: <who verifies>; self-verified units are findings
-One-way steps: <step> - <undo cost> - <point of no return> - <who holds the handle>
+Verifiers: <unit>: <who verifies>
+Steps: <step>: two-way | one-way - <undo cost> - <point of no return> - <who holds the handle>
 Checked: <what was examined>. Not checked: <what was not>.
 Independence: <judge context, distinct from author> or "missing: <reason>"
 ```
 
 When the caller requests a durable review, return `premortem-plan-review.v1`
-with the intent digest, author and judge context IDs, findings, evidence
-references, `checked`, and `not_checked`, and check it with this skill's
-`scripts/validate-output.sh`. The schema requires distinct author and judge
-IDs, so a review without an independent judge stays inline. An empty finding
-set means only that this optional challenge found no concrete defect; it is
-never a lifecycle gate.
+and check it with this skill's `scripts/validate-output.sh`. Its
+`intent_digest` is the SHA-256 of the exact intent text as supplied (for
+example `shasum -a 256 plan.md`); `author_context_id` names who wrote the plan
+(the caller, or that session's ID) and `judge_context_id` names this context.
+The form has no fields for verifiers or step marks: record them in `checked`,
+and put each finding's construction or blocking fact in its `evidence`. The
+validator rejects identical author and judge IDs but checks only that the
+strings differ, not that an independent judge ran, so a review without one
+stays inline. An empty finding set means only that this optional challenge
+found no concrete defect; it is never a lifecycle gate.

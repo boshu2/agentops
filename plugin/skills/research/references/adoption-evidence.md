@@ -1,9 +1,19 @@
 # Adoption evidence
 
-Applies to an [adoption question](../SKILL.md#adoption-questions). These are the
-facts that most often block or reverse an adoption after it looked settled.
-Cover one where it could change the answer, cite it under Research's evidence
-rules, and list the ones left unchecked in the answer's unchecked scope.
+Applies to an [adoption question](../SKILL.md#adoption-questions).
+
+- "Does not reach us" states the search and its scope.
+- For a choice that is costly to undo, each decisive claim needs two
+  independent sources. A claim made in the conversation is a lead to check,
+  not evidence.
+- Rank candidates for "what should we use for X" only when they are a short
+  list found in current sources and the criteria are stated or recoverable;
+  otherwise return what was found and name what is missing, leaving criteria
+  to the caller and an open field to [Idea Genie](../../idea-genie/SKILL.md).
+
+The facts below most often block or reverse an adoption after it looked
+settled. Cover one where it could change the answer, cite it under Research's
+evidence rules, and list the ones left unchecked in the answer's unchecked scope.
 
 ## Ours
 

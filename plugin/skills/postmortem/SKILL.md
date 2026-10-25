@@ -7,13 +7,13 @@ practices:
 hexagonal_role: domain
 consumes: []
 produces:
-- postmortem-report.md
+- postmortem-analysis
 context_rel: []
 skill_api_version: 1
 user-invocable: true
 metadata:
   capabilities: [postmortem]
-  effects: [write_postmortem_report]
+  effects: [write_requested_postmortem_report]
   canonical_status: canonical
   disposition: keep_strategy
   tier: judgment
@@ -31,7 +31,7 @@ output_contract: 'concise inline causal analysis; a requested durable report is 
 # Postmortem
 
 Answer an explicit retrospective causal question about a completed or stopped
-goal, session or change using its actual intent, outcome and judgment evidence.
+goal, session, change or incident from its actual intent, outcome and judgment evidence.
 For an explicitly requested interim analysis, pin the cutoff and pending checks;
 its conclusions describe that interval and do not establish a final outcome.
 Neighbours: how a plan not yet run could fail is [Premortem](../premortem/SKILL.md);
@@ -50,13 +50,13 @@ arrives with. Promoting a claim from correlation to cause requires all three:
   with cited evidence showing it did differ.
 
 Post-hoc fix attribution, "we changed X and the failure stopped, therefore X
-was the cause", satisfies none of these alone. The symptom may be intermittent,
+was the cause", satisfies none of these alone: the symptom may be intermittent,
 or the recovery and the change may share an unobserved cause. Keep such claims
 as correlations, name the alternatives still standing, and suggest the
-discriminating experiment. A recommendation built on an unproven cause is
-framed as that experiment, not as a supported change. Every supported causal
-claim needs all three elements with citations; anything less stays a
-correlation or an unknown.
+discriminating experiment; a recommendation built on an unproven cause is
+framed as that experiment, not as a supported change. Rejecting a claim needs
+discriminating evidence too, or a prediction of the claim that the evidence
+contradicts. Anything less stays a correlation or an unknown.
 
 ## Prompt
 
@@ -70,14 +70,13 @@ Answer inline.
 ## Critical Constraints
 
 - Postmortem is retrospective causal analysis, not the general learning umbrella
-  or a code-acceptance gate: acceptance proof and causal inference are different
-  judgments, so a request for code and a postmortem does not make the
-  postmortem an input to code judgment. Wait for a known outcome unless
-  interim analysis was requested, and keep the overall request incomplete until
-  the requested analysis exists.
-- Existing verdicts and native judgments remain unchanged. It does not re-run acceptance validation
-  or fabricate missing proof to enable a retrospective. An existing `verdict.v2`
-  is optional evidence; its absence does not exclude a stopped or unvalidated subject.
+  or a code-acceptance gate: code judgment never waits on it, and Plan's
+  [code plus a retrospective](../plan/references/resume-and-handoff.md) rule
+  keeps the two separate when both are requested.
+  Wait for a known outcome unless interim analysis was requested.
+- It does not re-run acceptance validation, change existing verdicts or
+  fabricate missing proof. An existing `verdict.v2` is optional evidence; its
+  absence does not exclude a stopped or unvalidated subject.
 - Because the caller owns subsequent action, do not rewrite proof, operate
   tracker state, change the remaining plan, reopen work or promote a rule.
 - Empty or inconclusive analysis is valid; recommend no change when warranted.
@@ -87,7 +86,10 @@ Answer inline.
 
 1. Pin the question, accepted intent, subject identity, actual outcome and
    available judgment with exact ids (commits, checks, messages, an existing
-   verdict); keep missing evidence explicit.
+   verdict); keep missing evidence explicit. For an incident, intent is the
+   expected service behaviour or SLO, judgment is the alerts and checks, and
+   step 2 looks for the deploy, config change, upstream event or missing signal
+   before the departure.
 2. Rebuild only the timeline the claims depend on, keeping delivered behavior,
    failed or stopped work and process output distinct. For a correction or stop,
    locate the first observable departure from the accepted behavior and the
@@ -110,9 +112,7 @@ Answer inline.
    excluded actors, and uncertainty. Separate elapsed time, overlapping work and
    accounting scopes; never equate totals with waste, savings or money without
    supporting evidence.
-5. Optionally seek independent support or challenge for contested causal claims
-   within caller authority. Return the output below and stop; suggestions do not
-   authorize implementation.
+5. Return the output below and stop; suggestions do not authorize implementation.
 
 ## Output Specification
 
@@ -126,7 +126,9 @@ Answer inline.
   - <claim>: supported | correlation | rejected | unknown
     mechanism / discriminating evidence / counterfactual: <each, cited, or "none">
     alternatives still standing: <rivals the evidence cannot rule out>
+  Accounting (if claimed): <source, interval, units, actors, uncertainty>
   Unknowns: <what would settle them>
+  Earlier advice (if supplied): <recommendation> - applied | partly applied | not applied | unknown, <evidence>
   Changes (at most three, or "no change"): <change> - <its limit, or the experiment that tests it>
   ```
 
@@ -134,29 +136,21 @@ Answer inline.
   tool result or missing input found in step 2, not at re-fixing code that is
   already repaired. The kind of avoidable miss picks the lever:
   - Mechanical slip (wrong path, skipped command, forbidden call): a lint rule,
-    test or hook. Read the repository's check commands, hooks and CI first; an
-    existing check that did not run or could not fail is the change, not a
-    duplicate. When no seam in the code can hold such a check, name
+    test, hook or config guard. Read the repository's check commands, hooks and
+    CI first; an existing check that did not run or could not fail is the
+    change, not a duplicate. When no seam in the code can hold such a check, name
     [Architecture](../architecture/SKILL.md) as the follow-up, with that defect
     as its named pain.
-  - Judgment miss: one proposed standard or instruction line; writing it is
-    separately authorized [Memory](../memory/SKILL.md) work.
+  - Judgment miss: one proposed standard, runbook step or instruction line;
+    writing it is separately authorized [Memory](../memory/SKILL.md) work.
   - Fact found slowly: one pointer where the search began. Fact out of reach:
-    a way to expose it next time, such as a captured log; changing access
-    needs caller authority.
+    a way to expose it next time, such as a captured log or an alert; changing
+    access needs caller authority.
 - Only when requested, save `YYYY-MM-DD-postmortem-<topic>.md` in caller-selected
   protected external non-Git storage. Missing routing does not authorize a
   repository fallback; preserve existing requested evidence under owner policy.
-- The caller owns bookkeeping, planning and delivery. Optional
-  [Memory](../memory/SKILL.md) owns any separately authorized curation, support
-  and destination-disclosure review; retrospective evidence cannot promote itself.
-
-## Quality Checklist
-
-- [ ] The causal question and actual inputs are pinned; gaps are explicit.
-- [ ] Supported and rejected claims cite discriminating evidence.
-- [ ] Alternatives, counterfactuals, and unknowns remain visible.
-- [ ] At most three changes, each aimed at what the next run meets, bounded or framed as an experiment.
-- [ ] The report stops short of proof, planning, tracker, and delivery authority.
+- Curation, support and destination-disclosure review of any lesson are
+  separately authorized [Memory](../memory/SKILL.md) work; retrospective
+  evidence cannot promote itself.
 
 Behavior examples are in [postmortem.feature](references/postmortem.feature).

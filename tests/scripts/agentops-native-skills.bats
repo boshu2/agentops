@@ -181,29 +181,32 @@ run_recon_race() {
 # B1.1
 @test "idea-genie produces an evidence-grounded idea-portfolio artifact" {
   v="$REPO_ROOT/skills/idea-genie/scripts/validate-output.sh"
-  assert_accepts "$v" '{"schema_version":"idea-portfolio.v1","status":"candidates","observations":[{"claim":"users cannot discover the route","evidence":"docs/SKILLS.md:1"}],"assumptions":["generated maps are current"],"candidates":[{"id":"I1","evidence":["docs/SKILLS.md:1"],"overlaps":[],"scenario":{"given":"a user has a goal","when":"routing runs","then":"the owner is named"}}],"termination":{"reason":"novelty-saturated","novel_candidates_last_pass":0}}'
+  assert_accepts "$v" '{"schema_version":"idea-portfolio.v1","status":"candidates","observations":[{"claim":"users cannot discover the route","evidence":"docs/SKILLS.md:1"}],"assumptions":["generated maps are current"],"candidates":[{"id":"I1","idea":"name the owning skill","evidence":["docs/SKILLS.md:1"],"overlaps":[],"status_quo":"users scan the full skill list","scenario":{"given":"a user has a goal","when":"routing runs","then":"the owner is named"}}]}'
   assert_rejects "$v" '{"schema_version":"idea-portfolio.v1","status":"candidates","observations":[],"assumptions":[],"candidates":[{"id":"I1","evidence":[],"overlaps":[],"scenario":{"given":"x","when":"y","then":"z"}}],"termination":{"reason":"novelty-saturated","novel_candidates_last_pass":0}}'
+  assert_rejects "$v" '{"schema_version":"idea-portfolio.v1","status":"candidates","observations":[{"claim":"users cannot discover the route","evidence":"docs/SKILLS.md:1"}],"assumptions":[],"candidates":[{"id":"I1","idea":"name the owning skill","evidence":["made-up"],"overlaps":[],"status_quo":"none","scenario":{"given":"a user has a goal","when":"routing runs","then":"the owner is named"}}],"winner":"I1"}'
 }
 
 # B1.2
 @test "idea-genie can return no-new-work without manufacturing candidates" {
   v="$REPO_ROOT/skills/idea-genie/scripts/validate-output.sh"
-  assert_accepts "$v" '{"schema_version":"idea-portfolio.v1","status":"no-new-work","observations":[{"claim":"all candidates overlap","evidence":"skills/catalog.json"}],"assumptions":[],"candidates":[],"termination":{"reason":"all-overlap-or-unsupported","novel_candidates_last_pass":0}}'
+  assert_accepts "$v" '{"schema_version":"idea-portfolio.v1","status":"no-new-work","observations":[{"claim":"all candidates overlap","evidence":"skills/catalog.json"}],"assumptions":[],"candidates":[],"dropped":[{"idea":"skill search","reason":"overlaps the catalog listing in skills/catalog.json"}]}'
   assert_rejects "$v" '{"schema_version":"idea-portfolio.v1","status":"no-new-work","observations":[],"assumptions":[],"candidates":[{"id":"padding"}],"termination":{"reason":"fixed-count-reached","novel_candidates_last_pass":1}}'
+  assert_rejects "$v" '{"schema_version":"idea-portfolio.v1","status":"no-new-work","observations":[{"claim":"all candidates overlap","evidence":"skills/catalog.json"}],"assumptions":[],"candidates":[]}'
 }
 
 # B2.1
 @test "idea-genie duel mode emits sealed advisory evidence for Plan" {
   v="$REPO_ROOT/skills/idea-genie/scripts/validate-challenge.sh"
-  assert_accepts "$v" '{"schema_version":"idea-challenge.v1","door_class":"one-way","sealed_generation":true,"perspectives":[{"id":"P1","context_id":"c1"},{"id":"P2","context_id":"c2"}],"cross_reviews":[{"reviewer":"P1","subject":"P2","dimensions":{"evidence":"WARN"}}],"disagreements":["port ownership"],"refutations":[{"claim":"P1","attempt":"existing seam","result":"survived"}],"handoff":{"owner":"plan","artifact_dir":".agents/scratch/ideas/run-1"}}'
+  assert_accepts "$v" '{"schema_version":"idea-challenge.v1","door_class":"one-way","sealed_generation":true,"perspectives":[{"id":"P1","context_id":"c1","proposal":"adapter seam"},{"id":"P2","context_id":"c2","proposal":"port rewrite"}],"cross_reviews":[{"reviewer":"P1","subject":"P2","dimensions":{"evidence":"WARN"}},{"reviewer":"P2","subject":"P1","dimensions":{"cost":"low"}}],"disagreements":["port ownership"],"refutations":[{"claim":"P1","attempt":"existing seam","result":"survived"}]}'
   assert_rejects "$v" '{"schema_version":"idea-challenge.v1","door_class":"one-way","sealed_generation":false,"perspectives":[{"id":"P1","context_id":"same"},{"id":"P2","context_id":"same"}],"cross_reviews":[],"disagreements":[],"refutations":[],"handoff":{"owner":"self-score"}}'
   assert_rejects "$v" '{"schema_version":"idea-challenge.v1","door_class":"one-way","sealed_generation":true,"perspectives":[{"id":"P1","context_id":"c1"},{"id":"P2","context_id":"c2"}],"cross_reviews":[{"reviewer":"P1","subject":"P2","dimensions":{"evidence":"WARN"}}],"disagreements":["x"],"refutations":[{"claim":"P1","attempt":"x","result":"survived"}],"handoff":{"owner":"plan","artifact_dir":".agents/scratch/ideas/run-1"},"readiness":"PASS"}'
+  assert_rejects "$v" '{"schema_version":"idea-challenge.v1","door_class":"one-way","sealed_generation":true,"perspectives":[{"id":"P1","context_id":"c1","proposal":"adapter seam"},{"id":"P2","context_id":"c2","proposal":"port rewrite"}],"cross_reviews":[{"reviewer":"P1","subject":"P2","dimensions":{"vibes":"great"}}],"disagreements":["port ownership"],"refutations":[{"claim":"P1","attempt":"existing seam","result":"survived"}]}'
 }
 
 # B2.2
 @test "idea-genie duel mode routes reversible choices without NTM ceremony" {
   v="$REPO_ROOT/skills/idea-genie/scripts/validate-challenge.sh"
-  assert_accepts "$v" '{"schema_version":"idea-challenge.v1","door_class":"two-way","sealed_generation":false,"perspectives":[],"cross_reviews":[],"disagreements":[],"refutations":[],"handoff":{"owner":"plan","artifact_dir":".agents/scratch/ideas/run-2","route":"single-fresh-context"},"requires_ntm":false}'
+  assert_rejects "$v" '{"schema_version":"idea-challenge.v1","door_class":"two-way","sealed_generation":false,"perspectives":[],"cross_reviews":[],"disagreements":[],"refutations":[],"handoff":{"owner":"plan","artifact_dir":".agents/scratch/ideas/run-2","route":"single-fresh-context"},"requires_ntm":false}'
   assert_rejects "$v" '{"schema_version":"idea-challenge.v1","door_class":"two-way","sealed_generation":true,"perspectives":[],"cross_reviews":[],"disagreements":[],"refutations":[],"handoff":{"owner":"ntm"},"requires_ntm":true}'
 }
 
@@ -433,6 +436,27 @@ run_recon_race() {
   v="$REPO_ROOT/skills/research/scripts/pattern-mining/validate-output.sh"
   assert_accepts "$v" '{"schema_version":"pattern-mining.v1","outcome":"hypothesis","exemplars":["a.go:1","b.go:2"],"invariants":[],"variations":[],"incidental":[],"holdout":{"source":"","result":"not-run"},"back_application":"not-run","route":"no-action"}'
   assert_rejects "$v" '{"schema_version":"pattern-mining.v1","outcome":"hypothesis","exemplars":["a.go:1"],"invariants":[],"variations":[],"incidental":[],"holdout":{"source":"","result":"not-run"},"back_application":"not-run","route":"skill"}'
+}
+
+# B4.3
+@test "claim-audit requires a cited per-item coverage ledger" {
+  v="$REPO_ROOT/skills/research/scripts/claim-audit/validate-output.sh"
+  assert_accepts "$v" '{"schema_version":"reality-check-report.v1","claim":"Done: 2 items","findings":[{"category":"gap","statement":"docs not updated","evidence":["diff names no docs/ path"]}],"coverage":[{"goal":"rate limit","disposition":"confirmed","evidence":["server/routes/login.js:4"]},{"goal":"tests pass","disposition":"unverifiable"}]}'
+  assert_rejects "$v" '{"schema_version":"reality-check-report.v1","claim":"Done","findings":[{"category":"confirmed","statement":"all good","evidence":["x"]}]}'
+  assert_rejects "$v" '{"schema_version":"reality-check-report.v1","claim":"Done","findings":[{"category":"confirmed","statement":"all good","evidence":["x"]}],"coverage":[]}'
+  assert_rejects "$v" '{"schema_version":"reality-check-report.v1","claim":"Done","findings":[{"category":"confirmed","statement":"ok","evidence":["x"]}],"coverage":[{"goal":"a","disposition":"confirmed"}]}'
+  assert_rejects "$v" '{"schema_version":"reality-check-report.v1","claim":"Done","findings":[{"category":"gap","statement":"ok","evidence":["x"]}],"coverage":[{"goal":"a","disposition":"gap","evidence":[]}]}'
+}
+
+# B4.4
+@test "pattern-mining shape is optional and a gate needs a promotion and a cost" {
+  v="$REPO_ROOT/skills/research/scripts/pattern-mining/validate-output.sh"
+  P='"schema_version":"pattern-mining.v1","outcome":"promote","exemplars":["a.go:1","b.go:2","c.go:3"],"invariants":["fail closed"],"variations":["transport"],"incidental":["identifier"],"holdout":{"source":"d.go:4","result":"pass"},"back_application":"pass","route":"operationalize"'
+  assert_accepts "$v" "{$P,\"shape\":\"helper\"}"
+  assert_accepts "$v" "{$P,\"shape\":\"gate\",\"cost\":\"INC-42 traced to an unwrapped call\"}"
+  assert_rejects "$v" "{$P,\"shape\":\"gate\"}"
+  assert_rejects "$v" "{$P,\"shape\":\"lint rule\"}"
+  assert_rejects "$v" '{"schema_version":"pattern-mining.v1","outcome":"hypothesis","exemplars":["a.go:1","b.go:2"],"invariants":[],"variations":[],"incidental":[],"holdout":{"source":"","result":"not-run"},"back_application":"not-run","route":"no-action","shape":"gate","cost":"INC-42"}'
 }
 
 @test "agent-native packet helper retains one-shot dispatch and overlap refusal" {

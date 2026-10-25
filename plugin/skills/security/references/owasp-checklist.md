@@ -1,8 +1,11 @@
-# OWASP Top 10 Security Checklist
+# Security Class Checklist
 
-> Code-level OWASP Top 10 review checklist. Load it during a `/security` code-level
-> review pass to walk each class and record a per-class result. It ranks findings by
-> severity; it does not gate merges or releases — those are caller decisions.
+> Code-level review classes drawn from the OWASP Top 10 plus SSRF, deserialization,
+> command injection, cryptography and prompt injection. Load it during a `/security`
+> review pass to walk each class and record a per-class result. It is not exhaustive:
+> add any class the surface needs (a race, business logic) to the ledger rather than
+> calling it clean. It ranks findings by severity; it does not gate merges or
+> releases — those are caller decisions.
 
 ## Checklist
 
@@ -83,6 +86,22 @@ grep -rn 'password\s*=\s*"[^"]\+"\|api_key\s*=\s*"[^"]\+"\|secret\s*=\s*"[^"]\+"
 - [ ] Each job's token permissions are the minimum it needs; default write access is off
 - [ ] Every job has an execution time limit
 
+### 12. Server-Side Request Forgery (SSRF)
+- [ ] A server-side fetch of a caller-supplied URL or host is limited to an allowlist; redirects and resolved addresses are rechecked, and loopback, private and cloud-metadata addresses are refused
+
+### 13. Deserialization
+- [ ] Untrusted bytes are never loaded with a format that can build arbitrary objects (`pickle`, `yaml.load` without a safe loader, Java native serialization, `Marshal`); use a data-only format and validate it
+
+### 14. OS Command Injection
+- [ ] Application code never builds a shell command from untrusted input: pass an argument list (no `shell=True`, `os.system`, or `sh -c` around interpolated text) and allowlist any value that becomes an argument; class 11 covers scripts and agent instructions
+
+### 15. Cryptography
+- [ ] Standard libraries and current algorithms only (no ECB mode, no MD5 or SHA-1 for integrity, no home-made scheme); keys and IVs are never hardcoded or reused; tokens come from a CSPRNG (`secrets`, `crypto/rand`), not `random`; TLS certificate verification is never disabled
+
+### 16. Prompt Injection and Model Output
+- [ ] Untrusted text that reaches a model (retrieved documents, issues, web pages, tool output) cannot widen what it may do: tool access, secrets and write actions are bounded by the caller's authority, not by the prompt
+- [ ] Model output is untrusted input before it reaches a shell, query, file path, HTML or another tool
+
 ## Severity Classification
 
 Severity ranks findings so a reviewer can order them; it carries no merge, release,
@@ -93,6 +112,8 @@ delivery, are caller decisions this checklist does not make.
 |---------|----------|
 | Hardcoded secret in source | CRITICAL |
 | SQL injection possible | CRITICAL |
+| OS command injection or unsafe deserialization of untrusted input | CRITICAL |
+| SSRF reaching internal or metadata addresses | HIGH |
 | Missing input validation on public endpoint | HIGH |
 | Dependency with known CVE (CVSS > 7) | HIGH |
 | Missing rate limiting | MEDIUM |

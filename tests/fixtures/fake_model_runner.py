@@ -9,6 +9,7 @@ tests/integration/test_multi_model_dispatch.bats.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import sys
@@ -33,52 +34,64 @@ def write_json(path: Path, payload: dict) -> None:
 
 
 def council(args: argparse.Namespace) -> int:
+    # Emits council-report.v1 as skills/council/SKILL.md describes it and
+    # skills/council/scripts/validate-output.sh accepts it: no verdict-like
+    # judgment, every agreement kept as a consensus point (weighs_as_one when
+    # one model or one method supports it), and unavailable profiles named in
+    # diversity_unsatisfied and under synthesis.unresolved.
     profiles = [p.strip() for p in args.models.split(",") if p.strip()]
     if len(profiles) < 2:
         print("council requires at least two --models", file=sys.stderr)
         return 2
     available = {p.strip() for p in (args.available or "").split(",") if p.strip()}
     unsatisfied = [p for p in profiles if available and p not in available]
+    live = [p for p in profiles if p not in unsatisfied]
+    if not live:
+        print("council requires at least one available --models profile", file=sys.stderr)
+        return 2
 
+    question = args.question or "conformance fixture question"
     judges = []
     for i, profile in enumerate(profiles, start=1):
-        judges.append(
-            {
-                "id": f"judge-{i}",
-                "context_id": f"ctx-judge-{i}-{profile}",
-                "model_identity": profile,
-                "methodology": "static-reading" if i % 2 else "executing-subject",
-                "judgment": "pass" if not unsatisfied else "abstain-disclosed",
-                "evidence": [f"fixture://criterion/{i}"],
-            }
-        )
+        # An unavailable profile degrades to a fresh context on a live model,
+        # disclosed in omissions; it never satisfies the missing leg.
+        model = profile if profile in live else live[0]
+        judge = {
+            "context_id": f"ctx-judge-{i}-{model}",
+            "methodology": "static-reading" if i % 2 else "executing-subject",
+            "model_identity": model,
+            "judgment": f"fixture criterion {i} is supported by the cited evidence",
+            "evidence": [f"fixture://criterion/{i}"],
+        }
+        if model != profile:
+            judge["omissions"] = [f"requested profile {profile} unavailable"]
+        judges.append(judge)
 
+    methodologies = sorted({j["methodology"] for j in judges})
+    models = sorted({j["model_identity"] for j in judges})
+    # Council's rule: agreement is never dropped. A point whose supporting
+    # judges share one model or one method is a consensus point that weighs
+    # as one confirmation (weighs_as_one: true), not an absent consensus.
+    point = {"claim": "fixture consensus", "methodologies": methodologies, "models": models}
+    if len(methodologies) < 2 or len(models) < 2:
+        point["weighs_as_one"] = True
+    consensus = [point]
     report = {
         "schema_version": "council-report.v1",
-        "question": args.question or "conformance fixture question",
+        "question": question,
+        # No file subject: the digest binds the frozen question text.
+        "subject_digest": hashlib.sha256(question.encode("utf-8")).hexdigest(),
         "judges": judges,
-        "context_ids": [j["context_id"] for j in judges],
-        "model_identities": [j["model_identity"] for j in judges],
-        "agreement": {
-            "cross_model": len({j["model_identity"] for j in judges}) > 1
-            and not unsatisfied,
-            "single_model_only": bool(unsatisfied)
-            or len({j["model_identity"] for j in judges}) == 1,
-            "note": (
-                "diversity_unsatisfied: "
-                + ",".join(unsatisfied)
-                if unsatisfied
-                else "cross-model agreement eligible"
-            ),
-        },
-        "diversity_unsatisfied": unsatisfied,
         "synthesis": {
-            "consensus": [] if unsatisfied else ["fixture consensus"],
+            "consensus": consensus,
             "divergence": [],
             "minority": [],
-            "unresolved": unsatisfied,
+            # A missing required leg prevents convergence; it stays listed here too.
+            "unresolved": [f"diversity_unsatisfied: {p}" for p in unsatisfied],
         },
-        "generated_at": utc_now(),
+        # Requested profiles with no authorized live adapter, listed by name
+        # (council SKILL.md step 1); false when every profile was live.
+        "diversity_unsatisfied": unsatisfied if unsatisfied else False,
     }
     out = Path(args.output)
     write_json(out, report)
