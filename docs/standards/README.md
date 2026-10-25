@@ -2,22 +2,24 @@
 
 ## Skills Integration
 
-These standards are also available as a **library skill** in domain-kit:
+Agent-facing versions of these standards ship with the Domain skill:
 
 ```
-plugins/domain-kit/skills/standards/references/
+skills/domain/references/standards/
+├── common-standards.md
 ├── python.md
 ├── go.md
 ├── typescript.md
+├── javascript.md
 ├── shell.md
 ├── yaml.md
 ├── json.md
 ├── rust.md
 ├── markdown.md
-└── openai.md (+ related OpenAI references)
+└── test-pyramid.md (+ risk checklists and skill structure)
 ```
 
-Skills like `/bug-hunt` and `/complexity` depend on the standards library for consistent language-specific guidance.
+`/domain` looks up the language-specific standard for a change, and `/test` uses its test pyramid.
 
 ---
 
