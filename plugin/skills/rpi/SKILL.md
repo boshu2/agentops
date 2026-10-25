@@ -128,10 +128,9 @@ results, unresolved cause, bounds and helper use in the native handoff.
 ## Evidence and boundaries
 
 When a validator is used, bind accepted intent, complete changed paths, the
-exact subject and its check results, as [Validate](../validate/SKILL.md)'s
-Subject section does: with AgentOps installed,
-`ao provenance manifest --root <repo> --include <path>` once per changed path;
-in any Git repository, the commit SHA and `git diff --name-only <base>...HEAD`.
+exact subject and its check results using
+[Validate's Subject rules](../validate/SKILL.md#subject), including its status
+listing and file hashes for uncommitted work.
 Where the repository records AgentOps evidence bindings, run
 `ao provenance evidence-orphans --root <repo> --changed <path>...` and disclose
 the acceptance evidence it reports orphaned. Requested proof goes to protected

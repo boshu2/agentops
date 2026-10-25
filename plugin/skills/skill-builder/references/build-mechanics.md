@@ -71,13 +71,15 @@ failures instead of resetting completion history.
 ## Check and heal targets
 
 Check/heal targets must be real direct children of `skills/`; reject missing
-paths, traversal and symlink spellings. Check mode is read-only. Fix mode
-regenerates owned projections for explicit targets and does not invent source
-behavior. Findings name their code, target and concrete issue. Checks cover the
+paths, traversal and symlink spellings. Check mode is read-only. Fix mode checks
+the explicit targets, then regenerates the skill mesh only; it does not refresh
+`plugin/skills/` or invent source behavior. Findings name their code, target and
+concrete issue. Checks cover the
 slug/name match, description, API version, metadata, live dependencies and
 linked resources.
 
 AgentOps source checkout only: from the repository root, `bash scripts/regen-all.sh`
-is the integrated projection recipe and `python3 scripts/generate-skill-mesh.py`
-the existing scoped surface; installed skills ship neither. Do not repeat
+refreshes every owned projection after a source edit and is the integrated
+projection recipe; `python3 scripts/generate-skill-mesh.py` is the existing
+scoped surface; installed skills ship neither. Do not repeat
 work already performed by `build.sh` unless source changes require it.
