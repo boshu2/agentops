@@ -17,11 +17,20 @@ arm's absolute rate separates them.
 
 The bytes are modelled on real persisted scorecards, not hand-invented shapes:
 
-- `saturated/` mirrors `docs/evals/scorecards/2026-08-05/validate-not-proven-v2-{low,xhigh}.json`
-  (control 2/2 and treatment 2/2 at both effort labels — the run that motivated
-  the rule).
+- `saturated/` mirrors the `validate-not-proven-v2` low and xhigh scorecards of
+  2026-08-05 (control 2/2 and treatment 2/2 at both effort labels — the run that
+  motivated the rule). That probe group was retired on 2026-10-24; its bytes are
+  at commit 51f5d6447.
 - `headroom/` mirrors the same writer's field set with the arm counts of a
   genuinely unsaturated scenario (control 1/2).
 
 Fixtures are immutable inputs. Editing a rate here changes what the gate
 claims to prove, so change the rule and its unit tests instead.
+
+## `anti-ceremony-discriminator.sh`
+
+The transcript-marker discriminator that `tests/scripts/anti-ceremony-discriminator.bats`
+and `tests/scripts/probe-skill.bats` drive. It lived in
+`evals/skill-probes/anti-ceremony-creation-gate-v2/` until that probe group was
+retired on 2026-10-24 (its skill, `operationalize`, left the tree in #1133);
+the script is a test input, so it moved here unchanged.

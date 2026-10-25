@@ -3,7 +3,7 @@
 - **Status:** Accepted, amended for native execution 2026-09-10 and conditional review 2026-10-03 (2026-09-03)
 - **Author:** AgentOps maintainers
 - **Builds on:** [ADR-0004](ADR-0004-corpus-moat-unproven-position-on-the-system.md) (corpus moat unproven, position on the verification system), [ADR-0011](ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md) (escape-corpus compounding demoted to hypothesis)
-- **Origin:** `docs/plans/2026-09-03-loop-restore.md` (this decision's intent source), and the 2026-09-02 Train 1 run, where the repair loop had to be improvised by hand
+- **Origin:** [`docs/plans/2026-09-03-loop-restore.md`](https://github.com/boshu2/agentops/blob/7de636720/docs/plans/2026-09-03-loop-restore.md) (this decision's intent source), and the 2026-09-02 Train 1 run, where the repair loop had to be improvised by hand
 
 ## Conditional-review amendment — 2026-10-03 (#1189)
 

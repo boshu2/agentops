@@ -3,7 +3,7 @@
 > **Status:** Durable export of the 2026-05-11 cycle-1..13 friction observations that justified cycle 45's 6 patches to `skills/evolve/SKILL.md`.
 > **Source path (local-only, gitignored):** `.agents/learnings/2026-05-11-evolve-skill-friction-from-13-cycle-session.md` — exported here per `soc-w6vh.5` acceptance.
 > **Bound to cycle 45 commit:** `cc21ec2d` (`feat(skill/evolve): land 6 patches from 13-cycle session friction`).
-> **Referenced from:** `docs/plans/2026-05-11-evolution-roadmap.md` § "research_refs".
+> **Referenced from:** [`docs/plans/2026-05-11-evolution-roadmap.md`](https://github.com/boshu2/agentops/blob/7de636720/docs/plans/2026-05-11-evolution-roadmap.md) § "research_refs".
 
 A 13-cycle autonomous /evolve session on 2026-05-11 shipped a full practice-citation epic (756/756 declared, 526 net new declarations across `skills/`, `hooks/`, `schemas/`, `evals/`, `cli/`; 14 commits pushed) but surfaced six skill-level friction points that the then-current SKILL.md didn't address. The frictions compound: each adds a turn of recovery work that eats context, and a heavy-context session degrades into the "still has work but can't do it" failure mode the dormancy gate doesn't catch.
 
@@ -66,7 +66,7 @@ The falsification pattern is itself the lesson that drove the cycle-51 read-path
 - Cycle 45 commit body (durable, on origin/main): `git log -1 cc21ec2d`.
 - Cycles 45-49 retro (local): `.agents/post-mortems/2026-05-12-evolve-cycles-45-49-retro.md`.
 - Improvement-focused post-mortem: `.agents/post-mortems/2026-05-12-evolve-session-improvement-postmortem.md`.
-- Rescope plan: `docs/plans/2026-05-12-rescope-evolve-and-architecture.md`.
+- Rescope plan: [`docs/plans/2026-05-12-rescope-evolve-and-architecture.md`](https://github.com/boshu2/agentops/blob/7de636720/docs/plans/2026-05-12-rescope-evolve-and-architecture.md).
 - Meta-contract: `docs/contracts/update-principles.md`.
 
 ## Why this file is tracked when the source learning is gitignored

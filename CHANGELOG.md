@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The [2026-10-22 plugin evaluation report](https://github.com/boshu2/agentops/blob/main/docs/evals/2026-10-22-plugin-eval-opus-5-5.md):
+  five rounds of `claude plugin eval` on Claude Opus 5.5 against AgentOps 3.11,
+  with each round's pre-registered rule and result. It is the current evidence
+  for the shipped skills; the 2026-10-05 report stays as the record of 3.9.0
+  against 3.10. Its scorecards are in `evals/plugin-eval/scorecards/`.
+
 ### Changed
 
 - Security, asked whether to ship, merge or deploy, reports findings and
@@ -62,6 +70,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   files; docs/MIGRATION.md lists what to use instead and how to clean up.
   None of 991 plugin-eval runs used a workflow, and the nine entries took
   3,099 characters at the top of the model's skill listing.
+
+- Thirteen retired behavioral probe groups and their scorecards under
+  `docs/evals/scorecards/`: eight the `skill.probe-headroom` gate classified
+  SATURATED (`crank-luna`, `one-way-door-batch-t2`, `reality-check-gap`,
+  `reality-check-gap-v2`, `security-coverage-gap`, `security-coverage-gap-v2`,
+  `validate-not-proven`, `validate-not-proven-v2`) and five whose skill no
+  longer exists (`crank`, `graphify-tool-preference`,
+  `standards-go-conventions`, `anti-ceremony-creation-gate`,
+  `anti-ceremony-creation-gate-v2`). `evals/skill-probes/LEDGER.md` keeps their
+  rows and names the commit that holds the bytes. The anti-ceremony
+  discriminator the harness tests use moved to
+  `tests/fixtures/skill-probes/anti-ceremony-discriminator.sh`.
+
+- `docs/plans/` (101 dated plan documents) and the one-off
+  `scripts/migrations/2026-04-19-fix-docs-links.py`. The `docs/plans/*`
+  exclusion in `scripts/lib/docs-scope.sh` goes with it; ADRs, learnings and
+  contracts that cited a plan now link it at commit 7de636720.
+- Superseded release files under `docs/releases/`: every `*-audit.md`, the
+  notes for v2.15.0 through v3.10.0, the claims and evidence directories and
+  two JSON snapshots (95 files). The checks that protected only them go too:
+  the `release.audit-artifacts` gate, `scripts/validate-release-audit-artifacts.sh`,
+  `scripts/resolve-release-artifacts.sh` and `tests/scripts/release-artifacts.bats`.
+  The live release-notes mechanism (`scripts/validate-release-notes.sh`,
+  `scripts/extract-release-notes.sh`, `scripts/scaffold-release-notes.sh`) and
+  the current notes file `docs/releases/2026-10-22-v3.11.0-notes.md` stay;
+  older notes are linked at commit 7de636720 where cited.
+- `docs/CHANGELOG.md`, the byte-identical copy of this file, with the
+  `changelog.sync` gate, the copy check in `tests/docs/validate-doc-release.sh`
+  and the pre-commit sync block. The docs site renders its changelog page from
+  the root file at build time through `docs/_hooks/gen_changelog.py`, so
+  existing `CHANGELOG.md` links on the site keep resolving.
 
 ### Fixed
 
@@ -225,7 +264,7 @@ runs against 11 of 48 on 3.9.0; nine skills still did not load there. Claude
 Exec is new, the eval cases ship in the repository, and no command or skill
 name changes.
 
-See the [curated release notes](https://github.com/boshu2/agentops/blob/main/docs/releases/2026-10-05-v3.10.0-notes.md)
+See the [curated release notes](https://github.com/boshu2/agentops/blob/7de636720/docs/releases/2026-10-05-v3.10.0-notes.md)
 for upgrade notes and known limits, and the
 [evaluation report](https://github.com/boshu2/agentops/blob/main/docs/evals/2026-10-05-plugin-eval-opus-5-5.md)
 for every number.
@@ -313,7 +352,7 @@ mistake is costly instead of on every change. Interview and Navigate are new,
 and Council gains duel and interview-panel modes. The optional menu goes from
 36 to 28 skills; native work still requires none of them.
 
-See the [curated release notes](https://github.com/boshu2/agentops/blob/main/docs/releases/2026-10-03-v3.9.0-notes.md)
+See the [curated release notes](https://github.com/boshu2/agentops/blob/7de636720/docs/releases/2026-10-03-v3.9.0-notes.md)
 for upgrade instructions, breaking changes and known limits.
 
 ### Added
@@ -516,7 +555,7 @@ independent judgment to check the result. The optional menu grows from 34 to
 36 skills. Existing 3.7 command and skill names remain available; native work
 still requires zero AgentOps skills.
 
-See the [curated release notes](https://github.com/boshu2/agentops/blob/main/docs/releases/2026-09-22-v3.8.0-notes.md)
+See the [curated release notes](https://github.com/boshu2/agentops/blob/7de636720/docs/releases/2026-09-22-v3.8.0-notes.md)
 for upgrade instructions, product changes and known limits.
 
 ### Added
@@ -574,7 +613,7 @@ is consolidated from the 52 roots shipped in 3.6.0 to 34, and the CLI gains
 recovery and exact-content evidence helpers. Upgrade guidance covers the
 published command, skill and scripted workflow entry points that were removed.
 
-See the [curated release notes](https://github.com/boshu2/agentops/blob/main/docs/releases/2026-09-13-v3.7.0-notes.md)
+See the [curated release notes](https://github.com/boshu2/agentops/blob/7de636720/docs/releases/2026-09-13-v3.7.0-notes.md)
 for upgrade instructions, the complete product-area summary and known limits.
 
 ### Added

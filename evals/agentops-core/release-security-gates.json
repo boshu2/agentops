@@ -66,17 +66,16 @@
       "id": "release-gate-contract-tests",
       "title": "release gate contract tests pass",
       "kind": "command",
-      "objective": "Keep ci-local-release CLI contracts and release artifact resolver/audit behavior covered without invoking the whole local release gate.",
+      "objective": "Keep ci-local-release CLI contracts covered without invoking the whole local release gate.",
       "runtime": "shell",
       "timeout_seconds": 120,
       "inputs": {
         "cwd": "../..",
-        "shell": "bats tests/scripts/ci-local-release.bats tests/scripts/release-artifacts.bats"
+        "shell": "bats tests/scripts/ci-local-release.bats"
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "1..55"},
-        {"type": "stdout_contains", "value": "ok 52 validate-release-audit-artifacts skips older missing local artifact dirs"}
+        {"type": "stdout_contains", "value": "1..36"}
       ],
       "dimensions": ["correctness", "process_adherence", "artifact_quality"],
       "critical": true

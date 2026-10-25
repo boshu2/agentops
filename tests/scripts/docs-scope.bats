@@ -24,8 +24,7 @@ setup() {
     export DOCS_ROOT="$BATS_TEST_TMPDIR/fix"
     mkdir -p "$DOCS_ROOT/docs" \
              "$DOCS_ROOT/docs/adr" \
-             "$DOCS_ROOT/docs/audits" \
-             "$DOCS_ROOT/docs/plans"
+             "$DOCS_ROOT/docs/audits"
 
     # A plain live doc (in scope, not exempt).
     printf '# Overview\n\nThis is a live doc.\n' > "$DOCS_ROOT/docs/live.md"

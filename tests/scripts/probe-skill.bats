@@ -228,7 +228,7 @@ else:
 }
 
 @test "v3 response-only scoring supports the repository transcript-marker discriminator" {
-    cp "$REPO_ROOT/evals/skill-probes/anti-ceremony-creation-gate-v2/discriminator.sh" \
+    cp "$REPO_ROOT/tests/fixtures/skill-probes/anti-ceremony-discriminator.sh" \
         "$PROBE_DIR/discriminator.sh"
     make_fixture_set fixtures observed-model low \
         $'A: CREATE\nB: CREATE' $'A: DROP\nB: CREATE'

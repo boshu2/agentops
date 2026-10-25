@@ -27,7 +27,8 @@ release owner, inside the band `[1,4]`.
 `skill.probe-headroom`: **SATURATED**, control arm ≥ 0.75 at `low` and `xhigh`
 (gpt-5.6-luna, 2 usable control reps each). Scorecards:
 `docs/evals/scorecards/2026-08-26/one-way-door-batch-t2-low.json`,
-`docs/evals/scorecards/2026-08-26/one-way-door-batch-t2-xhigh.json`.
+`docs/evals/scorecards/2026-08-26/one-way-door-batch-t2-xhigh.json`
+(removed 2026-10-24 with the retired group; both at commit e69144d6d).
 
 The honest reading: **at this altitude the behavior is native to the producer.**
 The control arm, given no skill bytes at all, routed items 4 and 7 in 4 of 4

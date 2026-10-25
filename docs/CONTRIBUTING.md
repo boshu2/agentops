@@ -144,7 +144,7 @@ AgentOps ships when the repo state justifies it. There is no fixed cadence.
 
 Maintainer notes:
 
-- Keep `[Unreleased]` in `CHANGELOG.md` current.
+- Keep `[Unreleased]` in the root `CHANGELOG.md` current. It is the only copy; the docs site renders its changelog page from it at build time.
 - Prefer coherent release bundles over random patch piles.
 - Draft releases are acceptable for validating packaging before public promotion.
 

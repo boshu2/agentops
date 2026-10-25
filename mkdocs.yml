@@ -31,7 +31,6 @@ exclude_docs: |
   handoffs/
   learnings/
   migration-trackers/
-  plans/
   rescope/
   research/
   sovereignty-proof/
@@ -162,6 +161,7 @@ plugins:
       scripts:
         - docs/_hooks/gen_skill_pages.py
         - docs/_hooks/gen_cli_reference.py
+        - docs/_hooks/gen_changelog.py
   - section-index
   - include-markdown
   - git-revision-date-localized:

@@ -495,11 +495,6 @@ func init() {
 		{ID: "always.quarantine-empty", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-quarantine-empty.sh"},
 		{ID: "always.test-fixture-parity", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-test-fixture-parity.sh"},
 		{ID: "go.race-fast", Tiers: gates.Fast | gates.Full, Match: goPaths, Blocking: true, Backing: "validate-go-fast.sh"},
-		// release-audit: narrow Match (only release files) + --mode changed, mirroring
-		// the bash gate's needs_release_audit_artifact_check (PB1a Args support).
-		{ID: "release.audit-artifacts", Tiers: gates.Fast | gates.Full, Blocking: true,
-			Backing: "validate-release-audit-artifacts.sh", Args: []string{"--mode", "changed"},
-			Match: []string{"docs/releases/**", "scripts/ci-local-release.sh", "scripts/resolve-release-artifacts.sh", "scripts/validate-release-audit-artifacts.sh", "tests/scripts/release-artifacts.bats"}},
 	}
 	for _, c := range seed {
 		gates.Register(c)

@@ -98,7 +98,7 @@ func TestReportJSON_FailLogTail(t *testing.T) {
 			// FAIL, native check, no captured output -> fall back to reason.
 			{
 				Check:   Check{ID: "native.fail", Blocking: true},
-				Verdict: ports.GateVerdict{Status: ports.GateStatusFail, Reason: "CHANGELOG.md != docs/CHANGELOG.md"},
+				Verdict: ports.GateVerdict{Status: ports.GateStatusFail, Reason: "native check failed: reason only"},
 			},
 			// FAIL, backing script with output -> bounded to last 15 lines.
 			{
@@ -121,7 +121,7 @@ func TestReportJSON_FailLogTail(t *testing.T) {
 
 	got := gatesFromJSON(t, report)
 
-	if g := got["native.fail"]; g.LogTail != "CHANGELOG.md != docs/CHANGELOG.md" {
+	if g := got["native.fail"]; g.LogTail != "native check failed: reason only" {
 		t.Fatalf("native.fail log_tail = %q, want reason fallback", g.LogTail)
 	}
 

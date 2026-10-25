@@ -19,7 +19,6 @@
 # do NOT edit those to burn them down.
 #
 # Comments (#...) and blank lines are ignored. Keep this list sorted.
-docs/CHANGELOG.md
 docs/contracts/codex-skill-api.md
 docs/domain-practice-packets.md
 docs/evals/age-9a9-corpus-free-sandbox-isolation.md

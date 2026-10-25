@@ -374,24 +374,6 @@ func TestRegisteredNativeChecks_RepairHintsAreAudienceSafe(t *testing.T) {
 	}
 }
 
-func TestRunChangelogSync_ReadFailureFailsClosed(t *testing.T) {
-	root := t.TempDir()
-	if err := os.WriteFile(filepath.Join(root, "CHANGELOG.md"), []byte("current\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	verdict, err := runChangelogSync(context.Background(), gates.RunContext{RepoRoot: root})
-	if err != nil {
-		t.Fatalf("runChangelogSync: %v", err)
-	}
-	if verdict.Status != ports.GateStatusFail {
-		t.Fatalf("status = %s, want FAIL for missing applicable evidence", verdict.Status)
-	}
-	if !strings.Contains(verdict.Reason, "docs/CHANGELOG.md") {
-		t.Fatalf("reason = %q, want missing evidence path", verdict.Reason)
-	}
-}
-
 func installRecordingShellcheck(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()

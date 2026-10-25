@@ -22,8 +22,6 @@ func init() {
 	// inside an agentops source checkout.
 	gates.Register(gates.Check{ID: "go.vet", Tiers: gates.Fast | gates.Full, Match: []string{"cli/**", "go.mod", "go.sum"}, Blocking: true, Run: runGoVet,
 		RepairHint: "run 'go vet ./...' in the cli module and fix what it reports"})
-	gates.Register(gates.Check{ID: "changelog.sync", Tiers: gates.Fast | gates.Full, Match: []string{"CHANGELOG.md", "docs/CHANGELOG.md"}, Blocking: true, Run: runChangelogSync,
-		RepairHint: "make the two changelog copies identical: cp CHANGELOG.md docs/CHANGELOG.md"})
 	gates.Register(gates.Check{ID: "shell.shellcheck-changed", Tiers: gates.Fast | gates.Full, Match: []string{"**/*.sh"}, Blocking: true, Run: runShellcheckChanged,
 		RepairHint: "run 'shellcheck -S warning <file>' on each reported shell file and fix the warnings (install shellcheck if it is missing)"})
 	gates.Register(gates.Check{ID: "learning.coherence", Tiers: gates.Fast | gates.Full, Match: learningRootGlobs, Blocking: true, Run: runLearningCoherence,
@@ -54,23 +52,6 @@ func runGoVet(ctx context.Context, rc gates.RunContext) (ports.GateVerdict, erro
 		return ports.GateVerdict{Status: ports.GateStatusFail, Reason: "go vet ./... failed", LogTail: tail(out.String(), 4096)}, nil
 	}
 	return ports.GateVerdict{Status: ports.GateStatusPass, Reason: "go vet ./... ok"}, nil
-}
-
-func runChangelogSync(_ context.Context, rc gates.RunContext) (ports.GateVerdict, error) {
-	root := filepath.Join(rc.RepoRoot, "CHANGELOG.md")
-	docs := filepath.Join(rc.RepoRoot, "docs", "CHANGELOG.md")
-	rb, rerr := os.ReadFile(root)
-	db, derr := os.ReadFile(docs)
-	if rerr != nil {
-		return ports.GateVerdict{Status: ports.GateStatusFail, Reason: fmt.Sprintf("read CHANGELOG.md: %v", rerr)}, nil
-	}
-	if derr != nil {
-		return ports.GateVerdict{Status: ports.GateStatusFail, Reason: fmt.Sprintf("read docs/CHANGELOG.md: %v", derr)}, nil
-	}
-	if !bytes.Equal(rb, db) {
-		return ports.GateVerdict{Status: ports.GateStatusFail, Reason: "CHANGELOG.md != docs/CHANGELOG.md (run: cp CHANGELOG.md docs/CHANGELOG.md)"}, nil
-	}
-	return ports.GateVerdict{Status: ports.GateStatusPass, Reason: "CHANGELOG in sync"}, nil
 }
 
 func runShellcheckChanged(ctx context.Context, rc gates.RunContext) (ports.GateVerdict, error) {

@@ -58,15 +58,14 @@ run_tag="low-$(date -u +%Y%m%dT%H%M%SZ)"
 scorecard_dir="docs/evals/scorecards/$(date -u +%F)"
 mkdir -p "$scorecard_dir"
 bash scripts/probe-skill.sh \
-  --probe anti-ceremony-creation-gate-v2 --live --capture --reps 2 \
+  --probe premortem-plan-shape-t2 --live --capture --reps 2 \
   --fixtures "fixtures-$run_tag" --model gpt-5.6-luna --effort low \
-  --output "$scorecard_dir/anti-ceremony-$run_tag.json"
+  --output "$scorecard_dir/premortem-plan-shape-t2-$run_tag.json"
 
-# Compatibility-replay the retained v2 classification without dispatching a
-# model. It is historical and coverage-ineligible under the v3 contract:
+# Replay the sealed 2026-09-03 capture without dispatching a model:
 bash scripts/probe-skill.sh \
-  --probe anti-ceremony-creation-gate-v2 --replay \
-  --fixtures fixtures-low-2026-08-16-v2b
+  --probe premortem-plan-shape-t2 --replay \
+  --fixtures fixtures-low-2026-09-03-sealed-r7
 ```
 
 Live capture dispatches `codex exec --json`, the sanctioned headless path. The

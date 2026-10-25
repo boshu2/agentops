@@ -322,7 +322,7 @@ difference was not traced.
 | Rejected | Why | Constraint |
 |---|---|---|
 | Deny mode for self-waive | The regex can be evaded many ways; ask makes the documented path visible without blocking a waiver the operator asked for | anti-ceremony (no false protection claim) |
-| FAIL before NOT_PROVEN on an identity gap | The order is deliberate and published (`docs/releases/2026-10-05-v3.10.0-notes.md:76-78`; `skills/validate/references/mechanics.md:52-59`); both outcomes block; the CLI reaches the case only with explicitly empty or colliding identities. Changing it reverses a contract | Released contract |
+| FAIL before NOT_PROVEN on an identity gap | The order is deliberate and published ([`docs/releases/2026-10-05-v3.10.0-notes.md:76-78`](https://github.com/boshu2/agentops/blob/7de636720/docs/releases/2026-10-05-v3.10.0-notes.md#L76-L78); `skills/validate/references/mechanics.md:52-59`); both outcomes block; the CLI reaches the case only with explicitly empty or colliding identities. Changing it reverses a contract | Released contract |
 | Cross-family reviewer by default | ADR-0017 "Prior review-selection amendment — 2026-09-08" (:176-185) makes the author's family the default and cross-model opt-in (`skills/validate/SKILL.md:144-151`) | ADR-0017 |
 | Fail-closed hook without jq or registry | Fail-open is documented, tested design (`hooks/guards/hooks/policy-dispatch.sh:45-49`; bats "missing registry fails OPEN") | pin |
 | Hook that blocks test edits | The tightening ratchet is advisory by design (§2.7) | pin |

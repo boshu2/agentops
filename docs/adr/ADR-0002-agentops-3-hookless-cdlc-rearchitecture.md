@@ -111,4 +111,4 @@ This ADR is accepted when:
 - [Operating Loop](../architecture/operating-loop.md)
 - [Ports and Adapters](../architecture/ports-and-adapters.md)
 - [Context Map](../contracts/context-map.md)
-- [AgentOps 3.0 Hookless CDLC Rearchitecture Plan](../plans/2026-05-15-agentops-3-hookless-cdlc-rearchitecture.md)
+- [AgentOps 3.0 Hookless CDLC Rearchitecture Plan](https://github.com/boshu2/agentops/blob/7de636720/docs/plans/2026-05-15-agentops-3-hookless-cdlc-rearchitecture.md)

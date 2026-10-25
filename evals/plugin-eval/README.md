@@ -3,7 +3,9 @@
 These cases measure whether an agent with the AgentOps plugin installed behaves
 differently from one without it. They run with Claude Code's own evaluator,
 `claude plugin eval`. Results from the last full run are in
-[the 2026-10-05 report](../../docs/evals/2026-10-05-plugin-eval-opus-5-5.md).
+[the 2026-10-22 report](../../docs/evals/2026-10-22-plugin-eval-opus-5-5.md);
+the [2026-10-05 report](../../docs/evals/2026-10-05-plugin-eval-opus-5-5.md)
+records 3.9.0 against 3.10.
 
 | Suite | Cases | Question | Arms |
 |---|---|---|---|

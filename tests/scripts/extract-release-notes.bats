@@ -150,7 +150,7 @@ assert_line() {
   assert_line "  https://example.test/releases/9.9.9"
   assert_line '  "Release details"'
 
-  assert_line "[Full changelog](https://github.com/boshu2/agentops/blob/main/docs/CHANGELOG.md)"
+  assert_line "[Full changelog](https://github.com/boshu2/agentops/blob/main/CHANGELOG.md)"
 }
 
 @test "release body links the tag's checksums and the compare range from the previous tag" {

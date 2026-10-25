@@ -1,5 +1,5 @@
 #!/usr/bin/env bats
-# L3 (legible membrane plan, docs/plans/2026-09-02-legible-membrane-plan.md):
+# L3 (legible membrane plan, https://github.com/boshu2/agentops/blob/7de636720/docs/plans/2026-09-02-legible-membrane-plan.md):
 # README.md and docs/install-day2-ops.md state the runtime requirements of the
 # skills that execute `ao` or a Python script. These checks are facts only:
 # both docs carry the identical table, every `ao …` command a row names

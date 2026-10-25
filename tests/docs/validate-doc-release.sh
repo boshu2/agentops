@@ -38,11 +38,6 @@ validate_changelog_entry() {
     echo "MISMATCH: root CHANGELOG.md missing release entry for $release_version"
     return 1
   fi
-  # docs/CHANGELOG.md is the published byte-identical copy of the root file.
-  if ! cmp -s "$changelog" "$REPO_ROOT/docs/CHANGELOG.md"; then
-    echo "MISMATCH: docs/CHANGELOG.md differs from CHANGELOG.md (cp CHANGELOG.md docs/CHANGELOG.md)"
-    return 1
-  fi
 }
 
 run_check "Link validation" bash "$REPO_ROOT/tests/docs/validate-links.sh"

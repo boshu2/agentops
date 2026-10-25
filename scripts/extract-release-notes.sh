@@ -329,7 +329,7 @@ CURATED_NOTES=$(cat "$NOTES_FILE")
 CURATED_NOTES="$(printf '%s' "$CURATED_NOTES" \
   | sed \
     -e "s#(../../CHANGELOG.md)#(https://github.com/${REPO}/blob/main/CHANGELOG.md)#g" \
-    -e "s#(../CHANGELOG.md)#(https://github.com/${REPO}/blob/main/docs/CHANGELOG.md)#g" \
+    -e "s#(../CHANGELOG.md)#(https://github.com/${REPO}/blob/main/CHANGELOG.md)#g" \
   | normalize_markdown)"
 echo "Using curated release notes from $NOTES_FILE" >&2
 
