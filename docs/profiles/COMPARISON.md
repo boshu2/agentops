@@ -15,7 +15,7 @@
 
 **Focus**: **Inventory and taxonomy** of what already exists
 
-**Created**: Today (2025-11-09) via `/ultra-think` analysis
+**Created**: Today (2025-11-09) via an ultra-think analysis session (not a shipped skill)
 
 ### System 2: 12-Factor-AgentOps Examples
 

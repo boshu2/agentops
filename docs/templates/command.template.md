@@ -39,4 +39,4 @@ What the command produces or displays.
 
 ## Related Commands
 
-- `/related-command` - How it relates
+- `/<related-command>` - How it relates

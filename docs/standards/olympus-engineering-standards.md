@@ -31,7 +31,7 @@ Verbatim from olympus:
 4. For architecture changes, provide at least two alternatives and justify the selected option with tradeoffs (correctness, operability, and cost).
 5. If uncertainty is material, state it directly and define the experiment or data needed before committing to a build path.
 
-Agentops's `.claude/rules/*` cover code-level conventions but not this pre-implementation decision gate. Closest equivalent is `/premortem` and `/brainstorm` skills, which are interactive flows rather than written standards.
+Agentops's `.claude/rules/*` cover code-level conventions but not this pre-implementation decision gate. Closest equivalent is `/premortem` and `/idea-genie` skills, which are interactive flows rather than written standards.
 
 ### Logging and observability hygiene
 
@@ -78,7 +78,7 @@ All olympus rules in this category are equally or more thoroughly covered by the
 | Source-of-truth order naming `docs/specs/index.md`, `SPEC-CONTRACT.md`, etc. | Olympus-specific doc tree. Agentops has its own precedence ladder in `CLAUDE.md` ("Source-of-Truth Precedence") — that one wins. |
 | `make test`, `make build`, `make testing-check`, `make daemon-smoke`, `make serve-smoke`, `make throughput` as gate names | Olympus Makefile target names. AgentOps exposes deterministic repository checks through `ao gate check`; release policy remains repository-owned. |
 | Coverage ratchet via `scripts/check-coverage-floors.sh` | Olympus-specific script path. Agentops handles coverage through `/validate`, complexity checks, and the local Go gate / CI rather than a ratcheted-floor script. |
-| Suite definitions in `testing/suites/*.md`, scenarios in `testing/scenarios/catalog.md` | Olympus-specific paths and catalog. Agentops uses `tests/` + `/scenario` skill (holdout scenarios in `.agents/holdout/`) — different model. |
+| Suite definitions in `testing/suites/*.md`, scenarios in `testing/scenarios/catalog.md` | Olympus-specific paths and catalog. Agentops uses `tests/` and the `/test` skill (it maintains scenario-to-test annotations where a repository already uses them) — different model. |
 | Long-tail merge checklist (6 items: spec match, tests, daemon/serve safety, throughput, docs/runbooks, goals/traceability) | Heavily Olympus-coupled. A consumer repository chooses its own merge checks; AgentOps supplies intent, exact-subject validation, and deterministic test utilities without becoming merge policy. |
 | Per-clone runtime isolation (`OL_HOME`, `BEADS_DIR`) | Olympus crew-clone workflow. Agentops uses repo-local `.agents/` and `.beads/` without `OL_HOME` indirection. |
 | Source-of-truth precedence (`docs/specs` > spec-contract > engineering-standards > workflow guides) | Olympus-specific document hierarchy. Agentops's executable-first precedence (CLI > schemas > docs) supersedes it. |
