@@ -1,11 +1,24 @@
 # Difficult failures
 
-Use the matching experiment only when an unexplained symptom suggests varying
-conditions, leaked state or concurrent access, is a regression from a known-good
-state, crosses components or survives repeated disproved causes. These
-experiments support Implement's existing cause, prediction, discriminating
-check and original scenario loop; they add no phase or obligation to an
-ordinary known repair.
+Start an unexplained failure with the diagnosis loop. Add the matching
+experiment below only when the symptom suggests varying conditions, leaked
+state or concurrent access, is a regression from a known-good state, crosses
+components or survives repeated disproved causes. The experiments support that
+loop; they add no phase or obligation to an ordinary known repair.
+
+## Diagnosis loop
+
+First match the reported symptom and reduce the reproduction. Confirm the
+failing run executes the code you think: revision and local edits, a fresh build
+rather than a stale artifact or installed binary, the resolved runtime and
+dependency versions, and required environment values. Ground the leading cause
+in an observation, not in how the code reads, and name its strongest rival.
+State one causal prediction, test it with a check the two causes predict
+differently, and repair the cause supported by the result. Change one thing per
+probe; when a prediction fails, revert that change, name what ruled the cause
+out and form a different cause, not a variant of it. Rerun the original
+scenario. Do not keep collecting hypotheses after the cause is understood. This
+loop is informed by [Matt Pocock's engineering skills](https://github.com/mattpocock/skills).
 
 ## Preserve the reported failure
 

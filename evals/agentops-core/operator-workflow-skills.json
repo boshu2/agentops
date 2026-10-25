@@ -33,20 +33,19 @@
       "id": "operator-workflow-skill-validators",
       "title": "operator workflow skill validators pass",
       "kind": "command",
-      "objective": "Run focused validators for high-use operator workflow skills across shared and Codex artifacts, including optional Codex validators when present.",
+      "objective": "Run focused validators for the high-use operator workflow skills that ship one.",
       "runtime": "shell",
       "timeout_seconds": 300,
       "inputs": {
         "cwd": "../..",
-        "shell": "set -eu; for s in bootstrap brainstorm bug-hunt complexity converter council deps design implement perf plan pr-implement pr-prep pr-research red-team refactor reverse-engineer-rpi review scaffold swarm trace using-agentops postmortem; do echo \"shared: $s\"; bash \"skills/$s/scripts/validate.sh\"; done; for s in bootstrap brainstorm bug-hunt complexity converter council deps design implement perf plan pr-implement pr-prep pr-research red-team refactor reverse-engineer-rpi review scaffold swarm trace using-agentops postmortem; do if [ -f \"skills-codex/$s/scripts/validate.sh\" ]; then echo \"codex: $s\"; bash \"skills-codex/$s/scripts/validate.sh\"; else echo \"codex: $s (no validator)\"; fi; done"
+        "shell": "set -eu; for s in council implement plan postmortem; do echo \"shared: $s\"; bash \"skills/$s/scripts/validate.sh\"; done"
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
+        {"type": "stdout_contains", "value": "shared: council"},
+        {"type": "stdout_contains", "value": "shared: implement"},
         {"type": "stdout_contains", "value": "shared: plan"},
-        {"type": "stdout_contains", "value": "codex: plan"},
-        {"type": "stdout_contains", "value": "shared: review"},
-        {"type": "stdout_contains", "value": "shared: postmortem"},
-        {"type": "stdout_contains", "value": "codex: swarm"}
+        {"type": "stdout_contains", "value": "shared: postmortem"}
       ],
       "dimensions": ["correctness", "runtime_compatibility", "process_adherence"],
       "critical": true

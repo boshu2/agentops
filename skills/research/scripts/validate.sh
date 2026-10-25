@@ -44,10 +44,16 @@ grep -Fq 'agreement, contradiction, and unknown are reported separately' \
   "$skill_dir/references/research.feature"
 python3 -m json.tool "$skill_dir/schemas/findings.json" >/dev/null
 
-if rg -n 'ao lookup|ao land|auto-redo|Gate 1|\.agents/rpi/next-work|finding-compiler' \
-  "$skill_dir/SKILL.md" "$skill_dir/references" "$skill_dir/schemas"; then
+# grep exits 1 for no match; any other status means the scan did not run.
+retired_rc=0
+grep -rEn 'ao lookup|ao land|auto-redo|Gate 1|\.agents/rpi/next-work|finding-compiler' \
+  "$skill_dir/SKILL.md" "$skill_dir/references" "$skill_dir/schemas" || retired_rc=$?
+if [[ "$retired_rc" -eq 0 ]]; then
   echo 'research contract contains retired lifecycle behavior' >&2
   exit 1
+elif [[ "$retired_rc" -ne 1 ]]; then
+  echo 'research contract: retired-lifecycle scan failed to run' >&2
+  exit 2
 fi
 
 if grep -Eiq 'ao (pawl|land)|git (commit|push)|br (close|update)|auto-redo|next[_ -]action' \

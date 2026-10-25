@@ -2,6 +2,7 @@ package skills
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/boshu2/agentops/cli/internal/clicontract"
 	"github.com/boshu2/agentops/cli/internal/skillsapp"
@@ -11,7 +12,18 @@ import (
 
 func (m *Module) buildCommand() *cobra.Command {
 	opts := skillsapp.BuildOptions{}
-	cmd := &cobra.Command{Use: "build <from-scratch|from-template|absorb-external> <slug>", Short: "Create an incomplete skill scaffold and its owned projections", Args: cobra.ExactArgs(2), RunE: func(cmd *cobra.Command, args []string) error {
+	cmd := &cobra.Command{Use: "build <from-scratch|from-template|absorb-external> <slug>", Short: "Create an incomplete skill scaffold and its owned projections", Long: `Create an incomplete skill scaffold and its owned projections.
+
+skills/<slug>/SKILL.md is written as a scaffold, then the owned projections
+regenerate unless --init-only. Every mode writes the same blank scaffold:
+from-template only checks that --source names an existing skill and records it
+as source_hint; absorb-external only checks that --source is a regular file.
+
+Exit 0: created. Exit 1: invalid creation input (slug, mode, template or
+external source, report destination) or an existing destination.
+Exit 3: the source was created but projections did not regenerate;
+the source and any report are retained, so finish the projections instead of
+rerunning creation.`, Args: cobra.ExactArgs(2), RunE: func(cmd *cobra.Command, args []string) error {
 		if m.host.DryRun != nil && m.host.DryRun() {
 			return fmt.Errorf("skills build does not support dry-run; no files created")
 		}
@@ -22,6 +34,11 @@ func (m *Module) buildCommand() *cobra.Command {
 			if e := json.NewEncoder(cmd.OutOrStdout()).Encode(report); e != nil {
 				return e
 			}
+		}
+		var projection *skillsapp.ProjectionError
+		if errors.As(err, &projection) {
+			// Empty Label: cobra already prints the error; the root maps only the code.
+			return &clicontract.ExitError{Code: skillsapp.ExitProjectionIncomplete, Message: projection.Error()}
 		}
 		return err
 	}}

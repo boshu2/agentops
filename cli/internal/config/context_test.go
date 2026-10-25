@@ -95,9 +95,37 @@ func contextFixture(t *testing.T, placement ...string) (ContextConfig, ContextPo
 	writeContextYAML(t, path, c)
 	r := ContextRequest{SourceID: c.SourceID, ProjectID: c.ProjectID, OwnerScope: c.OwnerScope, TaskRef: p.TaskRef, ModelRef: p.ModelRef, DestinationRef: p.DestinationRef, ConsumerRoot: consumer, NativeDirectory: base}
 	b, _ := json.Marshal(ContextFact{Type: "context.route.v1", FactID: "route-1", Route: &c})
-	g := &contextFixtureGateway{native: NativeContext{BDVersion: "1.2.2", SchemaVersion: 1, Backend: "dolt", ProjectID: c.ProjectID, BeadsDir: c.SourceID}, comments: []AnchorComment{{ID: "1", IssueID: c.MaintenanceWorkRef, Text: string(b)}}}
+	g := &contextFixtureGateway{native: NativeContext{BDVersion: "1.3.1", SchemaVersion: 1, Backend: "dolt", ProjectID: c.ProjectID, BeadsDir: c.SourceID}, comments: []AnchorComment{{ID: "1", IssueID: c.MaintenanceWorkRef, Text: string(b)}}}
 	return c, p, r, g, path
 }
+
+// The route reads any BD 1.x release from 1.2.2 on, not one pinned release.
+func TestContextNativeBDVersionRange(t *testing.T) {
+	for _, tc := range []struct {
+		version string
+		ok      bool
+	}{
+		{"1.2.2", true}, {"1.3.1", true}, {"1.10.0", true},
+		{"1.2.1", false}, {"1.1.9", false}, {"0.9.0", false}, {"2.0.0", false}, {"9.0.0", false},
+		{"1.3", false}, {"1.3.1-rc1", false}, {"v1.3.1", false}, {"1.+3.1", false}, {"", false},
+	} {
+		t.Run(tc.version, func(t *testing.T) {
+			if got := SupportedBDVersion(tc.version); got != tc.ok {
+				t.Fatalf("SupportedBDVersion(%q) = %v, want %v", tc.version, got, tc.ok)
+			}
+			_, _, req, g, _ := contextFixture(t)
+			g.native.BDVersion = tc.version
+			_, err := ResolveContext(context.Background(), g, req)
+			if tc.ok && err != nil {
+				t.Fatalf("BD %q rejected: %v", tc.version, err)
+			}
+			if !tc.ok && (err == nil || !strings.Contains(err.Error(), "unsupported native BD version")) {
+				t.Fatalf("BD %q: err = %v, want unsupported native BD version", tc.version, err)
+			}
+		})
+	}
+}
+
 func TestContextPrecedenceAndSameAnchorRecovery(t *testing.T) {
 	for _, placement := range []string{"external", "project"} {
 		t.Run(placement, func(t *testing.T) {

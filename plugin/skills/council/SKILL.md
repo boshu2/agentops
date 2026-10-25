@@ -25,10 +25,11 @@ Council is an optional judgment strategy for hard questions where contrasting
 perspectives can expose alternatives, assumptions, or missed evidence. Use it
 when the caller selects multiple views for brainstorming, architecture or
 planning, or validation. Name the uncertainty that makes the additional
-contexts useful; routine work needs no council. Neighbours: one adversarial
-challenge of a plan is [Premortem](../premortem/SKILL.md), one consequential
-choice for Plan is [Idea Genie](../idea-genie/SKILL.md), and an acceptance
-verdict is [Validate](../validate/SKILL.md).
+contexts useful; routine work needs no council. Neighbours: one opinion or
+look-over is [Review](../review/SKILL.md), one adversarial challenge of a plan
+is [Premortem](../premortem/SKILL.md), one consequential choice for Plan is
+[Idea Genie](../idea-genie/SKILL.md), and an acceptance verdict is
+[Validate](../validate/SKILL.md).
 
 ## Rules that decide the synthesis
 
@@ -39,11 +40,15 @@ agreement on one.
 
 - **No verdict.** Council returns no `PASS`, `FAIL`, `NOT_PROVEN`, readiness
   or approval, even when asked to turn agreement into one. Decline, and say
-  that a fresh Validate read owns that judgment; the council report is
-  advisory input to it.
+  that a fresh Validate read owns that judgment. The report goes to the caller
+  as advisory findings, which cannot stand in for it.
 - **Echo consensus weighs as one.** Agreement among judges that share one
   model or one evidence method counts as one confirmation, however many judges
-  share it. Name the methodologies and models behind every consensus claim.
+  share it: unanimity from identical inputs and one shared method is not
+  independent confirmation. Each consensus point names the `methodologies`
+  (static reading, executing the subject, tracing history) and, where judges
+  record `model_identity`, the `models` of its supporting judges; a point with
+  only one of either sets `weighs_as_one: true`.
 - **The caller's direction stays the default.** A judgment that contradicts
   what the caller decided becomes a `caller_challenge` entry with all five
   fields, never a consensus point or a quiet change to the recommendation.
@@ -56,16 +61,21 @@ agreement on one.
 |---|---|---|
 | Brainstorm | Distinct options, assumptions, and failure modes | Promising ideas and the objections worth testing |
 | Design or plan | A proposed approach, tradeoffs, and evidence | A recommendation with unresolved decisions visible |
-| Validate | Findings against the same subject and acceptance | Advisory findings for the accountable fresh validator |
+| Validate | Findings against the same subject and acceptance | Advisory findings; acceptance stays with a fresh Validate read |
 | Duel | Ranked ideas, then scores for every other member's ideas | Ideas ranked by cross-member agreement, score gaps and dissent |
 | Interview panel | An answer to each Interview question | Agreed and open answers the caller accepts or amends |
 
 1. Freeze the question, constraints or acceptance, authorized evidence, and
-   subject digest. Select participants, model pins, and real dispatch bounds.
+   subject digest. Select participants, model pins, and real dispatch bounds;
+   contexts stay in the author's model family unless the caller pins mixed
+   models through [model-dispatch](../agent-native/references/model-dispatch.md).
    The caller may give each participant its own model, effort and perspective
    (for example architect, reliability, security or simplicity); the same model
    in separate contexts counts as separate participants on the roster, but their
-   agreement still weighs as one model's confirmation.
+   agreement still weighs as one. A requested profile or required leg with no
+   authorized live adapter is listed by name in `diversity_unsatisfied`;
+   available views may still return with that limit, but a missing required
+   leg prevents convergence and no agreement substitutes for it.
 2. Give each participant a fresh independent context and the same bounded
    packet, never the author's preferred conclusion; a perspective steers what a
    member examines, never what evidence it gets. Collect proposals or judgments
@@ -81,15 +91,18 @@ agreement on one.
 3. Require evidence, reasoning, and omissions. For brainstorming, distinguish
    new hypotheses from supported claims; novelty is not proof.
 4. Synthesize the sealed initial views, or run a caller-selected mode below.
-   Preserve dissent and changes of position. Before each later round and before
-   synthesis, recompute the step 1 subject digest by the same method: one
-   sha256 over what Validate's [Subject](../validate/SKILL.md#subject) binds,
-   as `subject_digest` requires. When there is no file or candidate to bind, as
-   in a brainstorm, an open design question or an interview panel, hash the
-   frozen question text exactly as recorded in `question`. If the digest
-   changed, name the change and rerun every participant on the new subject or
-   return the incomplete outcome, never folding views of the old subject in.
-5. Return `council-report.v1` with a recommendation and its limits. Prefer one
+   Preserve dissent and changes of position. `subject_digest` covers what
+   Validate's [Subject](../validate/SKILL.md#subject) binds: the
+   `canonical_manifest_digest` of `ao provenance manifest`, or else
+   `shasum -a 256 <files> | LC_ALL=C sort | shasum -a 256` over the subject's
+   repo-relative paths, or the sha256 of a subject supplied only as text.
+   Recompute it the same way before each later round and before synthesis; if
+   it changed, name the change and rerun every participant on the new subject
+   or return the incomplete outcome, never folding views of the old subject in.
+   With nothing to bind (a brainstorm, an open design question, an interview
+   panel), it is the sha256 of `question` as recorded, computed once; a
+   reworded question is a new subject.
+5. Return `council-report.v1` with its `recommendation` and limits. Prefer one
    option only for a reason in the evidence; when options stay close, say
    either would serve and name the tradeoffs that separate them. Outside a
    caller-selected voting rule, a count of pros, cons or supporters breaks no
@@ -111,67 +124,31 @@ Load only the mode the caller selected:
 - A disagreement between validation judges that survives repair:
   [judge split](references/judge-split.md).
 
-## Methodology-weighted agreement
-
-Agreement across differing evidence methodologies counts more than agreement
-within one. Record each judge's evidence methodology (for example: static
-reading, executing the subject, tracing history) alongside its judgment. A
-consensus claim must name at least two distinct methodologies among its
-supporting judges; otherwise report it as single-method agreement and weight
-it as one confirmation, however many judges share it. The named failure mode
-is echo consensus: unanimous judgment produced from identical inputs by one
-shared method, laundered as independent confirmation.
-
-## Model-diversity axis
-
-Default to fresh contexts in the author's model family on both Codex and Claude.
-The caller selects mixed-family review explicitly and may pin each model, using
-the bounded adapter in [agent-native's model-dispatch recipe](../agent-native/references/model-dispatch.md);
-review time comes from caller/native bounds, with no fixed ten-minute cap.
-Record each pinned judge's `model_identity` beside its methodology and context
-ID. Single-model unanimity is weighted as one confirmation, for the same reason
-as single-method agreement. If a requested profile has no authorized live
-adapter, disclose `diversity_unsatisfied`; available views may still be
-returned with that limitation but do not satisfy the missing leg. A required
-cross-family validation leg remains unsatisfied and prevents convergence;
-Council cannot substitute single-model agreement for it.
-
 ## Caller challenge
-
-One consensus shape is never synthesized: **the judges agree the caller's stated
-direction is wrong.** Independent agreement against the caller is a strong
-signal, and it is still not authority: the caller holds context no judge was
-given, and a synthesis that folds the judges' position into a recommendation
-deletes that context without telling anyone it was overruled.
 
 When judgments recommend a change to something the caller specified (merging
 what they separated, cutting what they asked for, reversing a declared
-direction), record it as a `caller_challenge` entry, not a consensus point. Use
-these five fields; optional `judge_count` requires at least two supporters,
-while `disagreement_kind` classifies the objection:
+direction), record it in `synthesis.caller_challenge`. Independent agreement
+against the caller is a strong signal and still not authority: the caller
+holds context no judge was given. Each entry has five fields:
 
 - `caller_stated`: their direction, in their words, not paraphrased.
 - `judges_recommend`: the change, who supports it, and whether their views were
   independent or peer-informed; never describe debate votes as independent.
 - `reasoning`: the case at its strongest.
-- `context_possibly_missing`: what the judges provably were not given. This is
-  the field that makes the entry honest and the one most likely to be dropped;
-  an entry without it is majority laundering wearing a new label.
+- `context_possibly_missing`: what the judges provably were not given; an
+  entry without it is majority laundering wearing a new label.
 - `cost_if_wrong`: what breaks if the caller's direction was right.
 
-The caller's direction is the report's default and stays the default; the burden
-of argument is on the judges. When the judges classify the change as a security
-or feasibility defect rather than a preference, say which
-(`disagreement_kind`); the caller still decides, knowing the kind of
-disagreement.
-
-The named failure mode is **quiet adoption**: a council that converges against
-the caller and returns a synthesis reading as if the caller had asked for the
-judges' version all along. Stop condition: every judgment that contradicts a
-caller-stated direction appears in `caller_challenge` with all five fields, or it
-does not appear in the report at all. Whether the challenged decision can be
-undone belongs in [Plan](../plan/SKILL.md), with actual undo cost and existing
-authority; the council must not assume either.
+Optional `judge_count` needs at least two supporters; optional
+`disagreement_kind` says whether the objection is a `preference`, `security`
+or `feasibility` defect. The caller's direction stays the default and the
+burden of argument is on the judges; the caller decides, knowing the kind of
+disagreement. Stop condition: every judgment that contradicts a caller-stated
+direction appears in `caller_challenge` with all five fields and in no other
+synthesis bucket. Whether the challenged decision can be undone belongs in
+[Plan](../plan/SKILL.md), with actual undo cost and existing authority; the
+council must not assume either.
 
 ## Synthesis section
 
@@ -182,7 +159,8 @@ that would settle it) or a judgment call the caller owns, minority findings
 preserved in their own words, unresolved assumptions, and any
 `caller_challenge` entries. Synthesis is complete when every judge finding
 lands in exactly one of those buckets; a finding silently dropped from
-synthesis is majority laundering.
+synthesis is majority laundering. Run facts (bounds, roster, threshold, tally,
+stop reason, non-returning judges) go in `synthesis.notes`.
 
 Two judges' defect findings are one point only when a single fix would resolve
 both, judged by reading each defect and its fix, not the wording or a shared
@@ -199,55 +177,20 @@ judge's own evidence.
   fallback: when no destination is supplied, return the report inline in the
   conversation and write no file.
 - **Filename:** `council-report.json`.
-- **Format:** `council-report.v1` JSON: the frozen question and subject digest,
-  every judge's context ID, evidence methodology, cited evidence, and disclosed
-  omissions, plus the consensus/divergence/minority/unresolved synthesis and any
-  `caller_challenge` entries. Record mode and candidate digest in each
-  `judgment` and methodology and source references in their existing fields; no
-  new schema is needed. It carries no `verdict`, `readiness`, or `PASS` field;
-  the validator rejects one.
+- **Format:** `council-report.v1` JSON ([schema](schemas/council-report.v1.schema.json)):
+  the frozen `question`, `subject_digest` and `recommendation`, every judge's
+  `context_id`, `methodology`, cited `evidence` and `omissions`, and the
+  synthesis buckets above. Record mode, round and candidate digest in each
+  `judgment`. It carries no `verdict` or `readiness` field, and a `judgment`
+  or `recommendation` that is only a verdict word is rejected.
 - **Validation command:** this skill's
-  `scripts/validate-output.sh <council-report.json>`.
+  `scripts/validate-output.sh <council-report.json>`, or
+  `scripts/validate-output.sh -` with an inline report on stdin.
 
 A judge that times out, errors, or returns an evidence-free judgment is excluded
-from agreement counting and recorded as non-returning; if fewer than two
+from agreement counting and listed as non-returning in `synthesis.notes` with
+its context ID and reason, never as a `judges` entry. If fewer than two
 eligible initial judgments remain, report insufficient independent coverage
-rather than synthesize a thin consensus. If no valid report can be formed,
+rather than synthesize a thin consensus; when no valid report can be formed,
 return the incomplete outcome and available receipts without fabricating judge
 records.
-
-## Prompt
-
-```text
-Use /agentops:council to compare architectures for reliable Job redelivery.
-Use four distinct available models I authorize for this source. Have each
-propose an approach independently, then debate the alternatives. Require
-three of four to support the same exact recommendation. Cap debate at five
-rounds and the whole council at 60 minutes. Preserve objections and explain
-what evidence we still need before implementation or validation.
-```
-
-Resolve the actual authorized model pins before dispatch; these example bounds
-are caller choices, not skill defaults. For validation, provide the unchanged
-acceptance and exact candidate, and return findings to the fresh validator
-without voting on PASS.
-
-## It's working if
-
-- Initial views are sealed before cross-review; any debate is bounded and
-  labeled peer-informed, with exact-candidate votes and dissent preserved.
-- Every judge finding lands in exactly one synthesis bucket; none is dropped.
-- A judgment that contradicts a caller-stated direction appears as a
-  `caller_challenge` entry with all five fields, never as a consensus point.
-- Every consensus claim names at least two distinct evidence methodologies, or
-  is labelled single-method agreement and weighted as one confirmation.
-- No `verdict`, `readiness`, or `PASS` field appears anywhere in the report.
-
-## Boundary
-
-Council does not mint a verdict of any version — no `PASS`/`FAIL`/`NOT_PROVEN`,
-no `verdict.v*` — edit the subject, retry work, choose a next action, or
-authorize Git, closure, release, or delivery. When Council is used as a Validate
-strategy, one accountable fresh validator consumes its report and Validate
-remains the sole semantic result owner and the only optional `verdict.v2`
-writer.

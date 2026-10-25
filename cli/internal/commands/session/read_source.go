@@ -14,10 +14,11 @@ func (m Module) readSourceCommand() *cobra.Command {
 	var jsonOut bool
 	command := &cobra.Command{
 		Use: "read-source", Short: "Read authorized bounded source bytes with integrity facts",
-		Long: `Read one explicit regular source file under independently selected T05 context
-policy. Native BD 1.2.2 context and maintenance-anchor reads must succeed before
-source bytes open. The selected task_policy_ref must contain source-read-policy.v1
-with exact file permissions and a measured output profile. Missing, mismatched,
+		Long: `Read one explicit regular source file under a selected context policy.
+The policy is independently selected through the ao config context route.
+Native BD 1.x (1.2.2 or later) context and maintenance-anchor reads must
+succeed before source bytes open. The selected task_policy_ref must contain
+source-read-policy.v1 with exact file permissions and a measured output profile. Missing, mismatched,
 unavailable or malformed policy denies the read. Restricted sources remain
 unavailable until native access enforcement is implemented; current policy checks
 support only explicitly synthetic or already-cleared sources.
@@ -55,14 +56,14 @@ integrity failure, unavailable source/profile, oversized output or output failur
 	}
 	f := command.Flags()
 	f.StringVar(&options.File, "file", "", "Exact absolute source file path (required)")
-	f.StringVar(&options.Context.Overrides.AccessPolicyRef, "access-policy-ref", "", "Independently selected T05 access policy JSON (required)")
+	f.StringVar(&options.Context.Overrides.AccessPolicyRef, "access-policy-ref", "", "Independently selected context access policy JSON (required)")
 	f.StringVar(&options.Context.SourceID, "source-id", "", "Expected canonical native beads_dir (required)")
 	f.StringVar(&options.Context.ProjectID, "project-id", "", "Expected native project identity (required)")
 	f.StringVar(&options.Context.OwnerScope, "owner-scope", "", "Independently expected owner scope (required)")
 	f.StringVar(&options.Context.TaskRef, "task-ref", "", "Expected caller task identity (required)")
 	f.StringVar(&options.Context.ModelRef, "model-ref", "", "Expected model/provider identity (required)")
 	f.StringVar(&options.Context.DestinationRef, "destination-ref", "", "Expected destination identity (required)")
-	f.StringVar(&options.Context.ConsumerRoot, "consumer-root", "", "Existing consumer checkout for T05 route verification (required)")
+	f.StringVar(&options.Context.ConsumerRoot, "consumer-root", "", "Existing consumer checkout for context route verification (required)")
 	f.StringVar(&options.Context.NativeDirectory, "native-directory", "", "Explicit directory for native BD source verification (required)")
 	f.Int64Var(&options.StartByte, "start-byte", 0, "First byte of the returned half-open range (required)")
 	f.Int64Var(&options.MaxBytes, "max-bytes", 0, "Positive maximum returned source bytes (required)")

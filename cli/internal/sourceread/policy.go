@@ -20,7 +20,7 @@ import (
 	"github.com/boshu2/agentops/cli/internal/verdictcheck"
 )
 
-// OutputProfile is selected through independently supplied T05 policy, never
+// OutputProfile is selected through independently supplied context policy, never
 // through a source record. Its receipt is a caller observation, not OS isolation
 // or evidence of this particular command's delivery to a model.
 type OutputProfile struct {
@@ -38,7 +38,7 @@ type SourcePermission struct {
 }
 
 // Policy is the source-read-policy.v1 document at the resolved TaskPolicyRef.
-// The T05 access policy and native maintenance fact select this document.
+// The context access policy and native maintenance fact select this document.
 type Policy struct {
 	SchemaVersion  string             `json:"schema_version"`
 	SourceID       string             `json:"source_id"`
@@ -132,8 +132,8 @@ func permittedFile(files []SourcePermission, path string) (SourcePermission, err
 	if permission.Path == "" {
 		return permission, fmt.Errorf("read-source denied: file is not authorized")
 	}
-	// T05 only selects policy today. No supplied string can assert the missing
-	// native T39 enforcement. Restricted processing remains unavailable.
+	// The context route only selects policy today. No supplied string can assert
+	// the missing native access enforcement. Restricted processing remains unavailable.
 	if permission.ContentScope == "restricted" {
 		return permission, fmt.Errorf("read-source denied: restricted-source native enforcement is unavailable")
 	}

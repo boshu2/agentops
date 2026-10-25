@@ -13,8 +13,9 @@ delivery.
 
 ## Destination precedence for handoffs and evidence
 
-1. A new CDLC handoff, draft or proof goes only to the caller-selected
-   protected external non-Git destination (ADR-0016). A named path inside a Git
+1. A new CDLC (Context Delivery Lifecycle) handoff, draft or proof goes only
+   to the caller-selected protected external non-Git destination (ADR-0016).
+   A named path inside a Git
    working tree does not replace it. With none selected, report the missing
    routing, return the handoff in the response and create no fallback file in
    the checkout.

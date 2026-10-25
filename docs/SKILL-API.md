@@ -248,7 +248,7 @@ removed verbs — see [MIGRATION.md](MIGRATION.md).
 Path to a JSON Schema file that defines the skill's structured output format.
 
 ```yaml
-output_contract: skills/council/schemas/verdict.json
+output_contract: skills/council/schemas/council-report.v1.schema.json
 ```
 
 Paths are relative to repo root. Several skills instead use it as a prose

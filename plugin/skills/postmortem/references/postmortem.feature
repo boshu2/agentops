@@ -11,7 +11,7 @@ Feature: Postmortem tests retrospective causal claims
     And it cites evidence and counterfactuals
     And it distinguishes delivered facts, necessary checks and avoidable rework
     And uncertain time and token accounting remains explicit
-    And it returns at most three supported changes or no-change inline by default
+    And it returns at most three changes, or no-change, inline by default
     And each change aims at what the next run meets, such as a check, standard, pointer or a way to expose a missing fact, or is framed as an experiment, rather than re-fixing code already repaired
 
   Scenario: Postmortem does not repeat validation
@@ -21,14 +21,6 @@ Feature: Postmortem tests retrospective causal claims
     And it does not fabricate missing judgment evidence
     And it does not change proof, bookkeeping, planning, tracker, or delivery state
     And it saves a report only on request in protected external non-Git storage
-
-  Scenario: A goal requests code and a retrospective
-    Given the caller requires a coding change and a final postmortem
-    And required code checks are still pending
-    When the caller prepares code acceptance review
-    Then the review does not require a provisional postmortem
-    And final analysis waits for the known outcome and available judgment
-    And the overall goal still requires the requested postmortem
 
   Scenario: The caller explicitly requests interim analysis
     Given the coding outcome is not yet known

@@ -14,6 +14,7 @@
 
 | Source | Kind | Target |
 |---|---|---|
+| `agent-native` | `customer-of` | `agy-native` |
 | `agent-native` | `customer-of` | `claude-exec` |
 | `agent-native` | `customer-of` | `codex-exec` |
 | `agy-native` | `separate-ways` | `codex-exec` |
@@ -40,7 +41,7 @@
 | `security` | `supplier-to` | `validate` |
 | `skill-eval` | `supplier-to` | `skill-builder` |
 | `triage` | `supplier-to` | `plan` |
-| `using-gc` | `partnership` | `agent-native` |
+| `using-gc` | `supplier-to` | `orchestrate` |
 | `validate` | `customer-of` | `implement` |
 | `validate` | `customer-of` | `plan` |
 
@@ -97,7 +98,7 @@
 | `orchestrate` | consumes | `candidate-evidence` |
 | `orchestrate` | produces | `native-handoffs` |
 | `orchestrate` | produces | `reconciled-feedback` |
-| `postmortem` | produces | `postmortem-report.md` |
+| `postmortem` | produces | `postmortem-analysis` |
 | `premortem` | produces | `premortem-plan-review.v1` |
 | `refactor` | consumes | `repo-context` |
 | `refactor` | produces | `code-changes` |
@@ -123,8 +124,8 @@
 | `skill-builder` | produces | `converted-skill` |
 | `skill-builder` | produces | `operationalization-proposal` |
 | `skill-eval` | consumes | `skill-source-package` |
+| `skill-eval` | produces | `skill-maintenance-recommendation` |
 | `skill-eval` | produces | `probe-package` |
-| `skill-eval` | produces | `probe-result.v1` |
 | `test` | consumes | `standards` |
 | `test` | consumes | `repo-context` |
 | `test` | produces | `test-evidence` |
@@ -132,7 +133,7 @@
 | `triage` | consumes | `native-source-evidence` |
 | `triage` | produces | `triage-outcome` |
 | `triage` | produces | `agent-ready-brief` |
-| `using-gc` | consumes | `explicit-packets` |
+| `using-gc` | consumes | `accepted-intent` |
 | `using-gc` | produces | `gas-city-runtime-evidence` |
 | `validate` | consumes | `subject-manifest.v1` |
 | `validate` | produces | `subject-manifest.v1` |

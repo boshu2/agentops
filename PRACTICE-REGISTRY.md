@@ -269,7 +269,7 @@ Slug count: 45.
 - `skills/provenance/SKILL.md` — artifact lineage and source-chain tracing
 - `docs/domain-practice-packets.md` — product-facing packet contract
 - `docs/context-packet.md` — runtime context packet contract
-- `skills/rpi/references/phase-data-contracts.md` — phase handoff contract
+- `docs/architecture/rpi-traversal.md` — RPI traversal and evidence semantics
 - `docs/architecture/primitive-chains.md` — the concrete primitive layers
   (Mission / Discovery / Risk / Execution / Validation / Learning / Ratchet
   / Continuity) that compose the practice into chains

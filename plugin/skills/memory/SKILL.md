@@ -60,13 +60,20 @@ request to turn an incident into a rule for an instruction file:
    the project `.context/` page or the doc beside the governed code (never an
    external-bundle page from a checked-in file) that carries all five fields. A
    line that only restates what agents already do by default earns no place.
-4. **Review before admission.** Draft outside Git. A fresh reviewer who is not
-   the author checks factual support and disclosure of the exact text, paths
-   and destination before it enters `.context/`, an instruction file such as
-   `AGENTS.md`, or any Git object. Promoting an entry into an instruction file
-   is a separate policy change owned by that file.
-5. **Saving proves nothing.** Only later work can show that reuse changed an
-   action and helped. Until then a saved rule is an untested hypothesis.
+4. **Review before admission.** Give the draft inline in your reply unless the
+   caller named storage outside Git; never write it into the repository before
+   review. A fresh reviewer who is not the author checks factual support and
+   disclosure of the exact text, paths and destination before it enters
+   `.context/`, an instruction file such as `AGENTS.md`, or any Git object.
+   Promoting an entry into an instruction file is a separate policy change
+   owned by that file. On an explicit request to remember something, the
+   runtime's own memory store (such as Claude Code auto-memory or Codex memory)
+   is a valid destination; rules 1-3 still apply, and fresh review is owed only
+   when that store is shared or checked in.
+5. **Saving proves nothing.** Saved pages, retrieval counts and structural
+   checks prove no benefit. Only later work can show that reuse changed an
+   action and helped; keep failed, harmful and no-change results. Until then a
+   saved rule is an untested hypothesis.
 
 ```markdown
 ### <one-line claim>
@@ -90,50 +97,36 @@ them. Learning may also simplify or remove rules.
 | Rank repeated operational friction in supplied history | [Toil evidence](references/toil.md) |
 | Trace a corrected claim or audit the loaded instruction set | [Instruction sources](references/instruction-sources.md) |
 
-Memory owns these operations; other roles link here instead of keeping their
-own procedures. Capture includes bounded source maps, verdicts, corrections and
-failed or harmful reuse; it is never a required completion step. Load only the
-selected operation's reference. The optional
+Memory owns these operations. Whether recurring evidence warrants a general
+rule is decided by [Research's pattern mode](../research/SKILL.md#pattern-evidence)
+(independent exemplars and a holdout). Capture includes bounded source maps,
+verdicts, corrections and failed or harmful reuse; it is never a required
+completion step. Load only the selected operation's reference. The optional
 [OKF page profile](references/learn/okf-page-profile.md) checks structure only.
 
 ## One authority per fact
 
-BD or the caller's tracker owns work, status, dependencies and handoffs; Git
-owns content and delivery history; native sessions and CASS own episode
-evidence. Reviewed Markdown topic pages in a selected project `.context/` or an
-external bundle hold reusable claims as evidence, not another work account.
-Existing docs, ADRs and code keep their declared authority; a page points to
-those owners instead of copying their policy. Do not make one lesson file per
-session, copy a transcript lake, or silently initialize a memory store.
-
-For a selected project `.context/`, start at its small authored `README.md` map
-when relevant, then read likely pages and their current source owners with
-ordinary filesystem tools such as `rg` and `cat`; this needs neither BD nor AO.
-Reads create no directory, index or private import. The optional
-`ao config context` route supports external bundles and an explicitly bound
-canonical direct `<consumer>/.context`; it requires native BD and preserves the
-policy and identity bindings. Other consumer-overlapping roots remain refused.
+BD or the caller's tracker owns work and handoffs, Git owns content history,
+and native sessions or CASS own episodes. Reviewed topic pages in a project
+`.context/` or an external bundle hold reusable claims and point to the docs,
+ADRs and code that own a policy instead of copying it. Do not make one lesson
+file per session, copy a transcript lake, or silently initialize a memory
+store. Read a project `.context/` from its `README.md` map, when present, with
+`rg` and `cat`; this needs neither BD nor AO and creates nothing. External bundles and the
+`ao config context` route are in [Find / recall](references/recall.md).
 
 ## Access, storage and honest limits
 
 Use only sources already authorized for the task, owner, model/provider and
-exact destination. Read permission does not imply publication or Git storage.
-This lean path supports **public or already-cleared trial inputs only**. Neither
-this skill nor a prompt, worktree or same-user shell enforces restricted-source
-access, so do not retrieve restricted material through this path. The existing
-`ao session read-source` supported profile grants no broader or automatic
-transcript access. Unavailable and denied evidence remain explicit gaps; do not
-fetch then redact.
-
-Drafts and review proof stay in caller-selected protected external non-Git
-storage. Missing routing does not authorize a workspace fallback. Preserve
+exact destination; read permission does not imply publication or Git storage.
+This path supports **public or already-cleared trial inputs only** and enforces
+no restricted-source access, so do not retrieve restricted material through it;
+`ao session read-source` grants no broader transcript access. Unavailable and
+denied evidence remain explicit gaps; do not fetch then redact. Drafts and
+review proof go inline in your reply or to storage outside Git that the caller
+named; missing routing does not authorize a workspace fallback. Preserve
 requested legacy `.agents/` proof and unique evidence under owner policy.
 No blind TTL or delete operation is part of Memory. Labels and structural
-parsers do not prove isolation. `docs/adr/ADR-0016-state-tiers.md` owns these
-boundaries in a repository checkout; the operation references carry the
-installed rules.
-
-Saved pages, retrieval counts and structural checks prove no benefit. Only later
-work can demonstrate that reuse changed an action and helped its outcome; keep
-failed, harmful and no-change results. Mining is separately budgeted off-path
-and cannot delay finishing an already authorized change or alter its verdict.
+parsers do not prove isolation. In a repository checkout,
+`docs/adr/ADR-0016-state-tiers.md` owns these boundaries. Mining is budgeted
+separately and cannot delay an authorized change or alter its verdict.

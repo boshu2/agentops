@@ -513,11 +513,12 @@ Skill installation does not install tool dependencies:
 | `plan` | `ao`, conditional | runs `ao provenance snapshot-intent` with an explicit evidence root when the intent source is not durable |
 | `implement` | `ao`, conditional | at an integration boundary whose changed paths affect bound evidence, runs `ao provenance evidence-orphans` |
 | `validate` | `ao`, optional | with `ao`, derives exact subject identity from a content manifest and uses `ao provenance store-verdict` when persistence is requested; without it, names the commit and changed paths |
+| `council` | `ao`, optional | with `ao`, `subject_digest` is the `canonical_manifest_digest` from `ao provenance manifest`; without it, a sha256 over the subject's repo-relative files or its text |
 | `research` | `ao`, conditional | inspect selected goal measurements with `ao goals` or evidence-store facts with `ao status` |
 | `using-gc` | `ao` | rig prep runs `ao gc prepare` and `ao gc check` |
 | `doc` | `ao`, optional | a requested continuity handoff may use `ao session handoff`/`rehydrate` |
 | `reverse-engineer` | `python3` | Phase 1's mechanical teardown runs `scripts/reverse_engineer.py` |
-| `skill-builder` | `ao` 3.9 or later outside a source checkout, Go inside one; `python3`, conditional | build, check, heal and audit run through `ao skills`; build (without `--init-only`) and heal's fix mode also run `scripts/generate-skill-mesh.py`, and `audit.sh --legacy` needs PyYAML |
+| `skill-builder` | `ao` 3.9 or later outside a source checkout, Go inside one; `python3`, conditional | build, check, heal and audit run through `ao skills`; build (any mode) and heal's fix mode refuse with exit 2 outside an AgentOps source checkout (no `scripts/generate-skill-mesh.py`, as in a plugin install); build without `--init-only` and heal's fix mode run that script, and `audit.sh --legacy` needs PyYAML |
 | `memory` | `python3`, conditional | a selected toil investigation can use the repository helper `scripts/toil-mining/recent_human.py` on cleared Codex sources |
 | `security` | `python3`, conditional | the composable suite and offline redteam surfaces run `security_suite.py` when that scan type is selected |
 
@@ -532,8 +533,9 @@ Skill installation does not install tool dependencies:
 filesystem tools; no `ao` or Beads is needed. See this repo's [context map](.context/README.md).
 
 Adding notes requires authorized sources and fresh review of factual support
-and disclosure before Git admission. Drafts and evidence stay in protected
-external storage. These procedures do not enforce access permissions or prove
+and disclosure before Git admission. Drafts and evidence stay inline in the
+reply or in storage outside Git that the caller names. These procedures do not
+enforce access permissions or prove
 that saved notes improve later work. See [Memory's storage rules](skills/memory/SKILL.md#access-storage-and-honest-limits).
 
 </details>
