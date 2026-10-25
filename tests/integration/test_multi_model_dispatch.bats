@@ -96,11 +96,14 @@ PY
   python3 - "$FIX/council-degrade.json" <<'PY'
 import json, sys
 r = json.load(open(sys.argv[1]))
-assert r["diversity_unsatisfied"] is True
+assert r["diversity_unsatisfied"] == ["missing-model"]
 assert "diversity_unsatisfied: missing-model" in r["synthesis"]["unresolved"]
-# Single-model unanimity weighs as one confirmation, never consensus.
+# Single-model agreement is kept as a consensus point that weighs as one
+# confirmation (council SKILL.md: echo consensus weighs as one; nothing is dropped).
 assert {j["model_identity"] for j in r["judges"]} == {"live-model"}
-assert r["synthesis"]["consensus"] == []
+assert len(r["synthesis"]["consensus"]) == 1
+assert r["synthesis"]["consensus"][0]["weighs_as_one"] is True
+assert r["synthesis"]["consensus"][0]["models"] == ["live-model"]
 print("council degrade ok")
 PY
 

@@ -34,9 +34,11 @@ def write_json(path: Path, payload: dict) -> None:
 
 
 def council(args: argparse.Namespace) -> int:
-    # Emits council-report.v1 exactly as skills/council/scripts/validate-output.sh
-    # accepts it: no verdict-like judgment, boolean diversity_unsatisfied, and
-    # the unavailable profiles named under synthesis.unresolved.
+    # Emits council-report.v1 as skills/council/SKILL.md describes it and
+    # skills/council/scripts/validate-output.sh accepts it: no verdict-like
+    # judgment, every agreement kept as a consensus point (weighs_as_one when
+    # one model or one method supports it), and unavailable profiles named in
+    # diversity_unsatisfied and under synthesis.unresolved.
     profiles = [p.strip() for p in args.models.split(",") if p.strip()]
     if len(profiles) < 2:
         print("council requires at least two --models", file=sys.stderr)
@@ -65,9 +67,15 @@ def council(args: argparse.Namespace) -> int:
             judge["omissions"] = [f"requested profile {profile} unavailable"]
         judges.append(judge)
 
-    cross_model = not unsatisfied and len({j["model_identity"] for j in judges}) > 1
     methodologies = sorted({j["methodology"] for j in judges})
-    consensus = [{"claim": "fixture consensus", "methodologies": methodologies}]
+    models = sorted({j["model_identity"] for j in judges})
+    # Council's rule: agreement is never dropped. A point whose supporting
+    # judges share one model or one method is a consensus point that weighs
+    # as one confirmation (weighs_as_one: true), not an absent consensus.
+    point = {"claim": "fixture consensus", "methodologies": methodologies, "models": models}
+    if len(methodologies) < 2 or len(models) < 2:
+        point["weighs_as_one"] = True
+    consensus = [point]
     report = {
         "schema_version": "council-report.v1",
         "question": question,
@@ -75,13 +83,15 @@ def council(args: argparse.Namespace) -> int:
         "subject_digest": hashlib.sha256(question.encode("utf-8")).hexdigest(),
         "judges": judges,
         "synthesis": {
-            # Single-model unanimity weighs as one confirmation: no consensus.
-            "consensus": consensus if cross_model else [],
+            "consensus": consensus,
             "divergence": [],
             "minority": [],
+            # A missing required leg prevents convergence; it stays listed here too.
             "unresolved": [f"diversity_unsatisfied: {p}" for p in unsatisfied],
         },
-        "diversity_unsatisfied": bool(unsatisfied),
+        # Requested profiles with no authorized live adapter, listed by name
+        # (council SKILL.md step 1); false when every profile was live.
+        "diversity_unsatisfied": unsatisfied if unsatisfied else False,
     }
     out = Path(args.output)
     write_json(out, report)

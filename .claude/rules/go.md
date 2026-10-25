@@ -70,13 +70,13 @@ Suppressing a security-lint finding on intentional crypto (e.g. SHA-1 for git ob
 
 ```go
 import (
-    "crypto/sha1" // #nosec G505 nosemgrep -- git object IDs are SHA-1 by definition; not a security primitive here.
+    "crypto/sha1" // #nosec G505 nosemgrep: <rule-id> -- git object IDs are SHA-1 by definition; not a security primitive here.
 )
 // ...
-h := sha1.New() // #nosec G401 nosemgrep -- git blob IDs are SHA-1; matching git.
+h := sha1.New() // #nosec G401 nosemgrep: <rule-id> -- git blob IDs are SHA-1; matching git.
 ```
 
-Canonical example: `cli/internal/drrebuild/drrebuild.go`.
+Canonical placement (it uses the bare form, which still works): `cli/internal/drrebuild/drrebuild.go`.
 
 ## Style
 
