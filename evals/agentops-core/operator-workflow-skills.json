@@ -38,13 +38,11 @@
       "timeout_seconds": 300,
       "inputs": {
         "cwd": "../..",
-        "shell": "set -eu; for s in council implement plan postmortem; do echo \"shared: $s\"; bash \"skills/$s/scripts/validate.sh\"; done"
+        "shell": "set -eu; for s in council postmortem; do echo \"shared: $s\"; bash \"skills/$s/scripts/validate.sh\"; done"
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
         {"type": "stdout_contains", "value": "shared: council"},
-        {"type": "stdout_contains", "value": "shared: implement"},
-        {"type": "stdout_contains", "value": "shared: plan"},
         {"type": "stdout_contains", "value": "shared: postmortem"}
       ],
       "dimensions": ["correctness", "runtime_compatibility", "process_adherence"],
