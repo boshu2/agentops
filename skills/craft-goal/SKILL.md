@@ -16,10 +16,6 @@ context_rel:
 - kind: supplier-to
   with: plan
 user-invocable: true
-context:
-  window: inherit
-  intent:
-    mode: task
 metadata:
   tier: judgment
   dependencies: []
@@ -88,8 +84,9 @@ missing decisions. The caller owns revision and goal creation.
   [Navigate](../navigate/SKILL.md) owns the walk each wave applies: graph
   contract, ratchet, discovery classes and checkpoint.
 - **Proof stays outside the goal.** The goal consumes each verdict unchanged:
-  orchestration cannot author its own proof. Fresh validation is for the
-  costly cases only, since a review per bead multiplies cost across the graph.
+  orchestration cannot author its own proof. Fresh validation is for
+  [Validate's costly cases](../validate/SKILL.md#when-a-fresh-judgment-is-worth-it)
+  only, since a review per bead multiplies cost across the graph.
 - **Two-level bounds.** Every experiment and every wave is bounded, and the
   whole goal has monotonic hard ceilings, so a new wave cannot mint a new
   campaign.

@@ -68,24 +68,6 @@
       "critical": true
     },
     {
-      "id": "docs-readme-oss-skill-validators",
-      "title": "doc skill validator passes (README and OSS work absorbed into doc)",
-      "kind": "command",
-      "objective": "Keep the documentation skill healthy, including the README and OSS documentation work now absorbed into doc as request shapes. Every runtime loads skills/ directly, so there is one validator.",
-      "runtime": "shell",
-      "timeout_seconds": 120,
-      "inputs": {
-        "cwd": "../..",
-        "shell": "bash skills/doc/scripts/validate.sh"
-      },
-      "expectations": [
-        {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "doc structure and resource boundaries: PASS"}
-      ],
-      "dimensions": ["correctness", "runtime_compatibility", "process_adherence"],
-      "critical": true
-    },
-    {
       "id": "oss-docs-audit-json-behavior",
       "title": "OSS docs audit emits valid tiered JSON (OSS docs helper)",
       "kind": "command",

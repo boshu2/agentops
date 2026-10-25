@@ -29,13 +29,6 @@ metadata:
   tier: execution
   dependencies: []
   triggers: ["holds up", "really done"]
-context:
-  window: fork
-  intent:
-    mode: task
-  sections:
-    exclude:
-    - HISTORY
 output_contract: cited answer; findings.json for ordinary durable reports; validated codebase-recon.v1, pattern-mining.v1 or reality-check-report.v1 for selected evidence modes; per-item claim ledger with no verdict
 ---
 # Research
@@ -293,6 +286,16 @@ Research returns evidence; adoption remains an explicit caller decision.
 
 ## Output and boundaries
 
+`<skill-dir>` is the directory that contains this SKILL.md. Claude Code shows
+it as "Base directory for this skill"; Codex lists this skill's SKILL.md path;
+in an AgentOps source checkout it is `skills/research`. Replace `<skill-dir>`
+with that absolute path before running a command. The working directory stays
+the user's repository. If the host did not show where this skill is installed,
+use the directory of the SKILL.md you read. If you cannot determine it, do not
+guess a path or run a same-named script from the current repository; say the
+bundled script is unavailable and check the artifact's fields by hand against
+its format.
+
 Return a cited answer directly unless a durable output was requested or the
 selected mode requires one. To save a report, use the location the caller
 named, else the repository's existing research or decision-notes location and
@@ -313,13 +316,13 @@ back and report its exact path. Each durable mode keeps its own format:
   `statement` and cited `evidence`. When every item is unverifiable, record one
   incomplete-evidence finding that cites the searches. It has no verdict,
   readiness or PASS field. Check it with
-  `skills/research/scripts/claim-audit/validate-output.sh <report.json>`.
+  `bash "<skill-dir>/scripts/claim-audit/validate-output.sh" <report.json>`.
 - **Repository tracing:** `codebase-recon.v1` by the
   [recon pack contract](references/codebase-recon/pack-contract.md), checked by
-  `skills/research/scripts/codebase-recon/validate-output.sh --repo-root <target> <recon.json>`.
+  `bash "<skill-dir>/scripts/codebase-recon/validate-output.sh" --repo-root <target> <recon.json>`.
 - **Pattern evidence:** `pattern-mining.v1` by the
   [pattern pack contract](references/pattern-mining/pack-contract.md), checked by
-  `skills/research/scripts/pattern-mining/validate-output.sh <pattern.json>`.
+  `bash "<skill-dir>/scripts/pattern-mining/validate-output.sh" <pattern.json>`.
 
 Use only authorized sources and destinations. For restricted or mined episode
 material, follow [Memory's access and storage boundary](../memory/SKILL.md).

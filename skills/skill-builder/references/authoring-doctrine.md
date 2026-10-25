@@ -45,16 +45,17 @@ not invent workflow phases, and a concise adapter can express success and
 failure in one paragraph.
 
 A skill usually runs inside the conversation that loaded it, so its caller is
-the same agent; `context.window` is declaration-only and creates no boundary.
-There, an ending such as "return to the caller", "hand off", "output nothing
-else" or a closing "stop" can only end the turn, and an unattended run then
-halts with its task undone. Word the ending as the operation finishing: state
-the result and let the surrounding task go on. A stop stays when a person must
-decide, nothing is left to do, the reader is a dispatched agent whose result
-returns to its parent, an unattended default already exists, or the word only
-bounds the activity ("stop after three candidates", "report, then stop; fixing
-is the caller's"). A prompt for a real subagent may say report and stop; when a
-fallback runs the same prompt inline, word it so both readers are safe.
+the same agent (only Claude Code's `context: fork` would fork it, and no
+AgentOps skill sets that). There, an ending such as "return to the caller",
+"hand off", "output nothing else" or a closing "stop" can only end the turn,
+and an unattended run then halts with its task undone. Word the ending as the
+operation finishing: state the result and let the surrounding task go on. A
+stop stays when a person must decide, nothing is left to do, the reader is a
+dispatched agent whose result returns to its parent, an unattended default
+already exists, or the word only bounds the activity ("stop after three
+candidates", "report, then stop; fixing is the caller's"). A prompt for a real
+subagent may say report and stop; when a fallback runs the same prompt inline,
+word it so both readers are safe.
 
 ## Use concrete language before compressed cues
 

@@ -123,6 +123,18 @@ for skill_dir in "$SKILLS_DIR"/*/; do
         done <<< "$ref_paths"
     fi
 
+    # --- (f) <skill-dir>/scripts|schemas paths must exist in this package ---
+    bundled_paths=$(grep -oE '<skill-dir>/(scripts|schemas)/[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)*' "$skill_md" 2>/dev/null || true)
+    if [ -n "$bundled_paths" ]; then
+        while IFS= read -r ref; do
+            [ -z "$ref" ] && continue
+            if [ ! -f "$skill_dir/${ref#<skill-dir>/}" ]; then
+                fail "$skill_name" "bundled file '$ref' does not exist"
+                skill_ok=false
+            fi
+        done <<< "$bundled_paths"
+    fi
+
     if $skill_ok; then
         PASSED=$((PASSED + 1))
         echo -e "  ${GREEN}✓${NC} $skill_name (tier=$tier, ${line_count} lines)"

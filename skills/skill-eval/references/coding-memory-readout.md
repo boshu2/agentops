@@ -2,7 +2,8 @@
 
 Readout rules for controlled coding comparisons and memory transfer tests. Use
 the development adapter documented in
-[`evals/skills-rpi/readout.md`](../../../evals/skills-rpi/readout.md), or the
+[`evals/skills-rpi/readout.md`](https://github.com/boshu2/agentops/blob/main/evals/skills-rpi/readout.md)
+(AgentOps source checkout only), or the
 caller's existing equivalent. Its report is a rebuildable view, not work
 authority. The pilot's default `insufficient-evidence` recommendation is an
 honest limit; the specialist may make a narrower supported maintenance

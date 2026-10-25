@@ -17,12 +17,10 @@ acceptance-advancing action or consequential uncertainty. Reserve capacity for
 integration, required repairs, a fresh judgment where one is warranted and a useful handoff before
 spending the whole allowance on discovery or reviews.
 
-Apply the charter's at-most-one bounded helper to a genuine causal stall. Known
-failures get direct repair. A repeated wakeup, new context or renamed finding is
-not a new incident. A helper with no useful new approach ends that attempt;
-report the unresolved cause and required caller decision. Cancellation, refusal
-and spent real bounds skip help. Native blocked-status thresholds are bookkeeping,
-not permission to renew time, cost, quota or helper use.
+Apply the charter's [causal-stall rule](../SKILL.md#causal-stall-and-bounds) to
+a genuine stall: a repeated wakeup, new context or renamed finding is not a new
+incident, and native blocked-status thresholds are bookkeeping, not permission
+to renew time, cost, quota or helper use.
 
 No objective text, saved plan or simulated stop proves aggregate runtime
 enforcement. Stricter host or user helper and stopping rules still apply; this

@@ -136,8 +136,8 @@ Where the repository records AgentOps evidence bindings, run
 `ao provenance evidence-orphans --root <repo> --changed <path>...` and disclose
 the acceptance evidence it reports orphaned. Requested proof goes to protected
 storage outside Git that the caller selects; preserve legacy `.agents/`
-evidence. Validate's decision order sets a requested binding verdict.
-Authors cannot issue binding PASS.
+evidence. [Validate](../validate/SKILL.md#rules-that-decide-the-verdict)'s
+decision order sets a requested binding verdict, which the author cannot issue.
 
 [Memory](../memory/SKILL.md), specialists and runtime adapters are on demand;
 no-match and no-change are valid. Read [boundaries](references/boundaries.md)

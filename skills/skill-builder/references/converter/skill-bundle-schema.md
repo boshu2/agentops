@@ -4,15 +4,17 @@ The SkillBundle is the universal intermediate representation produced by the con
 
 ## Run the converter
 
-`bash skills/skill-builder/scripts/converter/convert.sh <skill-dir> <target> [output-dir]`
+`<skill-dir>` is defined in [SKILL.md](../../SKILL.md).
+
+`bash "<skill-dir>/scripts/converter/convert.sh" <source-skill-dir> <target> [output-dir]`
 makes an explicit out-of-tree export. Targets are `codex`, `cursor` and `test`;
-`--all` in place of `<skill-dir>` selects every package under the root's
+`--all` in place of `<source-skill-dir>` selects every package under the root's
 `skills/`, and `--codex-layout inline` selects the legacy inline Codex layout.
 It needs Bash 4.3 or later. The converter parses the source once, renders the
 target, then checks resource parity and target format. Report the layout and
 any Cursor references it omitted.
 
-Relative `<skill-dir>` and `[output-dir]` resolve against the current
+Relative `<source-skill-dir>` and `[output-dir]` resolve against the current
 directory. The root is the AgentOps source checkout holding the script, or
 `SKILL_BUILDER_REPO_ROOT`; without an output dir the export goes to
 `<root>/.agents/projections/converter/<target>/<skill-name>/`, and a root

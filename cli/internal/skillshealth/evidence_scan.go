@@ -10,7 +10,7 @@ import (
 
 var portableSlug = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
 var auditLink = regexp.MustCompile(`\[[^\]]*\]\(([^\s)#?]+)(?:[^)]*)\)`)
-var auditInvocation = regexp.MustCompile(`(?:bash|sh|python3?|node|exec)\s+["'` + "`" + `]?((?:\./)?scripts/[a-zA-Z0-9_./-]+\.(?:sh|py|js))`)
+var auditInvocation = regexp.MustCompile(`(?:bash|sh|python3?|node|exec)\s+["'` + "`" + `]?(<skill-dir>/)?((?:\./)?scripts/[a-zA-Z0-9_./-]+\.(?:sh|py|js))`)
 var auditNoop = regexp.MustCompile(`(?i)\b(be careful|use best practices|ensure quality|think carefully)\b`)
 var effectPatterns = []struct {
 	kind    string
@@ -53,7 +53,7 @@ func scanAuditResources(r *EvidenceReport, root, boundary, skill string) {
 					continue
 				}
 				target = strings.SplitN(strings.SplitN(target, "#", 2)[0], "?", 2)[0]
-				followAuditResource(r, root, boundary, &queue, seen, item, target, ref.line, strings.Split(item.content, "\n")[ref.line-1], false)
+				followAuditResource(r, root, boundary, &queue, seen, item, target, ref.line, strings.Split(item.content, "\n")[ref.line-1], false, false)
 			}
 		}
 		for i, line := range strings.Split(item.content, "\n") {
@@ -81,14 +81,14 @@ func scanAuditResources(r *EvidenceReport, root, boundary, skill string) {
 			if markdown && prose[i] != "" && auditNoop.MatchString(stripInlineCode(prose[i])) {
 				r.Authoring.Suspicions = append(r.Authoring.Suspicions, obs("generic-advice", "Phrase may add no task-specific instruction; compare with the actual task before changing it."))
 			}
-			for _, ref := range directInvocations(commands[i], markdown && prose[i] != "") {
-				followAuditResource(r, root, boundary, &queue, seen, item, ref, i+1, line, true)
+			for _, inv := range directInvocations(commands[i], markdown && prose[i] != "") {
+				followAuditResource(r, root, boundary, &queue, seen, item, inv.ref, i+1, line, true, inv.packageOnly)
 			}
 		}
 	}
 }
 
-func followAuditResource(r *EvidenceReport, root, boundary string, queue *[]auditResource, seen map[string]bool, item auditResource, ref string, line int, snippet string, invocation bool) {
+func followAuditResource(r *EvidenceReport, root, boundary string, queue *[]auditResource, seen map[string]bool, item auditResource, ref string, line int, snippet string, invocation, packageOnly bool) {
 	// Commands are relative to the package root; Markdown links to their containing file.
 	base := filepath.Dir(item.path)
 	if invocation {
@@ -112,7 +112,7 @@ func followAuditResource(r *EvidenceReport, root, boundary string, queue *[]audi
 		err = fmt.Errorf("resource uses a symlink: %s", ref)
 	}
 	if err != nil {
-		if invocation && os.IsNotExist(err) && repositoryInvocation(r, root, boundary, item, ref, line, snippet, false) {
+		if invocation && !packageOnly && os.IsNotExist(err) && repositoryInvocation(r, root, boundary, item, ref, line, snippet, false) {
 			return
 		}
 		r.addFinding("INVALID_RESOURCE", item.path, line, strings.TrimSpace(snippet), err.Error())
@@ -133,7 +133,7 @@ func followAuditResource(r *EvidenceReport, root, boundary string, queue *[]audi
 		r.addFinding("INVALID_RESOURCE", item.path, line, strings.TrimSpace(snippet), "required resource is not a regular file: "+ref)
 		return
 	}
-	if invocation {
+	if invocation && !packageOnly {
 		repositoryInvocation(r, root, boundary, item, ref, line, snippet, true)
 	}
 	if seen[rel] {
