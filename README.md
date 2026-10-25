@@ -490,12 +490,12 @@ afterward; new installs do not silently remove obsolete copies.
 **Upgrading from 3.8 or earlier:** version 3.9 removed ten bundled external tool
 skills, retired three delivery workflows, deleted the old curl installers and
 changed the Codex plugin to read `skills/` directly. Read the
-[3.9 release notes](docs/releases/2026-10-03-v3.9.0-notes.md) first.
+[3.9 release notes](https://github.com/boshu2/agentops/releases/tag/v3.9.0) first.
 
 **Upgrading from 3.6 or earlier:** read the [migration guide](docs/MIGRATION.md).
 Version 3.7 removed commands and skill names, including `learn`, `codebase-recon`
 and `swarm`; their current owners are `memory`, `research` and `agent-native`.
-See the [3.7 removals](docs/releases/2026-09-13-v3.7.0-notes.md).
+See the [3.7 release notes](https://github.com/boshu2/agentops/releases/tag/v3.7.0).
 
 </details>
 

@@ -46,37 +46,6 @@ if [[ -n "$staged_embed" ]]; then
     fi
 fi
 
-# --- Dual changelog sync (auto-copy new release entries to docs/CHANGELOG.md) ---
-if git diff --cached --name-only -- 'CHANGELOG.md' 2>/dev/null | grep -q '^CHANGELOG.md$'; then
-    if [[ -f "$REPO_ROOT/docs/CHANGELOG.md" ]]; then
-        # Extract the latest version from root changelog (portable: no grep -P)
-        latest_version=$(awk '/^## \[[0-9]+\.[0-9]+\.[0-9]+\]/{gsub(/.*\[|\].*/,""); print; exit}' "$REPO_ROOT/CHANGELOG.md")
-        if [[ -n "$latest_version" ]] && ! grep -Fq "## [$latest_version]" "$REPO_ROOT/docs/CHANGELOG.md"; then
-            echo "pre-commit: Root CHANGELOG.md has [$latest_version] but docs/CHANGELOG.md does not."
-            # Extract the new entry to a temp file using sed (awk range breaks on multibyte UTF-8)
-            escaped_ver=$(printf '%s' "$latest_version" | sed 's/\./\\./g')
-            sed -n "/^## \[${escaped_ver}\]/,/^## \[/{/^## \[/!p; /^## \[${escaped_ver}\]/p;}" \
-                "$REPO_ROOT/CHANGELOG.md" > "$REPO_ROOT/docs/.changelog-entry.tmp"
-            # Insert after ## [Unreleased] line in docs/CHANGELOG.md
-            {
-                found_unreleased=0
-                while IFS= read -r line; do
-                    printf '%s\n' "$line"
-                    if [[ "$found_unreleased" -eq 0 ]] && [[ "$line" == "## [Unreleased]"* ]]; then
-                        found_unreleased=1
-                        printf '\n'
-                        cat "$REPO_ROOT/docs/.changelog-entry.tmp"
-                    fi
-                done < "$REPO_ROOT/docs/CHANGELOG.md"
-            } > "$REPO_ROOT/docs/CHANGELOG.md.tmp"
-            mv "$REPO_ROOT/docs/CHANGELOG.md.tmp" "$REPO_ROOT/docs/CHANGELOG.md"
-            rm -f "$REPO_ROOT/docs/.changelog-entry.tmp"
-            git add "$REPO_ROOT/docs/CHANGELOG.md" 2>/dev/null || true
-            echo "pre-commit: docs/CHANGELOG.md synced with [$latest_version] and staged."
-        fi
-    fi
-fi
-
 # --- Plugin/marketplace version parity check (on release commits) ---
 commit_msg_file="$REPO_ROOT/.git/COMMIT_EDITMSG"
 if [[ -f "$commit_msg_file" ]] && grep -q '^Release v' "$commit_msg_file" 2>/dev/null; then

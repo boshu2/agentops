@@ -35,7 +35,6 @@ WARNING -  Doc file 'seed-definition.md' contains a link '../PRODUCT.md', but th
 WARNING -  Doc file 'trust-factory.md' contains a link '../PRODUCT.md', but the target is not found among documentation files.
 WARNING -  Doc file 'wiki-for-agents.md' contains a link '../PRODUCT.md', but the target is not found among documentation files.
 WARNING -  Doc file 'contracts/codex-skill-api.md' contains a link '../../AGENTS.md', but the target '../AGENTS.md' is not found among documentation files.
-WARNING -  Doc file 'releases/2026-07-17-v3.3.0-notes.md' contains a link '../../CHANGELOG.md', but the target '../CHANGELOG.md' is not found among documentation files. Did you mean '../CHANGELOG.md'?
 
 # Verified 2026-09-10: these links deliberately cite canonical source contracts
 # and the strict-build policy outside docs/, rather than generated site pages.
@@ -55,3 +54,24 @@ WARNING -  Doc file 'architecture/rpi-traversal.md' contains a link '../../skill
 WARNING -  Doc file 'reference/skill-system-evolution.md' contains a link '../../skills/rpi/SKILL.md', but the target '../skills/rpi/SKILL.md' is not found among documentation files.
 WARNING -  Doc file 'releases/2026-07-30-v3.4.0-notes.md' contains a link '../../skills/using-gc/SKILL.md', but the target '../skills/using-gc/SKILL.md' is not found among documentation files.
 WARNING -  Doc file 'CONTRIBUTING.md' contains a link '../tests/docs/mkdocs-strict-allowlist.txt', but the target is not found among documentation files.
+
+# Added 2026-10-25 (age-cdvz.6): cross-references from published pages to real
+# repo artifacts outside docs_dir, introduced with the skill links of #1235 and
+# the agent-native agents/*.toml references; each target verified to exist.
+WARNING -  Doc file 'agent-workflow-reference.md' contains a link '../skills/architecture/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'agent-workflow-reference.md' contains a link '../skills/ergonomics/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'agent-workflow-reference.md' contains a link '../skills/interview/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'agent-workflow-reference.md' contains a link '../skills/plan/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'agent-workflow-reference.md' contains a link '../skills/postmortem/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'agent-workflow-reference.md' contains a link '../skills/refactor/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'agent-workflow-reference.md' contains a link '../skills/review/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'agent-workflow-reference.md' contains a link '../skills/test/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'agent-workflow-reference.md' contains a link '../skills/triage/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'install-day2-ops.md' contains a link '../skills/agent-native/references/context-budget-delegation.md', but the target is not found among documentation files.
+WARNING -  Doc file 'install-day2-ops.md' contains a link '../skills/council/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'install-day2-ops.md' contains a link '../skills/implement/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'install-day2-ops.md' contains a link '../skills/orchestrate/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'install-day2-ops.md' contains a link '../skills/review/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'install-day2-ops.md' contains a link '../skills/validate/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'skills/agent-native.md' contains a link 'agents/bulk-reader.toml', but the target 'skills/agents/bulk-reader.toml' is not found among documentation files.
+WARNING -  Doc file 'skills/agent-native.md' contains a link 'agents/code-writer.toml', but the target 'skills/agents/code-writer.toml' is not found among documentation files.

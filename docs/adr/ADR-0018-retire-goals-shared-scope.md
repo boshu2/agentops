@@ -3,7 +3,7 @@
 - **Status:** Accepted, amended for selected CDLC 2026-09-06 (2026-09-03)
 - **Author:** AgentOps maintainers
 - **Builds on:** [ADR-0017](ADR-0017-loop-as-control-flow-not-knowledge.md) (the loop restored; its cathedral-cut gate is where retirements are tombstoned)
-- **Origin:** the 2026-09-02 field audit's inventory of the shipped skills, which named `goals` as a verbatim alias, `shared` as a consumer-less tombstone, and `scope` as five write-scope checks that belong in Plan (the plan folded them into plan step 3); Train 1 excluded them (`docs/plans/2026-09-02-legible-membrane-plan.md`, Non-goals: "No directory moves, deletions, or retirements (Train 2)") and Train 2 acted on them
+- **Origin:** the 2026-09-02 field audit's inventory of the shipped skills, which named `goals` as a verbatim alias, `shared` as a consumer-less tombstone, and `scope` as five write-scope checks that belong in Plan (the plan folded them into plan step 3); Train 1 excluded them ([`docs/plans/2026-09-02-legible-membrane-plan.md`](https://github.com/boshu2/agentops/blob/7de636720/docs/plans/2026-09-02-legible-membrane-plan.md), Non-goals: "No directory moves, deletions, or retirements (Train 2)") and Train 2 acted on them
 
 ## Active lean inventory amendment — 2026-09-09
 

@@ -174,7 +174,6 @@ scripts/regression-bisect.sh
 scripts/release-cadence-check.sh
 scripts/release-smoke-test.sh
 scripts/render-intent-bead.sh
-scripts/resolve-release-artifacts.sh
 scripts/restore-branch-protection.sh
 scripts/retag-release.sh
 scripts/run-rpi-phases.sh
@@ -219,7 +218,6 @@ scripts/validate-next-work.sh
 scripts/validate-outcomes-rubric.sh
 scripts/validate-practice-citations.sh
 scripts/validate-provenance-ledger.sh
-scripts/validate-release-audit-artifacts.sh
 scripts/validate-release-notes.sh
 scripts/validate-release.sh
 scripts/validate-skill-body-refs.sh

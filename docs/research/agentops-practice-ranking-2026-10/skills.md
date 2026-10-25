@@ -326,7 +326,7 @@ As of a193b6bdf none is met: `skills/navigate/SKILL.md` exists and
 
 | Edit | Ruling | Reason |
 |---|---|---|
-| validate: proven failure returns FAIL even with an identity gap | Rejected | Order is deliberate and published (`docs/releases/2026-10-05-v3.10.0-notes.md:76-78`; `skills/validate/references/mechanics.md:55-59`); the CLI reaches the case only with explicit empty or colliding identities; both outcomes block |
+| validate: proven failure returns FAIL even with an identity gap | Rejected | Order is deliberate and published ([`docs/releases/2026-10-05-v3.10.0-notes.md:76-78`](https://github.com/boshu2/agentops/blob/7de636720/docs/releases/2026-10-05-v3.10.0-notes.md#L76-L78); `skills/validate/references/mechanics.md:55-59`); the CLI reaches the case only with explicit empty or colliding identities; both outcomes block |
 | premortem: rescope Check 1 | Deferred (owner, paid) | Changes the only criterion where premortem beats no plugin (c1 3/3 vs 2/3); no deterministic check covers it; rerun the case (about $0.39) first |
 | orchestrate: pointer instead of the restated charter | Optional, not done | Copy is consistent with Validate today; no defect |
 | rpi 6-step rewrite; memory storage-policy move | Deferred | Conflict with validator phrase pins and active constraints |
