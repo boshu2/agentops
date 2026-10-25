@@ -1,4 +1,5 @@
-# Executable spec for Doc readme mode — gold-standard README generation.
+# Documentation-only scenarios for Doc readme mode (listed in scripts/.scenario-linkage-allow;
+# no test executes them) — gold-standard README generation.
 # Doc readme mode drafts or improves a README that converts skimmers into users and satisfies
 # deep readers, enforcing 8 non-negotiable patterns (problem-first lead, trust block
 # near install, collapse-don't-delete depth, adoption-ordered sections), then runs
@@ -16,6 +17,7 @@ Feature: README generation converts skimmers into users and reports evidence
   Scenario: The request shape and an existing README choose the path
     When Doc handles a README request
     Then a check-only request with an existing README skips to deterministic review only
+    And an update request edits only the named part of the existing README in place
     And a rewrite request with an existing README reuses it as rewrite context
     And with no README it generates from scratch, asking only for facts the repository cannot supply
     And when an existing README's request names neither shape it asks once which the caller wants
@@ -36,10 +38,10 @@ Feature: README generation converts skimmers into users and reports evidence
     Then it is placed inside <details> blocks with a blank line after <summary>
     And the skimmer path stays short while deep readers can expand
 
-  Scenario: De-slopify runs before deterministic checks
-    When generation or rewrite finishes
-    Then Doc runs the de-slopify pass from references/de-slopify.md on README.md
-    And applies manual recasts before the repository's checks and the anti-pattern checks
+  Scenario: An optional prose pass precedes deterministic checks on a substantial README
+    Given a substantial README was generated or rewritten
+    When Doc chooses to run the de-slopify pass from references/de-slopify.md
+    Then it applies manual recasts before the repository's checks and the anti-pattern checks
 
   Scenario: Checks run before the skill reports its evidence
     When generation or rewrite finishes

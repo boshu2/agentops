@@ -412,8 +412,9 @@ func init() {
 		{ID: "contract.compatibility", Tiers: gates.Fast | gates.Full, Match: contractPaths, Blocking: true, Backing: "check-contract-compatibility.sh"},
 		{ID: "contract.verdict-corpus", Tiers: gates.Fast | gates.Full, Match: []string{
 			"schemas/verdict.v2.schema.json",
-			"skills/validate/scripts/**",
+			"skills/validate/tests/**",
 			"cli/internal/verdictcheck/**",
+			"cli/internal/evidence/**",
 			"cli/cmd/ao/status.go",
 			"tests/fixtures/verdict-contract/**",
 			"scripts/check-verdict-contract-corpus.sh",

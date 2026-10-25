@@ -24,13 +24,11 @@ output_contract: 'one question per turn with a labeled recommendation and tradeo
 # Interview
 
 Shape a big outcome with the caller, one question per turn, before agents run
-alone. You look up facts; the caller makes choices and supplies what only they
-know. **Why:** answering shapes the caller's thinking, and control is highest
-before launch. Interview creates nothing new (no goal, bead or file) and
-changes no status, claim or closure; within authority it only appends settled
-notes to an existing intent source (see [Show the state](#show-the-state)).
-The caller can also select it to test a plan, design or decision they already
-hold; see [a held plan](references/stress-test.md#a-plan-the-caller-already-holds).
+alone: you look up facts; the caller makes choices and supplies what only they
+know. Interview creates nothing new (no goal, bead or file), changes no status,
+claim or closure, and only appends notes to an existing intent source
+([Show the state](#show-the-state)). To test a plan, design or decision the
+caller already holds, see [a held plan](references/stress-test.md#a-plan-the-caller-already-holds).
 
 ## Each turn
 
@@ -66,7 +64,8 @@ the outcome needs. Add a criterion, safeguard, authority or budget the caller
 did not name only when the outcome fails without it or harm would land before
 anyone notices. Offer anything else costly to add later (stored data, a
 published interface, money, security) as an option, not as the recommendation.
-Never narrow what the caller asked for.
+Never narrow what the caller asked for. Draw budget and authority options from
+a source (prior goals, the tracker, the caller's words); with none, ask openly.
 
 ## Answerer
 
@@ -100,8 +99,7 @@ code and tests. [Domain](../domain/SKILL.md) owns deeper modeling.
 
 ## Show the state
 
-Open each turn with one line: what just settled and how many choices stay
-open. Show these lists on request, after a revision and at stop:
+Show these lists on request, after a revision and at stop:
 
 - **Decided:** each choice; acceptance carries its Given/When/Then and proof.
   A fact the caller supplied appears here labeled as their report.
@@ -109,35 +107,37 @@ open. Show these lists on request, after a revision and at stop:
 - **Open:** unanswered choices, most consequential first.
 - **Deferred:** choices that change no next decision, and what revives them.
 
-Within authority, append settled decisions and terms to the intent source
-(root epic, issue or conversation), and Open and Deferred at stop. If a goal
-already runs on that epic, do not append a changed criterion or term; list it
-under Open as an acceptance change so the caller can hold and re-craft first. In BD:
+Number each choice Q<n> when first listed. As an item changes, Open and
+Deferred included, append its line to the intent source (root epic, issue or
+conversation) if the request or existing authorization covers editing it (the
+conversation always does); otherwise show it for the caller to append. The
+last line per Q<n> or term is current. A Navigate checkpoint in the epic notes
+or open child build beads mean a goal runs; if unsure, ask. While one runs,
+append no changed criterion or term; list it under Open in the conversation
+as an acceptance change for the caller to hold and re-craft. In BD:
 
 ```bash
 bd context --json    # confirm the destination before any write
-bd show <epic-id>    # on resume: reuse settled notes, start from Open
-bd update <epic-id> --append-notes "decided: <choice> | example: <Given/When/Then>"
+bd show <epic-id>    # on resume: the last line per Q<n> or term; start from Open
+bd update <epic-id> --append-notes "decided Q<n>: <choice> | example: <Given/When/Then> | proof: <evidence>"
+# or: "fact Q<n>: <report>" "term: <word> = <definition>" "open Q<n>: <choice>" "deferred Q<n>: <choice> | revive when <condition>"
 ```
 
 ## Stop and hand off
 
 Stop when the caller stops, the next question would only restate a settled
 answer, the work proves to be one slice (not when testing a held plan), or
-Craft Goal admission is decided:
+everything [Craft Goal admission](../craft-goal/SKILL.md#admission-decide-first)
+needs is settled:
 
 1. outcome, and non-goals the caller named or rejected;
 2. terminal acceptance, each criterion with its proving evidence;
 3. authority: reads, writes, external effects, Git, and when agents must ask;
-4. budgets: numeric limits per wave of work and for the whole goal, which
-   nothing renews, and how many results that change no decision trigger HOLD
-   (implementation stops for causal review);
+4. numeric wave and goal [budgets and the HOLD threshold](../craft-goal/SKILL.md#budgets-and-hold);
 5. the first falsifiable question.
 
-While the caller is still here,
-[test the settled answers](references/stress-test.md#test-the-settled-answers)
-once: read them together for contradictions, then try up to three borderline
-cases from open issues or recent work, one question each. Then hand over the
-lists; the caller starts the next step: Craft Goal for several related
-experiments, RPI or [Plan](../plan/SKILL.md) for one outcome with items 1 to
-3 and real bounds. Open items stay open; never fill one to finish.
+While the caller is still here, [test the settled answers](references/stress-test.md#test-the-settled-answers)
+once. Then hand over the lists; the caller starts the next step: Craft Goal
+for several related experiments, RPI or [Plan](../plan/SKILL.md) for one
+outcome with items 1 to 3 and real bounds. Open items stay open; never fill
+one to finish.

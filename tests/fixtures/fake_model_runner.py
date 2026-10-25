@@ -9,6 +9,7 @@ tests/integration/test_multi_model_dispatch.bats.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import sys
@@ -33,52 +34,54 @@ def write_json(path: Path, payload: dict) -> None:
 
 
 def council(args: argparse.Namespace) -> int:
+    # Emits council-report.v1 exactly as skills/council/scripts/validate-output.sh
+    # accepts it: no verdict-like judgment, boolean diversity_unsatisfied, and
+    # the unavailable profiles named under synthesis.unresolved.
     profiles = [p.strip() for p in args.models.split(",") if p.strip()]
     if len(profiles) < 2:
         print("council requires at least two --models", file=sys.stderr)
         return 2
     available = {p.strip() for p in (args.available or "").split(",") if p.strip()}
     unsatisfied = [p for p in profiles if available and p not in available]
+    live = [p for p in profiles if p not in unsatisfied]
+    if not live:
+        print("council requires at least one available --models profile", file=sys.stderr)
+        return 2
 
+    question = args.question or "conformance fixture question"
     judges = []
     for i, profile in enumerate(profiles, start=1):
-        judges.append(
-            {
-                "id": f"judge-{i}",
-                "context_id": f"ctx-judge-{i}-{profile}",
-                "model_identity": profile,
-                "methodology": "static-reading" if i % 2 else "executing-subject",
-                "judgment": "pass" if not unsatisfied else "abstain-disclosed",
-                "evidence": [f"fixture://criterion/{i}"],
-            }
-        )
+        # An unavailable profile degrades to a fresh context on a live model,
+        # disclosed in omissions; it never satisfies the missing leg.
+        model = profile if profile in live else live[0]
+        judge = {
+            "context_id": f"ctx-judge-{i}-{model}",
+            "methodology": "static-reading" if i % 2 else "executing-subject",
+            "model_identity": model,
+            "judgment": f"fixture criterion {i} is supported by the cited evidence",
+            "evidence": [f"fixture://criterion/{i}"],
+        }
+        if model != profile:
+            judge["omissions"] = [f"requested profile {profile} unavailable"]
+        judges.append(judge)
 
+    cross_model = not unsatisfied and len({j["model_identity"] for j in judges}) > 1
+    methodologies = sorted({j["methodology"] for j in judges})
+    consensus = [{"claim": "fixture consensus", "methodologies": methodologies}]
     report = {
         "schema_version": "council-report.v1",
-        "question": args.question or "conformance fixture question",
+        "question": question,
+        # No file subject: the digest binds the frozen question text.
+        "subject_digest": hashlib.sha256(question.encode("utf-8")).hexdigest(),
         "judges": judges,
-        "context_ids": [j["context_id"] for j in judges],
-        "model_identities": [j["model_identity"] for j in judges],
-        "agreement": {
-            "cross_model": len({j["model_identity"] for j in judges}) > 1
-            and not unsatisfied,
-            "single_model_only": bool(unsatisfied)
-            or len({j["model_identity"] for j in judges}) == 1,
-            "note": (
-                "diversity_unsatisfied: "
-                + ",".join(unsatisfied)
-                if unsatisfied
-                else "cross-model agreement eligible"
-            ),
-        },
-        "diversity_unsatisfied": unsatisfied,
         "synthesis": {
-            "consensus": [] if unsatisfied else ["fixture consensus"],
+            # Single-model unanimity weighs as one confirmation: no consensus.
+            "consensus": consensus if cross_model else [],
             "divergence": [],
             "minority": [],
-            "unresolved": unsatisfied,
+            "unresolved": [f"diversity_unsatisfied: {p}" for p in unsatisfied],
         },
-        "generated_at": utc_now(),
+        "diversity_unsatisfied": bool(unsatisfied),
     }
     out = Path(args.output)
     write_json(out, report)

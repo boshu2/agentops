@@ -36,7 +36,8 @@ Write or strengthen tests for a named behavior. Use existing tests directly when
 the task is only to run a known suite; this skill is not a required wrapper.
 A test is useful when it distinguishes an accepted outcome from a plausible
 failure, not merely when it executes the implementation. A green test is
-evidence for the caller's decision, never the test author's merge approval.
+evidence for the caller's decision, never the test author's merge approval;
+the binding verdict belongs to [Validate](../validate/SKILL.md).
 
 ## Modes
 
@@ -125,7 +126,7 @@ No need to re-prove an unchanged healthy runner on each edit.
    domain rules and check their promised end states. Do not invent impossible
    combinations or infer a kind's result from a sibling's passing test. A table
    test may cover many pairs; no separate artifact or test per cell is required.
-   Report relevant uncovered pairs under `unchecked`. Shared removal code is
+   Report relevant uncovered pairs under `not_checked`. Shared removal code is
    valid when those kinds should both disappear; it is a defect when an observed
    end state contradicts the accepted meaning, such as deleting a record that
    withdrawal must retain as inactive.
@@ -140,10 +141,11 @@ No need to re-prove an unchanged healthy runner on each edit.
    interface: the entry point callers use. Add no export, flag or hook only
    tests call (a time, randomness or external-boundary seam excepted), mock no
    collaborator inside the unit, and move to the interface any test you write
-   here that a behavior-preserving rewrite would break; report existing ones as
-   Rewrite candidates. In `tdd` mode run it before implementation and require the
-   expected missing-behavior failure, then implement and refactor under green,
-   one test at a time, each next case chosen from what the last cycle showed.
+   here that a behavior-preserving rewrite would break; list existing ones under
+   `not_checked` as rewrite candidates ([suite audit](references/suite-audit.md)).
+   In `tdd` mode run it before implementation and require the expected
+   missing-behavior failure, then implement and refactor under green, one test
+   at a time, each next case chosen from what the last cycle showed.
 4. Run focused checks while editing and the relevant integration recipe before
    handoff; broaden only for changed risk, a failure or repository policy.
 5. Compare against the original accepted examples. New tests added after
@@ -155,7 +157,7 @@ Load only the guidance needed by the subject:
 
 - Public compatibility contracts: [conformance-harnesses](references/conformance-harnesses.md)
 - Parsers and hostile inputs: [fuzzing](references/fuzzing.md)
-- Snapshots: [golden artifacts](references/golden-artifacts.md) and [update strategy](references/golden-artifact-strategy.md)
+- Snapshots and golden-file updates: [golden artifacts](references/golden-artifacts.md)
 - Invariants: [metamorphic testing](references/metamorphic-testing.md)
 - Service integration: [real-service E2E](references/real-service-e2e.md)
 - Selected user journeys: [exploratory QA](references/exploratory-qa.md)
@@ -171,19 +173,18 @@ Tests belong in the repository's language-native locations. Check facts and
 limits go in the existing handoff:
 
 ```text
-tests:     <file::name> -> <behavior and exact values it asserts>
-proof:     <each important new test> -> how it was shown to fail on its defect:
-           pre-fix RED | reverted-fix run | negative control | not shown
-commands:  <exact command> -> <result>
-harness:   <runner completed; how many ran; skips or exclusions>
-defects:   <discovered defect and reproducer, or none>
-unchecked: <material behavior no test covers>
+tests:       <file::name> -> <behavior and exact values it asserts>
+proof:       <each important new test> -> how it was shown to fail on its defect:
+             pre-fix RED | reverted-fix run | negative control | not shown
+commands:    <exact command> -> <result>
+harness:     <runner completed; how many ran; skips or exclusions>
+coverage:    <before -> after, command> (coverage mode only)
+defects:     <discovered defect and reproducer, or none>
+not_checked: <material behavior no test covers>
 ```
 
 Persist coverage or other reports only when requested or required by a declared
-consumer, at its selected destination; no automatic `.agents/` output. Factual
-green is input to the caller's merge or review decision, not the test author's
-binding PASS.
+consumer, at its selected destination; no automatic `.agents/` output.
 
 Example: for a duplicate Job delivery, assert that the completed result is
 returned and the external side effect is called only once. A coverage increase

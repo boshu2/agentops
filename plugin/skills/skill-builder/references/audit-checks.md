@@ -40,28 +40,24 @@ accepted but cannot turn suspicions into blockers. JSON defaults to stdout;
 `schemas/audit-report-legacy.json`, with the original field/exit contract.
 Consumers that need the old `verdict`, `pass1`, `pass2`, `density`, `rubric`,
 `craft` and `authoring` fields must opt in explicitly; do not use legacy scores
-to rank or optimize packages.
-The historical reference below applies **only** to that option. Canonical lexical
-WARNs remain nonblocking even under strict mode; external strict semantics stay
-unchanged. Direct readiness/craft scripts remain legacy measurements, not a
-ranking objective. The shared conformance-profile/trigger CI consumer is unchanged.
-Retire this option only after actual v1 consumers have migrated.
+to rank or optimize packages. The shared conformance-profile/trigger CI consumer
+is unchanged. The option's only callers are
+`tests/integration/test_skill_audit.bats`,
+`tests/scripts/skill-audit-rubric-pass.bats` and
+`docs/reference/skill-quality-rubric.md`; retire it together with them.
 
 ### Legacy deep skill audit checks
 
-Current Skill Builder migration: canonical `repo-runtime` Pass 2 checks are
-legacy authoring suspicions, all WARN and nonblocking even with `--strict`.
-Pass 1 source defects still produce FAIL. The eight IDs and JSON schema stay
-stable. External-observation strict behavior and other shared-profile consumers
-remain unchanged. The older per-check FAIL labels below describe the legacy
-profile defaults, not canonical audit acceptance. No static result or score
-establishes semantic completeness, safety or effectiveness.
+The reference below applies **only** to `--legacy`. It runs the structural
+`heal.sh --check --strict` pass (Pass 1), eight content checks (Pass 2), an
+advisory package-readiness score, a density block and advisory craft
+instrumentation. The eight IDs and JSON schema stay stable. The per-check FAIL
+labels below are legacy profile defaults, not canonical audit acceptance, and no
+static result or score establishes semantic completeness, safety or effectiveness.
 
-
-`audit.sh --legacy` runs the structural `heal.sh --check --strict` pass, eight content
-checks, an advisory static package-readiness score, and advisory craft
-instrumentation. The checks protect usability without rewarding ceremony or
-package size.
+The `density` block reports which of six fields (`intent`, `boundary`,
+`evidence`, `decision`, `constraint`, `next_action`) a keyword signal found; a
+missing field warns and never changes the verdict, exit code or CI.
 
 Executable thresholds and severities come from
 `skills/skill-builder/references/skill-conformance-profiles.yaml`.
@@ -129,11 +125,11 @@ material into linked references instead of expanding the always-loaded kernel.
 changes the verdict or exit code; they name gaps for the author and the fresh
 validator to judge.
 
-- **Craft score** — presence of the 12 craft elements enumerated in
-  [skill-template.md](skill-template.md) section 7, reported as
-  `craft n/12; missing: <element-ids>`. Detection is cheap pattern matching
-  over authored prose (HTML comments are stripped, so `init.sh` scaffold stubs
-  never count). Presence, never quality.
+- **Craft score** — presence of the 12 craft elements that `detect_elements()`
+  in [craft_score.py](../scripts/craft_score.py) lists, each with a one-line description,
+  reported as `craft n/12; missing: <element-ids>`. Detection is cheap pattern
+  matching over the prose left after HTML comments are stripped. Presence,
+  never quality.
 - **Provenance resolution** — repo paths and `.agents/ao` verdict/intent digest
   citations (full or abbreviated `prefix...suffix`) extracted from prose must
   resolve against the repository; each dead citation is a named finding.

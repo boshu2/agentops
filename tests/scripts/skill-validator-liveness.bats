@@ -78,6 +78,17 @@ seeded_validator_must_fail() {
   [ "$status" -ne 0 ]
 }
 
+@test "plan validator refuses an unshipped resume reference" {
+  local copy="$BATS_TEST_TMPDIR/plan"
+  mkdir -p "$copy"
+  cp -R "$REPO_ROOT/skills/plan/." "$copy/"
+  run bash "$copy/scripts/validate.sh"
+  [ "$status" -eq 0 ]
+  mv "$copy/references/resume-and-handoff.md" "$copy/references/resume-and-handoff.missing"
+  run bash "$copy/scripts/validate.sh"
+  [ "$status" -ne 0 ]
+}
+
 @test "implement validator fails on seeded forbidden token" {
   seeded_validator_must_fail implement 'candidate-packet.v1'
 }
@@ -96,8 +107,26 @@ seeded_validator_must_fail() {
   seeded_validator_must_fail security 'AUTO-REDO'
 }
 
+@test "research retired-lifecycle scan fails closed without ripgrep" {
+  local copy="$BATS_TEST_TMPDIR/research" bin="$BATS_TEST_TMPDIR/no-rg-bin" t
+  mkdir -p "$copy" "$bin"
+  cp -R "$REPO_ROOT/skills/research/." "$copy/"
+  for t in bash grep python3 cat dirname; do ln -s "$(command -v "$t")" "$bin/$t"; done
+  run env PATH="$bin" "$bin/bash" "$copy/scripts/validate.sh"
+  [ "$status" -eq 0 ]
+  printf '\nRun ao lookup --query x first.\n' >> "$copy/references/status.md"
+  run env PATH="$bin" "$bin/bash" "$copy/scripts/validate.sh"
+  [ "$status" -eq 1 ]
+}
+
+@test "premortem validator fails when the advisory review claims lifecycle authority" {
+  # Premortem only reports findings on a plan; it never lands, commits or
+  # redoes work. Before this test nothing in CI ran its validator.
+  seeded_validator_must_fail premortem 'Then run ao land on the reviewed plan.'
+}
+
 @test "validators still pass on the live skill sources" {
-  for slug in rpi plan implement memory security; do
+  for slug in rpi plan implement memory security premortem; do
     run bash "$REPO_ROOT/skills/$slug/scripts/validate.sh"
     [ "$status" -eq 0 ]
   done

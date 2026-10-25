@@ -81,7 +81,7 @@ proof of runtime isolation. --dry-run rejects evidence writes before mutation.`
 	case "store-verdict":
 		flagRoot()
 		flag(&o.evidenceRoot, "evidence-root", "Existing explicit non-Git evidence directory", true)
-		flag(&o.draft, "draft", "Fresh judge's supplied draft JSON", true)
+		flag(&o.draft, "draft", "Fresh judge's draft JSON; requires verdict, criteria, findings, evidence_refs, checked, not_checked and validated_at, and rejects unknown fields", true)
 		flag(&o.intent, "intent-source", "Independently supplied immutable intent file", true)
 		flag(&o.manifest, "subject-manifest", "Runtime-derived manifest", true)
 		flag(&o.base, "base-manifest", "Base manifest for deletions", false)

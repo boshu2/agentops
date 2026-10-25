@@ -24,9 +24,10 @@ discovery and status handling, see [code/API guidance](default-mode.md).
 ## Informational documents
 
 Use an existing validator where available, or inspect the selected files
-directly. `skills/doc/scripts/audit-oss-docs.sh` checks doc-file presence for an
-OSS pack; its counts do not measure API entities, link validity or semantic
-accuracy. No standalone link/orphan validator ships with this skill.
+directly. This skill's `scripts/audit-oss-docs.sh`, run with the audited
+repository as the working directory (see [OSS pack](oss-pack.md#audit-and-project-type)),
+checks doc-file presence for an OSS pack; its counts do not measure API
+entities, link validity or semantic accuracy. No standalone link/orphan validator ships with this skill.
 
 For a requested broader audit, define its file set and check relevant items:
 

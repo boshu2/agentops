@@ -50,10 +50,12 @@ as that reader would, and ask what it does next.
 
 ## Select the mode
 
-- **Plan mode** reads a proposed interface: design doc, spec, draft help text
-  or PR description. A failure path the design introduces without saying what
-  the caller sees is a finding, not an unknown; so is a user action it adds
-  with no agent path and no stated reason.
+- **Plan mode** reads without running anything: a proposed interface (design
+  doc, spec, draft help text, PR description), or the help and transcripts
+  supplied for a built one. In a proposal, a failure path it adds without
+  saying what the caller sees is a finding, not an unknown; so is a user action
+  it adds with no agent path and no stated reason. For a built tool, the
+  supplied runs count as observed and every other path is `Not exercised`.
 - **Live mode** exercises a built surface under [Authority](#authority).
   Unexercised commands are gaps, never passes.
 - Use both when a design makes claims about an existing surface. If no surface
@@ -63,11 +65,10 @@ as that reader would, and ask what it does next.
 
 **Coverage.** When the product also has a human interface, each valuable domain
 action there (create, change, approve, send, export, recover) has an
-agent-callable equivalent. The agent reads the same records, state and terms
-the person sees and acts on those same objects, not a separate agent copy.
-Consent, CAPTCHA, password entry, terms acceptance and approval steps the
-product keeps human on purpose stay human-only. Rank a missing path by the
-value of the action it blocks; preference screens rarely matter.
+agent-callable equivalent that reads and acts on the records, state and terms
+the person sees, not a separate agent copy. Consent, CAPTCHA, password entry,
+terms acceptance and approval steps the product keeps human on purpose stay
+human-only. Rank a missing path by the value of the action it blocks.
 
 **Discovery.** Help lists every command, flag, argument, default and required
 input. Each common task has a runnable example, and the examples run. One
@@ -118,15 +119,19 @@ refusal names it. A partial failure says what completed.
 
 ## Live exercise
 
-1. Inventory commands, flags and documented failure paths from help and source.
+1. Inventory commands, flags and documented failure paths from docs and source;
+   run help itself only inside the sandbox, in step 3.
 2. Use an available disposable sandbox that enforces the allowed filesystem,
-   process and network access. Keep operator files, credentials and host
-   sockets outside its access; no network unless authorized. Within it, use a
-   temporary HOME and working directory, only the needed env vars, stdin from
-   `/dev/null`, no terminal and a deadline per command (`timeout` or the host's
-   equivalent). Those settings alone do not establish containment. If required
-   isolation is unavailable, use plan mode and record live paths as not
-   exercised; do not execute on the ambient host or install a sandbox.
+   process and network access. Keep host sockets outside its access; keep
+   operator files, credentials and the network outside it unless an
+   [Authority](#authority) approval forwards them for that run; approval widens the sandbox and never
+   moves the run to the ambient host. Within it, use a temporary HOME and
+   working directory, only the needed env vars, stdin from `/dev/null`, no
+   terminal and a deadline per command (`timeout` or the host's equivalent).
+   Those settings alone do not establish containment. If required isolation is
+   unavailable or its enforcement cannot be confirmed, use plan mode and record
+   live paths as not exercised; do not execute on the ambient host or install a
+   sandbox.
 3. Start with paths rejected before any work: help, an unknown flag, a missing
    argument, an invalid value. These need no further approval.
 4. Capture the literal command, the target's own exit code (not a pipe's or
@@ -153,27 +158,18 @@ concrete agent consequence is not a finding. Unexercised paths still go under
 Surface: <tool and version, or design doc>; mode: plan | live; environment: <sandbox setup | n/a>
 1. <command | endpoint | file:line | design section> - <what is wrong>
    repro: <exact command> -> exit <n>; stdout: <excerpt>; stderr: <excerpt>
-          (plan mode: quoted design text and the call an agent would make)
+          (plan mode: quoted design text or supplied output, and the call an agent would make)
    agent consequence: <what a literal caller does next and what it costs>
    smallest fix: <exact change> -> Implement | Doc | Security | Test
-Exercised: <commands and paths run>
-Not exercised: <path - needs credentials | mutation not authorized | timed out | could not launch>
-First success: <steps and guesses from a clean environment> | not attempted (<reason>)
+Exercised: <commands and paths run or seen in supplied output>
+Not exercised: <path - not in supplied output | plan mode only | needs credentials | mutation not authorized | timed out | could not launch>
+First success (live mode only): <steps and guesses from a clean environment> | not attempted (<reason>)
 ```
 
 A clean result reads "no findings in the exercised scope", lists that scope and
 carries no score or verdict. Asked for a score, say in one line that the audit
 gives none and point to the findings instead; a count of passing checks
 presented as the score is still a score.
-
-## It's working if
-
-- Every finding has a location, literal reproduction, agent consequence and
-  smallest fix; every observed failure was checked against each applicable item.
-- Live runs used enforced containment, a disposable HOME and working directory,
-  a scrubbed environment, closed stdin, no unapproved network and a deadline.
-- Unexercised paths carry a reason; launch failures stay apart from tool failures.
-- No score, grade or readiness claim appears.
 
 ## Authority
 

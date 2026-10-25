@@ -10,8 +10,3 @@
 #
 # Format: one repo-relative file path per line. Blank lines and `#` comments
 # are ignored.
-
-# Illustrative CLI-naming template: deliberately names hypothetical commands
-# (`ao loop-history`, `ao loop write`, `ao loop tail`) as good/bad naming
-# examples and future-subcommand placeholders — not real invocations.
-skills/domain/references/standards/cli-wireup-template.md

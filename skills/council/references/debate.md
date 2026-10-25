@@ -53,5 +53,19 @@ resolve a failed required validation leg. Without a caller-selected voting
 rule, synthesize the evidence without inventing a vote.
 
 Record round, mode and candidate digest in each `judgment`, and bounds, roster,
-threshold, tally and stop reason in the synthesis prose; keep initial and
-deliberative support distinguishable. No new schema is needed.
+threshold, tally and stop reason in `synthesis.notes`; keep initial and
+deliberative support distinguishable.
+
+## Example request
+
+```text
+Use /agentops:council to compare architectures for reliable Job redelivery.
+Use four distinct available models I authorize for this source. Have each
+propose an approach independently, then debate the alternatives. Require
+three of four to support the same exact recommendation. Cap debate at five
+rounds and the whole council at 60 minutes. Preserve objections and explain
+what evidence we still need before implementation or validation.
+```
+
+Resolve the authorized model pins before dispatch; these bounds are the
+caller's choices, not skill defaults.

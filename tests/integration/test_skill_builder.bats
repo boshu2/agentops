@@ -151,7 +151,9 @@ PYCODE
   mv "$obstruction" "$BATS_TEST_TMPDIR/skill-graph.md"
   mkdir "$obstruction"
   run bash "$BUILD_SH" from-scratch "$name" --report "$REPORT_DIR/${name}-failed.json"
-  [ "$status" -eq 1 ]
+  # Exit 3, never the generator's own status: exit 1 means invalid input or an
+  # existing destination, and the rerun below must be told apart from this.
+  [ "$status" -eq 3 ]
   [[ "$output" == *"projection incomplete"* ]]
   source="$SCRATCH_ROOT/skills/$name/SKILL.md"
   [ -f "$source" ]

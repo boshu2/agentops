@@ -6,10 +6,21 @@ creation. The audit report, its exit codes and the legacy audit schema are in
 
 ## Creation inputs and reports
 
-Supply one input to `scripts/build.sh`: `from-scratch`, `from-template` or
-`absorb-external <slug> --from <path>`. The caller can supply `SKILL_TIER`,
-`SKILL_DEPENDENCIES`, `SKILL_CAPABILITIES` and `SKILL_EFFECTS`; lists are JSON
-arrays. An inline answer needs no output file.
+Supply one input to `scripts/build.sh`: `from-scratch <slug>`,
+`from-template <slug> --like <existing-slug>` or
+`absorb-external <slug> --from <path>`. Without `--like`, `from-template` exits
+1 with `invalid template slug`, which names the missing template, not the new
+slug. `from-template` only checks that the named skill exists and records it as
+`source_hint`; its scaffold is the same as `from-scratch`. For any mode the
+caller can supply `SKILL_TIER`, `SKILL_DEPENDENCIES`, `SKILL_CAPABILITIES` and
+`SKILL_EFFECTS`; lists are JSON arrays. An inline answer needs no output file.
+
+`build.sh` and `heal.sh --fix` write under `skills/` of an AgentOps source
+checkout: the one holding these scripts, or the root named by
+`SKILL_BUILDER_REPO_ROOT` (build) or `HEAL_REPO_ROOT` (heal). A root without
+`scripts/generate-skill-mesh.py`, such as a plugin install, is refused with exit
+2 before anything is written. `heal.sh --check` has no such requirement but
+accepts only targets under that root's `skills/`.
 
 The shell entrypoints delegate creation and source checks to `ao skills build`
 and `ao skills check-source`. Development checkouts run their Go source;
@@ -29,9 +40,14 @@ report destination or read stdout.
 
 | Command | Exit 0 | Exit 1 | Exit 2 |
 |---|---|---|---|
-| `build.sh` | Created; always reports scaffold state | Invalid creation input, including an invalid slug or missing template/external input, or an existing destination | Wrapper syntax error |
-| `heal.sh` | No finding, or findings in non-strict check mode | Findings under `--strict` or `--fix` | Invalid target, or `ao` could not run |
+| `build.sh` | Created; always reports scaffold state | Invalid creation input (an invalid slug, a missing `--like` template or `--from` input) or an existing destination | Wrapper syntax error, or the root is not a source checkout |
+| `heal.sh` | No finding, or findings in non-strict check mode | Findings under `--strict` or `--fix` | Invalid target, `ao` could not run, or `--fix` outside a source checkout |
 
+A projection failure after `build.sh` created the source prints `projection
+incomplete` and exits 3 with the source and any report retained: finish the
+projections, never rerun creation, which hits the existing destination.
+`heal.sh --fix` also exits 3 when projection fails after a clean source check;
+the source is unchanged and projections may be partial.
 Exit 0 never means the skill is safe or effective.
 
 ## Staged creation and recovery

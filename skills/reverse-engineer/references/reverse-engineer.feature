@@ -1,8 +1,7 @@
-# Executable spec for the /reverse-engineer skill — spec reconstruction (BC1 Corpus).
-# /reverse-engineer reconstructs product specs from an existing system — in repo mode it
-# maps the code into a feature catalog and specs; in binary mode it analyzes a binary with a
-# security audit. Hexagon: supporting; consumes: a target codebase or binary; produces:
-# a feature catalog, code map, and specs. (soc-qk4b)
+# Behavior scenarios for the /reverse-engineer skill (documentation; no runner executes this
+# file). scripts/validate.sh and scripts/self_test.sh check the behavior. In repo mode it maps
+# the code into a feature catalog and specs; in binary mode it analyzes a binary, with a
+# security audit only when --security-audit is set.
 
 Feature: Reverse-engineer reconstructs specs from an existing system
   As an agent onboarding or auditing an unfamiliar system
@@ -16,9 +15,9 @@ Feature: Reverse-engineer reconstructs specs from an existing system
     When the target is a code repository
     Then it maps the code into a feature catalog, code map, and specs
 
-  Scenario: Binary mode includes a security audit
-    When the target is a binary
-    Then it analyzes the binary and includes a security audit in the output
+  Scenario: Binary mode adds a security audit only on request
+    When the target is a binary analyzed with --authorized and --security-audit
+    Then it analyzes the binary and writes a security audit scaffold under security/
 
   Scenario: Output is a reusable spec set
     When reconstruction completes
@@ -29,6 +28,7 @@ Feature: Reverse-engineer reconstructs specs from an existing system
     When the caller compares its registry with the live destination repository
     Then the caller authors steal-map.md with evidence-backed verdict rows
     And the complete-output validator rejects a missing or malformed steal-map
+    And it rejects a steal row without code evidence
 
   Scenario: An explicit analysis root cannot drift
     Given --local-clone-dir selects a particular tree

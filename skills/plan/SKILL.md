@@ -28,7 +28,8 @@ metadata:
 Shape missing intent into one actionable slice, then stop. A clear change can
 proceed directly; load a specialist only for the question it answers.
 Prefer the caller's tracker, if any; otherwise use the conversation or
-supplied text. Planning produces no AgentOps packet.
+supplied text. Supplied advice, such as an [Idea Genie](../idea-genie/SKILL.md)
+portfolio or challenge, is evidence to weigh, never a decision.
 
 ## A plan meets these rules
 
@@ -52,12 +53,19 @@ supplied text. Planning produces no AgentOps packet.
    access, not only the happy path.
 3. **Look up facts; ask only for choices.** Read code, docs and the tracker
    instead of asking. Ask the caller at most one question, only for a choice
-   no source can answer, with your recommendation and its tradeoff.
+   no source can answer, with your recommendation and its tradeoff. When
+   several choices compete for it (which outcome comes first, a rule 7
+   conflict, a recorded decision under [Who decides](#who-decides)), ask the
+   one that most changes the slice and list each other under Later with what
+   it would change. If several block acceptance,
+   [Interview](../interview/SKILL.md) settles them one per turn.
 4. **The repository's words.** Reuse the term its code, glossary or tracker
    defines; never coin a parallel name.
 5. **Scope by consumer.** Name the owners to edit, every live caller and test
-   of the changed behavior, and generated companions as a class. Scope is
-   authority, not a predicted file count.
+   of the changed behavior, and generated companions as a class, as
+   repository-relative patterns. Scope is authority, not a predicted file
+   count: a live consumer outside it goes to the caller as an exact-file
+   amendment, while independent in-scope work continues.
 6. **A discriminating check:** what fails today and passes after the slice.
 7. **Unrequested mechanisms earn their place.** A guard, retry, fallback,
    option or abstraction nobody asked for joins the slice only when a contract
@@ -95,9 +103,8 @@ only where it prevents a plausible scope mistake.
 1. Read the accepted intent, any existing plan or native handoff, and the
    relevant source owners and active constraints. Reuse the
    acceptance already supplied in the conversation or bead; clarify only what
-   prevents action or judgment. To resume or replace another context, hand a
-   slice on or weigh a context change, plan code together with a requested
-   retrospective, or keep an exact snapshot of conversation intent, follow
+   prevents action or judgment. To resume, hand a slice on, pair code with a
+   retrospective or snapshot intent, follow
    [resume and handoff](references/resume-and-handoff.md).
 2. Route only the uncertainty that could change the slice (table below).
    If an interface choice drives that uncertainty, use the conditional
@@ -108,10 +115,12 @@ only where it prevents a plausible scope mistake.
    [Refactor](../refactor/SKILL.md), with its own before-and-after check
    separate from the Check line, and keep it out of the slice's diff. A
    mechanical cross-cutting migration that cannot stay working slice by slice
-   uses expand, migrate, contract and states where integration is required. Include recapture of affected bound
-   evidence where necessary; in repositories with AgentOps provenance
-   bindings, `ao provenance evidence-orphans` finds it. Across an epic,
-   [Navigate](../navigate/SKILL.md) picks the next bead; Plan shapes that bead.
+   uses expand, migrate, contract and says where integration is required. If
+   recorded evidence (scorecards, fixtures) is bound to files the slice
+   changes, plan its recapture; with the `ao` CLI, which the plugin does not
+   ship, `ao provenance evidence-orphans --root <repo-root> --changed <path>`
+   lists those bindings. Across an epic, [Navigate](../navigate/SKILL.md)
+   picks the next bead; Plan shapes that bead.
 4. When evidence disproves an approach, keep the failed assumption, its
    evidence and the revised check in the existing intent, under the same
    authority as the Output write below. An approach change
@@ -154,24 +163,13 @@ disagreement and its support instead of silently changing acceptance. A
 proposed process artifact needs a concrete consumer, the decision it gates, an
 observed defect and a retirement condition; otherwise omit it.
 
-## Examples and naming
+## Example
 
 An example can be plain text; BDD needs no `.feature` file or interview. In a
-repository that calls queued work a **Job**:
+repository that calls queued work a **Job** (write "Job", not "task item"):
 
 > Given a Job has already completed, when the worker receives it again,
 > then its completed result is returned and its side effect is not repeated.
 
-Write "Job", not a parallel label such as "task item". Keep the accepted
-example available to Implement and Validate; tests added after coding may
-supplement it but cannot redefine what was promised. For product planning,
-separate demonstrated behavior from aspiration; an ordinary feature needs no
-product document.
-
-## Scope
-
-Use normalized repository-relative scope patterns. An uncovered live consumer
-needs a concise exact-file amendment to the caller; continue independent
-in-scope work meanwhile. Generated companions already in scope need no extra
-permission. [Boundaries](../rpi/references/boundaries.md) keep work and status
-in the caller's tracker and delivery under repository policy.
+Tests added after coding may supplement the accepted example but cannot
+redefine what was promised.

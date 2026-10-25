@@ -7,7 +7,7 @@ ledger is required. The RPI charter already owns a single authorized outcome
 through finish; an outer goal is not permission needed for ordinary repair.
 
 A crafted goal orchestrates many RPIs over one bead graph.
-Craft Goal writes and lints the frozen goal prompt;
+[Craft Goal](../../craft-goal/SKILL.md) writes and lints the frozen goal prompt;
 [Navigate](../../navigate/SKILL.md) is the graph walk the goal applies each
 wave. The goal still selects work, and neither adds a scheduler or a ledger.
 
@@ -24,12 +24,6 @@ report the unresolved cause and required caller decision. Cancellation, refusal
 and spent real bounds skip help. Native blocked-status thresholds are bookkeeping,
 not permission to renew time, cost, quota or helper use.
 
-Report observed native enforcement and unmeasured limits honestly. No objective
-text, saved plan or simulated stop proves aggregate runtime enforcement. The
-caller may authorize a new outcome or scope; agents may revise an approach when
-evidence disproves an assumption within unchanged authority.
-
-Existing host/user policies may impose stricter helper or stopping requirements.
-This repository charter does not update those installed host instructions.
-Inspect and report the effective upstream rule instead of claiming the lean
-contract overrides it or that an optional guide enforces native controls.
+No objective text, saved plan or simulated stop proves aggregate runtime
+enforcement. Stricter host or user helper and stopping rules still apply; this
+guide does not override them.

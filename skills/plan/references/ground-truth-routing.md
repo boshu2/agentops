@@ -2,8 +2,7 @@
 
 Use this method only when an observation could change a consequential approach
 or clarify the caller's reaction to concrete behavior. First inspect existing
-evidence: a clear task or already answered question needs no prototype, stock
-quickstart, control experiment or deviation ledger.
+evidence: a clear task or an already answered question needs no prototype.
 
 Before running anything, state in the existing intent or handoff:
 
@@ -43,33 +42,23 @@ caller to try; if you cannot see the result, say so.
 Return the observation, its source/configuration, limitations, and the decision
 or next question it supports. Preserve failed predictions as evidence. If a
 documented native path needs a deviation, retain its reason and support in the
-existing intent. Keep
-only decision-relevant details and pointers in the existing handoff, not the
-whole experiment transcript. Disposable work is not a production implementation;
-retain or remove it under the caller's ownership and storage policy. New proof
-uses the existing protected external storage boundary when applicable.
+existing intent. Keep only decision-relevant details and pointers in the
+existing handoff, not the whole experiment transcript. Disposable work is not a
+production implementation; retain or remove it under the caller's ownership and
+storage policy. New proof uses the existing protected external storage boundary
+when applicable. A prototype cannot change intent, authorize implementation or
+establish acceptance; promising results still face implementation checks and a
+fresh exact-content judgment.
 
 ## Reuse after source drift
 
-Before reusing inherited prototype evidence when discovery resumes, check the
-current referenced interface and relevant environment assumptions against the
-observation's recorded source/configuration. Check what could change the named
-result; a purely unrelated source change does not require repetition.
-
-If a changed assumption could affect the result, preserve the earlier
-observation with its original context and repeat only the smallest
-discriminating probe against the current subject before declaring that empirical
-question resolved. Record the new observation and its limitations in the
-existing intent or handoff; do not replay the broader research.
-
-If relevant assumptions cannot be checked or required execution is unavailable,
-leave that empirical question explicitly unresolved. Continue only independent
-ready work that does not rely on the result.
-
-A prototype cannot change intent, authorize implementation or establish
-acceptance. Even promising results require implementation checks and fresh
-exact-content judgment. No new tracker, control ledger or automatic context
-admission follows from the experiment.
+Before reusing inherited prototype evidence, check the current interface and
+environment against the observation's recorded source/configuration; an
+unrelated change needs no repeat. If a change could affect the named result,
+keep the earlier observation with its context, rerun only the smallest
+discriminating probe against the current subject and record the new result in
+the existing intent or handoff. If the assumption cannot be checked or rerun,
+leave the question unresolved and continue only work that does not rely on it.
 
 ## Compare interfaces from the caller's side
 

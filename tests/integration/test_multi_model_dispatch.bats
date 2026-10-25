@@ -4,8 +4,9 @@
 # diversity_unsatisfied degradation.
 
 REPO_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)"
-RUNNER="$REPO_ROOT/skills/agent-native/scripts/fake_model_runner.py"
+RUNNER="$REPO_ROOT/tests/fixtures/fake_model_runner.py"
 VALIDATE_CHALLENGE="$REPO_ROOT/skills/idea-genie/scripts/validate-challenge.sh"
+VALIDATE_COUNCIL="$REPO_ROOT/skills/council/scripts/validate-output.sh"
 
 setup() {
   FIX="$(mktemp -d)"
@@ -22,6 +23,9 @@ teardown() {
     --available "fable-a,fable-b" \
     --output "$FIX/council.json"
   [ "$status" -eq 0 ]
+  # The fixture is a council-report.v1 only if council's own validator says so.
+  run bash "$VALIDATE_COUNCIL" "$FIX/council.json"
+  [ "$status" -eq 0 ]
   python3 - "$FIX/council.json" <<'PY'
 import json, sys
 r = json.load(open(sys.argv[1]))
@@ -31,8 +35,9 @@ ids = [j["context_id"] for j in r["judges"]]
 assert len(set(ids)) == 2
 models = [j["model_identity"] for j in r["judges"]]
 assert models == ["fable-a", "fable-b"]
-assert r["agreement"]["cross_model"] is True
-assert r["diversity_unsatisfied"] == []
+assert r["diversity_unsatisfied"] is False
+assert len(r["synthesis"]["consensus"]) == 1, "cross-model agreement is consensus"
+assert len(r["synthesis"]["consensus"][0]["methodologies"]) >= 2
 for j in r["judges"]:
     assert "methodology" in j
 print("council ok")
@@ -86,11 +91,16 @@ PY
     --available "live-model" \
     --output "$FIX/council-degrade.json"
   [ "$status" -eq 0 ]
+  run bash "$VALIDATE_COUNCIL" "$FIX/council-degrade.json"
+  [ "$status" -eq 0 ]
   python3 - "$FIX/council-degrade.json" <<'PY'
 import json, sys
 r = json.load(open(sys.argv[1]))
-assert "missing-model" in r["diversity_unsatisfied"]
-assert r["agreement"]["single_model_only"] is True
+assert r["diversity_unsatisfied"] is True
+assert "diversity_unsatisfied: missing-model" in r["synthesis"]["unresolved"]
+# Single-model unanimity weighs as one confirmation, never consensus.
+assert {j["model_identity"] for j in r["judges"]} == {"live-model"}
+assert r["synthesis"]["consensus"] == []
 print("council degrade ok")
 PY
 

@@ -96,23 +96,19 @@ without restarting its interview or taking over caller choices.
    answering about an adjacent one; name any substitute the caller allowed.
 2. Inspect the smallest relevant sources and verify search hits against the
    actual source. External facts that change (versions, vendor behavior,
-   standards) need current primary sources. This skill grants no tools of its
-   own: use the host's web tools when they are available and permitted;
-   otherwise mark the external claim unknown and name the source that would
-   settle it.
-   Before an external search or outside service sees a query, strip host
+   standards) need current primary sources, through the host's web tools when
+   available and permitted; otherwise mark the claim unknown and name the
+   source that would settle it. Before a query leaves the host, strip host
    names, IP addresses, file paths, query fragments, account or customer
-   identifiers and internal names; search on the generic error class with the
-   library and version. If no safe form remains, skip the external lookup and
-   say so. For how a third-party library, tool or service behaves here, first
-   find the version this repository actually resolves: its lockfile, the
-   installed binary's reported version or a vendored copy. Answer from that
-   version's source, tests or release notes. Latest documentation, web answers
-   and recall are leads; say so when they describe a different version. Before
-   recommending an external API, SDK, auth scope or service, look for
-   deprecation, sunset and breaking-change notices for the version being
-   recommended and state any in the answer; without a permitted lookup, say
-   that status is unchecked.
+   identifiers and internal names, and search on the generic error class with
+   the library and version; if no safe form remains, skip the lookup and say so.
+   For how a third-party library, tool or service behaves here, answer from the
+   version this repository resolves (lockfile, installed binary's version or
+   vendored copy) and that version's source, tests or release notes; latest
+   docs, web answers and recall are leads, so say when they describe another
+   version. Before recommending an external API, SDK, auth scope or service,
+   check deprecation, sunset and breaking-change notices for that version and
+   state any, or say that status is unchecked.
 3. Lead with the answer, then show evidence and remaining gaps. Each part of the
    question is answered or explicitly unknown with the searched scope disclosed.
    Before settling a consequential answer, look once for the strongest contrary
@@ -161,16 +157,13 @@ expected state with observable evidence, item by item. The named failure mode
 is auditing only what the diff touched: a claimed item with no trace in the
 evidence is a gap, not something to leave out of the report.
 
-A request to check a stated claim against the evidence selects this audit
-without another question; so do requests to measure declared goals or report
-native status. A bare readiness question ("is it ready?", "can you check
-this?") with no claim and no settled purpose is ambiguous: ask once whether the
-caller wants advisory findings or an acceptance judgment, and wait. This audit
-is not acceptance and cannot substitute for
+A request to check a stated claim, measure declared goals or report native
+status selects this audit without another question. A bare "is it ready?" with
+no claim and no settled purpose is ambiguous: ask once, by the shared
+[advice or acceptance](../review/references/advice-or-acceptance.md) rule. This
+audit is not acceptance and cannot substitute for
 [Validate](../validate/SKILL.md)'s fresh, author-distinct judgment; if
-acceptance is wanted, hand off and report a missing fresh reviewer as a gap,
-never as validation that occurred. Shared routing:
-[advice or acceptance](../review/references/advice-or-acceptance.md).
+acceptance is wanted, hand off and report a missing fresh reviewer as a gap.
 
 1. Read the exact claim and its source, and split it into its separate items,
    including work that was never started.
@@ -220,28 +213,20 @@ Checked: <what was inspected>. Not checked: <what was not>.
 ```
 
 The ledger reports evidence; it carries no overall PASS, FAIL, verdict or
-readiness call, even when every item is confirmed. A selected durable gap
-report uses `reality-check-report.v1`, a format name kept from the retired
-Reality Check skill: save `reality-check-report.json` by the save rule under
-[Output and boundaries](#output-and-boundaries), record the claim,
-evidence-backed findings and the per-item dispositions in `coverage`, and check
-it with `skills/research/scripts/claim-audit/validate-output.sh <report.json>`.
-The [format](schemas/reality-check-report.v1.schema.json) permits no
-`verdict`, `readiness` or `PASS` field.
+readiness call, even when every item is confirmed. Its durable form is under
+[Output and boundaries](#output-and-boundaries).
 
 ### Health, goals and status
 
 For "is this repository healthy" or "do the checks pass", run the project's
-own read-only checks: those declared in its instructions or CI configuration,
-or found in its build files. Prefer a `--check`, dry-run or verify variant
-when one exists. List any step that writes tracked files, publishes, deploys
-or needs credentials as not run, with the reason. Record what you selected and
-where it came from. Run each one separately and keep going after a failure so
-later results are not lost. Report each check as passed, failed, not run
-because the tool is unavailable, or not determined because its output could
-not be captured, taking the result from the exit status rather than from
-parsing the output. Name declared checks you did not run. Do not fix anything,
-and do not fold the results into one score that hides a failure.
+own read-only checks (declared in its instructions or CI configuration, or
+found in its build files), preferring a `--check`, dry-run or verify variant,
+and record where each came from. List any step that writes tracked files,
+publishes, deploys or needs credentials as not run, with the reason. Run each
+separately and keep going after a failure. Report each as passed, failed, not
+run (tool unavailable) or not determined (output not captured), from its exit
+status rather than parsed output, and name declared checks you did not run.
+Fix nothing, and fold no results into one score that hides a failure.
 
 Running `ao goals` against the declared goals source is in
 [goals](references/goals.md); reading the evidence store with `ao status`, and
@@ -256,30 +241,22 @@ For "should we adopt, replace or keep X" or "does advisory Y reach us", the
 answer needs both sides. Ours: the current tool and a cited place it is used,
 or a searched absence plus where X would plug in, and any earlier decision on
 the same question. Theirs: a current primary source for each external fact the
-answer rests on. Where relevant, also cover the fit, license, cost-of-staying
-and maintenance facts in [adoption evidence](references/adoption-evidence.md).
-A strong side never covers a missing one; then answer "not yet answerable" and
-list what to inspect. Keeping the current tool or doing nothing is a real
-option. "Does not reach us" states the search and its scope. For a choice that
-is costly to undo, each decisive claim needs two independent sources. A claim
-made in the conversation is a lead to check, not evidence. Rank candidates for
-"what should we use for X" only when they are a short list found in current
-sources and the criteria are stated or recoverable; otherwise return what was
-found and name what is missing, leaving criteria to the caller and an open
-field to [Idea Genie](../idea-genie/SKILL.md).
+answer rests on. A strong side never covers a missing one; then answer "not yet
+answerable" and list what to inspect. Keeping the current tool or doing nothing
+is a real option. Sourcing, ranking and the fit, license, cost-of-staying and
+maintenance facts are in [adoption evidence](references/adoption-evidence.md).
 
 ## Decision lineage
 
 For "why is it like this" or "how did this idea change", trace one decision or
-idea through its record: commits, ADRs, issues, reviews and prior reports.
-Separate its first appearance, clearest statement, current form, reversals,
-contradictions (two claims that cannot both hold) and abandoned variants, each
-dated and cited. A bucket with no evidence says what was searched. Do not
-smooth sparse or messy history into a tidy story; a supersession is not a
-contradiction. Before presenting a past reason as a binding constraint, check
-that its cause still holds in the current tree or record; if it no longer
-holds, report that as evidence for reopening the decision; whether it still
-binds stays with its owner or the caller.
+idea through commits, ADRs, issues, reviews and prior reports into dated, cited
+buckets: first appearance, clearest statement, current form, reversals,
+contradictions (two claims that cannot both hold) and abandoned variants. An
+empty bucket says what was searched; a supersession is not a contradiction; do
+not smooth messy history into a tidy story. Before presenting a past reason as
+binding, check that its cause still holds in the current tree or record; if
+not, report that as evidence for reopening, leaving the call to its owner or
+the caller.
 
 ## Repository tracing
 
@@ -295,9 +272,7 @@ not only the success path. Source and tests establish behavior; a file name or
 a claim in the conversation does not.
 
 An inline investigation may use dirty working-tree evidence with explicit
-limits. A selected durable `codebase-recon.v1` pack is commit-bound and follows
-the [recon pack contract](references/codebase-recon/pack-contract.md), checked by
-`skills/research/scripts/codebase-recon/validate-output.sh`.
+limits; a selected durable `codebase-recon.v1` pack is commit-bound.
 
 ## Pattern evidence
 
@@ -310,27 +285,41 @@ exemplars: <file:line> per independent lineage; copies listed under their source
 invariant: <what every exemplar shares and the behavior needs>
 variation: <legitimate differences>; incidental: <syntax, names>
 cost:      <demonstrated cost of violation, or "none found">
-shape:     <no action | reference line | template | helper | gate> and why
+shape:     <no-action | reference-line | template | helper | gate> and why
 outcome:   hypothesis | promote (three independent exemplars, passing holdout and back-application)
 ```
 
-A selected durable `pattern-mining.v1` record follows the
-[pattern pack contract](references/pattern-mining/pack-contract.md), checked by
-`skills/research/scripts/pattern-mining/validate-output.sh`. Research returns
-evidence; adoption remains an explicit caller decision.
+Research returns evidence; adoption remains an explicit caller decision.
 
 ## Output and boundaries
 
 Return a cited answer directly unless a durable output was requested or the
-selected evidence contract requires one. Ordinary durable reports follow
-[findings.json](schemas/findings.json): question, scope, answer, evidence,
-contradictions, unknowns, checked and unchecked areas. Multi-report synthesis
-also retains `source_ledger` and `comparison`. Selected recon, pattern and
-claim-audit modes retain their own validated formats instead of forcing them
-into this schema.
-To save a report, use the location the caller named, else the repository's
-existing research or decision-notes location and naming; with neither, return
-the answer and ask where to save it. Read the file back and report its exact path.
+selected mode requires one. To save a report, use the location the caller
+named, else the repository's existing research or decision-notes location and
+naming; with neither, return the answer and ask where to save it. Read the file
+back and report its exact path. Each durable mode keeps its own format:
+
+- **Ordinary report:** [findings.json](schemas/findings.json) allows only
+  `topic`, `summary`, `findings` (each `area`, `observation`, `evidence` and
+  optional `implications`), `checked`, `not_checked` and `schema_version: 1`.
+  Multi-report synthesis adds `source_ledger` and `comparison` (`agreements`,
+  `contradictions`, `unknowns`).
+- **Claimed-state audit:** `reality-check-report.json` in the
+  [reality-check-report.v1](schemas/reality-check-report.v1.schema.json) format,
+  a name kept from the retired Reality Check skill. It holds `claim`; `coverage`,
+  one row per stated item with `goal` (the item), `disposition` and `evidence`
+  (required for confirmed and gap); and at least one `findings` entry with a
+  `category` (confirmed, gap, incomplete-evidence or changed-assumption), a
+  `statement` and cited `evidence`. When every item is unverifiable, record one
+  incomplete-evidence finding that cites the searches. It has no verdict,
+  readiness or PASS field. Check it with
+  `skills/research/scripts/claim-audit/validate-output.sh <report.json>`.
+- **Repository tracing:** `codebase-recon.v1` by the
+  [recon pack contract](references/codebase-recon/pack-contract.md), checked by
+  `skills/research/scripts/codebase-recon/validate-output.sh --repo-root <target> <recon.json>`.
+- **Pattern evidence:** `pattern-mining.v1` by the
+  [pattern pack contract](references/pattern-mining/pack-contract.md), checked by
+  `skills/research/scripts/pattern-mining/validate-output.sh <pattern.json>`.
 
 Use only authorized sources and destinations. For restricted or mined episode
 material, follow [Memory's access and storage boundary](../memory/SKILL.md).

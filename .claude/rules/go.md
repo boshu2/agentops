@@ -65,7 +65,7 @@ Or equivalently: `cd cli && make build && make test`
 Suppressing a security-lint finding on intentional crypto (e.g. SHA-1 for git object IDs) needs TWO independent annotations on the SAME line — the two scanners run separately and ignore each other's directives:
 
 - **gosec** ignores `//nolint:gosec`. Use a `// #nosec G<NN>` directive (e.g. `// #nosec G401 G505`).
-- **semgrep** is suppressed only by a **bare** `// nosemgrep`. A qualified `nosemgrep: <rule-id>` does **NOT** suppress.
+- **semgrep** ignores `#nosec`. `nosemgrep: <rule-id>` suppresses only the named rule; a bare `nosemgrep` suppresses every rule on the line, so prefer the qualified form with the rule id from the finding.
 - Put the combined comment on **both** the import line and the usage/call site — they are flagged independently.
 
 ```go

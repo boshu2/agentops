@@ -23,20 +23,17 @@ metadata:
   effects: [modify_declared_subject, derive_subject_manifest]
   canonical_status: canonical
   disposition: keep
-  triggers: ["execute the next wave", "per-lane evidence"]
+  triggers: ["execute the next wave", "per-lane evidence", "fix this bug", "CI is red", "loosen the assertion"]
 ---
 
 # Implement
 
-Implement the accepted outcome. Repair ordinary known defects directly. Use the existing
-intent; no Plan, Recall or Learn worksheet is owed for a clear edit. Implement
-owns source changes and factual checks. Read changed paths and content identity
-from Git or `ao provenance manifest`, not from memory. Copy the author context
-ID from the session, subagent or thread ID the runtime exposes, or use the
-identity the caller supplied and label it as supplied. Report it as unknown when
-neither exists, and never make one up. Copy check results from the command
-output. `ao` records these values only as caller-supplied flags and does not
-derive them.
+Implement the accepted outcome. Repair ordinary known defects directly. Use the
+existing intent; a clear edit needs no Plan first. Implement owns source changes
+and factual checks. Read changed paths from Git (`git status --porcelain`,
+`git diff --name-only <base>`), never from memory;
+`ao provenance manifest --root <repo>` with one `--include <path>` per declared
+path digests only the paths you declare and runs no Git. Copy check results from the command output.
 
 ## Rules that decide the result
 
@@ -80,12 +77,12 @@ recovery, resilience, toil); ordinary edits owe no operations phase.
 ## Workflow
 
 1. Read intent, acceptance, scope and repository boundaries before the first
-   write; reuse loaded contracts. RPI [boundaries](../rpi/references/boundaries.md)
-   apply when that workflow is explicitly selected. Caller-selected episode
-   tracking follows the [session association reference](../agent-native/references/session-associations.md#work-to-session-associations);
-   keep unknowns explicit and invent no parentage or second tracker. Note the
-   revision and files already modified, staged or untracked; report only your
-   own as changed, and ask the caller before editing one holding others' edits.
+   write; reuse loaded contracts. [RPI boundaries](../rpi/references/boundaries.md)
+   apply when RPI is selected; caller-selected episode tracking follows the
+   [session association reference](../agent-native/references/session-associations.md#work-to-session-associations).
+   Note the revision and files already modified, staged or untracked; report
+   only your own as changed, and ask the caller before editing one holding
+   others' edits.
 2. Carry the accepted behavior examples forward unchanged. Use repository
    domain names in symbols and tests; check observable outcomes through the
    relevant interface. Run the smallest applicable check before and after
@@ -123,17 +120,17 @@ recovery, resilience, toil); ordinary edits owe no operations phase.
 6. Have the runtime derive actual changed paths and content identity. A delegated
    increment awaiting integration returns an exact commit or runtime-derived
    content digests, author context ID and check facts in the existing handoff.
-   The integrating caller derives `subject-manifest.v1` (AgentOps schema
-   `schemas/subject-manifest.v1.schema.json`) over the complete final subject
-   before judgment; an independently judged increment needs its own manifest.
-   Do not generate both merely because work was delegated.
-7. At that boundary, when the repository records AgentOps evidence bindings
-   and changed paths affect bound acceptance evidence, run
-   `ao provenance evidence-orphans --root <repo-root>` with one `--changed
-   <path>` per derived path, retain its actual output and refresh affected
-   bindings after repairs. Without `ao`, list the orphan scan under `not run`.
-   Never invent or suppress the orphan list.
-8. Return the handoff below, then stop.
+   Copy that ID from the session, subagent or thread ID the runtime exposes, or
+   label a caller-supplied one as supplied; otherwise report it as unknown,
+   never made up. The integrating caller derives `subject-manifest.v1` (AgentOps
+   schema `schemas/subject-manifest.v1.schema.json`) over the complete final
+   subject before judgment; an independently judged increment needs its own
+   manifest. Do not generate both merely because work was delegated. Where the
+   repository records AgentOps evidence bindings, also run
+   `ao provenance evidence-orphans --root <repo-root>` with one `--changed <path>`
+   per derived path (it is advisory), keep its actual output and refresh
+   flagged bindings after repairs; without `ao`, list it under `not run`.
+7. Return the handoff below, then stop.
 
 ## Handoff
 
@@ -141,6 +138,7 @@ Keep full logs at their source; do not duplicate inventories or status documents
 
 ```text
 changed:   <runtime-derived paths>; identity: <commit or content digests>
+author:    <runtime session/subagent/thread ID, "ID (supplied)" or "unknown">; when an integrator or fresh read follows
 checks:    <exact command> -> <result>, one per line; before and after for a behavioral change
 not run:   <check> -> <reason>; "none" only when every relevant check ran
 consumers: <file:line> -> <covering check, or "uncovered">
@@ -157,54 +155,43 @@ to accepted direction, behavior or acceptance always needs caller authority.
 
 ## Diagnosis, scaffolding and delegated work
 
-For an unexplained failure, first match the reported symptom and reduce the
-reproduction. Confirm the failing run executes the code you think: revision and
-local edits, a fresh build rather than a stale artifact or installed binary,
-the resolved runtime and dependency versions, and required environment values.
-Ground the leading cause in an observation, not in how the code reads, and name
-its strongest rival. State one causal prediction, test it with a check the two
-causes predict differently, and repair the cause supported by the result.
-Change one thing per probe; when a prediction fails, revert that change, name
-what ruled the cause out and form a different cause, not a variant of it.
-Rerun the original scenario. Do not keep collecting hypotheses after the cause
-is understood. For intermittent verdicts, leaked test state, suspected races, a
-hung/crashed process, a regression from a known-good state, a failure crossing
-components or repeated disproved causes, use only the matching experiment in
-[difficult failures](references/difficult-failures.md). This compact diagnosis
-path is informed by [Matt Pocock's engineering skills](https://github.com/mattpocock/skills).
+For an unexplained failure, follow the [diagnosis loop](references/difficult-failures.md#diagnosis-loop)
+before repairing: confirm the failing run executes the code you think, ground
+the leading cause in an observation, name its strongest rival and test one
+prediction the two disagree on. The same file holds the experiments for races,
+leaked state, hangs, regressions and failures that cross components.
 
 When scaffolding is the requested change, start from the repository's existing
-layout and a working vertical slice. See [scaffold references](references/scaffold/agent-facing-tool-scaffolds.md)
-only for the relevant tool shape, and [generic scaffold examples](references/scaffold/generic-templates.md)
-when the repository has no suitable pattern. Avoid placeholder success paths and
-a new framework for a one-off operation.
+layout (or the ecosystem's standard one for a new project) and one working
+vertical slice; avoid placeholder success paths and a new framework for a
+one-off operation. For installers, agent-facing tool servers or a Rust CLI with
+local state, see [agent-facing tool scaffolds](references/scaffold/agent-facing-tool-scaffolds.md).
 
-Prefer current-session execution. If delegation is authorized and useful,
-partition independent writes in isolated workspaces; shared generators and
-integration serialize. Supply each lane its intent, acceptance, scope and review
-owner, then integrate its exact content and check facts. A selected wave ends with the
-caller-requested wave result; do not invent another wave. One fresh review of
-the integrated candidate can cover unjudged increments; when the integrator
-owns that review, workers return their handoff without commissioning another.
-Preserve any separately required lane judgments; a successful process exit is
-not semantic PASS.
-[Agent Native](../agent-native/SKILL.md) supplies optional dispatch mechanics.
+Prefer current-session execution. If delegation is authorized and useful, keep
+concurrent writers disjoint and isolated as [Agent Native](../agent-native/SKILL.md)
+describes; shared generators and integration serialize. Supply each lane its
+intent, acceptance, scope and review owner, then integrate its exact content and
+check facts. A selected wave ends with the caller-requested wave result; do not
+invent another wave. One fresh review of the integrated candidate can cover
+unjudged increments; when the integrator owns that review, workers return their
+handoff without commissioning another. Preserve any separately required lane
+judgments; a successful process exit is not semantic PASS.
 
 An explicitly requested one-shot adapter dispatches each supplied operation
-once, reports its output or error, and stops. Show dispatch count and failure
-reporting with a dry-run or fixture. It does not silently acquire a scheduler,
-retry controller or store. Factories require the caller's selection.
+once, reports its output or error and stops, with no scheduler, retry controller
+or store; show its dispatch count and failure reporting with a dry-run or
+fixture. Factories require the caller's selection.
 
 ## Finish
 
-Specialists advise only. Known defects stay implementation work; a genuine
-causal stall permits at most one bounded fresh helper within caller authority.
-Respect remaining caller/native bounds and reserve finishing capacity; retries reset neither.
+Specialists advise only; known defects stay implementation work. A genuine
+causal stall admits one bounded fresh helper under RPI's
+[stall rule](../rpi/SKILL.md#causal-stall-and-bounds); retries renew no bound.
 
 Return facts, not semantic PASS. An implement-only handoff does not authorize
 Git, tracker or delivery transitions; existing caller authority remains usable.
 A full outcome request finishes on its checks and CI. It continues to one fresh
 independent judgment only when the caller asks, a mistake cannot be cheaply
 undone after it lands, or no deterministic check covers the changed behavior.
-RPI is optional and explicitly selected. Success is working behavior with usable
-evidence, not volume of logs or process artifacts.
+Success is working behavior with usable evidence, not volume of logs or process
+artifacts.

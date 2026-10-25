@@ -1,8 +1,7 @@
 # Stress-testing settled answers and held plans
 
-Supporting detail for [Interview](../SKILL.md). Both tests use Interview's
-question shape, one question per turn, and create nothing new: what they
-settle lands in the existing Decided, Open and Deferred lists.
+Supporting detail for [Interview](../SKILL.md): both tests ask in its question
+shape, and what they settle lands in its lists.
 
 ## Test the settled answers
 
@@ -25,9 +24,6 @@ caller is still in the conversation. If the caller has stopped, skip it.
    move on. When they cannot, sharpen the outcome or acceptance instead of
    adding a criterion to absorb the case. When the caller rejects the
    proposal, record it as a non-goal.
-
-List only non-goals the caller named or rejected. A boundary the caller never
-saw is the agent's guess, and agents working alone would treat it as decided.
 
 ## A plan the caller already holds
 

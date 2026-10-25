@@ -4,11 +4,9 @@
 > quality** method under [`doc`](../SKILL.md), not a general writing skill and
 > not a standalone AgentOps skill.
 
-Use it from `doc` (required when a README is generated or rewritten) so READMEs
-and other repo docs stay concrete, scannable, and free of LLM prefab.
-
-Use this reference from `doc` (especially for README work) before reporting
-completion.
+Use it from `doc` when a substantial README or other repo doc is generated or
+rewritten, so it stays concrete, scannable, and free of LLM prefab. It is
+optional guidance, not a completion gate.
 
 > **Core insight #1:** You cannot do this with regex or a script. It requires a
 > manual, line-by-line read. A linter catches a fraction; the rest is judgment.
@@ -58,7 +56,7 @@ THE DEEP ONE:
   taken from the source and never invented, and at least one non-obvious idea.
   Fluent generality is still slop.
 
-Then read the whole thing aloud. Fix every drone, stumble, and breath failure.
+Then re-read the whole text for rhythm. Fix every drone, stumble, and run-on.
 ```
 
 ## THE PROMPT — quick
@@ -68,7 +66,7 @@ Remove AI-slop: prefab phrases, verbal false limbs, zombie nouns, copula
 avoidance, "here's why"/"dive in" lead-ins, explicit "not X, it's Y" (≤1, never
 on the headline), reflexive rule-of-three, stacked same-shape sentences, elegant
 variation, hidden actors, stacked hedges. Each paragraph needs one concrete
-particular from the source, never an invented one. Read aloud. Recast only the
+particular from the source, never an invented one. Re-read for rhythm. Recast only the
 lines with a tell, manually — no regex.
 ```
 
@@ -114,7 +112,7 @@ After cuts, confirm:
 - Muddy sentences rewrite the thought (clutter is unfinished thinking)
 - One non-obvious idea per section
 - Sentence-length variance (build long, land short)
-- Read-aloud gate last
+- A last re-read for rhythm
 
 Subtraction alone yields clean, bloodless prose that still reads generated.
 
@@ -159,12 +157,12 @@ repository document match the surrounding idiom.
 
 - Before publishing a README, doc, or release note
 - After any AI-assisted writing session
-- When `doc` generates or rewrites a README (required), or checks one without
+- When `doc` generates or rewrites a substantial README, or checks one without
   rewriting it (flag findings)
 
-## Required for README work in Doc
+## README work in Doc
 
-After writing or rewriting `README.md`, run the full prompt above on the exact
-file and apply fixes before the deterministic checks (Step 5 of
+When you run it on a written or rewritten `README.md`, run the full prompt above
+on the exact file before the deterministic checks (Step 5 of
 [README craft](readme-craft.md)). On a check-only request, report residual slop
 tells as evidence; do not silently rewrite unless the caller asked for a rewrite.

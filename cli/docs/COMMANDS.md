@@ -545,7 +545,7 @@ ao session prune-agents [flags]
 
 #### `ao session read-source`
 
-Read one explicit regular source file under independently selected T05 context
+Read one explicit regular source file under a selected context policy.
 
 ```
 ao session read-source [flags]
@@ -554,9 +554,9 @@ ao session read-source [flags]
 **Flags:**
 
 ```
-      --access-policy-ref string      Independently selected T05 access policy JSON (required)
+      --access-policy-ref string      Independently selected context access policy JSON (required)
       --allow-oversize                Explicitly bypass serialized profile size bound; host delivery remains unverified
-      --consumer-root string          Existing consumer checkout for T05 route verification (required)
+      --consumer-root string          Existing consumer checkout for context route verification (required)
       --destination-ref string        Expected destination identity (required)
       --expect-file-identity string   Expected prior file_before.identity, for replacement checks across calls
       --expect-prefix-sha256 string   Expected SHA-256 of all bytes before through-byte
@@ -871,7 +871,7 @@ ao provenance store-verdict [flags]
 ```
       --author-context-id string       Runtime author identity
       --base-manifest string           Base manifest for deletions
-      --draft string                   Fresh judge's supplied draft JSON
+      --draft string                   Fresh judge's draft JSON; requires verdict, criteria, findings, evidence_refs, checked, not_checked and validated_at, and rejects unknown fields
       --evidence-root string           Existing explicit non-Git evidence directory
       --exclude-git-root stringArray   Caller-known existing Git storage root to exclude (repeatable); unresolved roots fail before writes
       --freshness-attester-id string   Freshness attester identity
@@ -1033,7 +1033,7 @@ ao skills audit <package> [flags]
 
 #### `ao skills build`
 
-Create an incomplete skill scaffold and its owned projections
+Create an incomplete skill scaffold and its owned projections.
 
 ```
 ao skills build <from-scratch|from-template|absorb-external> <slug> [flags]

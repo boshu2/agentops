@@ -15,8 +15,9 @@
 
 Codex loads the canonical `skills/<name>/` packages directly. The plugin
 manifest, [.codex-plugin/plugin.json](https://github.com/boshu2/agentops/blob/main/.codex-plugin/plugin.json),
-ships `./skills`, and `ao skills link` links the same directories into
-`~/.codex/skills`. No Codex copy of the skills is generated, and nothing under
+ships `./skills`; a source checkout can instead link the same directories into
+`~/.codex/skills` with `ao skills link`. Use one route per host, since both
+together list every skill twice. No Codex copy of the skills is generated, and nothing under
 `skills/` is rewritten for Codex.
 
 The facts below were observed from the Codex loader (`skills/list` on

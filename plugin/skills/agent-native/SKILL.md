@@ -10,6 +10,8 @@ context_rel:
   with: codex-exec
 - kind: customer-of
   with: claude-exec
+- kind: customer-of
+  with: agy-native
 skill_api_version: 1
 user-invocable: true
 metadata:
@@ -25,11 +27,10 @@ output_contract: runtime evidence and per-packet candidate, evidence, or error f
 # Agent Native
 
 Launch and observe caller-selected agent sessions as explicit roles, and return
-runtime facts per packet. Execution does not validate output, and the runtime
-never becomes AgentOps lifecycle authority: an adapter cannot select AgentOps
-semantics, issue a binding verdict, or turn factory completion into delivery or
-validation proof. [Orchestrate](../orchestrate/SKILL.md) decides what to
-dispatch and when; this skill launches and observes.
+runtime facts per packet. Execution does not validate output: no adapter issues
+a binding verdict or turns factory completion into delivery or validation proof.
+[Orchestrate](../orchestrate/SKILL.md) decides what to dispatch and when; this
+skill launches and observes.
 
 ## Before launch, and while running
 
@@ -86,11 +87,11 @@ dispatch and when; this skill launches and observes.
 - **Orchestrator:** passes focused intent, scope and evidence references, names
   the integration/final-review owner, and reports runtime facts. Retrieve extra
   history only for a consequential uncertainty; a fresh context is not
-  necessarily small. A new goal does not clear history or renew spent bounds.
+  necessarily small.
 - **Implementer:** may modify only its packet's declared subject.
-- **Validator:** receives exact candidate content in a fresh, read-only context.
-  It may supply judgment to Validate; only Validate writes `verdict.v2`.
-- **Scribe:** records runtime evidence without judging acceptance.
+- **Validator:** receives exact candidate content in a fresh, read-only context
+  and supplies judgment to [Validate](../validate/SKILL.md), which alone writes
+  `verdict.v2`.
 
 Reader and Writer are bounded cheap delegations, not roles with authority. A
 Reader returns line-referenced bullets over files the caller never loads, in
@@ -109,11 +110,11 @@ instructions.
 
 1. Before starting a worker, require caller intent, role, workspace, starting
    commit, authorized source/output scope and evidence destination. Record the
-   dispatch association in the caller-owned native channel before execution can
-   fail. A requested ID is not an observed ID; worker identity stays unknown
-   until the runtime reports it.
+   dispatch association in the caller's native work comments or metadata, or in
+   existing runtime facts, before execution can fail. A requested ID is not an
+   observed ID; worker identity stays unknown until the runtime reports it.
 2. At startup, before substantive work, capture the observed runtime, session
-   and context identity and return it through that channel. Before its first
+   and context identity and return it to that same record. Before its first
    edit, the worker confirms its HEAD is that starting commit; a mismatch is a
    launch failure, never repaired by reset. Report launch failures, recording
    gaps and unknowns; never fill them in. An authentication-shaped error from a
@@ -143,12 +144,6 @@ instructions.
    activity shows an excluded action is out of authority, not a candidate,
    whatever its checks show.
 
-The batch contract's reference implementation, `scripts/swarm/dispatch_once.py`,
-needs an AgentOps source checkout and is not bundled with installed skills;
-installed use dispatches through the selected native runtime. It rejects a
-nonempty `write_scope.exclude` because its proof cannot honor exclusions. Batch
-mode selects no backlog work, creates no queue and integrates no changes.
-
 ## Adapters and judgment
 
 NTM, native processes, Agent Mail, Gas City and the one-shot headless runners
@@ -157,18 +152,15 @@ NTM, native processes, Agent Mail, Gas City and the one-shot headless runners
 when the caller selected that execution shape; a single local agent pays no
 factory coordination cost.
 
-For judgment, default to a fresh context in the author's model family.
-Cross-model Validate, mixed Council and dueling model perspectives are explicit
-caller selections. [Model dispatch](references/model-dispatch.md) owns host
-authorization, isolation, finite input/output, timeout and cleanup for each leg;
-the working session is the controller, no factory is required, and Agent Mail
-is never the judgment path. Role requests declare authority, but only native
+Judgment defaults to a fresh context in the author's model family; cross-model
+legs are explicit caller selections. [Model dispatch](references/model-dispatch.md)
+owns each leg's authorization, isolation, bounds and cleanup, and Agent Mail is
+never the judgment path. Role requests declare authority, but only native
 runtime/OS filesystem and egress controls enforce it.
-[Native judgment receipts](references/judgment-receipts.md) define receipt
-references and the checks for caller-required model diversity; missing native
-identity never satisfies a leg. For exact native source spans, follow
-[bounded raw source reads](references/RAW_SOURCE_READS.md) and its access and
-output limits.
+[Native judgment receipts](references/judgment-receipts.md) check
+caller-required model diversity; missing native identity never satisfies a leg.
+For exact native source spans, follow
+[bounded raw source reads](references/RAW_SOURCE_READS.md).
 
 ## Per-packet result
 

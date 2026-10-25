@@ -2,8 +2,6 @@
 name: rpi
 description: 'Drive one accepted change through implementation and checks to done, with one fresh review only where a mistake is costly. Use when: asked to run or orchestrate work through RPI.'
 practices:
-- bdd-gherkin
-- tdd
 - design-by-contract
 hexagonal_role: domain
 consumes:
@@ -26,7 +24,7 @@ metadata:
   tier: meta
   dependencies: [plan, implement, validate]
   capabilities: [own_authorized_outcome, report]
-  effects: [dispatch_core_phases]
+  effects: [modify_authorized_subject, dispatch_conditional_validator]
   canonical_status: canonical
   disposition: keep_strategy
 output_contract: 'concise human-readable result; optional rpi-report.v1 when a caller or declared consumer requests machine-readable evidence'
@@ -34,8 +32,9 @@ output_contract: 'concise human-readable result; optional rpi-report.v1 when a c
 
 # RPI
 
-Own the authorized outcome through finish. Use the native coding agent and
-shell. BD or the caller's tracker owns work and handoffs; Git owns content and
+Own the authorized outcome through finish. RPI (research, plan, implement) is
+one native pass, not fixed phases: use the native coding agent and shell.
+BD or the caller's tracker owns work and handoffs; Git owns content and
 delivery. AgentOps supplies a small charter and one fresh judgment where a
 mistake is costly, not a scheduler.
 
@@ -53,9 +52,9 @@ mistake is costly, not a scheduler.
    A known test failure needs a fix and a discriminating check, not another
    planning phase, council or helper.
 4. Use focused checks during edits and complete required integration checks
-   before finishing. Reuse valid exact-input receipts; rerun affected checks
-   after changes. Reserve capacity for integration and repair. Keep a subject
-   unchanged while it is being judged.
+   before finishing. Reuse a check result only while its inputs are unchanged;
+   rerun affected checks after changes. Reserve capacity for integration and
+   repair. Keep a subject unchanged while it is being judged.
 5. Spend validation where a mistake is costly. For an ordinary change the
    checks and CI are the gate: finish. Obtain [Validate](../validate/SKILL.md)
    from one fresh author-distinct context only when the caller asks, when a
@@ -78,35 +77,25 @@ mistake is costly, not a scheduler.
    pending caller decision or an unresolved causal stall after the help below.
    A choice the accepted outcome depends on that lies outside existing
    authority (changed acceptance, wider scope, an irreversible step it does not
-   cover) is the caller's decision, not a stall, so no helper applies. Finish the independent authorized work, then stop and
-   return the choice instead of waiting on it, handed over in full: what raised
-   it, what you found, the options with their tradeoffs and your
-   recommendation. A count or a link is not a handover, and the result is never
-   `done` while a choice is open. Adjacent improvements are not permission to
-   expand the goal. Report them briefly only when useful; do not turn them into
-   another work batch.
-
-These loop defaults (review only on the triggers in 5, one round in 6, one
-helper per stall below) are working assumptions about current models, not
-measured laws. Propose revising or retiring one as an owner-approved ADR-0017
-amendment, never mid-run, when a measured run shows the same outcome without it
-or a model change removes or moves the failure it guards against.
+   cover) is the caller's decision, not a stall, so no helper applies. Finish
+   the independent authorized work, then stop and return the choice instead of
+   waiting on it, handed over in full: what raised it, what you found, the
+   options with their tradeoffs and your recommendation. A count or a link is
+   not a handover, and the result is never `done` while a choice is open.
+   Adjacent improvements are not permission to expand the goal. Report them
+   briefly only when useful; do not turn them into another work batch.
 
 ## Delegation and handoffs
 
 When delegation is authorized and useful, select the runtime's task-only
-dispatch option for independent work; a short prompt in a full-history fork
-still carries the full history. Supply accepted intent and scope, the exact
+dispatch option for independent work: a short prompt in a full-history fork
+still carries the full history, and prompt wording proves neither isolation nor
+a smaller inherited context. Supply accepted intent and scope, the exact
 subject, relevant evidence, remaining bounds, the result's consumer and check
-ownership. Resume an author for direct repair when useful. Observe actual
-dispatch settings: prompt wording proves neither isolation nor smaller
-inherited context. At completion, verify the expected subject and required
-results; a quiet or partial status is not success.
-
-Return concise findings, check facts and evidence references in the existing
-handoff, and disclose missing or truncated evidence. Identify the combined
-subject at the integration or judgment boundary; unjudged worker increments
-supply content identity and check facts, not duplicate evidence bundles.
+ownership; resume an author for direct repair when useful. At completion,
+verify the expected subject and required results; a quiet or partial status is
+not success. Integrate as [Implement](../implement/SKILL.md) describes for
+delegated work, disclosing missing or truncated evidence in the existing handoff.
 
 ## Causal stall and bounds
 
@@ -131,21 +120,24 @@ Cancellation, refusal and spent hard time/cost/quota skip help.
 
 Respect actual caller/native limits, including explicit repair-round bounds.
 Retries, compaction, helpers and new subjects never renew them; retry count
-alone is not a spent budget. If interruption threatens evidence, preserve
-accepted intent, exact subject, useful receipts, unresolved cause, bounds and
-helper use in the native handoff. Prompt text proves no native enforcement.
+alone is not a spent budget, and prompt text proves no native enforcement. If
+interruption threatens evidence, preserve accepted intent, exact subject, check
+results, unresolved cause, bounds and helper use in the native handoff.
 [Outer-goal guidance](references/outer-goal.md) remains optional.
 
 ## Evidence and boundaries
 
-When a validator is used, bind accepted intent, complete changed paths, exact
-subject and factual receipts for it; disclose affected orphaned acceptance
-evidence. Use existing provenance helpers rather than a new evidence format.
-Requested proof uses caller-selected protected external non-Git storage;
-preserve legacy `.agents/` evidence. For a requested binding verdict, missing
-identity, freshness or proof means NOT_PROVEN; proven failed acceptance or
-scope violation means FAIL; PASS needs every criterion verified and empty
-`not_checked`. Authors cannot issue binding PASS.
+When a validator is used, bind accepted intent, complete changed paths, the
+exact subject and its check results, as [Validate](../validate/SKILL.md)'s
+Subject section does: with AgentOps installed,
+`ao provenance manifest --root <repo> --include <path>` once per changed path;
+in any Git repository, the commit SHA and `git diff --name-only <base>...HEAD`.
+Where the repository records AgentOps evidence bindings, run
+`ao provenance evidence-orphans --root <repo> --changed <path>...` and disclose
+the acceptance evidence it reports orphaned. Requested proof goes to protected
+storage outside Git that the caller selects; preserve legacy `.agents/`
+evidence. Validate's decision order sets a requested binding verdict.
+Authors cannot issue binding PASS.
 
 [Memory](../memory/SKILL.md), specialists and runtime adapters are on demand;
 no-match and no-change are valid. Read [boundaries](references/boundaries.md)
@@ -177,3 +169,10 @@ following a mid-run steer. Routine fixes stay out; with no such call, add none.
 `NOT_PLANNED` (stopped before an actionable slice existed) and `NOT_BUILT`
 (stopped before a candidate change existed) describe progress, not semantic
 verdicts.
+
+When `rpi-report.v1` is requested, its `status` is the validator's verdict when
+Judgment ran on the final subject. Otherwise it is `NOT_PLANNED` or `NOT_BUILT`
+as reported, `FAIL` when a check on the final subject proves a criterion
+failed, and `NOT_PROVEN` for every other Result, `done` included; never `PASS`.
+Fill `checked` and `not_checked`; fields the runtime did not derive, and both
+verdict fields when no validator ran, are `null`.
