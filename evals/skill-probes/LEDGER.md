@@ -159,7 +159,7 @@ the coverage headline before and after is 0 of 10 product/judgment skills
 measured (the two 2026-09-03 `premortem` INERT rows no longer verify because
 the evaluator wrapper changed after capture).
 
-| Group | Reason | Last commit holding the bytes |
+| Group | Reason | Last commit that changed the group |
 |---|---|---|
 | `crank-luna` | SATURATED; skill `crank` retired in #1133 | 51f5d6447 |
 | `one-way-door-batch-t2` | SATURATED; skill `one-way-door` retired in #1133 | e69144d6d |

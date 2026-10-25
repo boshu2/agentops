@@ -391,7 +391,8 @@ evaluator, `claude plugin eval`: one realistic request per skill, graded against
 four or five criteria taken from the practice the skill teaches. For Test, one
 criterion is that a regression test is shown failing without the fix.
 
-On Claude Opus 5.5, measured 2026-10-22 and 2026-10-23 over five rounds:
+On Claude Opus 5.5, measured 2026-10-22 and 2026-10-23 over five rounds; the
+3.10 column is the stored 2026-10-05 result:
 
 | | No plugin | AgentOps 3.10 | AgentOps 3.11 |
 |---|---:|---:|---:|
@@ -404,8 +405,8 @@ to move: the agent met every criterion with no plugin.
 
 Read the limits before you quote these numbers:
 
-- One request per skill, six runs with the plugin and three without, one
-  model. A difference under 0.15 is noise.
+- One request per skill, six runs with 3.11, three with 3.10 and three
+  without, one model. A difference under 0.15 is noise.
 - The criteria come from each skill's own rules. A pass shows the rule landed on
   that request. It says nothing about the outcome of a real task, and an earlier
   [coding pilot](PRODUCT.md#evidence-and-claim-limits) found no end-to-end

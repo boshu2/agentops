@@ -89,7 +89,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   contracts that cited a plan now link it at commit 7de636720.
 - Superseded release files under `docs/releases/`: every `*-audit.md`, the
   notes for v2.15.0 through v3.10.0, the claims and evidence directories and
-  two JSON snapshots (94 files). The checks that protected only them go too:
+  two JSON snapshots (95 files). The checks that protected only them go too:
   the `release.audit-artifacts` gate, `scripts/validate-release-audit-artifacts.sh`,
   `scripts/resolve-release-artifacts.sh` and `tests/scripts/release-artifacts.bats`.
   The live release-notes mechanism (`scripts/validate-release-notes.sh`,

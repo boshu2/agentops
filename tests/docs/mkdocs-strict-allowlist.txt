@@ -52,7 +52,6 @@ WARNING -  Doc file 'architecture/rpi-traversal.md' contains a link '../../skill
 WARNING -  Doc file 'architecture/rpi-traversal.md' contains a link '../../skills/rpi/references/outer-goal.md', but the target '../skills/rpi/references/outer-goal.md' is not found among documentation files.
 WARNING -  Doc file 'architecture/rpi-traversal.md' contains a link '../../skills/memory/SKILL.md', but the target '../skills/memory/SKILL.md' is not found among documentation files.
 WARNING -  Doc file 'reference/skill-system-evolution.md' contains a link '../../skills/rpi/SKILL.md', but the target '../skills/rpi/SKILL.md' is not found among documentation files.
-WARNING -  Doc file 'releases/2026-07-30-v3.4.0-notes.md' contains a link '../../skills/using-gc/SKILL.md', but the target '../skills/using-gc/SKILL.md' is not found among documentation files.
 WARNING -  Doc file 'CONTRIBUTING.md' contains a link '../tests/docs/mkdocs-strict-allowlist.txt', but the target is not found among documentation files.
 
 # Added 2026-10-25 (age-cdvz.6): cross-references from published pages to real
