@@ -1,6 +1,6 @@
 # Context-Budget Delegation (Reader / Writer)
 
-Re-checked on 2026-10-25 against Claude Code 2.1.309, codex-cli 0.163.0, AGY 1.4.7, gc edge 97503b2 (with Gas City v1.5.1 docs and source), bd 1.3.1 and ao 3.11.0.
+Re-checked on 2026-10-25 against Claude Code 2.1.309, codex-cli 0.163.0, AGY 1.4.7, gc edge 97503b2 (with Gas City v1.5.1 docs and source), bd 1.3.1 and ao 3.11.0. Hook calls, linked-worktree hook discovery and standalone role discovery were not re-run on 0.163.0; the body marks each of those claims with what would verify it.
 
 Keep large file bytes out of the working context by delegating reads and
 patterned writes to bounded cheap contexts that return line-referenced bullets

@@ -140,10 +140,11 @@ and may be deleted without affecting the canonical repository skills.
 
 ## Bundled files
 
-Neither host substitutes a path into a reference or a shell command. Codex
-(0.163.0) lists each skill's `SKILL.md` path and resolves relative paths against
-its directory; Claude Code (2.1.309) expands `${CLAUDE_SKILL_DIR}` only in the
-`SKILL.md` body and `allowed-tools`. A `SKILL.md` that runs a bundled file
+Neither host substitutes a path into a reference file or into a script's
+runtime environment. Codex (0.163.0) lists each skill's `SKILL.md` path and
+resolves relative paths against its directory; Claude Code (2.1.309) expands
+`${CLAUDE_SKILL_DIR}` only in the `SKILL.md` body and `allowed-tools`, so a
+command in a reference file would keep the literal variable. A `SKILL.md` that runs a bundled file
 defines a literal `<skill-dir>` once before first use and runs scripts as
 `bash "<skill-dir>/scripts/x.sh"`; references and schemas use relative links;
 repository-root material is labeled "AgentOps source checkout only" and linked
