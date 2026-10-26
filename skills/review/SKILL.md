@@ -58,15 +58,12 @@ or `NOT_PROVEN`, or author `verdict.v2`. Neighbours: how a plan could fail is
 
 ## Advice or acceptance
 
-Route on the caller's intended outcome, not the word "review". An explicit
-request for Validate, an acceptance verdict or independent proof that original
-acceptance is met selects acceptance. A request for a look, once-over or
-opinion is advice even when the caller will act on the result, as in the
-migration example above: give the findings with that caveat. Ask once, and
-wait, only when the request and settled context name no kind of judgment, as
-with a bare "is it ready?"; supplied criteria say what to inspect, not which
-judgment is wanted. Shared routing and handoff rules:
-[advice or acceptance](references/advice-or-acceptance.md).
+Route on the caller's intended outcome, not the word "review": a request for a
+look or opinion is advice even when the caller will act on it, so give the
+findings with that caveat; an explicit request for an acceptance verdict goes
+to Validate; and only a request that names no kind of judgment, such as a bare
+"is it ready?", gets one question
+([advice or acceptance](references/advice-or-acceptance.md)).
 
 ## Advisory examination
 

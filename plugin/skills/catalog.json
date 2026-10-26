@@ -304,7 +304,7 @@
         "documentation",
         "session-handoff"
       ],
-      "references_count": 17,
+      "references_count": 14,
       "tier": "product",
       "user_invocable": true
     },
@@ -457,7 +457,7 @@
       "produces": [
         "subject-manifest.v1"
       ],
-      "references_count": 5,
+      "references_count": 4,
       "tier": "execution",
       "user_invocable": true
     },
@@ -640,7 +640,7 @@
         "ddd-bounded-context"
       ],
       "produces": [],
-      "references_count": 4,
+      "references_count": 3,
       "tier": "execution",
       "user_invocable": true
     },
@@ -667,7 +667,7 @@
       "produces": [
         "postmortem-analysis"
       ],
-      "references_count": 1,
+      "references_count": 0,
       "tier": "judgment",
       "user_invocable": true
     },
@@ -699,7 +699,7 @@
       "produces": [
         "premortem-plan-review.v1"
       ],
-      "references_count": 2,
+      "references_count": 1,
       "tier": "judgment",
       "user_invocable": true
     },
@@ -729,7 +729,7 @@
       "produces": [
         "code-changes"
       ],
-      "references_count": 2,
+      "references_count": 1,
       "tier": "execution",
       "user_invocable": true
     },
@@ -920,7 +920,7 @@
         "suite-summary.json",
         "redteam-results.json"
       ],
-      "references_count": 7,
+      "references_count": 5,
       "tier": "product",
       "user_invocable": true
     },
@@ -1030,7 +1030,7 @@
       "produces": [
         "test-evidence"
       ],
-      "references_count": 11,
+      "references_count": 10,
       "tier": "execution",
       "user_invocable": true
     },

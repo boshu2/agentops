@@ -13,12 +13,6 @@ Every skill has a YAML frontmatter block between `---` delimiters at the top of 
 name: my-skill
 description: 'What this skill does. Triggers: "keyword1", "keyword2".'
 skill_api_version: 1
-context:
-  window: fork
-  intent:
-    mode: task
-  sections:
-    exclude: [HISTORY]
 metadata:
   tier: execution
 ---
@@ -36,88 +30,39 @@ metadata:
 
 ### `context`
 
-Legacy metadata that once controlled the now-retired lookup command. Nothing
-reads it today; it stays in the schema so skills written against the old shape
-keep validating. New skills can omit it; many shipped skills do. Two
-forms remain accepted:
+No shipped skill declares `context`. Leave it out of a new skill.
 
-**String form:**
+**String form.** Claude Code reads one value of this key, the string
+`context: fork`, and runs the skill in a forked subagent instead of the
+conversation that loaded it. No AgentOps skill sets it.
+
 ```yaml
 context: fork
 ```
 
-**Object form:**
-```yaml
-context:
-  window: isolated
-  intent:
-    mode: task
-  sections:
-    exclude: [HISTORY]
-```
+**Object form: retired 2026-10-25.** The object-valued block (`window`,
+`sections`, `intent`, `intel_scope`) once fed a context lookup command that has
+since been removed (see [MIGRATION.md](MIGRATION.md)). A search of `cli/`,
+`scripts/` and `tests/` finds no reader, and Claude Code ignores an object
+value, so a declaration has no effect. The twelve shipped skills that still
+carried one dropped it on that date. `schemas/skill-frontmatter.v1.schema.json`
+still accepts the object so third-party skills written against the old shape
+keep validating. Delete an old block rather than rewriting it as
+`context: fork`, which does change how the skill runs.
 
-#### `context.window`
+What each key of an old block declared, for reading one:
 
-How the skill's execution context relates to the parent session.
+| Key | What it declared | Effect now |
+|-----|------------------|------------|
+| `window` | `isolated`, `fork` or `inherit`: how the skill's context related to the parent session | none |
+| `sections` | `include` / `exclude` lists of `HISTORY` (past session summaries), `INTEL` (mined learnings) and `TASK` (current bead and predecessor context) for a removed injection step | none |
+| `intent.mode` | `task`, `questions` or `none`: what the skill was doing | none |
+| `intel_scope` | `topic`, `full` or `none`: how much mined knowledge to inject | none |
 
-| Value | Meaning |
-|-------|---------|
-| `isolated` | Fresh context, no parent inheritance. For validation and mechanical skills. |
-| `fork` | Copy parent context as starting point. For skills that need to know what you're working on. |
-| `inherit` | Use full parent context as-is. For session utilities (`status`, `handoff`, `bootstrap`). |
-
-**v1 status:** Declaration-only. Nothing parses or enforces it.
-Do not rely on this field for RPI phase isolation: the freshness requirement
-for Validate is a property of the traversal, described in
-[`docs/architecture/rpi-traversal.md`](architecture/rpi-traversal.md) and
-enforced by the validator's own context-identity checks, not by this key.
-
-#### `context.sections`
-
-Named which knowledge sections a retired injection step would filter.
-
-```yaml
-sections:
-  include: [INTEL, TASK]     # Allowlist — only these sections
-  exclude: [HISTORY]         # Blocklist — everything except these
-```
-
-If both `include` and `exclude` are set, `include` takes precedence.
-
-Valid section names:
-
-| Section | What it named |
-|---------|---------------|
-| `HISTORY` | Past session summaries |
-| `INTEL` | Mined learnings and patterns. The surface that produced them was retired with `ao flywheel` and `ao knowledge`; the name is still accepted so old declarations parse, and it now names nothing. <!-- ao-resolve: ignore --> |
-| `TASK` | Current bead ID and predecessor context |
-
-**v1 status:** Metadata compatibility only. The lookup command was removed and
-no shipped code injects any of these sections, so a `sections` declaration
-neither adds nor removes context at runtime. One skill (`converter`) still
-carries `exclude: [HISTORY, INTEL, TASK]` as an inert legacy declaration.
-
-#### `context.intent.mode`
-
-Declares what the skill is doing.
-
-| Value | Meaning |
-|-------|---------|
-| `task` | Executing work (`implement`, `plan`, `validate`) |
-| `questions` | Exploring or researching (`research`, `skill-builder`, `workflow-builder`) |
-| `none` | Operational utility (`status`, `handoff`) |
-
-**v1 status:** Declaration-only. Nothing reads it at runtime.
-
-#### Retired: `context.intel_scope`
-
-`context.intel_scope` declared how much of the knowledge flywheel to inject.
-That surface is gone — `ao flywheel`, `ao knowledge`, `ao patterns`, and <!-- ao-resolve: ignore -->
-`ao inject` were all removed (see [MIGRATION.md](MIGRATION.md)), and a search <!-- ao-resolve: ignore -->
-of `cli/` and `scripts/` finds no reader for the key. No shipped skill declares
-it any more. `schemas/skill-frontmatter.v1.schema.json` still accepts it so
-third-party skills written against the old shape keep validating; a declaration
-has no effect.
+`window: isolated` never isolated anything. Validate's freshness comes from a
+separately dispatched reviewer whose context identity is observed, as described
+in [`docs/architecture/rpi-traversal.md`](architecture/rpi-traversal.md), not
+from any frontmatter key.
 
 ### `allowed-tools`
 
@@ -248,12 +193,12 @@ removed verbs — see [MIGRATION.md](MIGRATION.md).
 Path to a JSON Schema file that defines the skill's structured output format.
 
 ```yaml
-output_contract: skills/council/schemas/council-report.v1.schema.json
+output_contract: schemas/council-report.v1.schema.json
 ```
 
-Paths are relative to repo root. Several skills instead use it as a prose
-description of their output (`learn`), which the schema
-allows — it is typed as a plain string.
+Paths are relative to the skill directory. Several skills instead use it as a
+prose description of their output (`research`), which the schema allows: it is
+typed as a plain string.
 
 **v1 status:** Declaration-only. `scripts/validate-skill-schema.sh` allowlists
 the key; nothing resolves the path or checks a skill's output against it.
@@ -265,59 +210,24 @@ the key; nothing resolves the path or checks a skill's output against it.
 | `license` | string | License identifier (e.g., `MIT`) |
 | `compatibility` | string | Runtime requirements (e.g., `Requires git, gh CLI`) |
 
-## Context Declaration Quick Reference
-
-`context` is optional and most skills omit it. These 25 are every skill in
-`skills/` that declares one; the remaining 30 declare no `context` block at
-all. Regenerate this view with `rg -A5 '^context:' skills/*/SKILL.md`; the
-frontmatter is the source of truth, this table is a convenience copy.
-
-| Skill | Tier | Window | Sections | Intent |
-|-------|------|--------|----------|--------|
-| craft-goal | judgment | inherit | - | task |
-| postmortem | judgment | fork | exclude: HISTORY | task |
-| codebase-recon | execution | fork | exclude: HISTORY | task |
-| pattern-mining | execution | fork | exclude: HISTORY | task |
-| refactor | execution | fork | exclude: HISTORY | task |
-| research | execution | fork | exclude: HISTORY, TASK | questions |
-| reverse-engineer | execution | fork | exclude: HISTORY | task |
-| scaffold | execution | fork | exclude: HISTORY | task |
-| test | execution | fork | exclude: HISTORY | task |
-| claude-exec | orchestration | inherit | exclude: HISTORY | none |
-| codex-exec | orchestration | inherit | exclude: HISTORY | none |
-| bootstrap | session | fork | - | task |
-| handoff | session | inherit | - | none |
-| status | session | inherit | - | none |
-| domain | knowledge | isolated | - | none |
-| doc | product | fork | exclude: HISTORY | task |
-| fitness | product | fork | - | task |
-| product | product | inherit | - | task |
-| security | product | fork | exclude: HISTORY | task |
-| automation-shape-routing | meta | inherit | - | task |
-| human-only-skills | meta | inherit | - | none |
-| skill-builder | meta | fork | exclude: HISTORY | questions |
-| toil-mining | meta | fork | exclude: HISTORY | task |
-| workflow-builder | meta | fork | exclude: HISTORY | questions |
-| converter | cross-vendor | isolated | exclude: HISTORY, INTEL, TASK | none |
-
 ## Enforcement Summary (v1)
 
-Only three frontmatter fields change behavior at runtime, and none is
+Only these frontmatter fields change behavior at runtime, and none is
 enforced by `ao`: `name`/`description` drive skill discovery in the host agent
-runtime, `allowed-tools` narrows that runtime's auto-approval, and
+runtime, `allowed-tools` narrows that runtime's auto-approval,
 `disable-model-invocation` (where the runtime honors it) strips the
-description from context and reserves invocation to the person. Everything
-under `context` is inert metadata kept so existing skills keep validating.
+description from context and reserves invocation to the person, and the string
+`context: fork` runs the skill in a forked subagent in Claude Code. No
+AgentOps skill sets `context`; the retired object form is inert and stays in
+the schema only so old-shape skills keep validating.
 
 | Field | Runtime enforcement | Enforced by |
 |-------|--------------------|-------------|
 | `allowed-tools` | **Active** — narrows tool auto-approval | host agent runtime |
 | `name`, `description` | **Active** — skill discovery and trigger matching | host agent runtime |
 | `disable-model-invocation` | **Active** where honored — strips the description from context and reserves invocation to the person; Codex takes the same policy from the skill's `agents/openai.yaml` | host agent runtime |
-| `context.window` | None — declaration-only | — |
-| `context.intent.mode` | None — declaration-only | — |
-| `context.sections` | None — the injection surface was removed | — |
-| `context.intel_scope` | None — retired; no skill declares it | — |
+| `context: fork` (string) | **Active** in Claude Code — runs the skill in a forked subagent; no AgentOps skill sets it | host agent runtime |
+| `context` (object form) | None — retired 2026-10-25; no reader, and no shipped skill declares it | — |
 | `model` | None — declaration-only | — |
 | `output_contract` | None — declaration-only | — |
 

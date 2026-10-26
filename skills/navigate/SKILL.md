@@ -100,13 +100,12 @@ falsifier.
 Hand each build bead to native execution, or to one RPI when the goal or
 caller selects it: through Orchestrate or Agent Native when delegation is
 authorized, one bead per worker, otherwise the caller's runtime. Its checks
-and CI are its result; it gets one fresh, author-distinct Validate only when
-the caller asks, a mistake cannot be cheaply undone after it lands, or no
-deterministic check covers the changed behavior, and a repair does not start
-another. A [decision bead](#foggy-epics) goes to the resolver it names, never
-to an implementer; one that needs the caller's answer goes under decisions in
-the checkpoint. Done when each picked bead has a one-line reason and a named
-handoff.
+and CI are its result; it gets one fresh, author-distinct Validate only on
+[Validate's triggers](../validate/SKILL.md#when-a-fresh-judgment-is-worth-it),
+and a repair does not start another. A [decision bead](#foggy-epics) goes to
+the resolver it names, never to an implementer; one that needs the caller's
+answer goes under decisions in the checkpoint. Done when each picked bead has a
+one-line reason and a named handoff.
 
 ## 3. Ratchet the graph
 

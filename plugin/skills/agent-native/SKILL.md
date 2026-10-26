@@ -37,9 +37,9 @@ skill launches and observes.
 - **Validate the whole batch first.** Every packet needs its selected executor,
   packet identity, all transitive effects, the actions it must not take (such
   as push, merge, history rewrite, tracker or external writes) and a canonical
-  workspace-relative write scope in separate isolation. If any packet is
-  invalid, launch none: starting the valid ones and fixing the rest later is a
-  partial launch.
+  workspace-relative write scope, generated companions and regeneration outputs
+  included, in separate isolation. If any packet is invalid, launch none:
+  starting the valid ones and fixing the rest later is a partial launch.
 - **Compare canonical scopes.** Resolve symlinks, normalize paths and compare
   case-insensitively so an alias cannot hide a collision. A lexical check alone
   cannot prove symlink or runtime isolation. Disjoint files are not
@@ -99,9 +99,10 @@ slices of at most 350 lines. A Writer lands one patterned file from a spec plus
 a required reference file and returns a receipt the caller never reads back.
 Both are caller-selected per call and yield runtime facts only; a receipt is not
 validation. For Codex, use the source-owned `bulk-reader` and `code-writer`
-native roles; their model and sandbox are pinned in
+native roles; their model and effort are pinned in
 [agents/bulk-reader.toml](agents/bulk-reader.toml) and
-[agents/code-writer.toml](agents/code-writer.toml).
+[agents/code-writer.toml](agents/code-writer.toml), and each runs in the parent
+session's sandbox, which a role file cannot override.
 [Context-budget delegation](references/context-budget-delegation.md) covers
 installation, native invocation, opt-in refusal hooks and the limits of role
 instructions.

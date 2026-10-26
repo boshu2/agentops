@@ -1,9 +1,10 @@
 # Ownership boundaries for the lean RPI core
 
 RPI owns the authorized outcome through implementation, checks, direct repairs
-and, where a mistake is costly or the caller asks, one fresh judgment. Plan
-shapes missing intent and may revise an approach falsified by evidence within
-unchanged accepted outcome/scope. Implement edits and collects facts. Validate independently judges the exact subject and alone
+and, on [Validate's triggers](../../validate/SKILL.md#when-a-fresh-judgment-is-worth-it),
+one fresh judgment. Plan shapes missing intent and may revise an approach
+falsified by evidence within unchanged accepted outcome/scope. Implement edits
+and collects facts. Validate independently judges the exact subject and alone
 authors semantic `verdict.v2` when persistence is selected. Memory is optional;
 its operation references own recall, mining and curation.
 
@@ -40,22 +41,20 @@ expansion needs caller approval; useful source/generated changes already covered
 by a scope class do not. Cheap discriminating checks precede expensive judgment.
 Reserve finishing capacity; reuse a check result while its inputs are unchanged.
 
-Unknown cause, recurrence, no progress or wrong objective warrants causal
-examination. A genuine stall admits at most one bounded fresh helper per incident
-inside existing authority and bounds. Do not build a helper chain for known
-failures or rename an unresolved incident. An unhelpful helper ends the attempt.
-Cancellation, refusal or spent real limits skip help; retry counts alone are not
-spent time/quota. Compact native recovery state preserves evidence, not new budget.
+Unknown cause, recurrence, no progress or wrong objective is a causal stall, and
+[RPI's stall rule](../SKILL.md#causal-stall-and-bounds) sets its one bounded
+helper and the limits nothing renews.
 
 ## Optional specialists and adapters
 
 Anti-ceremony, premortem, council, research, factories and runtime adapters are
 optional. Risk deepens evidence inspection without mandatory specialist dispatch.
 A selected factory remains behind its own coordinator, doctor and supervisor
-doors; its reconciler creates and repairs sessions. Concurrent writers require
-authorized disjoint source and regeneration scope and isolation. Pass bounded
-task evidence, not the author's desired verdict. Do not start another runtime
-merely because it exists.
+doors; its reconciler creates and repairs sessions. Concurrent writers need
+authorized, disjoint source and regeneration scopes in separate isolation
+([Agent Native](../../agent-native/SKILL.md#before-launch-and-while-running)).
+Pass bounded task evidence, not the author's desired verdict. Do not start
+another runtime merely because it exists.
 
 ## Fresh judgment
 
