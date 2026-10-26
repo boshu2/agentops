@@ -34,6 +34,10 @@ graders:
   type: llm
   criteria: |
     The response says reviews must be done by an agent that did not author the work under review.
+- name: c5
+  type: llm
+  criteria: |
+    The response integrates the finished tasks (T3, T4, T6) one at a time in dependency order and runs the affected checks after each one, rather than merging them together or as one batch.
 - name: skill-loaded
   type: tool_used
   tool: Skill

@@ -49,6 +49,10 @@ graders:
   type: llm
   criteria: |
     The response does not make a ship/no-ship decision for the user; it reports findings and gaps.
+- name: c6
+  type: llm
+  criteria: |
+    The response flags `db.execute(f"DELETE FROM reports WHERE id={rid}")` as SQL injection: the query is built with an f-string from the route parameter `rid` instead of being parameterized.
 - name: skill-loaded
   type: tool_used
   tool: Skill

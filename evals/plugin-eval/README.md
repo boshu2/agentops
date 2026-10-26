@@ -9,13 +9,26 @@ records 3.9.0 against 3.10.
 
 | Suite | Cases | Question | Arms |
 |---|---|---|---|
-| `behavior/` | 32, covering 31 skills | Does the answer follow the practice the skill teaches? Each case has 4 or 5 criteria and also records whether the skill loaded. | with the plugin and without it |
+| `behavior/` | 44, covering 31 skills | Does the answer follow the practice the skill teaches? Each case has 4 to 6 criteria and also records whether the skill loaded. | with the plugin and without it |
 | `routing/` | 32, covering 31 skills | Does the matching skill load on a request a user would type? | plugin only |
 
 Research has two cases in each suite: `research` and `research-claim-check`,
 the case Reality Check had before it folded into Research on 2026-10-23. Its
 prompt and criteria are unchanged; its `skill-loaded` check now expects
 Research.
+
+Twelve behavior cases were added on 2026-10-25 for wave 3 of epic age-pv2j,
+because about half the earlier cases tested what the model already does without
+the skill. Five target a skill's distinctive rule (`council-vote-tally`,
+`research-absence-proof`, `review-merge-base`, `test-isolated-revert`,
+`validate-mutating-check`); the last four run in a small Git repository that the
+case's `seed.sh` builds. Seven are harder versions of cases the model passed
+unaided (`<skill>-harder`); `navigate-harder` is round 4's case copied unchanged,
+so its case name is still `navigate-hard`. Their bars, runs and spend were fixed
+before any run in [the headroom plan](plans/2026-10-wave3-headroom.md), with the
+fold-or-cut decision each one settles. [The loading plan](plans/2026-10-wave3-loading.md)
+fixes, the same way, a description and listing test for `implement`, `triage`,
+`security` and `review`. Neither plan has been run.
 
 A case is one `case.yaml`: a request a user would type, the criteria, and a
 `skill-loaded` check on the Skill tool call. Most routing requests never name
@@ -47,6 +60,11 @@ claude plugin eval . --eval-dir evals/plugin-eval/routing \
   --ablation none --model claude-opus-5-5 --no-publish --json "$OUT/routing.json"
 ```
 
+The cases tagged `seeded` build their repository with `context.scaffold_script`,
+which the evaluator runs only with `--scaffold`, and they need the gated tools:
+add `--scaffold --allow-tools Edit Write Bash` (for example with `--tag seeded`).
+Without `--scaffold` they run in an empty workspace and measure nothing.
+
 The JSON files hold every prompt and response, so write them outside the
 repository as shown. Without `--no-publish` the evaluator also uploads its HTML
 report to claude.ai. Its own run directory sits beside the cases and is ignored
@@ -54,7 +72,7 @@ by Git.
 
 Every run is a full Claude Code session on your account. On Claude Opus 5.5 a
 run cost about $0.13 to generate (168 runs for $21.25 on 2026-10-04). The
-behavior suite is 192 runs at the default three per case; routing is 96.
+behavior suite is 264 runs at the default three per case; routing is 96.
 
 ## Grade
 
@@ -90,14 +108,16 @@ the evaluator reports it beside the score; in a single-arm run it is the score.
 - **Score** is the share of criteria met, pooled over runs.
 - **Check loading before you read a zero.** If the skill never loaded, a zero
   delta says nothing about the skill's content. Fix the description first.
-- **One case per skill, three runs.** One run meeting or missing one criterion
+- **Few cases per skill, three runs each.** One run meeting or missing one criterion
   moves a five-criterion case by 0.07. Treat a delta under about 0.15 as noise.
 - **The criteria come from each skill's own rules.** A pass shows the rule
   landed on that request. It does not show a better outcome on a real task.
-- **Four behavior cases use a slash command** (`craft-goal`, `interview`,
-  `postmortem`, `rpi`). These skills were user-only until 2026-10-23 and now
-  also load when named in plain words; their behavior cases still start with
-  `/agentops:<name>`, so the arm without the plugin sees an unknown command.
+- **Five behavior cases use a slash command** (`craft-goal`, `interview`,
+  `postmortem`, `rpi`, and `navigate-harder`). The first four skills were
+  user-only until 2026-10-23 and now also load when named in plain words;
+  `navigate-harder` keeps the forced prefix it was measured with in round 4.
+  These cases start with `/agentops:<name>`, so the arm without the plugin sees
+  an unknown command.
 
 ## Changing a case
 

@@ -1,0 +1,126 @@
+# Wave 3 (age-pv2j.39) harder case for Research's claimed-state audit (the folded claim audit).
+# The October harder case let the agent answer with facts alone; here the user asks for a yes or
+# no, one item rests on a test that asserts nothing plus another component's behavior, and the
+# wiring gap needs tracing from the production entry point. Written from
+# skills/research/SKILL.md ("Claimed-state audit" steps 2 to 4 and the no-verdict ledger rule), not
+# from observed failures. Criteria fixed before any run; bars in
+# evals/plugin-eval/plans/2026-10-wave3-headroom.md.
+# Rule each criterion tests:
+#   c1  a test that exercises code without asserting, or behavior left to another component, is unverifiable, not confirmed.
+#   c2  code that no live entry point reaches is not wired in.
+#   c3  give each stated item its own disposition, including the ones that hold.
+#   c4  the ledger carries no overall verdict or readiness call.
+schema_version: '1.1'
+name: research-claim-check-harder
+tags:
+- behavior
+- harder
+- wave3
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Our agent closed NOTIF-230 with the message below. Before I tell the PM it's live, can you check it? Just give me a yes or no I can forward.
+
+    > Done and wired in:
+    > 1. Users who turned off emails (`email_opt_out`) are skipped.
+    > 2. The DailyDigest job is registered with the scheduler, so it runs nightly at 02:00 UTC in production.
+    > 3. A user gets at most one digest per day, even if the job is re-run.
+    > 4. Tests added and passing.
+
+    What I pulled from main at 4be81c2:
+
+    ```python
+    # notify/digest.py
+    class DailyDigest(Job):
+        schedule = "0 2 * * *"
+
+        def run(self, now):
+            for user in User.active():
+                if user.email_opt_out:
+                    continue
+                send_digest(user, day=now.date())
+
+    # notify/send.py
+    def send_digest(user, day):
+        items = Activity.for_user(user.id, day=day)
+        mailer.send(
+            to=user.email,
+            template="digest",
+            items=items,
+            idempotency_key=f"digest:{user.id}:{day.isoformat()}",
+        )
+
+    # jobs/registry.py
+    from notify.digest import DailyDigest
+    from reports.weekly import WeeklyReport
+
+    JOBS = [WeeklyReport, DailyDigest]
+
+    # jobs/prod_registry.py
+    from billing.invoices import InvoiceRun
+    from reports.weekly import WeeklyReport
+
+    JOBS = [InvoiceRun, WeeklyReport]
+
+    # worker/main.py  (production worker; Procfile: `worker: python -m worker.main`)
+    from jobs.prod_registry import JOBS
+    from worker.scheduler import scheduler
+
+    scheduler.start(JOBS)
+
+    # dev/run_jobs.py  (local helper for running jobs by hand)
+    from jobs.registry import JOBS
+
+    # mailer/client.py
+    def send(to, template, items, idempotency_key=None):
+        payload = {"to": to, "template": template, "items": items}
+        headers = {"Idempotency-Key": idempotency_key} if idempotency_key else {}
+        return _http.post(f"{MAIL_API}/v1/messages", json=payload, headers=headers)
+
+    # tests/test_digest.py
+    def test_digest_skips_opted_out(fake_mailer, make_user):
+        make_user(email="a@example.com", email_opt_out=True)
+        DailyDigest().run(now=datetime(2026, 10, 20, 2, 0))
+        assert fake_mailer.sent == []
+
+    def test_digest_rerun_same_day(fake_mailer, make_user):
+        make_user(email="b@example.com")
+        job = DailyDigest()
+        job.run(now=datetime(2026, 10, 20, 2, 0))
+        job.run(now=datetime(2026, 10, 20, 2, 30))
+    ```
+
+    ```
+    $ git rev-parse --short HEAD
+    4be81c2
+    $ pytest tests/test_digest.py -q
+    ..                                                    [100%]
+    2 passed in 0.14s
+    ```
+graders:
+- name: c1
+  type: llm
+  criteria: |
+    The response marks item 3 (at most one digest per user per day, even on a re-run) as unverifiable or not shown, neither confirmed nor shown broken: the only test runs the job twice and asserts nothing, and the guarantee rests on the mail service honoring the Idempotency-Key header, which nothing shown establishes. It names what would settle it, such as a test asserting one send after two runs, or the mail API's documented idempotency behavior.
+- name: c2
+  type: llm
+  criteria: |
+    The response marks item 2 as a gap: DailyDigest is listed only in jobs/registry.py, which only the local dev/run_jobs.py imports, while the production worker (worker/main.py, started by the Procfile) loads jobs/prod_registry.py, which does not include it, so the job does not run in production.
+- name: c3
+  type: llm
+  criteria: |
+    The response gives each of the four items its own disposition (such as confirmed, gap or unverifiable), including items 1 and 4, rather than discussing only the problems it found.
+- name: c4
+  type: llm
+  criteria: |
+    The response does not give the requested yes or no, or any other overall verdict or readiness call (such as "no, it's not live", "yes", PASS, FAIL, "ready", or "done once X is fixed"). It reports the per-item findings, and if it addresses the yes/no it says that an overall acceptance call is a separate judgment. Stating a per-item fact such as "the job is not registered in production" is allowed.
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?research"'
+  arm: with-only

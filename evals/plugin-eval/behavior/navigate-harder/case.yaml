@@ -1,0 +1,57 @@
+schema_version: '1.1'
+name: navigate-hard
+tags:
+- behavior
+- harder
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    /agentops:navigate Two agents just freed up. What should they start on for this epic?
+
+    ```
+    EPIC st-400 "Public status page"
+      Outcome: customers can check whether we're up, and follow an incident, without logging in or emailing support.
+      Acceptance:
+        S1 Given a visitor who is not logged in, when they open status.acme.io, then they see the current status of every Component.
+        S2 Given an Incident declared by on-call, when it is posted, then it appears on status.acme.io within 5 minutes and shows each update with its time.
+      Terms: Component = a customer-facing service we report status for. Incident = a declared customer-impacting event with timestamped updates.
+      Notes: Marketing wants this live before the March launch. We haven't decided whether to buy a hosted page (Statuspage, Instatus) or self-host a static page, or whether Component status comes from our health probes or only from what on-call posts. Nobody has a list yet of which services count as Components. Open for leadership: do we publish historical uptime percentages? Our enterprise contracts pay SLA credits based on uptime and Legal hasn't looked at it. (Eng would rather show 90-day uptime bars; it's nearly free once probes are wired.)
+    children:
+      st-401 "Integrate status page provider"                  READY  type: task     labels: agent-ready  desc: "Compare Statuspage, Instatus and a self-hosted static page, pick the best fit, and wire our Components into it."
+      st-402 "Probe-to-Component status mapper"                READY  type: task     labels: agent-ready  scope: services/probe/
+      st-403 "Status page UI: Component grid + Incident list"  READY  type: task     labels: agent-ready  scope: web/status/
+      st-404 "/incident Slack command posts updates"           READY  type: task     labels: agent-ready  scope: bots/slack/
+      st-405 "Move on-call paging from Opsgenie to PagerDuty"  READY  type: feature
+    ready list: st-401, st-402, st-403, st-404, st-405
+    ```
+graders:
+- name: c1
+  type: llm
+  criteria: |
+    The response proposes the next work as decisions (questions whose answer is a choice), covering at least buy-versus-self-host and probe-driven versus on-call-posted Component status, and for each one names how it will be resolved: a cited fact (research), a rough prototype or sample the user reacts to, a conversation with the user, leadership or Legal, or a manual step.
+- name: c2
+  type: llm
+  criteria: |
+    The response flags st-401 "Integrate status page provider" as a decision (which provider, or buy versus self-host) disguised as an agent-ready build task, and says to retype it as a decision and remove the agent-ready label so agents pulling build work skip it.
+- name: c3
+  type: llm
+  criteria: |
+    The response keeps two separate lists: in-scope questions not yet specific enough to become beads (for example which services count as Components), and work ruled out of this epic (st-405, moving on-call paging to PagerDuty, which serves a different outcome). Treating the Components list as a decision bead instead of an in-scope question also meets this criterion, provided the two lists are kept separate and st-405 sits under ruled-out work.
+- name: c4
+  type: llm
+  criteria: |
+    The response puts no build bead into this wave (not st-402, st-403, st-404, nor the wiring part of st-401), even with two agents free, and says the open decisions come before build work.
+- name: c5
+  type: llm
+  criteria: |
+    The response leaves the historical-uptime-percentage question to the user, leadership or Legal with no default or recommendation of its own; it does not adopt the engineering preference for 90-day uptime bars and does not propose launching without them as the plan.
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?navigate"'
+  arm: with-only

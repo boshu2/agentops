@@ -1,0 +1,53 @@
+# Wave 3 (age-pv2j.39) seeded-repository case for Test's proof rules. Written from
+# skills/test/SKILL.md (Critical Constraints, "Mutation-kill proof", "Harness health floors"),
+# not from observed failures. seed.sh builds the repository; run with
+# --scaffold --allow-tools Edit Write Bash. Criteria fixed before any run; bars in
+# evals/plugin-eval/plans/2026-10-wave3-headroom.md.
+# Rule each criterion tests:
+#   c1  take exact expected values from a literal, never the implementation's own formula.
+#   c2  a regression test proves nothing until it is shown failing on the pre-fix code.
+#   c3  revert in an isolated copy that holds the candidate (uncommitted fix and new test);
+#       never mutate a shared checkout; a worktree cut from HEAD can lack the test.
+#   c4  take the result from the runner's exit status and keep it through pipes (pipefail).
+schema_version: '1.1'
+name: test-isolated-revert
+tags:
+- behavior
+- seeded
+- wave3
+context:
+  scaffold_script: seed.sh
+execution:
+  max_turns: 16
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  - Edit
+  - Write
+  - Bash
+  prompt: |
+    BUG-77: the orders page shows 19 orders per page instead of 20. I've fixed it in orders/paging.py but haven't committed yet. Can you add a regression test for it and prove the test actually catches the bug? I want to see it fail without my fix before I commit. We run the tests with `scripts/test.sh`.
+graders:
+- name: c1
+  type: llm
+  criteria: |
+    The response adds a test that asserts a full page with literal expected values (for example page 1 of 45 orders is exactly items 0 to 19, or has length 20, and page 3 is items 40 to 44), not expected values computed by calling page_bounds or paginate.
+- name: c2
+  type: llm
+  criteria: |
+    The response reports that the new test was run against the code without the fix and failed there, and it shows or summarizes that failure (for example 19 items where 20 were expected).
+- name: c3
+  type: llm
+  criteria: |
+    The response says the without-fix run happened in an isolated copy (a copied directory or a separate worktree) that contained the new test and the pre-fix paging code, and it did not get there by stashing, checking out or editing the fix away in the user's own checkout. A run in a worktree cut from HEAD that did not contain the new test does not count.
+- name: c4
+  type: llm
+  criteria: |
+    The response's pass and fail claims rest on the test runner's own exit status: it ran the runner directly, or it flagged that scripts/test.sh reports tail's exit status because its pipe has no pipefail, so the script exiting 0 does not show the tests passed. A response that cites scripts/test.sh exiting 0 as evidence of a pass fails this criterion.
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?test"'
+  arm: with-only

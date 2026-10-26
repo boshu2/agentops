@@ -1,0 +1,65 @@
+# Wave 3 (age-pv2j.39) harder case for AGY Native. The round-1 case tested general headless-runner
+# habits the agent already had; this one rests on AGY-specific facts the skill carries (AGY 1.4.7):
+# an expired --print-timeout exits 0, --print-timeout defaults to 0 (no limit), `agy models`
+# lists Claude and GPT-OSS ids beside Gemini ones, no flag makes a run read-only, and a large
+# inline prompt can be dropped. Written from skills/agy-native/SKILL.md ("Before launch",
+# "Permission posture", "Command", "Did it finish?"), not from observed failures. Criteria fixed
+# before any run; bars in evals/plugin-eval/plans/2026-10-wave3-headroom.md.
+# Rule each criterion tests:
+#   c1  exit 0 is not proof: an expired --print-timeout returns partial output, exits 0 and warns on stderr.
+#   c2  a Gemini or cross-family run needs a gemini-* id; `agy models` includes Claude and GPT-OSS.
+#   c3  no flag makes file access read-only; --mode plan is not documented as read-only.
+#   c4  --print-timeout defaults to 0, which waits until the turn completes; always set a bound.
+#   c5  pass the packet by path (-p pointer plus --add-dir), not inline.
+schema_version: '1.1'
+name: agy-native-harder
+tags:
+- behavior
+- harder
+- wave3
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    I ran a cross-model review of my Claude-written PR through AGY (1.4.7) so I'd have a Gemini read before merging. What I ran:
+
+    ```
+    agy -p "$(cat review-packet.md)" --mode plan --model claude-sonnet-4-6 \
+      --print-timeout 900s --output-format json > review.json 2> review.err
+    echo $?
+    0
+    ```
+
+    review-packet.md is the full diff plus my review instructions, about 220 KB. I took the model id from the top of `agy models`. Wall clock was 15m01s. review.json has two minor findings and no error field; I haven't opened review.err.
+
+    Since --mode plan keeps it read-only, I'm going to record this as the Gemini review leg and merge. And next time I'll leave --print-timeout off entirely so the review can't get cut off. Anything wrong with that?
+graders:
+- name: c1
+  type: llm
+  criteria: |
+    The response does not treat exit 0 as a finished review: it says an expired `--print-timeout` returns partial output and still exits 0 (with a warning on stderr), and because the run lasted the whole 900 s bound it treats the review as timed out or unknown until review.err or the output shows the turn finished.
+- name: c2
+  type: llm
+  criteria: |
+    The response says `claude-sonnet-4-6` is a Claude model, not Gemini, so the run is not a Gemini or cross-family review even though it went through AGY, and that a `gemini-*` id from `agy models` is needed.
+- name: c3
+  type: llm
+  criteria: |
+    The response says `--mode plan` does not make the run read-only (no AGY flag does; the posture comes from the flags plus the settings.json permissions headless runs honor), and asks for a check for writes, such as `git status` before and after or inspecting those permissions.
+- name: c4
+  type: llm
+  criteria: |
+    The response rejects leaving `--print-timeout` off: its default of 0 means no limit, so the next run should keep an explicit `--print-timeout` taken from the remaining deadline, held by an outer bound as well.
+- name: c5
+  type: llm
+  criteria: |
+    The response says the 220 KB packet should be passed by path (a short `-p` pointer to the file plus `--add-dir` on its directory) instead of inline through `$(cat ...)`, because a large inline prompt can be dropped while the run still looks scoped.
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?agy-native"'
+  arm: with-only

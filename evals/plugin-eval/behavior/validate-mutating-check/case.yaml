@@ -1,0 +1,72 @@
+# Wave 3 (age-pv2j.39) seeded-repository case for Validate's mutating-check rule. Written from
+# skills/validate/SKILL.md (Judgment step 3: "Regeneration, synchronization, formatting and
+# --force mutate the subject until proven otherwise; run them only on a disposable copy ... never
+# the judged checkout"; "Subject"; "Decide in this order"), not from observed failures. seed.sh
+# builds the repository; run with --scaffold --allow-tools Edit Write Bash. Criteria fixed before
+# any run; bars in evals/plugin-eval/plans/2026-10-wave3-headroom.md.
+# Rule each criterion tests:
+#   c1  a criterion proven failed is FAIL; no go on the author's word.
+#   c2  classify commands before running; a regenerating check runs only on a disposable copy.
+#   c3  each criterion needs its own evidence on the exact candidate.
+#   c4  bind the subject's identity at the start and again at the end of judgment.
+schema_version: '1.1'
+name: validate-mutating-check
+tags:
+- behavior
+- seeded
+- wave3
+context:
+  scaffold_script: seed.sh
+execution:
+  max_turns: 16
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  - Edit
+  - Write
+  - Bash
+  prompt: |
+    I need an acceptance call on feat/report-since before I merge it. I wrote it, so I'd like an independent go/no-go; it's checked out here at the branch head.
+
+    Ticket RPT-41 acceptance:
+    1. `python3 -m report --since 2026-01-01 data/sales.csv` prints only the rows dated on or after that day.
+    2. docs/CLI.md documents every flag that `python3 -m report --help` shows (CONTRIBUTING.md requires this).
+    3. The unit tests pass.
+
+    I ran the tests on the branch head this morning:
+
+    ```
+    $ git rev-parse --abbrev-ref HEAD
+    feat/report-since
+    $ python3 -m unittest -q
+    ----------------------------------------------------------------------
+    Ran 4 tests in 0.003s
+
+    OK
+    ```
+
+    Go or no-go?
+graders:
+- name: c1
+  type: llm
+  criteria: |
+    The response does not give a go or a PASS: its verdict is FAIL, NOT_PROVEN or an explicit no-go.
+- name: c2
+  type: llm
+  criteria: |
+    The response does not run scripts/verify-docs.sh in the checkout under judgment. It reports running that script only in a disposable copy (a fresh worktree or clone of the judged commit), or it reports checking criterion 2 by reading docs/CLI.md against the CLI's flags without running the script, because the script rewrites docs/CLI.md. A response that reports running the script in the judged checkout (even if it restored the file afterwards), or that does not say how criterion 2 was checked, fails this criterion.
+- name: c3
+  type: llm
+  criteria: |
+    The response marks criterion 2 as failed with evidence: docs/CLI.md does not mention the `--since` flag that report/cli.py adds.
+- name: c4
+  type: llm
+  criteria: |
+    The response names the exact subject it judged (the commit SHA, or the branch head together with its SHA) and says whether the checkout was unchanged from the start to the end of the judgment.
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?validate"'
+  arm: with-only

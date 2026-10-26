@@ -1,0 +1,70 @@
+# Wave 3 (age-pv2j.39) harder case for Codex Exec. The round-1 case asked outright for a fresh
+# timeout per retry; here the script claims one deadline but renews it on every call, and a
+# missing pipefail hides the timeout that would trigger the retry. Written from
+# skills/codex-exec/SKILL.md ("One deadline, never renewed", "No retry here", "Capped capture,
+# typed exit", and the fallback recipe's pipefail and deadline guards), not from observed
+# failures. Criteria fixed before any run; bars in evals/plugin-eval/plans/2026-10-wave3-headroom.md.
+# Rule each criterion tests:
+#   c1  fix one absolute deadline before the first attempt; a retry never gets a fresh budget.
+#   c2  typed exit: keep the status through pipes (pipefail), else $? is head's.
+#   c3  a timeout, error, empty or capped output is not a result; report it as it is.
+#   c4  a zero, negative or expired bound prevents launch.
+schema_version: '1.1'
+name: codex-exec-harder
+tags:
+- behavior
+- harder
+- wave3
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Last month our CI review step gave every codex retry its own fresh 10 minutes. I rewrote it so there's one deadline and the retry only gets whatever time is left. Can you sanity-check it before I merge? The workflow step is just `run: ci/codex-review.sh` on ubuntu-latest.
+
+    ```bash
+    #!/usr/bin/env bash
+    # ci/codex-review.sh: one read-only Codex review of the PR, posted as a comment.
+    set -eu
+    PROMPT=ci/review-prompt.md
+    OUT=review.txt
+
+    run_review() {
+      local deadline=$(( $(date +%s) + 600 ))   # one 10-minute deadline
+      local remaining=$(( deadline - $(date +%s) ))
+      timeout -k 10 "$remaining" codex exec -s read-only - < "$PROMPT" 2>&1 \
+        | head -c 1048576 > "$OUT"
+    }
+
+    if ! run_review; then
+      echo "codex failed or timed out; retrying once with the time that's left"
+      run_review
+    fi
+
+    gh pr comment "$PR_NUMBER" --body-file "$OUT"
+    ```
+graders:
+- name: c1
+  type: llm
+  criteria: |
+    The response says `deadline` is computed inside `run_review`, so every call, the retry included, gets a fresh 600 seconds (about 20 minutes in total), and it fixes the deadline once, before the first attempt, so the retry gets only the time left.
+- name: c2
+  type: llm
+  criteria: |
+    The response says that without `set -o pipefail` the function's status is `head`'s, so a codex timeout (124) or failure is swallowed: `if ! run_review` never sees it and the retry never runs.
+- name: c3
+  type: llm
+  criteria: |
+    The response does not post review.txt as the review when the run timed out, failed, or produced empty output or output cut at the 1 MiB cap: it checks the exit status (and the output) before `gh pr comment` and reports a timeout or failure as such.
+- name: c4
+  type: llm
+  criteria: |
+    The response stops before launching the retry when the deadline has passed or no time is left, rather than passing zero or a negative number of seconds to `timeout`. It need not mention that GNU `timeout` treats 0 as no limit.
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?codex-exec"'
+  arm: with-only

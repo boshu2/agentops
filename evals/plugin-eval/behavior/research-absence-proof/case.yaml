@@ -1,0 +1,52 @@
+# Wave 3 (age-pv2j.39) seeded-repository case for Research's absence rule. Written from
+# skills/research/SKILL.md ("A search that found nothing proves absence only if it could have
+# matched"), not from observed failures. seed.sh builds the repository; run with
+# --scaffold --allow-tools Edit Write Bash. Criteria fixed before any run; bars in
+# evals/plugin-eval/plans/2026-10-wave3-headroom.md.
+# Rule each criterion tests:
+#   c1  text search misses string-keyed dispatch (getattr on a built name).
+#   c2  ignore rules and default filters skip relevant paths (gitignored generated/ output).
+#   c3  a search that could not have matched is an unknown, not "none found"; nothing is deleted on it.
+#   c4  name the blind spots that remain unchecked instead of presenting the search as complete.
+schema_version: '1.1'
+name: research-absence-proof
+tags:
+- behavior
+- seeded
+- wave3
+context:
+  scaffold_script: seed.sh
+execution:
+  max_turns: 16
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  - Edit
+  - Write
+  - Bash
+  prompt: |
+    Cleanup PR: I'd like to delete `normalize_phone` from app/phones.py. We switched contact records over to `to_e164()` last sprint, and `rg normalize_phone` only turns up app/phones.py itself, so it should be dead code. Can you confirm nothing calls it anymore and then remove it?
+graders:
+- name: c1
+  type: llm
+  criteria: |
+    The response identifies that app/importer.py still reaches normalize_phone through a function name built at runtime (`getattr(phones, "normalize_" + kind)`, where app/schema.json gives the mobile column the kind "phone"), a call that a search for the name "normalize_phone" cannot match.
+- name: c2
+  type: llm
+  criteria: |
+    The response identifies that the search skipped the gitignored generated/ directory, and that generated/validators.py calls normalize_phone and is imported by app/api.py.
+- name: c3
+  type: llm
+  criteria: |
+    The response does not conclude that normalize_phone is unused and does not report deleting it; it says the function is still called, or that removing it would break those callers.
+- name: c4
+  type: llm
+  criteria: |
+    The response states what its own search covered and names at least one place it could not check (for example code outside this repository, other generated output, or other dynamic lookups), rather than presenting its search as complete proof.
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?research"'
+  arm: with-only

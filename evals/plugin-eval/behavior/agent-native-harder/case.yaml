@@ -1,0 +1,71 @@
+# Wave 3 (age-pv2j.39) harder case for Agent Native. The round-1 case named its symlink and case
+# collisions in the request and the agent met every criterion without the plugin; here the
+# collisions sit in pasted output the user did not connect. Written from
+# skills/agent-native/SKILL.md ("Validate the whole batch first", "Compare canonical scopes"),
+# not from observed failures. Criteria fixed before any run; bars in
+# evals/plugin-eval/plans/2026-10-wave3-headroom.md.
+# Rule each criterion tests:
+#   c1  resolve symlinks before comparing scopes.
+#   c2  compare case-insensitively so an alias cannot hide a collision.
+#   c3  a lexical check alone cannot prove disjoint scopes.
+#   c4  if any packet is invalid, launch none; starting the valid ones and fixing the rest later is a partial launch.
+#   c5  serialize or merge only the lanes that collide.
+schema_version: '1.1'
+name: agent-native-harder
+tags:
+- behavior
+- harder
+- wave3
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Launching four agents in parallel on our web app this afternoon, each in its own git worktree off main. We all work on Macs. Lanes (write scope, then the check each agent runs before handing back):
+
+      L1  web/src/styles/tokens/**   rename color tokens to the new palette      -> pnpm stylelint web/src/styles
+      L2  api/handlers/export/**     CSV export endpoint                          -> (still deciding)
+      L3  packages/ui/tokens/**      add the dark-mode token set                  -> pnpm --filter ui test
+      L4  web/src/Styles/**          WEB-88 "Styles cleanup": delete unused sheets -> pnpm stylelint web/src
+
+    I checked with a quick script that no scope string is a prefix of another, so they're disjoint. For context, here's the ui package:
+
+    ```
+    $ ls -l packages/ui
+    total 16
+    drwxr-xr-x  9 dev  staff  288 Oct 20 09:12 components
+    -rw-r--r--  1 dev  staff  412 Oct 20 09:12 package.json
+    -rw-r--r--  1 dev  staff  198 Oct 20 09:12 tsconfig.json
+    lrwxr-xr-x  1 dev  staff   27 Oct 20 09:12 tokens -> ../../web/src/styles/tokens
+    ```
+
+    L2's packet isn't final (no check command yet), so my plan is to launch L1, L3 and L4 now and add L2 once its packet is ready. Anything wrong with that?
+graders:
+- name: c1
+  type: llm
+  criteria: |
+    The response flags that L3's `packages/ui/tokens/**` is the same directory as L1's `web/src/styles/tokens/**`, because `packages/ui/tokens` is a symlink to `../../web/src/styles/tokens` (shown in the `ls -l` output).
+- name: c2
+  type: llm
+  criteria: |
+    The response flags that L4's `web/src/Styles/**` differs from `web/src/styles/**` only in case, so on the default case-insensitive macOS filesystem it is the same directory and contains L1's scope (and L4's deletions can hit the files L1 renames).
+- name: c3
+  type: llm
+  criteria: |
+    The response says comparing scope strings or prefixes cannot show the lanes are disjoint, and recommends comparing resolved, case-folded paths (for example realpath then lowercase) for every lane.
+- name: c4
+  type: llm
+  criteria: |
+    The response does not endorse launching L1, L3 and L4 now and adding L2 later: it says to fix every packet first (L2's missing check and the colliding scopes) and then launch the corrected batch, rather than starting some lanes while another packet is still invalid.
+- name: c5
+  type: llm
+  criteria: |
+    The response does not serialize all four lanes: the colliding token and stylesheet work (L1, L3, L4) is merged into one lane or run one after another, while L2, once its packet is complete, still runs in parallel with it.
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?agent-native"'
+  arm: with-only

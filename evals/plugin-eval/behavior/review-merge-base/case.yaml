@@ -1,0 +1,58 @@
+# Wave 3 (age-pv2j.39) seeded-repository case for Review's branch-review rules. Written from
+# skills/review/SKILL.md (Advisory examination step 1: "inspect from its merge base to the working
+# tree, committed and uncommitted together ... Name untracked files"; "Rules an unaided review
+# misses"), not from observed failures. seed.sh builds the repository; run with
+# --scaffold --allow-tools Edit Write Bash. Criteria fixed before any run; bars in
+# evals/plugin-eval/plans/2026-10-wave3-headroom.md.
+# Rule each criterion tests:
+#   c1  a branch review starts at the merge base, not main's tip (main's later commits are not the branch's).
+#   c2  untracked files are part of the subject; name them and whether they were read.
+#   c3  compare changed behavior with the originating request (AUTH-19's 15-minute window).
+#   c4  commit each suggestion to one change, not a menu.
+#   c5  state the scope inspected and what was not.
+schema_version: '1.1'
+name: review-merge-base
+tags:
+- behavior
+- seeded
+- wave3
+context:
+  scaffold_script: seed.sh
+execution:
+  max_turns: 16
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  - Edit
+  - Write
+  - Bash
+  prompt: |
+    Can you review my branch before I open the PR against main? It's AUTH-19: "After 5 failed logins for an account, refuse further logins for that account for 15 minutes." Tell me what you'd change.
+graders:
+- name: c1
+  type: llm
+  criteria: |
+    The response reviews the branch from its merge base with main (for example `git diff main...HEAD`, or a diff from `git merge-base main HEAD`) and does not attribute main's later commits to the branch: it does not report the branch as removing `hmac.compare_digest` or deleting SECURITY.md. Saying the branch must be rebased onto, or merged with, main and keep the constant-time comparison is allowed.
+- name: c2
+  type: llm
+  criteria: |
+    The response names app/throttle_store.py as untracked (not committed on the branch) and says the committed app/throttle.py imports it, so the branch as pushed would fail to import or the PR would not contain the file.
+- name: c3
+  type: llm
+  criteria: |
+    The response raises that the failure count in app/throttle_store.py never expires or resets, so an account stays locked after 5 failures until the process restarts, instead of for the 15 minutes AUTH-19 asks for.
+- name: c4
+  type: llm
+  criteria: |
+    For the lockout finding, the response recommends exactly one specific change rather than a menu of alternatives (such as "either store timestamps, or use Redis with a TTL, or use a library"). Naming an alternative only to reject it is not a menu. If the response does not raise the lockout finding, this criterion fails.
+- name: c5
+  type: llm
+  criteria: |
+    The response says what it inspected (for example the merge-base diff and the untracked file) and names at least one thing it did not inspect or run.
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?review"'
+  arm: with-only
