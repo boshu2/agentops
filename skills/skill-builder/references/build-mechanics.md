@@ -1,12 +1,12 @@
 # Build and check mechanics
 
-Detail for `scripts/build.sh`, `scripts/heal.sh` and recovery from partial
+Detail for this skill's `scripts/build.sh`, `scripts/heal.sh` and recovery from partial
 creation. The audit report, its exit codes and the legacy audit schema are in
 [audit checks](audit-checks.md).
 
 ## Creation inputs and reports
 
-Supply one input to `scripts/build.sh`: `from-scratch <slug>`,
+Supply one input to `build.sh`: `from-scratch <slug>`,
 `from-template <slug> --like <existing-slug>` or
 `absorb-external <slug> --from <path>`. Without `--like`, `from-template` exits
 1 with `invalid template slug`, which names the missing template, not the new
@@ -19,8 +19,9 @@ caller can supply `SKILL_TIER`, `SKILL_DEPENDENCIES`, `SKILL_CAPABILITIES` and
 checkout: the one holding these scripts, or the root named by
 `SKILL_BUILDER_REPO_ROOT` (build) or `HEAL_REPO_ROOT` (heal). A root without
 `scripts/generate-skill-mesh.py`, such as a plugin install, is refused with exit
-2 before anything is written. `heal.sh --check` has no such requirement but
-accepts only targets under that root's `skills/`.
+2 before anything is written. `heal.sh --fix` runs the source check first, so a
+target with findings exits 1 before that refusal is reached. `heal.sh --check`
+has no such requirement but accepts only targets under that root's `skills/`.
 
 The shell entrypoints delegate creation and source checks to `ao skills build`
 and `ao skills check-source`. Development checkouts run their Go source;
@@ -41,7 +42,7 @@ report destination or read stdout.
 | Command | Exit 0 | Exit 1 | Exit 2 |
 |---|---|---|---|
 | `build.sh` | Created; always reports scaffold state | Invalid creation input (an invalid slug, a missing `--like` template or `--from` input) or an existing destination | Wrapper syntax error, or the root is not a source checkout |
-| `heal.sh` | No finding, or findings in non-strict check mode | Findings under `--strict` or `--fix` | Invalid target, `ao` could not run, or `--fix` outside a source checkout |
+| `heal.sh` | No finding, or findings in non-strict check mode | Findings under `--strict` or `--fix` | Invalid target, `ao` could not run, or `--fix` on a clean target outside a source checkout (findings exit 1 first) |
 
 A projection failure after `build.sh` created the source prints `projection
 incomplete` and exits 3 with the source and any report retained: finish the
@@ -77,7 +78,8 @@ concrete issue. Checks cover the
 slug/name match, description, API version, metadata, live dependencies and
 linked resources.
 
-Run `bash scripts/regen-all.sh` from the repository root to refresh every owned
-projection after a source edit;
-`scripts/generate-skill-mesh.py` is the existing scoped surface. Do not repeat
+AgentOps source checkout only: from the repository root, `bash scripts/regen-all.sh`
+refreshes every owned projection after a source edit and is the integrated
+projection recipe; `python3 scripts/generate-skill-mesh.py` is the existing
+scoped surface; installed skills ship neither. Do not repeat
 work already performed by `build.sh` unless source changes require it.

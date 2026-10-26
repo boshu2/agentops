@@ -446,6 +446,7 @@ run_recon_race() {
   assert_rejects "$v" '{"schema_version":"reality-check-report.v1","claim":"Done","findings":[{"category":"confirmed","statement":"all good","evidence":["x"]}],"coverage":[]}'
   assert_rejects "$v" '{"schema_version":"reality-check-report.v1","claim":"Done","findings":[{"category":"confirmed","statement":"ok","evidence":["x"]}],"coverage":[{"goal":"a","disposition":"confirmed"}]}'
   assert_rejects "$v" '{"schema_version":"reality-check-report.v1","claim":"Done","findings":[{"category":"gap","statement":"ok","evidence":["x"]}],"coverage":[{"goal":"a","disposition":"gap","evidence":[]}]}'
+  assert_rejects "$v" '{"schema_version":"reality-check-report.v1","claim":"Done: 2 items","findings":[{"category":"gap","statement":"docs not updated","evidence":["diff names no docs/ path"]}],"coverage":[{"goal":"rate limit","disposition":"confirmed","evidence":["server/routes/login.js:4"]},{"goal":"tests pass","disposition":"unverifiable"}],"verdict":"PASS"}'
 }
 
 # B4.4
@@ -466,5 +467,10 @@ run_recon_race() {
 
 @test "memory history helper preserves source filtering and provenance" {
   run env PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s "$REPO_ROOT/tests/toil-mining" -p 'test_*.py'
+  [ "$status" -eq 0 ]
+}
+
+@test "validate reference tests hold identity, evidence and scope rules" {
+  run env PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s "$REPO_ROOT/skills/validate/tests" -p 'test_validate.py'
   [ "$status" -eq 0 ]
 }

@@ -11,10 +11,6 @@ produces:
 context_rel: []
 skill_api_version: 1
 user-invocable: true
-context:
-  window: isolated
-  intent:
-    mode: task
 metadata:
   capabilities: [domain, clarify_domain_language, reconcile_domain_names]
   effects: [update_existing_domain_contracts]

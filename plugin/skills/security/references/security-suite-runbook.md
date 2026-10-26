@@ -1,12 +1,12 @@
 # Security Suite Runbook
 
-Use this reference for the AgentOps repository gate, authorized binary assurance, baseline comparison, policy enforcement, and offline repo-surface redteam. The caller supplies authorization and owns every decision after the report. Commands below are written from an AgentOps checkout root.
+Use this reference for the AgentOps repository gate, authorized binary assurance, baseline comparison, policy enforcement, and offline repo-surface redteam. The caller supplies authorization and owns every decision after the report. The repository gate and the maintainer checks run from an AgentOps checkout root; the suite and redteam commands run from the repository under review, with `<skill-dir>` as defined in [SKILL.md](../SKILL.md).
 
 ## Repository gate (AgentOps repository root only)
 
 ```bash
-scripts/security-gate.sh --mode quick   # changed scope
-scripts/security-gate.sh --mode full    # repository-wide
+bash scripts/security-gate.sh --mode quick   # changed scope
+bash scripts/security-gate.sh --mode full    # repository-wide
 ```
 
 Add `--require-tools` when skipped scanners would invalidate the assurance claim. **Checkpoint:** preserve the exit code and check `security-gate-summary.json` with the validator below before triage.
@@ -49,7 +49,7 @@ rejects it.
 Capture an owned binary:
 
 ```bash
-python3 skills/security/scripts/security_suite.py run \
+python3 "<skill-dir>/scripts/security_suite.py" run \
   --binary "$(command -v ao)" \
   --out-dir .tmp/security-suite/ao-current
 ```
@@ -57,7 +57,7 @@ python3 skills/security/scripts/security_suite.py run \
 Compare with a known-good baseline:
 
 ```bash
-python3 skills/security/scripts/security_suite.py run \
+python3 "<skill-dir>/scripts/security_suite.py" run \
   --binary "$(command -v ao)" \
   --out-dir .tmp/security-suite/ao-current \
   --baseline-dir .tmp/security-suite/ao-baseline \
@@ -67,19 +67,19 @@ python3 skills/security/scripts/security_suite.py run \
 Enforce policy:
 
 ```bash
-python3 skills/security/scripts/security_suite.py run \
+python3 "<skill-dir>/scripts/security_suite.py" run \
   --binary "$(command -v ao)" \
   --out-dir .tmp/security-suite/ao-current \
-  --policy-file skills/security/references/policy-example.json \
+  --policy-file "<skill-dir>/references/policy-example.json" \
   --fail-on-policy-fail
 ```
 
 Run offline redteam:
 
 ```bash
-python3 skills/security/scripts/prompt_redteam.py scan \
+python3 "<skill-dir>/scripts/prompt_redteam.py" scan \
   --repo-root . \
-  --pack-file skills/security/references/agentops-redteam-pack.json \
+  --pack-file "<skill-dir>/references/agentops-redteam-pack.json" \
   --out-dir .tmp/security-suite-redteam
 ```
 

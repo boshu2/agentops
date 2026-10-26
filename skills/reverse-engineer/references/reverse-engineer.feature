@@ -1,8 +1,9 @@
-# Behavior scenarios for the /reverse-engineer skill (documentation; no runner executes this
-# file). scripts/validate.sh and scripts/self_test.sh check the behavior. In repo mode it maps
-# the code into a feature catalog and specs; in binary mode it analyzes a binary, with a
-# security audit only when --security-audit is set.
-
+# Behavior scenarios for the /reverse-engineer skill, linked by @covered-by: CI runs
+# scripts/validate.sh via tests/scripts/reverse-engineer-validate.bats;
+# self_test.sh (Go) runs by hand. In repo mode it maps the code into a feature
+# catalog and specs; in binary mode it analyzes a binary, with a security audit
+# only when --security-audit is set.
+@covered-by:tests/scripts/reverse-engineer-validate.bats
 Feature: Reverse-engineer reconstructs specs from an existing system
   As an agent onboarding or auditing an unfamiliar system
   I want its behavior reconstructed into a feature catalog and specs
@@ -15,6 +16,7 @@ Feature: Reverse-engineer reconstructs specs from an existing system
     When the target is a code repository
     Then it maps the code into a feature catalog, code map, and specs
 
+  @covered-by:skills/reverse-engineer/scripts/self_test.sh
   Scenario: Binary mode adds a security audit only on request
     When the target is a binary analyzed with --authorized and --security-audit
     Then it analyzes the binary and writes a security audit scaffold under security/
@@ -42,6 +44,7 @@ Feature: Reverse-engineer reconstructs specs from an existing system
     When reverse engineering starts
     Then it refuses before writing through that link
 
+  @covered-by:skills/reverse-engineer/scripts/self_test.sh::earlier-default
   Scenario: An earlier-default output directory remains explicit and usable
     Given an existing teardown under .agents/research
     When that exact directory is supplied with --output-dir

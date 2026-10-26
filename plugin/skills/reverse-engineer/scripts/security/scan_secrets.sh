@@ -17,13 +17,13 @@ fi
 PATTERNS=(
   'AKIA[0-9A-Z]{16}'
   'ASIA[0-9A-Z]{16}'
-  '-----BEGIN (RSA|EC|OPENSSH) PRIVATE KEY-----'
+  # Every PEM private-key header: PKCS#8, ENCRYPTED, RSA, EC, DSA, OPENSSH, PGP ... BLOCK.
+  '-----BEGIN ([A-Z0-9]+ )*PRIVATE KEY( BLOCK)?-----'
   'xox[baprs]-[0-9A-Za-z-]{10,}'
   'ghp_[0-9A-Za-z]{20,}'
   'github_pat_[0-9A-Za-z_]{20,}'
   'sk-[0-9A-Za-z]{20,}'
   'AIza[0-9A-Za-z_-]{20,}'
-  '-----BEGIN PGP PRIVATE KEY BLOCK-----'
 )
 # Matched case-insensitively. The optional quote catches JSON keys ("api_key": "...").
 ICASE_PATTERNS=(

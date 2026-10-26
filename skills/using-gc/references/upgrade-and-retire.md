@@ -22,21 +22,22 @@ release provenance and an import command whose binding is the pack name
 `gc import add` declares a source and version, and `gc import install` resolves
 it into `packs.lock`. Prefer an exact accepted release for reproducible cities.
 
-## Upgrade an existing city to 1.4.x
+## Upgrade an existing city to 1.5.x
 
-Before starting its orchestrator, run once per city:
+First upgrade bd to the release the new gc pins (bd v1.3.2 for gc v1.5.1).
+Then restart the supervisor on the new binary before repairing any city:
 
 ```sh
-gc doctor --fix
-gc import install
-gc supervisor stop --wait   # macOS when an older direct supervisor remains
+gc supervisor stop --wait   # stops every city this supervisor hosts
 gc start
+gc doctor --fix             # once per city
 ```
 
 Then confirm:
 
-- `gc version` reports a 1.4.x release (v1.4.2 was current on 2026-10-25) or
-  the intended `edge` build, from the intended path;
+- `gc version` reports a 1.5.x release (v1.5.1 was current on 2026-10-25) or
+  the intended `edge` build, from the intended path, and `bd version` reports
+  the bd that release pins;
 - `gc doctor` has no blocking failures;
 - each graph-owning rig has an unsuspended `core.control-dispatcher`;
 - imports and `packs.lock` resolve;
@@ -60,8 +61,12 @@ gc unregister /path/to/old-city
 gc cities --json
 ```
 
-`unregister` fails rather than silently accepting an unknown target. Preserve
-the city directory until its Beads state is backed up or confirmed disposable.
+On Gas City 1.5.x, `gc stop` of a supervisor-registered city also unregisters
+it, so drop the separate `gc unregister` line there; keep it only on builds
+whose `gc stop --help` does not say so. `unregister` fails rather than silently
+accepting an unknown target. If `gc stop` exits 1 with `stop not confirmed`, its
+registration is restored; resolve the named error and stop again. Preserve the
+city directory until its Beads state is backed up or confirmed disposable.
 Create the replacement from the upstream Gas City template, install its pinned
 imports, and verify it with `gc cities --json`, `gc --city <new-city> status`,
 and `gc --city <new-city> doctor --json`.

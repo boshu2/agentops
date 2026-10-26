@@ -1,6 +1,7 @@
 # Pattern-mining pack contract
 
 Applies only when a durable `pattern-mining.v1` record is selected.
+`<skill-dir>` is defined in [SKILL.md](../../SKILL.md).
 
 A promotion needs at least three independent lineages, one anchored exemplar
 each (copies and ports of one source count once, under Research's
@@ -12,7 +13,7 @@ needs supporting alignment. Otherwise preserve the result as
 
 Save `pattern-mining.json` by Research's
 [save rule](../../SKILL.md#output-and-boundaries) and run
-`skills/research/scripts/pattern-mining/validate-output.sh <pattern.json>`.
+`bash "<skill-dir>/scripts/pattern-mining/validate-output.sh" <pattern.json>`.
 Preserve the schema's `outcome`, `exemplars`, `invariants`, `variations`,
 `incidental`, `holdout`, `back_application` and `route` fields. Record the
 recommended `shape` (`no-action`, `reference-line`, `template`, `helper` or

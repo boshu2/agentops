@@ -100,7 +100,8 @@ in `--subject-manifest`, `--author-context-id`, `--validator-context-id`,
 `--freshness-source` and `--freshness-attester-id`, never in the draft. A
 `PASS` needs every criterion `PASS` with evidence, nonempty `evidence_refs`
 and `checked`, and an empty `not_checked`; otherwise storage records
-`NOT_PROVEN` with a `validate.integrity` finding. The full contract is
+`NOT_PROVEN` with a `validate.integrity` finding. The full contract (AgentOps
+source checkout only) is
 [verdict.v2.schema.json](https://github.com/boshu2/agentops/blob/main/schemas/verdict.v2.schema.json).
 
 ## Evidence storage

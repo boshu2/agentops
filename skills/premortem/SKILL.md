@@ -19,7 +19,7 @@ metadata:
   tier: judgment
   dependencies: []
   triggers: ["one judge", "challenge this plan"]
-output_contract: skills/premortem/schemas/premortem-plan-review.v1.schema.json
+output_contract: schemas/premortem-plan-review.v1.schema.json
 ---
 
 # Premortem
@@ -141,8 +141,18 @@ Checked: <what was examined>. Not checked: <what was not>.
 Independence: <judge context, distinct from author> or "missing: <reason>"
 ```
 
+`<skill-dir>` is the directory that contains this SKILL.md. Claude Code shows it
+as "Base directory for this skill"; Codex lists this skill's SKILL.md path; in
+an AgentOps source checkout it is `skills/premortem`. Replace `<skill-dir>` with
+that absolute path before running a command. The working directory stays the
+user's repository. If the host did not show where this skill is installed, use
+the directory of the SKILL.md you read. If you cannot determine it, do not guess
+a path or run a same-named script from the current repository; say the bundled
+script is unavailable and check the review's fields by hand against its
+[schema](schemas/premortem-plan-review.v1.schema.json).
+
 When the caller requests a durable review, return `premortem-plan-review.v1`
-and check it with this skill's `scripts/validate-output.sh`. Its
+and check it with `bash "<skill-dir>/scripts/validate-output.sh" <review.json>`. Its
 `intent_digest` is the SHA-256 of the exact intent text as supplied (for
 example `shasum -a 256 plan.md`); `author_context_id` names who wrote the plan
 (the caller, or that session's ID) and `judge_context_id` names this context.

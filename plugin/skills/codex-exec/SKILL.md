@@ -13,13 +13,6 @@ produces:
 context_rel:
 - kind: supplier-to
   with: validate
-context:
-  window: inherit
-  intent:
-    mode: none
-  sections:
-    exclude:
-    - HISTORY
 metadata:
   capabilities: [codex_exec]
   effects: [run_codex_process, sandbox_tiered_workspace_and_network_effects]

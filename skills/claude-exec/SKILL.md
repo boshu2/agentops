@@ -12,7 +12,6 @@ context_rel:
   with: validate
 - kind: separate-ways
   with: codex-exec
-context: {window: inherit, intent: {mode: none}, sections: {exclude: [HISTORY]}}
 metadata:
   tier: orchestration
   dependencies: []
@@ -28,7 +27,9 @@ output_contract: process exit status and captured Claude output artifact
 Run one caller-supplied prompt through Claude Code print mode and capture the
 result, only when the caller selects Claude: the native agent stays the
 default and batches belong to `agent-native`. Flags match `claude --help` for
-2.1.309; recheck it on other versions.
+2.1.309; recheck it on other versions. Re-checked on 2026-10-25 against Claude
+Code 2.1.309, codex-cli 0.163.0, AGY 1.4.7, gc edge 97503b2 (with Gas City
+v1.5.1 docs and source), bd 1.3.1 and ao 3.11.0.
 
 ## Failure modes of a quick `claude -p`
 
@@ -42,8 +43,8 @@ default and batches belong to `agent-native`. Flags match `claude --help` for
    time left before it, so a retry spends it instead of renewing it. Make one
    attempt; any other is the caller's decision.
 3. **Exit 0 as proof.** A denied call still exits 0 with `is_error: false`
-   and "done". Name targets by path, check effects there, and leave
-   acceptance to a fresh validator.
+   and "done" (not re-run since 2.1.282). Name targets by path, check
+   effects there, and leave acceptance to a fresh validator.
 4. **Silent fallback.** With no `claude`, login or model, report and stop
    instead of switching runtimes or passing `--fallback-model`.
 5. **Self-review.** Review in a new session, never by `--resume` or
@@ -53,10 +54,10 @@ default and batches belong to `agent-native`. Flags match `claude --help` for
 
 Redirect the prompt from a file, or pass it as the argument with `</dev/null`,
 because print mode reads stdin to EOF: a pipe left open hangs until the bound
-kills it. Stock macOS lacks `timeout`: use GNU `timeout` or Homebrew's
-`gtimeout`, and launch nothing without one. This script body makes one
-launch; the caller supplies `$POSTURE`, `$BUDGET_USD` and absolute
-`$PROMPT_FILE`, `$OUT` and `$ERR` paths outside the tree.
+kills it (not re-run since 2.1.282). Stock macOS lacks `timeout`: use GNU
+`timeout` or Homebrew's `gtimeout`, and launch nothing without one. This
+script body makes one launch; the caller supplies `$POSTURE`, `$BUDGET_USD`
+and absolute `$PROMPT_FILE`, `$OUT` and `$ERR` paths outside the tree.
 
 ```bash
 TO=$(command -v timeout || command -v gtimeout) || { echo "no timeout: not launching" >&2; exit 2; }
@@ -78,10 +79,13 @@ SECS=$(( DEADLINE_EPOCH - $(date +%s) ))   # DEADLINE_EPOCH: Unix time fixed onc
 Unapproved calls are denied and listed in `permission_denials`. Add `Bash` to
 `--tools` only for authorized commands named in `--allowedTools`, e.g.
 `"Bash(go test *)"`; with settings hooks dropped, that list is the guard.
-`--max-budget-usd` stops after the call that crosses it, and `--help` lists no
-turn cap, so time and budget are the bounds. `--no-session-persistence` keeps
-no transcript. `--bare` signs in only with `ANTHROPIC_API_KEY` or an
-`apiKeyHelper` passed with `--settings`, never an OAuth login.
+`--max-budget-usd` stops after the call that crosses it. `--max-turns <n>`
+caps agentic turns in print mode and exits with an error when it is reached:
+2.1.309 accepts it although `--help` omits it, and the CLI reference documents
+it. Time, budget and an optional turn cap are the bounds.
+`--no-session-persistence` keeps no transcript. `--bare` signs in only with
+`ANTHROPIC_API_KEY` or an `apiKeyHelper` passed with `--settings`, never an
+OAuth login.
 
 A host shell tool may kill a call before `$SECS`, leaving `$OUT` empty since
 JSON is written only at exit. When its cap is under `$SECS` plus the 10 s
@@ -96,9 +100,9 @@ billed; identity evidence needs `stream-json --verbose` per the
 [model-dispatch recipe](../agent-native/references/model-dispatch.md). Judge
 by exit status and `is_error`: an unknown model exited 1 with
 `subtype: "success"`, `terminal_reason: "api_error"` and `api_error_status:
-404`. Exit 1 also covers a spent budget or missing input; `timeout` gives 124,
-or 137 when KILL follows 10 seconds later. Read the fields before the byte
-cap, since a cut JSON file no longer parses:
+404`. Exit 1 also covers a spent budget or missing input (not re-run since
+2.1.282); `timeout` gives 124, or 137 when KILL follows 10 seconds later.
+Read the fields before the byte cap, since a cut JSON file no longer parses:
 
 ```bash
 jq -c '{is_error, terminal_reason, api_error_status, session_id,

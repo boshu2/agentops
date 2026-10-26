@@ -57,24 +57,24 @@ run started that way has no coordinator, and the operator inherits its tending.
 ## Version facts
 
 Re-checked 2026-10-25: `--help` for every `gc` command here on the installed
-`edge` build (`gc bd` needs a city), and Gas City v1.4.2 source (tagged
-2026-09-18) for wake, sling
-routing, the status API line, the run census and trust-dialog handling. The
-`gascity` pack pin is release 0.1.6, commit
-`3b3b89f2011e06d84459aa7bea1552382f13930a`, which `ao gc` enforces. If a later
-build's `--help` disagrees with this skill, the help wins; report the drift.
+`edge` build (commit 97503b2, built 2026-07-30; `gc bd` needs a city), and
+Gas City v1.5.1 (2026-10-24, current stable) docs and source for wake, import,
+the status API line, the run census and trust dialogs. The `gascity` pack pin
+is release 0.1.6, commit `3b3b89f2011e06d84459aa7bea1552382f13930a` (still the
+latest registry release), which `ao gc` enforces. If a later build's `--help`
+disagrees with this skill, the help wins; report the drift.
 
 ## Operating model
 
-Gas City 1.4 is run-centered. The supervisor serves the dashboard and typed,
-paginated session/run APIs. Every graph-owning city or rig scope needs its own
-`core.control-dispatcher`, the deterministic worker that advances formula
-control beads; agent workers claim routed work. The upstream `gc.mayor` skill is
-the guided coordinator; `gc.run-operator` launches and supervises formulas.
-AgentOps needs no Gas City formula or role pack of its own: workers find `plan`,
-`implement`, `test`, `validate` and the other AgentOps skills once they are
-installed in the provider runtime (`ao gc prepare` links them into the city and
-rig Codex sinks).
+Gas City 1.4 and later are run-centered. The supervisor serves the dashboard and
+typed, paginated session/run APIs. Every graph-owning city or rig scope needs
+its own `core.control-dispatcher`, the deterministic worker that advances
+formula control beads; agent workers claim routed work. The upstream `gc.mayor`
+skill is the guided coordinator; `gc.run-operator` launches and supervises
+formulas. AgentOps needs no Gas City formula or role pack of its own: workers
+find `plan`, `implement`, `test`, `validate` and the other AgentOps skills once
+they are installed in the provider runtime (`ao gc prepare` links them into the
+city and rig Codex sinks).
 
 ## Install the pack
 
@@ -102,7 +102,7 @@ roles import: that yields `gascity.mayor`, leaves the `gc.*` formula routes with
 no rig roles, and fails `ao gc check`, which requires the rig import
 `rig:<rig>:gc`. Keep the stock `gc.*` namespace; do not nest or rename the roles
 behind an AgentOps pack. Other packs, the optional community registry, upgrading
-a city to 1.4.x (including a stale registered city that blocks every start) and
+a city to 1.5.x (including a stale registered city that blocks every start) and
 retiring one are in [Setup, upgrade and retirement](references/upgrade-and-retire.md).
 
 ## Prepare and check a rig

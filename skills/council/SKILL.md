@@ -16,7 +16,7 @@ metadata:
   effects: [write_advisory_council_report]
   canonical_status: canonical
   disposition: keep_strategy
-output_contract: council-report.v1 JSON validated by skills/council/scripts/validate-output.sh
+output_contract: council-report.v1 JSON (schemas/council-report.v1.schema.json) validated by this skill's scripts/validate-output.sh
 ---
 
 # Council
@@ -102,9 +102,10 @@ agreement on one.
    With nothing to bind (a brainstorm, an open design question, an interview
    panel), it is the sha256 of `question` as recorded, computed once; a
    reworded question is a new subject.
-5. Return `council-report.v1` with its `recommendation` and limits. Prefer one
-   option only for a reason in the evidence; when options stay close, say
-   either would serve and name the tradeoffs that separate them. Outside a
+5. Return `council-report.v1` with its limits and, when the use produces one
+   (design or plan does), its optional `recommendation`. Prefer one option
+   only for a reason in the evidence; when options stay close, say either
+   would serve and name the tradeoffs that separate them. Outside a
    caller-selected voting rule, a count of pros, cons or supporters breaks no
    tie. Council neither changes the subject nor grants implementation or
    delivery authority.
@@ -172,20 +173,30 @@ judge's own evidence.
 
 ## Output
 
+`<skill-dir>` is the directory that contains this SKILL.md. Claude Code shows
+it as "Base directory for this skill"; Codex lists this skill's SKILL.md path;
+in an AgentOps source checkout it is `skills/council`. Replace `<skill-dir>`
+with that absolute path before running a command. The working directory stays
+the user's repository. If the host did not show where this skill is installed,
+use the directory of the SKILL.md you read. If you cannot determine it, do not
+guess a path or run a same-named script from the current repository; say the
+bundled script is unavailable and check the report's fields by hand against
+its [schema](schemas/council-report.v1.schema.json).
+
 - **Destination:** caller-selected protected external non-Git storage;
   preserve existing legacy evidence. Missing routing is not a workspace
   fallback: when no destination is supplied, return the report inline in the
   conversation and write no file.
 - **Filename:** `council-report.json`.
 - **Format:** `council-report.v1` JSON ([schema](schemas/council-report.v1.schema.json)):
-  the frozen `question`, `subject_digest` and `recommendation`, every judge's
+  the frozen `question` and `subject_digest`, any `recommendation`, every judge's
   `context_id`, `methodology`, cited `evidence` and `omissions`, and the
   synthesis buckets above. Record mode, round and candidate digest in each
   `judgment`. It carries no `verdict` or `readiness` field, and a `judgment`
   or `recommendation` that is only a verdict word is rejected.
-- **Validation command:** this skill's
-  `scripts/validate-output.sh <council-report.json>`, or
-  `scripts/validate-output.sh -` with an inline report on stdin.
+- **Validation command:**
+  `bash "<skill-dir>/scripts/validate-output.sh" <council-report.json>`, or
+  `bash "<skill-dir>/scripts/validate-output.sh" -` with an inline report on stdin.
 
 A judge that times out, errors, or returns an evidence-free judgment is excluded
 from agreement counting and listed as non-returning in `synthesis.notes` with

@@ -14,13 +14,6 @@ produces:
 context_rel: []
 skill_api_version: 1
 user-invocable: true
-context:
-  window: fork
-  intent:
-    mode: questions
-  sections:
-    exclude:
-    - HISTORY
 metadata:
   capabilities: [skill_builder, heal_skill, export_skill, distill_expertise]
   effects: [write_skill_source, write_build_report, regenerate_skill_projections, repair_skill_projections, write_converted_skill_projection, write_advisory_proposal]
@@ -65,22 +58,34 @@ the new skill or file it wants:
 
 ## Choose the requested operation
 
+`<skill-dir>` is the directory that contains this SKILL.md. Claude Code shows it
+as "Base directory for this skill"; Codex lists this skill's SKILL.md path; in
+an AgentOps source checkout it is `skills/skill-builder`. Replace `<skill-dir>`
+with that absolute path before running a command. The working directory stays
+the user's repository. If the host did not show where this skill is installed,
+use the directory of the SKILL.md you read. If you cannot determine it, do not
+guess a path or run a same-named script from the current repository; say the
+bundled script is unavailable and apply the rules and doctrine here to the
+package by hand and use its repository's own checks.
+
 | Need | Entry point |
 |---|---|
-| Create a source package | `scripts/build.sh from-scratch <slug>`, `from-template <slug> --like <existing-slug>` or `absorb-external <slug> --from <path>` |
-| Check package structure | `scripts/heal.sh --check [--strict] skills/<slug>` |
-| Repair the skill mesh | `scripts/heal.sh --fix skills/<slug>` |
-| Inspect audit evidence | `scripts/audit.sh [--profile canonical\|portable\|external-observation] [--json <path>] skills/<slug>` |
+| Create a source package | `bash "<skill-dir>/scripts/build.sh" from-scratch <slug>`, `from-template <slug> --like <existing-slug>` or `absorb-external <slug> --from <path>` |
+| Check package structure | `bash "<skill-dir>/scripts/heal.sh" --check [--strict] skills/<slug>` |
+| Repair the skill mesh | `bash "<skill-dir>/scripts/heal.sh" --fix skills/<slug>` |
+| Inspect audit evidence | `bash "<skill-dir>/scripts/audit.sh" [--profile canonical\|portable\|external-observation] [--json <path>] skills/<slug>` |
 | Merge overlapping skills | [Consolidate](#consolidate) |
 | Export to another platform | [Conversion](#conversion) |
 | Make repeated expertise reusable | [Distill expertise](#distill-expertise) |
 
 Run only the selected operation. `build.sh` and `heal.sh --fix` work on
 `skills/` of an AgentOps source checkout and refuse with exit 2 elsewhere, such
-as from a plugin install, instead of writing into its cache. For a skill in
-another repository or a user's skills directory, apply the rules and doctrine
-here to that directory and use its own checks; `audit.sh` resolves targets from
-the current directory and has `portable` and `external-observation` profiles.
+as from a plugin install, instead of writing into its cache; `heal.sh --fix`
+checks the source first, so a target with findings exits 1 before that refusal.
+For a skill in another repository or a user's skills directory, apply the rules
+and doctrine here to that directory and use its own checks; `audit.sh` resolves
+targets from the current directory and has `portable` and
+`external-observation` profiles.
 Roots, inputs, report destinations, exit codes and recovery from partial
 creation are in [build and check mechanics](references/build-mechanics.md).
 
@@ -92,7 +97,7 @@ writes the same blank scaffold: `from-template` only checks the named skill and
 records it as `source_hint`, and `absorb-external` only verifies its input.
 Neither imports another skill's content or metadata.
 
-`scripts/build.sh` creates one incomplete source package containing only
+`build.sh` creates one incomplete source package containing only
 `SKILL.md` with `metadata.authoring_state: scaffold`; helpers, references and
 assets are conditional on the actual behavior. Replace the placeholders and
 state applicability, inputs, authority, result, completion and failure in the
@@ -109,12 +114,13 @@ it decides when text stays unchanged, when a list stays explicit, and what to
 check before cutting a line.
 
 Edit `skills/<slug>/` as the source owner. Check the completed source with
-`scripts/heal.sh --check --strict skills/<slug>`. In an AgentOps source
-checkout, run `bash scripts/regen-all.sh` from the repository root to regenerate
-every owned projection, including `plugin/skills/`. Running
-`scripts/heal.sh --fix skills/<slug>` regenerates only the skill mesh and leaves
-plugin copies unchanged. Inspect the generated diff; hand-edit no projection.
-A clean check says nothing about behavior: when an edit changes
+`bash "<skill-dir>/scripts/heal.sh" --check --strict skills/<slug>`. In an
+AgentOps source checkout only, run `bash scripts/regen-all.sh` from the
+repository root to regenerate every owned projection, including
+`plugin/skills/`; `bash "<skill-dir>/scripts/heal.sh" --fix skills/<slug>`
+regenerates only the skill mesh and leaves plugin copies unchanged. Inspect the
+generated diff; hand-edit no projection. A clean check says nothing about
+behavior: when an edit changes
 when the skill routes, what it asks, when it stops, what it commits or
 publishes or how it degrades, or cuts a line that recorded provenance protects,
 report that behavior as unmeasured unless a [Skill Eval](../skill-eval/SKILL.md)
@@ -152,7 +158,7 @@ result measured it.
 
 ## Conversion
 
-Run `bash skills/skill-builder/scripts/converter/convert.sh <skill-dir> <target>
+Run `bash "<skill-dir>/scripts/converter/convert.sh" <source-skill-dir> <target>
 [output-dir]` to export one package, or `--all`, to `codex`, `cursor` or `test`
 outside the shipped tree. Before an export, read
 [running the converter](references/converter/skill-bundle-schema.md#run-the-converter)

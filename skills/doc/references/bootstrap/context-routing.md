@@ -127,9 +127,11 @@ Loss of the policy or anchor is unavailable, not permission to start over.
 
 ## Native withdrawal and resolution facts
 
-The route accepts only the BD version that `ao config context --help` names;
-check it against `bd --version` before relying on a route. Its `context` schema is 1, and native comment `id` and `issue_id` are
-strings. Lookup first verifies the
+The route accepts native BD 1.x from 1.2.2 on, the range
+`ao config context --help` names. It reads the version from the `bd_version`
+field of `bd context --json`, not from `bd --version`; check that field
+before relying on a route. Its `context` schema is 1, and native comment `id`
+and `issue_id` are strings. Lookup first verifies the
 native project/source identity and anchor existence with `show --json`, then
 reads **`bd --readonly comments ANCHOR --json`** directly. It never uses
 `show --include-comments` or child listings to infer absence. Native process,

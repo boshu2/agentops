@@ -70,6 +70,22 @@ setup_file() {
     "$REPORT_DIR/${name}-build.json"
 }
 
+@test "heal fix on a scaffold source fails without projection mutation" {
+  name=builder-contract-test
+  source="$SCRATCH_ROOT/skills/$name/SKILL.md"
+  cp "$source" "$BATS_TEST_TMPDIR/source-before.md"
+  cp "$SCRATCH_ROOT/skills/catalog.json" "$BATS_TEST_TMPDIR/catalog-before.json"
+  # A changed description would reach the catalog if --fix projected anyway.
+  sed 's/TODO: state when this behavior applies\./TODO: seeded projection probe./' \
+    "$BATS_TEST_TMPDIR/source-before.md" > "$source"
+  grep -q 'seeded projection probe' "$source"
+  run env HEAL_REPO_ROOT="$SCRATCH_ROOT" bash "$REAL_REPO_ROOT/skills/skill-builder/scripts/heal.sh" --fix "$SCRATCH_ROOT/skills/$name"
+  cp "$BATS_TEST_TMPDIR/source-before.md" "$source"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *INCOMPLETE_SCAFFOLD* ]]
+  cmp "$BATS_TEST_TMPDIR/catalog-before.json" "$SCRATCH_ROOT/skills/catalog.json"
+}
+
 @test "initializer accepts template and external creation modes with defaults" {
   run bash "$INIT_SH" --template builder-template-test --like plan
   [ "$status" -eq 0 ]

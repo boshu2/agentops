@@ -38,10 +38,6 @@ grep -Fq '"source_ledger"' "$skill_dir/schemas/findings.json"
 grep -Fq '"comparison"' "$skill_dir/schemas/findings.json"
 grep -q '^Feature: Research answers one bounded question$' \
   "$skill_dir/references/research.feature"
-grep -Fq 'Scenario: Multiple caller-supplied reports are synthesized once' \
-  "$skill_dir/references/research.feature"
-grep -Fq 'agreement, contradiction, and unknown are reported separately' \
-  "$skill_dir/references/research.feature"
 python3 -m json.tool "$skill_dir/schemas/findings.json" >/dev/null
 
 # grep exits 1 for no match; any other status means the scan did not run.

@@ -52,3 +52,15 @@ LINKS
   [ "$status" -ne 0 ]
   [[ "$output" == *"referenced file 'references/missing.md' does not exist"* ]]
 }
+
+@test "skill lint resolves a <skill-dir> bundled script and rejects a missing one" {
+  mkdir -p "$FIXTURE/skills/caller/scripts"
+  touch "$FIXTURE/skills/caller/scripts/run.sh"
+  printf '%s\n' 'Run `bash "<skill-dir>/scripts/run.sh"`.' >> "$FIXTURE/skills/caller/SKILL.md"
+  run bash "$FIXTURE/tests/skills/lint-skills.sh"
+  [ "$status" -eq 0 ]
+  printf '%s\n' 'Run `bash "<skill-dir>/scripts/missing.sh"`.' >> "$FIXTURE/skills/caller/SKILL.md"
+  run bash "$FIXTURE/tests/skills/lint-skills.sh"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"bundled file '<skill-dir>/scripts/missing.sh' does not exist"* ]]
+}

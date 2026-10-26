@@ -174,11 +174,19 @@ var markdownBareCommand = regexp.MustCompile("^\\s*(?:[-*] |[0-9]+[.)] )?[`\"']?
 var markdownExamplePrefix = regexp.MustCompile(`(?i)^\s*(?:example:|for example[, :]|e\.g\.)`)
 var scriptRunPrefix = regexp.MustCompile(`(?:^|;|&&|\|\||\bthen\b|\bdo\b)\s*$`)
 
+// directInvocation is one literal script path a command runs. packageOnly is
+// set when the command names it through the literal `<skill-dir>/` prefix, so
+// only the skill package itself can satisfy it.
+type directInvocation struct {
+	ref         string
+	packageOnly bool
+}
+
 // Direct invocations are affirmative prose directives (including inline command
 // formatting), or command-position text in scripts. Examples and prohibitions
 // do not become resource requirements merely by naming a command.
-func directInvocations(line string, markdown bool) []string {
-	var out []string
+func directInvocations(line string, markdown bool) []directInvocation {
+	var out []directInvocation
 	if (markdown && markdownExamplePrefix.MatchString(line)) || (!markdown && strings.HasPrefix(strings.TrimSpace(line), "#")) {
 		return out
 	}
@@ -190,7 +198,7 @@ func directInvocations(line string, markdown bool) []string {
 		if !markdown && !scriptRunPrefix.MatchString(prefix) {
 			continue
 		}
-		out = append(out, line[idx[2]:idx[3]])
+		out = append(out, directInvocation{line[idx[4]:idx[5]], idx[2] >= 0})
 	}
 	return out
 }

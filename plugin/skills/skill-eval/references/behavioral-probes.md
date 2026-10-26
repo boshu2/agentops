@@ -1,6 +1,7 @@
 # Behavioral probes: preserve their existing meaning
 
-`scripts/probe-skill.sh` remains the runner for small behavioral regression
+The AgentOps source checkout's `scripts/probe-skill.sh` remains the runner for
+small behavioral regression
 probes and immutable replay. It exposes an empty workspace and one injected
 SKILL.md, not a complete installed-package coding trial. Its verdict measures
 **behavior change**, never quality uplift or productive engineering completion.
@@ -27,7 +28,8 @@ UNMEASURED, not permission to substitute another runtime. Effort levels are a
 declared experimental choice, not a prerequisite for every question.
 
 Take the replay and live commands from the
-[skill-probes README](../../../evals/skill-probes/README.md#running). Three
+[skill-probes README](https://github.com/boshu2/agentops/blob/main/evals/skill-probes/README.md#running)
+(AgentOps source checkout only). Three
 facts decide whether one runs and what it shows (checked 2026-10-25):
 
 - **Replay needs a dated set.** Pass `--replay --fixtures <set>` naming a
@@ -44,6 +46,7 @@ facts decide whether one runs and what it shows (checked 2026-10-25):
   time; the runner refuses another rep count, an existing fixture set or an
   existing scorecard before dispatch.
 
+AgentOps source checkout only: from the repository root,
 `bash scripts/check-skill-probe-headroom.sh` reports the classes below.
 Authoring a probe means supplying the package the runner reads (`probe.json`,
 `question.md`, `discriminator.sh`, a prelude only in `injected-prelude` mode)
@@ -67,8 +70,9 @@ the rule in a new report. Read and report the actual answer:
 
 ## Legacy ledger
 
-[`LEDGER.md`](../../../evals/skill-probes/LEDGER.md) and
-[`RUNBOOK.md`](../../../evals/skill-probes/RUNBOOK.md) keep the historical
+[`LEDGER.md`](https://github.com/boshu2/agentops/blob/main/evals/skill-probes/LEDGER.md) and
+[`RUNBOOK.md`](https://github.com/boshu2/agentops/blob/main/evals/skill-probes/RUNBOOK.md)
+(AgentOps source checkout only) keep the historical
 verdicts under their own admissibility rules; keep a valid INERT or losing
 result. A rep scored `infra` (discriminator exit 2) leaves the usable
 behavioral rate but stays in the all-attempt count; zero usable treatment reps

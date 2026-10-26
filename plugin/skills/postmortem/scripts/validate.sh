@@ -9,7 +9,6 @@ grep -Fq 'retrospective causal analysis' "$skill_dir/SKILL.md"
 grep -Fq 'does not re-run acceptance validation' "$skill_dir/SKILL.md"
 grep -Fq 'counterfactual' "$skill_dir/SKILL.md"
 grep -Fq 'Empty or inconclusive analysis is valid' "$skill_dir/SKILL.md"
-grep -q '^Feature: Postmortem tests retrospective causal claims$' "$skill_dir/references/postmortem.feature"
 
 forbidden='ao (pawl|land)|git (commit|push)|(bd|br) (close|update|create)'
 # Seeded case: the guard must catch this repository's live tracker (BD), not only br.

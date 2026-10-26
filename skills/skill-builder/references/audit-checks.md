@@ -1,7 +1,7 @@
 # Skill audit evidence
 
-The advertised `scripts/audit.sh` delegates to `ao skills audit`. Its default
-`skill-audit.v2` schema is `schemas/audit-report.json` and reports:
+This skill's `scripts/audit.sh` delegates to `ao skills audit`. Its default
+`skill-audit.v2` schema is [audit-report.json](../schemas/audit-report.json) and reports:
 
 - **Conformance:** selected static package checks, their applicability, findings,
   checked scope and explicit untested scope. Canonical uses the existing source
@@ -37,7 +37,7 @@ accepted but cannot turn suspicions into blockers. JSON defaults to stdout;
 ## Explicit legacy compatibility
 
 `audit.sh --legacy` emits the accepted S1 report under
-`schemas/audit-report-legacy.json`, with the original field/exit contract.
+[audit-report-legacy.json](../schemas/audit-report-legacy.json), with the original field/exit contract.
 Consumers that need the old `verdict`, `pass1`, `pass2`, `density`, `rubric`,
 `craft` and `authoring` fields must opt in explicitly; do not use legacy scores
 to rank or optimize packages. The shared conformance-profile/trigger CI consumer
@@ -60,7 +60,7 @@ The `density` block reports which of six fields (`intent`, `boundary`,
 missing field warns and never changes the verdict, exit code or CI.
 
 Executable thresholds and severities come from
-`skills/skill-builder/references/skill-conformance-profiles.yaml`.
+[skill-conformance-profiles.yaml](skill-conformance-profiles.yaml).
 
 ## Verdicts
 
@@ -140,10 +140,10 @@ validator to judge.
   budget phrase. Vague goals ("until it feels done") do not count as stop
   conditions.
 
-The scorer's detection power is itself mutation-tested:
+The scorer's detection power is itself mutation-tested (`<skill-dir>` is defined in [SKILL.md](../SKILL.md)):
 
 ```bash
-bash skills/skill-builder/scripts/test-craft-mutations.sh
+bash "<skill-dir>/scripts/test-craft-mutations.sh"
 ```
 
 ## Authoring prose scan (Pass 5, advisory)
@@ -170,7 +170,7 @@ owns the judgment.
 Detection power is mutation-tested:
 
 ```bash
-bash skills/skill-builder/scripts/test-authoring-mutations.sh
+bash "<skill-dir>/scripts/test-authoring-mutations.sh"
 ```
 
 ## Calibration rule
@@ -178,7 +178,7 @@ bash skills/skill-builder/scripts/test-authoring-mutations.sh
 Before tightening a check, run it across every canonical skill. A proposed
 rule that fails valid concise skills is miscalibrated unless the repository
 contract itself requires those skills to change. Do not add boilerplate solely
-to satisfy a heuristic.
+to satisfy a heuristic. AgentOps source checkout only, from the repository root:
 
 ```bash
 for skill in skills/*; do

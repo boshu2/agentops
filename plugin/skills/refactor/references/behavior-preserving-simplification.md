@@ -132,7 +132,7 @@ Safety checks:
 Use static analysis plus repository-wide search. For CLI commands, flags, or cross-language surfaces in the AgentOps repository, run the following; elsewhere, search every tracked file with the repository's own tools:
 
 ```bash
-scripts/check-removed-symbol-refs.sh -- <removed-command-or-flag>
+bash scripts/check-removed-symbol-refs.sh -- <removed-command-or-flag>
 ```
 
 Safety checks:
