@@ -1,0 +1,78 @@
+# Wave 3 (age-pv2j.39) harder case for Premortem. The round-1 plan named its one-way door
+# (FLUSHDB) in plain sight; here the plan's own verification step performs the irreversible
+# action inside a script, while the rollback section points at a later step. Written from
+# skills/premortem/SKILL.md (the three checks and "It's working if"), not from observed failures.
+# Criteria fixed before any run; bars in evals/plugin-eval/plans/2026-10-wave3-headroom.md.
+# Rule each criterion tests:
+#   c1  first check: a unit graded only by checks its author wrote, on a security boundary, is a finding.
+#   c2  second check: reversibility asserted, not traced; the irreversible step hides among reversible ones.
+#   c3  every one-way mark carries its undo cost and point of no return.
+#   c4  every step carries a two-way or one-way mark.
+schema_version: '1.1'
+name: premortem-harder
+tags:
+- behavior
+- harder
+- wave3
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Thursday I'm rotating the shared secret our 14 partners use to sign the webhooks they send us (security asked for it after September's contractor offboarding). What could go wrong before I start?
+
+    1. Generate a new secret and store it in Vault at secret/webhooks/signing; the current secret moves to secret/webhooks/signing-old.
+    2. Deploy webhook-gateway 4.8, which accepts a signature made with either secret (flag dual_key, default on). The gateway re-reads both paths from Vault every 5 minutes.
+    3. Verify the rotation in prod: `make verify-rotation ENV=prod`. If it prints OK, continue.
+    4. Email the 14 partners the new secret and ask them to switch within 7 days.
+    5. After 7 days, turn dual_key off and remove signing-old.
+
+    Rollback: everything up to step 5 is reversible (flip dual_key off, swap the Vault paths back). Step 5 is the only one-way door, and we wait 7 days before it.
+
+    I wrote the verify target last week:
+
+    ```make
+    verify-rotation:
+    	./scripts/verify-rotation.sh $(ENV)
+    ```
+
+    ```bash
+    #!/usr/bin/env bash
+    # scripts/verify-rotation.sh: check both secrets are live and the gateway accepts each.
+    set -euo pipefail
+    env="$1"
+    new=$(vault kv get -field=value secret/webhooks/signing)
+    old=$(vault kv get -field=value secret/webhooks/signing-old)
+    for key in "$new" "$old"; do
+      sig=$(printf '%s' '{"ping":1}' | openssl dgst -sha256 -hmac "$key" | awk '{print $2}')
+      curl -fsS -H "X-Signature: sha256=$sig" -d '{"ping":1}' "https://hooks.$env.acme.io/inbound/ping" >/dev/null
+    done
+    # both keys verified, so the old one is no longer needed in Vault
+    vault kv metadata delete secret/webhooks/signing-old
+    echo OK
+    ```
+graders:
+- name: c1
+  type: llm
+  criteria: |
+    The response flags that the rotation is verified only by the author's own script (`make verify-rotation` printing OK) and asks for a check the author did not write, or an independent read, because it guards webhook authentication.
+- name: c2
+  type: llm
+  criteria: |
+    The response flags that step 3, the verification step, is itself irreversible: `vault kv metadata delete secret/webhooks/signing-old` permanently deletes the old secret with all its versions, which contradicts the rollback claim that everything before step 5 is reversible.
+- name: c3
+  type: llm
+  criteria: |
+    For that step the response names the cost of crossing it: once the gateway's 5-minute refresh drops the old secret, webhooks signed with it are rejected, which is every partner because the step-4 email has not gone out yet, and the old secret cannot be restored to undo this.
+- name: c4
+  type: llm
+  criteria: |
+    The response marks each of the five steps as reversible (two-way) or irreversible (one-way).
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?premortem"'
+  arm: with-only

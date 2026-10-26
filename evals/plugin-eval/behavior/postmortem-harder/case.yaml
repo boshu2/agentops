@@ -1,0 +1,86 @@
+# Wave 3 (age-pv2j.39) harder case for Postmortem. The October cases offered only unproven
+# causes; here one cause meets all three tests and a tempting coincidence (a fix followed by
+# clean nights) does not, so both over-hedging and post-hoc attribution fail. Written from
+# skills/postmortem/SKILL.md ("First check: correlation or cause?", Output "Changes (at most
+# three)"), not from observed failures. Criteria fixed before any run; bars in
+# evals/plugin-eval/plans/2026-10-wave3-headroom.md.
+# Rule each criterion tests:
+#   c1  a claim with a mechanism, discriminating evidence and a counterfactual is promoted to cause.
+#   c2  post-hoc fix attribution stays a correlation; rejecting it needs contrary evidence.
+#   c3  evidence counts only if it discriminates: the clean nights never met the failing condition.
+#   c4  at most three changes, aimed at what the next run meets; none built on the unproven cause.
+#   c5  the outcome is not "resolved" while the proven mechanism is untouched.
+schema_version: '1.1'
+name: postmortem-harder
+tags:
+- behavior
+- harder
+- wave3
+execution:
+  max_turns: 12
+  allowed_tools:
+  - Read
+  - Glob
+  - Grep
+  - Skill
+  prompt: |
+    Can you do a short retro on the orders_rollup failures before Monday's ops review? Jamie drafted this and I want to know if it's right:
+
+    > Root cause: the job's pod hit its 8Gi memory limit. Fix: raised the limit to 16Gi on Oct 13. Twelve clean nights since, so this is resolved.
+
+    What we have. orders_rollup runs nightly at 01:00 UTC on Kubernetes: it reads the day's orders export, sorts it with GNU sort (TMPDIR=/tmp), and loads the result into Postgres. Before Oct 13 the pod had an 8Gi memory limit; /tmp is an emptyDir with sizeLimit 50Gi (unchanged).
+
+    | night | export size | result |
+    |---|---|---|
+    | Oct 1 | 31 GB | ok |
+    | Oct 2 | 42 GB | failed |
+    | Oct 3 | 29 GB | ok |
+    | Oct 4 | 33 GB | ok |
+    | Oct 5 | 44 GB | failed |
+    | Oct 6 | 18 GB | ok |
+    | Oct 7 | 36 GB | ok |
+    | Oct 8 | 38 GB | ok |
+    | Oct 9 | 47 GB | failed |
+    | Oct 10 | 30 GB | ok |
+    | Oct 11 | 27 GB | ok |
+    | Oct 12 | 45 GB | failed |
+    | Oct 13 to 24 (16Gi) | 21 to 36 GB | ok, all 12 |
+
+    Log tail from Oct 9 (the other three failures end the same way):
+
+    ```
+    01:42:17 sort: write failed: /tmp/sortq3Xk9a: No space left on device
+    01:42:17 rollup: sort exited 2
+    01:45:31 psycopg.OperationalError: consuming input failed: server closed the connection unexpectedly
+    01:45:32 rollup: job failed (exit 1)
+    ```
+
+    After the Oct 12 failure, Priya re-ran the job by hand on the same 45 GB export with TMPDIR pointed at a 500 GB scratch volume and the memory limit still at 8Gi. It succeeded in 58 minutes.
+
+    Is Jamie's write-up right? What happened, and what should we change?
+graders:
+- name: c1
+  type: llm
+  criteria: |
+    The response classifies running out of /tmp space during the sort as the supported or established cause, not only as "likely" or a correlation, and backs it with all three: the mechanism (sort failed with "No space left on device" on /tmp, which is capped at 50Gi), discriminating evidence (every failed night had an export of 42 GB or more and every successful night 38 GB or less), and the counterfactual (the Oct 12 re-run of the same 45 GB export succeeded with TMPDIR on a larger volume and memory still at 8Gi).
+- name: c2
+  type: llm
+  criteria: |
+    The response does not accept the memory limit as the cause: it calls Jamie's claim a correlation or rejects it, citing evidence against it, such as the Oct 12 re-run succeeding at 8Gi or the failures' logs showing a disk-space error rather than an out-of-memory kill.
+- name: c3
+  type: llm
+  criteria: |
+    The response says the twelve clean nights since Oct 13 do not show that raising the memory limit fixed anything, because none of those nights had an export above about 40 GB (they ranged 21 to 36 GB), so the failing condition never came back.
+- name: c4
+  type: llm
+  criteria: |
+    The response recommends at most three changes, at least one of which addresses temporary space for the sort (for example sizing /tmp or TMPDIR to the export, or failing fast when free space is below what the export needs), and it does not present the 16Gi limit as the fix.
+- name: c5
+  type: llm
+  criteria: |
+    The response does not call the problem resolved: it says the next night whose export exceeds about 40 GB would still fail, because the Oct 13 change did not touch /tmp.
+- name: skill-loaded
+  type: tool_used
+  tool: Skill
+  input_match: '"skill"\s*:\s*"(?:[\w-]+:)?postmortem"'
+  arm: with-only
