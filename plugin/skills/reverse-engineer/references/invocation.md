@@ -2,11 +2,11 @@
 
 Script-level detail for Phase 1 of the reverse-engineer skill. The skill body
 owns the evidence rules, verdicts and routing; this file owns flags, outputs,
-tests and fixtures.
+tests and fixtures. `<skill-dir>` is defined in [SKILL.md](../SKILL.md).
 
 ## Invocation contract
 
-Required: `product_name`. Common flags: `--mode=repo|binary|both`, `--upstream-repo`, `--upstream-ref` (requires the selected checkout to be at that exact commit and records its resolved SHA in `clone-metadata.json`), `--local-clone-dir` (selects that exact tree, including a non-Git tree; it never falls back to the caller's checkout; default `.tmp/<product>/` under the current directory, so keep that out of commits), `--output-dir` (default `.agents/scratch/reverse-engineer/<product>/`; an older teardown directory such as `.agents/research/<product>/` is accepted when passed explicitly, and nothing is moved), `--security-audit`, `--materialize-archives` (authorized-only opt-in; extracts under `<local-clone-dir>/extracted`; index-only by default), `--authorized` (mandatory for binary mode — refuses without it). Full list: `python3 skills/reverse-engineer/scripts/reverse_engineer.py --help`.
+Required: `product_name`. Common flags: `--mode=repo|binary|both`, `--upstream-repo`, `--upstream-ref` (requires the selected checkout to be at that exact commit and records its resolved SHA in `clone-metadata.json`), `--local-clone-dir` (selects that exact tree, including a non-Git tree; it never falls back to the caller's checkout; default `.tmp/<product>/` under the current directory, so keep that out of commits), `--output-dir` (default `.agents/scratch/reverse-engineer/<product>/`; an older teardown directory such as `.agents/research/<product>/` is accepted when passed explicitly, and nothing is moved), `--security-audit`, `--materialize-archives` (authorized-only opt-in; extracts under `<local-clone-dir>/extracted`; index-only by default), `--authorized` (mandatory for binary mode — refuses without it). Full list: `python3 "<skill-dir>/scripts/reverse_engineer.py" --help`.
 
 ## Outputs
 
@@ -34,17 +34,17 @@ a `steal` row needs the `code` tag. In every phase it runs
 
 ## Tests and fixtures
 
-- `bash skills/reverse-engineer/scripts/validate.sh` needs no Go or network.
+- `bash "<skill-dir>/scripts/validate.sh"` needs no Go or network.
   It checks Python syntax, that the security gate refuses an unfilled
   scaffold, that the secret scan catches seeded `key = value`, JSON-key,
-  Bearer and AIza cases, a repo-mode teardown of a small tree (unclassified
+  Bearer, AIza and PEM private-key header cases, a repo-mode teardown of a small tree (unclassified
   registry, scratch inside the output dir), the steal-map row rules, and that
   a wrong-ref checkout and symlinked outputs are refused.
-- `bash skills/reverse-engineer/scripts/self_test.sh` needs Go and writes under
+- `bash "<skill-dir>/scripts/self_test.sh"` needs Go and writes under
   the repository's `.tmp/`. It builds a demo binary with an embedded archive,
   runs binary mode and the security audit, pins an upstream ref, and checks the
   output-path defaults and generated-tree hygiene.
-- `bash skills/reverse-engineer/scripts/repo_fixture_test.sh` needs network. It
+- `bash "<skill-dir>/scripts/repo_fixture_test.sh"` needs network. It
   tears down cc-sdd at `v2.1.0` and compares the contracts with
   `fixtures/cc-sdd-v2.1.0/`. When contracts legitimately change, re-run with
   `UPDATE_FIXTURES=1`, review the diff, and commit.

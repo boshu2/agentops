@@ -14,13 +14,6 @@ produces:
 context_rel: []
 skill_api_version: 1
 user-invocable: true
-context:
-  window: fork
-  intent:
-    mode: task
-  sections:
-    exclude:
-    - HISTORY
 metadata:
   capabilities: [test]
   effects: [write_test_files, write_test_evidence, modify_source_files]
@@ -76,8 +69,7 @@ CLI flags. Coverage thresholds come from the caller or repository.
   tests to pin untested code before changing it, marking an odd result as a
   suspected defect. Never manufacture a RED claim or alter acceptance to excuse
   a product defect.
-- Repair a discovered defect when already authorized; otherwise report the
-  reproducer and finding. Do not mask it by deleting or weakening a test.
+- Repair a discovered defect when already authorized; otherwise report the reproducer and finding, never masking it by deleting or weakening a test ([fix the cause, not the oracle](../implement/SKILL.md#rules-that-decide-the-result)).
 
 ## Oracle-strength hierarchy
 

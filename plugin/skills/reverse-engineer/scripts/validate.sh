@@ -51,14 +51,17 @@ if bash "$sec/validate-security-audit.sh" "$tmp/audit" --no-sbom >/dev/null 2>&1
   fail "security-audit gate certified an unfilled _TBD scaffold"
 fi
 
-# Secret scan: key = value, JSON key, Bearer and dash-bearing AIza secrets must
-# fail. Seeds are assembled at run time so this file holds no secret-shaped text.
+# Secret scan: key = value, JSON key, Bearer, dash-bearing AIza secrets and
+# PEM private-key headers (generic PKCS#8 and ENCRYPTED, not only RSA/EC/OPENSSH)
+# must fail. Seeds are assembled at run time so this file holds no secret-shaped text.
 seeds=(
   "api""_key = x"
   "\"api""_key\": \"x\""
   "client""_secret: x"
   "Authorization: ""Bearer x"
   "key=AI""zaSyA-bcdefghijklmnopqrstu"
+  "-----BEGIN PRIVATE"" KEY-----"
+  "-----BEGIN ENCRYPTED PRIVATE"" KEY-----"
 )
 i=0
 for seed in "${seeds[@]}"; do

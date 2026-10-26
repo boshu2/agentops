@@ -28,10 +28,11 @@ return runtime evidence, and stop.
 
 ## Before launch
 
-1. **Read the live surface.** The CLI changes faster than skill text; the facts
-   here are from AGY 1.4.7. Run `agy --help` for flags, `agy changelog` for
-   behavior the help omits, and `agy models` for ids. That list includes Claude
-   and GPT-OSS: a Gemini or cross-family run needs a `gemini-*` id.
+1. **Read the live surface.** The CLI changes faster than skill text.
+   Re-checked on 2026-10-25 against Claude Code 2.1.309, codex-cli 0.163.0, AGY 1.4.7, gc edge 97503b2 (with Gas City v1.5.1 docs and source), bd 1.3.1 and ao 3.11.0.
+   Run `agy --help` for flags, `agy changelog` for behavior the help omits,
+   and `agy models` for ids. That list includes Claude and GPT-OSS: a Gemini
+   or cross-family run needs a `gemini-*` id.
 2. **Absent means stop.** If `agy` is missing or its help cannot be read,
    report the absence and stop. Never fall back silently to Codex, Claude or
    any other runtime; a substitute needs a new caller selection. Nothing routes
@@ -75,7 +76,9 @@ stall and output-cap handling and runs
 installed skill lacks that library; use this block.
 The packet goes by path, not inline: a short `-p` pointer plus `--add-dir` on
 the packet's own directory only, because a large inline prompt can be dropped
-while the run still looks scoped.
+while the run still looks scoped. That drop is an earlier-run observation, not
+in the 1.4.7 help or changelog. Would verify: a run with an inline `-p` prompt
+over ~100 KB that asks for a marker from its end.
 
 ```bash
 TO=$(command -v timeout || command -v gtimeout) || { echo "no timeout: not launching" >&2; exit 2; }
@@ -96,8 +99,11 @@ set -o pipefail  # bash and zsh: $? is the failing stage, not head's
 rc=$?
 ```
 
-Put every flag before `-p`. `--print-timeout` needs a unit such as `300s`; a
-bare number or an unknown flag exits 2. If the host shell tool's cap is under
+Put every flag before `-p`. The help does not say whether `-p` takes a value,
+and this is untested on 1.4.7. Would verify: `agy -p hi --print-timeout 300`
+exiting 2 (flags after `-p` are parsed) or starting a billed run (they are
+not). `--print-timeout` needs a unit such as `300s`; a bare number or an
+unknown flag exits 2. If the host shell tool's cap is under
 `remaining` plus 10 s, handle it as [claude-exec](../claude-exec/SKILL.md#run) does.
 
 **Did it finish?** Exit 0 is not proof: an expired `--print-timeout` returns

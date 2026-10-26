@@ -18,13 +18,6 @@ metadata:
   disposition: keep_strategy
   tier: judgment
   dependencies: []
-context:
-  window: fork
-  intent:
-    mode: task
-  sections:
-    exclude:
-    - HISTORY
 output_contract: 'concise inline causal analysis; a requested durable report is YYYY-MM-DD-postmortem-<topic>.md in caller-selected protected external non-Git storage'
 ---
 
@@ -152,5 +145,3 @@ Answer inline.
 - Curation, support and destination-disclosure review of any lesson are
   separately authorized [Memory](../memory/SKILL.md) work; retrospective
   evidence cannot promote itself.
-
-Behavior examples are in [postmortem.feature](references/postmortem.feature).

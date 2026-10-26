@@ -17,13 +17,6 @@ context_rel:
   with: validate
 skill_api_version: 1
 user-invocable: true
-context:
-  window: fork
-  intent:
-    mode: task
-  sections:
-    exclude:
-    - HISTORY
 metadata:
   capabilities: [security]
   effects: [write_scan_artifacts]
@@ -133,11 +126,21 @@ its revision, not a rule-5 hypothesis; with nothing to run, each is suspected.
 
 Each selected scan runs once per request; a rerun is a new caller decision.
 
+`<skill-dir>` is the directory that contains this SKILL.md. Claude Code shows it
+as "Base directory for this skill"; Codex lists this skill's SKILL.md path; in
+an AgentOps source checkout it is `skills/security`. Replace `<skill-dir>` with
+that absolute path before running a command. The working directory stays the
+user's repository. If the host did not show where this skill is installed, use
+the directory of the SKILL.md you read. If you cannot determine it, do not guess
+a path or run a same-named script from the current repository; say the bundled
+script is unavailable and run the scanners the project already uses, record the
+suite or redteam scan as a coverage gap, and do the manual hunt.
+
 | Surface | Entry point | Location |
 |---|---|---|
-| Repository gate (quick or full) | `scripts/security-gate.sh` | AgentOps repository root only |
-| Composable suite for authorized binaries | `skills/security/scripts/security_suite.py` | this skill's `scripts/` |
-| Offline prompt-surface redteam | `skills/security/scripts/prompt_redteam.py` | this skill's `scripts/` |
+| Repository gate (quick or full) | `bash scripts/security-gate.sh` | AgentOps repository root only |
+| Composable suite for authorized binaries | `python3 "<skill-dir>/scripts/security_suite.py"` | bundled with this skill |
+| Offline prompt-surface redteam | `python3 "<skill-dir>/scripts/prompt_redteam.py"` | bundled with this skill |
 
 - **No gate script** (any other repository): run the scanners the project
   already uses, such as a dependency audit, secret scan, or static analyzer,

@@ -59,7 +59,8 @@ requiring the full transcript; a missing or contradictory pointer needs source
 investigation, not a guess. For each task, check who holds it, its workspace and
 starting content, the write scope it occupies, pending checks and review, the
 current candidate, who integrates it, and whether each prerequisite's content
-is present. An empty ready list does not prove completion.
+is present. An empty ready list does not prove completion
+([Navigate](../navigate/SKILL.md#rules-that-decide-the-pick)).
 
 ## Choose the next useful dispatch
 
@@ -90,7 +91,9 @@ identity at startup through Agent Native's association procedure.
 [Implement](../implement/SKILL.md) owns the complete change, meaningful checks
 and direct repair; it is optional guidance for that worker, not a compulsory
 stage. The handoff returns candidate identity, changed scope, check facts,
-discoveries and gaps; prompt delivery proves neither engagement nor acceptance.
+discoveries and gaps; prompt delivery proves neither engagement
+([Agent Native](../agent-native/SKILL.md#before-launch-and-while-running)) nor
+acceptance.
 
 When several workers apply one set of decisions, such as a batch of review
 findings or one rewrite that must read the same in many files, make each
@@ -118,15 +121,14 @@ blind. A write outside a worker's declared scope, or collisions that keep
 recurring, show the scope split cannot be trusted for this change: finish the
 rest serially.
 
-For an ordinary candidate the integrated checks and CI are the gate. Assign one
-fresh author-distinct judgment through
-[Validate](../validate/SKILL.md#when-a-fresh-judgment-is-worth-it) only in the
-costly cases it names: the caller asks, a mistake cannot be cheaply undone
-after it lands, or no deterministic check covers the changed behavior. Validate
-owns the single round, what counts as a finding, and when a repair needs only
-its checks rerun. Preserve every explicitly required review leg; advisory
-Review, Plan challenge and Council advice cannot stand in for a judgment the
-caller requested.
+For an ordinary candidate the integrated checks and CI are the gate; assign one
+fresh author-distinct judgment only in the costly cases
+[Validate](../validate/SKILL.md#when-a-fresh-judgment-is-worth-it) names, and
+Validate owns the single round, what counts as a finding, and when a repair
+needs only its checks rerun. Preserve every explicitly required review leg;
+advisory Review, Plan challenge and Council advice cannot stand in for a
+judgment the caller requested
+([advice or acceptance](../review/references/advice-or-acceptance.md#handing-off-to-acceptance)).
 
 ## Reconcile feedback and resume
 
@@ -142,14 +144,11 @@ slice. New evidence may change an approach within the accepted outcome; a
 different promised outcome or authority choice returns to the caller, never to
 agent advice. Do not reopen accepted work to fit a revised story.
 
-Known failures return to the responsible task for direct repair. A genuine
-causal stall is an unknown cause, a recurrence, no progress or a wrong
-objective ([RPI](../rpi/SKILL.md#causal-stall-and-bounds)); it admits at most
-one authorized bounded fresh helper for that incident within remaining bounds,
-and an unhelpful answer ends that attempt. Cancellation, refusal or exhausted
-bounds skip help. Replacement workers, retries, new subjects and compaction
-never reset those bounds. Use native waits for unchanged pending state instead
-of repeated analysis or probes.
+Known failures return to the responsible task for direct repair; a genuine
+causal stall gets [RPI's one bounded helper](../rpi/SKILL.md#causal-stall-and-bounds),
+and replacement workers, retries, new subjects and compaction never reset its
+bounds. Use native waits for unchanged pending state instead of repeated
+analysis or probes.
 
 To recover a dead worker, confirm its process stopped, not only its pane;
 capture its state and preserve its partial work recoverably; move its tracker

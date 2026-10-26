@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # convert.sh — Cross-platform skill converter pipeline
-# Usage: bash skills/skill-builder/scripts/converter/convert.sh <skill-dir> <target> [output-dir]
-#        bash skills/skill-builder/scripts/converter/convert.sh --all <target> [output-dir]
+# Usage: bash "<skill-dir>/scripts/converter/convert.sh" <source-skill-dir> <target> [output-dir]
+#        bash "<skill-dir>/scripts/converter/convert.sh" --all <target> [output-dir]
 set -euo pipefail
 
 # This script uses namerefs (`local -n`), which require Bash >= 4.3. On stock
@@ -39,12 +39,12 @@ require_source_checkout() {
 usage() {
   cat <<'EOF'
 Usage:
-  bash skills/skill-builder/scripts/converter/convert.sh [--codex-layout modular|inline] <skill-dir> <target> [output-dir]
-  bash skills/skill-builder/scripts/converter/convert.sh [--codex-layout modular|inline] --all <target> [output-dir]
+  bash "<skill-dir>/scripts/converter/convert.sh" [--codex-layout modular|inline] <source-skill-dir> <target> [output-dir]
+  bash "<skill-dir>/scripts/converter/convert.sh" [--codex-layout modular|inline] --all <target> [output-dir]
 
 Targets: codex, cursor, test
 
-Examples:
+Examples (from an AgentOps source checkout root):
   bash skills/skill-builder/scripts/converter/convert.sh skills/council codex
   bash skills/skill-builder/scripts/converter/convert.sh --codex-layout inline skills/council codex
   bash skills/skill-builder/scripts/converter/convert.sh --all codex

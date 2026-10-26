@@ -76,13 +76,10 @@ Decide in this order:
 
 An explicit request for Validate, an acceptance verdict or independent proof
 that original acceptance is met selects this skill, even when phrased as
-"review this". A request for a look or an opinion is advice: route it to
-Review. When a generic checking or readiness question and the settled context
-leave the purpose open, ask once whether the caller wants advice or an
-acceptance judgment, and wait; supplied criteria say what to inspect, not which
-judgment. Issue no verdict or readiness approval meanwhile; missing intent is
-not a `NOT_PROVEN` verdict. Shared routing:
-[advice or acceptance](../review/references/advice-or-acceptance.md).
+"review this"; a request for a look or opinion goes to Review, and when the
+purpose is open, ask once and issue no verdict meanwhile, since missing intent
+is not a `NOT_PROVEN` verdict
+([advice or acceptance](../review/references/advice-or-acceptance.md#ambiguous-requests)).
 
 ## When a fresh judgment is worth it
 
@@ -145,8 +142,9 @@ Codex/OpenAI, Claude/Anthropic for Claude/Anthropic), on the runtime's
 configured capable model unless pinned. If this context produced the
 candidate, it cannot be that reviewer: dispatch one and return its result, or
 return NOT_PROVEN with the identity gap when none can run. Give the reviewer
-intent, scope, exact subject and the evidence each criterion needs, never full
-author history, a desired verdict or peer conclusions.
+intent, scope, exact subject, the evidence each criterion needs and one
+question written before it starts, never full author history, the author's
+confidence, a desired verdict or peer conclusions.
 
 Cross-model review is opt-in: `--cross-model [model]` is a skill prompt
 selection, not an AO flag, adding a fresh other-family reviewer through

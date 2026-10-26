@@ -39,9 +39,11 @@ path digests only the paths you declare and runs no Git. Copy check results from
 
 - **Fix the cause, not the oracle.** Never loosen an assertion, tolerance,
   golden, fixture or suppression, or substitute a mock or placeholder, to turn
-  a check green. A check that fails against accepted behavior points at a
-  product defect; changing what the check accepts is an acceptance change and
-  needs caller authority.
+  a check green; nor change what the check runs against: code that acts
+  differently under test or CI, a newly silenced failure path, or a check made
+  non-blocking or skipped. A check that fails against accepted behavior points
+  at a product defect; changing what the check accepts is an acceptance change
+  and needs caller authority.
 - **Find live consumers before editing.** Search the callers, readers, scripts,
   docs and tests of every edited function, type, path, format or message. For
   each one, state whether the change affects it and which check covers it. When
@@ -52,7 +54,8 @@ path digests only the paths you declare and runs no Git. Copy check results from
   keep the old version working or report it.
 - **Name discriminating checks.** A behavioral change preserves RED
   for the expected missing behavior: name the check that fails before the edit
-  and passes after, plus the check for each affected consumer.
+  and passes after ([Test's proof rule](../test/SKILL.md#critical-constraints)),
+  plus the check for each affected consumer.
 - **Report only what ran.** Give exact commands and results. List every check
   you did not or could not run as not run. Never call unrun work verified,
   fixed or green. Output can show as soon as a command runs, so keep secrets
@@ -123,7 +126,7 @@ recovery, resilience, toil); ordinary edits owe no operations phase.
    Copy that ID from the session, subagent or thread ID the runtime exposes, or
    label a caller-supplied one as supplied; otherwise report it as unknown,
    never made up. The integrating caller derives `subject-manifest.v1` (AgentOps
-   schema `schemas/subject-manifest.v1.schema.json`) over the complete final
+   schema [subject-manifest.v1.schema.json](https://github.com/boshu2/agentops/blob/main/schemas/subject-manifest.v1.schema.json), AgentOps source checkout only) over the complete final
    subject before judgment; an independently judged increment needs its own
    manifest. Do not generate both merely because work was delegated. Where the
    repository records AgentOps evidence bindings, also run
@@ -190,8 +193,7 @@ causal stall admits one bounded fresh helper under RPI's
 
 Return facts, not semantic PASS. An implement-only handoff does not authorize
 Git, tracker or delivery transitions; existing caller authority remains usable.
-A full outcome request finishes on its checks and CI. It continues to one fresh
-independent judgment only when the caller asks, a mistake cannot be cheaply
-undone after it lands, or no deterministic check covers the changed behavior.
+A full outcome request finishes on its checks and CI; it continues to one fresh
+independent judgment only on [Validate's triggers](../validate/SKILL.md#when-a-fresh-judgment-is-worth-it).
 Success is working behavior with usable evidence, not volume of logs or process
 artifacts.

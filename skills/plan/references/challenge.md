@@ -39,10 +39,11 @@ or requested audit under the existing storage rules.
 ## Other selected strategies
 
 When independent alternatives themselves matter, two sealed positions may be
-selected: each author receives the same accepted question and source evidence
-without seeing the other's proposal. Compare only after both initial positions
-are fixed; later replies are peer-informed and no longer independent. Give both
-the same newly discovered decisive source, or disclose the unequal evidence.
+selected: both authors get the same accepted question and source evidence, both
+initial positions are fixed before comparison as
+[Council](../../council/SKILL.md#rules-that-decide-the-synthesis) seals views,
+later replies are peer-informed, and a newly found decisive source goes to both
+or the unequal evidence is disclosed.
 An independent derivation can also be compared with an already fixed proposal.
 
 [Premortem](../../premortem/SKILL.md) owns a requested plan-failure examination,
