@@ -116,9 +116,9 @@ Update its matrix row, then classify each discovery:
 
 | Discovery | Action |
 |---|---|
-| Needed for frozen acceptance, within authority and budget | `bd create "<title>" --parent <epic> --deps discovered-from:<id> --acceptance "<example it serves>"` |
-| Useful later | note or link it outside the epic; never run it in this goal |
-| Changes acceptance, exceeds authority or budget | HOLD; the goal's breaker (the HOLD triggers its prompt declares) takes over |
+| **necessary-now**: needed for frozen acceptance, within authority and budget | `bd create "<title>" --parent <epic> --deps discovered-from:<id> --acceptance "<example it serves>"` |
+| **linked-follow-up**: useful later | note or link it outside the epic; never run it in this goal |
+| **HOLD/rescope**: changes acceptance, exceeds authority or budget | HOLD; the goal's breaker (the HOLD triggers its prompt declares) takes over |
 
 A result ratchets when it proves part of acceptance, falsifies a live
 hypothesis with discriminating evidence, or resolves an uncertainty so the next
@@ -127,8 +127,8 @@ rewritten plans and red with no new information are churn. Split old defects
 from regressions by before/after reproduction or equivalent causal evidence
 under the same acceptance; counts, timestamps and new ids prove no cause.
 Unknown cause, a reopened finding or recurrence of a closed finding class is
-HOLD, not proof the design is wrong. Never downgrade a needed discovery to
-useful later; no wave, helper, retry or compaction resets the goal's budget
+HOLD, not proof the design is wrong. Never downgrade a necessary-now discovery to
+a linked follow-up; no wave, helper, retry or compaction resets the goal's budget
 totals. Done when every result sits on its bead and every discovery has a class.
 
 ## 4. Checkpoint
