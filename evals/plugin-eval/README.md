@@ -112,18 +112,24 @@ the evaluator reports it beside the score; in a single-arm run it is the score.
   moves a five-criterion case by 0.07. Treat a delta under about 0.15 as noise.
 - **The criteria come from each skill's own rules.** A pass shows the rule
   landed on that request. It does not show a better outcome on a real task.
-- **Five behavior cases use a slash command** (`craft-goal`, `interview`,
-  `postmortem`, `rpi`, and `navigate-harder`). The first four skills were
+- **Four behavior cases use a slash command** (`craft-goal`,
+  `postmortem`, `rpi`, and `navigate-harder`). The first three skills were
   user-only until 2026-10-23 and now also load when named in plain words;
   `navigate-harder` keeps the forced prefix it was measured with in round 4.
   These cases start with `/agentops:<name>`, so the arm without the plugin sees
   an unknown command.
+- **Interview has a new baseline as of 2026-10-25.** Its behavior request now
+  says "Interview me about this" in plain words, with the scenario and four
+  criteria unchanged. Both arms must be run again; do not pool or compare its
+  scores as the same case as the earlier slash-command prompt. This is an
+  explicit by-name request, not blind routing. It measures the opening turn,
+  not the quality of a complete interview dialogue.
 
 ## Changing a case
 
-- Write the request the way a user would type it. Never name the skill,
-  except in a routing case for a skill whose description says to load it when
-  named.
+- Write the request the way a user would type it. Name the skill only when
+  testing an explicit by-name request, and label that case as such. Use plain
+  words in both arms so the no-plugin baseline can answer the same request.
 - Write each criterion as one statement a reader can check against the answer.
 - Fix the criteria before you run. Do not edit a criterion to make a run pass.
 - Do not copy a case's scenario into the skill it tests. A skill that quotes its

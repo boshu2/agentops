@@ -1,4 +1,6 @@
 schema_version: '1.1'
+# 2026-10-25: plain-language by-name request; rerun both arms. Earlier
+# slash-command results are a different baseline. Criteria are unchanged.
 name: interview
 tags:
 - behavior
@@ -10,7 +12,7 @@ execution:
   - Grep
   - Skill
   prompt: |
-    /agentops:interview I want our agents to be able to run long migrations overnight without me watching. Before anyone builds anything, help me pin down what we're actually building. Context: we use a Postgres-backed job table today, jobs sometimes run twice after a worker crash, and I'm the only person who approves schema changes.
+    Interview me about this. I want our agents to be able to run long migrations overnight without me watching. Before anyone builds anything, help me pin down what we're actually building. Context: we use a Postgres-backed job table today, jobs sometimes run twice after a worker crash, and I'm the only person who approves schema changes.
 graders:
 - name: c1
   type: llm
