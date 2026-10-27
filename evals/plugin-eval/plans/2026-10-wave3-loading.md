@@ -1,5 +1,8 @@
 # Wave 3 loading experiment: implement, triage, security, review
 
+Execution status (2026-10-26): [results and limitations](../../../docs/evals/2026-10-26-wave3-opus-5-5.md).
+The registration below is preserved as written; its "not run" statements refer to registration time.
+
 Pre-registered 2026-10-25 for epic age-pv2j (bead age-pv2j.39), before any subject was built
 or any run started. Nothing here has been run. The bars below are fixed; a run lane may not
 change them after its first counted run.
