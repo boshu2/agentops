@@ -28,7 +28,9 @@ so its case name is still `navigate-hard`. Their bars, runs and spend were fixed
 before any run in [the headroom plan](plans/2026-10-wave3-headroom.md), with the
 fold-or-cut decision each one settles. [The loading plan](plans/2026-10-wave3-loading.md)
 fixes, the same way, a description and listing test for `implement`, `triage`,
-`security` and `review`. Neither plan has been run.
+`security` and `review`. Both plans ran on 2026-10-26; the
+[targeted Wave 3 report](../../docs/evals/2026-10-26-wave3-opus-5-5.md) records
+all attempts, the repaired Interview baseline and the shipping-gate failures.
 
 A case is one `case.yaml`: a request a user would type, the criteria, and a
 `skill-loaded` check on the Skill tool call. Most routing requests never name

@@ -1,5 +1,8 @@
 # Wave 3 headroom bars: the new behavior cases
 
+Execution status (2026-10-26): [results and limitations](../../../docs/evals/2026-10-26-wave3-opus-5-5.md).
+The registration below is preserved as written; its "not run" statements refer to registration time.
+
 Pre-registered 2026-10-25 for epic age-pv2j (bead age-pv2j.39), before any of these cases was
 run. Nothing here has been run. The bars and the fold-or-cut conditions below are fixed; a run
 lane may not change a bar or a criterion after its first counted run.
