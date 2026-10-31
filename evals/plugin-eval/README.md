@@ -31,6 +31,10 @@ fixes, the same way, a description and listing test for `implement`, `triage`,
 `security` and `review`. Both plans ran on 2026-10-26; the
 [targeted Wave 3 report](../../docs/evals/2026-10-26-wave3-opus-5-5.md) records
 all attempts, the repaired Interview baseline and the shipping-gate failures.
+[The description trial](plans/2026-10-31-description-trial.md) of 2026-10-31
+re-tested six description lines that fit the shipping budget;
+[its report](../../docs/evals/2026-10-31-description-trial-opus-5-5.md) landed
+new lines for `triage` and `implement` and recorded the other four as nulls.
 
 A case is one `case.yaml`: a request a user would type, the criteria, and a
 `skill-loaded` check on the Skill tool call. Most routing requests never name
