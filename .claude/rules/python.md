@@ -10,7 +10,7 @@ paths:
 
 ## Formatting and Linting
 
-- **Black** formatter with 100-character line length.
+- **Formatting:** `ruff format` (or Black) at the line length the repository configures; this repository configures none, so keep a file's existing style. See `skills/domain/references/standards/python.md`.
 - **ruff** linter (`ruff check` must pass).
 - **mypy** for type checking.
 
