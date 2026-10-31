@@ -160,9 +160,12 @@ metadata:
 ```
 
 Every shipped skill declares `tier`, `dependencies`, `capabilities`, `effects`,
-and `canonical_status`; `disposition` is on 50, `graph_root` on 11,
-`stability` on 5, `internal` on 2. The schema also still permits `version`,
-`author`, `triggers`, and `replaces`, which no shipped skill declares.
+`canonical_status`, and `disposition`; `graph_root` is on 13, `stability` on 7,
+`internal` on 1. The schema also still permits `version`, `author`, and
+`replaces`, which no shipped skill declares, and `triggers`, which implement,
+plan, premortem, research, and review declare. Only `ao skills find` and the
+`skill.triggers` gate read `triggers`; the host runtime routes on
+`description`, so a phrase meant to change which skill loads belongs there.
 `dependencies` feeds the delegation edges rendered by `ao skills graph`.
 
 #### Tier Values
