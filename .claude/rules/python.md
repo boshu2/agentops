@@ -10,7 +10,7 @@ paths:
 
 ## Formatting and Linting
 
-- **Black** formatter with 100-character line length.
+- **Formatting:** `ruff format` (or Black) at the line length the repository configures; this repository configures none, so keep a file's existing style. See `skills/domain/references/standards/python.md`.
 - **ruff** linter (`ruff check` must pass).
 - **mypy** for type checking.
 
@@ -32,9 +32,9 @@ paths:
 - Use `secrets` module for tokens, not `random`.
 - Validate all external input.
 
-## Testing (AI-Native Test Shape)
+## Testing (Risk-Based)
 
-**L2 first, L1 always.** Write L2 integration tests first (where bugs are found), then L1 unit tests for regression safety. AI agents write both. See `skills/domain/references/standards/test-pyramid.md` for the full AI-native test shape.
+**Pick the test by risk, not by level.** Start from the acceptance behavior and write the narrowest test that fails when it is wrong: L1 unit for dense logic and edge cases, L2 integration when a boundary (module entry point, file or network I/O) is likely to hide the defect. Add a level only for a distinct risk; L2 is not required by default. See `skills/domain/references/standards/test-pyramid.md` for the selection questions.
 
 - Assert exact expected values (`== expected`), not just `!= wrong`.
 - Mock external services, not internal code.
