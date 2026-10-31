@@ -190,6 +190,32 @@ FAKE
   ! grep -q 'SECRET_BODY_TOKEN' "$TMP/agy-argv"
 }
 
+@test "agy: --add-dir grants a private packet directory, not all of TMPDIR, removed after the run" {
+  # The stub records the --add-dir value and what that directory holds while it runs.
+  cat > "$TMP/bin/agy" <<FAKE
+#!/usr/bin/env bash
+prev=""
+for a in "\$@"; do
+  if [ "\$prev" = "--add-dir" ]; then printf '%s' "\$a" > "$TMP/agy-add-dir"; fi
+  prev="\$a"
+done
+ls -A "\$(cat "$TMP/agy-add-dir")" > "$TMP/agy-add-dir-listing"
+echo "VERDICT: CONFIRMED"
+exit 0
+FAKE
+  chmod +x "$TMP/bin/agy"
+  run bash -c '
+    . "'"$LIB"'"
+    REVIEWER=agy CODEX_EXEC_PROMPT_ARG="review this change" CODEX_EXEC_TIMEOUT=10 codex_exec_guarded
+  '
+  [ "$status" -eq 0 ]
+  add_dir="$(cat "$TMP/agy-add-dir")"
+  [ "${add_dir%/}" != "${TMP%/}" ]
+  [[ "$add_dir" == "$TMP"/* ]]
+  [ "$(cat "$TMP/agy-add-dir-listing")" = "packet.md" ]
+  [ ! -e "$add_dir" ]
+}
+
 # ===========================================================================
 # Adapter 3 = local-mlx (caller-selected local runtime).
 # ===========================================================================

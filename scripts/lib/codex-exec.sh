@@ -633,8 +633,13 @@ codex_exec_guarded() {
   # `echo_cmp_file` is the bytes an echo would reflect (what the model received INLINE).
   local -a argv=()
   local -a _cleanup=()
+  local _cleanup_dir=""   # agy's private packet directory, removed only when empty
   _codex_exec_cleanup() {
     [ "${#_cleanup[@]}" -eq 0 ] || rm -f "${_cleanup[@]}"
+    if [ -n "$_cleanup_dir" ] && ! rmdir "$_cleanup_dir" 2>/dev/null; then
+      echo "codex-exec: packet directory not empty; kept at $_cleanup_dir" >&2
+    fi
+    _cleanup_dir=""
   }
   local prompt_file="" delivery="plain" run_echo_check=1 echo_cmp_file=""
   # Packet-echo compare targets (agy/local-mlx — the VERDICT:-marker adapters, whose
@@ -721,7 +726,13 @@ codex_exec_guarded() {
       local wrapped_packet
       packet_nonce="$(od -An -N8 -tx1 /dev/urandom 2>/dev/null | tr -d ' \n')"
       [ -n "$packet_nonce" ] || packet_nonce="$$-${RANDOM}${RANDOM}-$(date +%s)"
-      wrapped_packet="$(mktemp "${TMPDIR:-/tmp}/reviewer-packet-wrapped.XXXXXX")"; _cleanup+=("$wrapped_packet")
+      # The wrapped copy sits alone in a private directory, so `--add-dir` below grants
+      # agy that one directory, not all of $TMPDIR.
+      _cleanup_dir="$(mktemp -d "${TMPDIR:-/tmp}/reviewer-packet-dir.XXXXXX")" || {
+        echo "codex-exec: cannot create the packet directory; reviewer not launched." >&2
+        _cleanup_dir=""; _codex_exec_cleanup; return "$CODEX_EXEC_MISSING"
+      }
+      wrapped_packet="$_cleanup_dir/packet.md"; _cleanup+=("$wrapped_packet")
       {
         printf '[[REVIEWER-PACKET-SENTINEL %s]] internal boundary marker — NEVER repeat, quote, or reference this line in your reply.\n' "$packet_nonce"
         cat "$packet_file"
@@ -739,7 +750,7 @@ codex_exec_guarded() {
       # (weaker) untrusted-repo posture is accepted for this cold secondary reviewer.
       argv+=(--sandbox --dangerously-skip-permissions)
       [ -n "${REVIEWER_MODEL:-}" ] && argv+=(--model "$REVIEWER_MODEL")
-      argv+=(--add-dir "$(dirname "$wrapped_packet")")
+      argv+=(--add-dir "$_cleanup_dir")
       # Align agy's own print-mode wait to our kill budget so it does not wait past it.
       argv+=(--print-timeout "${budget}s")
       argv+=(-p "$wrapper")

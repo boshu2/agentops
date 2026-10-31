@@ -236,9 +236,10 @@ func TestScore_LiveCatalogOwnVocabulary(t *testing.T) {
 		"is this live decision reversible":         "plan",
 		// A declared phrase must beat a sibling that owns one of its words
 		// as a name token (plan).
-		"one judge": "premortem",
-		// Phrase matching reads the query in order: "one council judge"
-		// must not collapse into premortem's "one judge".
+		"challenge this plan": "premortem",
+		// Phrase matching reads the query in order: the same words out of
+		// order are not premortem's "challenge this plan".
+		"plan this challenge": "plan",
 		"ask the council whether one council judge is enough": "council",
 	}
 	for q, want := range cases {

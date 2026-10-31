@@ -100,7 +100,10 @@ A gate PASS is a deterministic fact, not a semantic verdict.
   configuration lookup or workspace fallback. The caller resolves CDLC routing;
   `internal/evidencepath` supplies the shared explicit-root guard.
 - Python reference/schema checks live under `skills/validate/tests` and are
-  developer tests, not installed runtime dependencies. Evidence leaves attach
+  developer tests, not installed runtime dependencies. Manifest version 1 keeps
+  that reference's asymmetric root rule: live files and symlinks match include
+  roots literally; deletions match them as fnmatch patterns against the base
+  manifest (`internal/evidence/manifest.go`). Evidence leaves attach
   their actual contracts to the provenance family; optional relationship
   records remain separate from exact-subject mechanics.
 - `ao status` is a read-only evidence inspector: it structurally verifies
