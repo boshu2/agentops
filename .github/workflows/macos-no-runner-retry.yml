@@ -1,0 +1,60 @@
+# Retry main-branch runs whose only failures are macOS jobs GitHub never
+# assigned a runner to ("The job was not acquired by Runner of type hosted even
+# after multiple attempts" — macOS arm64 capacity). Those jobs end cancelled
+# after ~15 minutes with zero steps and runner_id 0, and turn main red without
+# any test having run.
+#
+# Retries once, only when EVERY failed/cancelled job in the run is such a
+# no-runner macOS job. Any job that actually ran steps and failed (any OS)
+# leaves the run red and is never retried.
+
+name: macos-no-runner-retry
+
+on:
+  workflow_run:
+    workflows: [install-e2e, fresh-install-conformance]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  retry:
+    if: >-
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.run_attempt == 1 &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - name: Rerun if the only failures are macOS jobs that never got a runner
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          RUN_NAME: ${{ github.event.workflow_run.name }}
+        run: |
+          set -euo pipefail
+          jobs="$(gh api "repos/$REPO/actions/runs/$RUN_ID/jobs?per_page=100")"
+          summary="$(jq -c '
+            def no_runner_macos:
+              .conclusion == "cancelled"
+              and ((.runner_id // 0) == 0)
+              and (((.steps // []) | length) == 0)
+              and any(.labels[]; startswith("macos"));
+            [.jobs[] | select(.conclusion == "failure" or .conclusion == "cancelled" or .conclusion == "timed_out")]
+            | {
+                bad: length,
+                no_runner: [.[] | select(no_runner_macos) | .name],
+                real: [.[] | select(no_runner_macos | not) | .name]
+              }' <<<"$jobs")"
+          echo "$summary"
+          if [[ "$(jq '.bad' <<<"$summary")" -eq 0 || "$(jq '.real | length' <<<"$summary")" -gt 0 ]]; then
+            echo "$RUN_NAME run $RUN_ID has real failures (or none); not retrying."
+            exit 0
+          fi
+          echo "::warning::$RUN_NAME run $RUN_ID: macOS job(s) never got a runner: $(jq -r '.no_runner | join(", ")' <<<"$summary"). Rerunning failed jobs once."
+          gh api -X POST "repos/$REPO/actions/runs/$RUN_ID/rerun-failed-jobs"
