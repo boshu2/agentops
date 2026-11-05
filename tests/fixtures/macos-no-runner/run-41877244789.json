@@ -1,0 +1,78 @@
+{
+  "total_count": 2,
+  "jobs": [
+    {
+      "id": 126739888681,
+      "run_id": 41877244789,
+      "name": "ubuntu-install",
+      "status": "completed",
+      "conclusion": "success",
+      "runner_id": 1000126846,
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Set up Go",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Build ao and link skills into a fresh HOME",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Verify install-smoke",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Post Set up Go",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        },
+        {
+          "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        }
+      ]
+    },
+    {
+      "id": 126739889094,
+      "run_id": 41877244789,
+      "name": "macos-install",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "runner_id": 0,
+      "labels": [
+        "macos-latest"
+      ],
+      "steps": []
+    }
+  ]
+}
