@@ -1,0 +1,4604 @@
+{
+  "schema_version": 1,
+  "trial": "2026-10-31 description trial (bead age-pv2j.103)",
+  "source_commit": "73cbeae8be281b970389d8b2ea5636cfa972a9fa",
+  "plugin_tree": "455faa6cfeb22caa3f95b3c3d1816191f25bafc4",
+  "registration": "evals/plugin-eval/plans/2026-10-31-description-trial.md",
+  "adopted_variants": [
+    "implement:D1-implement",
+    "triage:D2-triage"
+  ],
+  "candidate_precheck": [
+    {
+      "skill": "architecture",
+      "tag": "D1",
+      "serialized": "\"Compare interface designs and find structural friction before any code moves. Use when: a change spreads across modules or a boundary is unclear. Moving code is Refactor or Plan.\"",
+      "gate_count": 178,
+      "budget_exit": 0,
+      "budget_failures": [],
+      "goldens_exit": 0,
+      "goldens_findings": {},
+      "goldens_rank1": {},
+      "passes": true
+    },
+    {
+      "skill": "architecture",
+      "tag": "D2",
+      "serialized": "\"Find where structure makes change costly and compare options for a new boundary. Use when: a change spreads across modules or a boundary is unclear. Code moves: Refactor or Plan.\"",
+      "gate_count": 178,
+      "budget_exit": 0,
+      "budget_failures": [],
+      "goldens_exit": 0,
+      "goldens_findings": {},
+      "goldens_rank1": {},
+      "passes": true
+    },
+    {
+      "skill": "council",
+      "tag": "D1",
+      "serialized": "\"Compare independent opinions from several models or contexts without inflating agreement. Use when: wanting several separate takes, a debate, or synthesizing collected reviews.\"",
+      "gate_count": 176,
+      "budget_exit": 0,
+      "budget_failures": [],
+      "goldens_exit": 0,
+      "goldens_findings": {},
+      "goldens_rank1": {},
+      "passes": true
+    },
+    {
+      "skill": "council",
+      "tag": "D2",
+      "serialized": "\"Compare independent opinions without inflating agreement. Use when: asked for independent takes from several models, a debate or vote, or to synthesize reviews already collected.\"",
+      "gate_count": 178,
+      "budget_exit": 0,
+      "budget_failures": [],
+      "goldens_exit": 0,
+      "goldens_findings": {},
+      "goldens_rank1": {},
+      "passes": true
+    },
+    {
+      "skill": "domain",
+      "tag": "D1",
+      "serialized": "\"Settle what domain terms mean per context, or which repository conventions and code, data, risk or test standards apply. Use when: names disagree or a rename or rule is at issue.\"",
+      "gate_count": 178,
+      "budget_exit": 0,
+      "budget_failures": [],
+      "goldens_exit": 0,
+      "goldens_findings": {},
+      "goldens_rank1": {},
+      "passes": true
+    },
+    {
+      "skill": "implement",
+      "tag": "D1",
+      "serialized": "'Make the code change a ticket or bug report asks for, then prove it with the repo''s own checks. Use when: told to fix, change or build something, such as \"fix this bug\".'",
+      "gate_count": 170,
+      "budget_exit": 0,
+      "budget_failures": [],
+      "goldens_exit": 0,
+      "goldens_findings": {},
+      "goldens_rank1": {},
+      "passes": true
+    },
+    {
+      "skill": "implement",
+      "tag": "D2",
+      "serialized": "\"Fix red CI or build what a ticket calls for without loosening the test; prove it with the repo's checks. Use when: asked for a patch or a fix, or whether to relax an assert.\"",
+      "gate_count": 173,
+      "budget_exit": 0,
+      "budget_failures": [],
+      "goldens_exit": 0,
+      "goldens_findings": {},
+      "goldens_rank1": {},
+      "passes": true
+    },
+    {
+      "skill": "security",
+      "tag": "D1",
+      "serialized": "\"Review code, config, CI workflows and dependencies for security problems and secrets. Use when: asked if code is safe to ship, or if anything is exploitable, nasty or leaking.\"",
+      "gate_count": 175,
+      "budget_exit": 0,
+      "budget_failures": [],
+      "goldens_exit": 0,
+      "goldens_findings": {},
+      "goldens_rank1": {},
+      "passes": true
+    },
+    {
+      "skill": "security",
+      "tag": "D2",
+      "serialized": "\"Find what an attacker could exploit in code, config, CI workflows or dependencies and report it. Use when: asked if code is safe to ship, what is exploitable or if a secret leaked.\"",
+      "gate_count": 180,
+      "budget_exit": 0,
+      "budget_failures": [],
+      "goldens_exit": 0,
+      "goldens_findings": {},
+      "goldens_rank1": {},
+      "passes": true
+    },
+    {
+      "skill": "triage",
+      "tag": "D1",
+      "serialized": "\"Decide what happens to something that just arrived: take it, park it, close as duplicate, ask for more or hand it off. Use when: a new issue, alert or outside PR needs that call.\"",
+      "gate_count": 178,
+      "budget_exit": 0,
+      "budget_failures": [],
+      "goldens_exit": 0,
+      "goldens_findings": {},
+      "goldens_rank1": {},
+      "passes": true
+    },
+    {
+      "skill": "triage",
+      "tag": "D2",
+      "serialized": "\"Make the call on a new bug report, issue, outside PR or alert: take it, ask for more, or close as duplicate or already fixed, each with evidence. Use when: one lands on you.\"",
+      "gate_count": 173,
+      "budget_exit": 0,
+      "budget_failures": [],
+      "goldens_exit": 0,
+      "goldens_findings": {},
+      "goldens_rank1": {},
+      "passes": true
+    }
+  ],
+  "loading": {
+    "architecture": {
+      "subjects": {
+        "C": {
+          "skill": "architecture",
+          "requests": {
+            "architecture-natural": {
+              "attempts": 6,
+              "planned_attempts": 6,
+              "errors": [],
+              "complete": true,
+              "target_loads": 0,
+              "successful_target_loads": 0,
+              "skill_calls": [
+                [],
+                [],
+                [],
+                [],
+                [],
+                []
+              ],
+              "models": {
+                "claude-opus-5-5": 6
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 6,
+              "limit_errors": 0,
+              "score": {
+                "met": 9,
+                "total": 30,
+                "rate": 0.3,
+                "wilson95": [
+                  0.16664748268243793,
+                  0.47875787458714947
+                ]
+              },
+              "criterion_passes": {
+                "c1": 0,
+                "c2": 6,
+                "c3": 3,
+                "c4": 0,
+                "c5": 0
+              }
+            },
+            "architecture-r1": {
+              "attempts": 3,
+              "planned_attempts": 3,
+              "errors": [],
+              "complete": true,
+              "target_loads": 3,
+              "successful_target_loads": 3,
+              "skill_calls": [
+                [
+                  "architecture"
+                ],
+                [
+                  "architecture"
+                ],
+                [
+                  "architecture"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 3
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 3,
+              "limit_errors": 0
+            },
+            "architecture-r2": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 2,
+              "successful_target_loads": 2,
+              "skill_calls": [
+                [
+                  "architecture"
+                ],
+                [
+                  "architecture"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            },
+            "architecture-r3": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 2,
+              "successful_target_loads": 2,
+              "skill_calls": [
+                [
+                  "architecture"
+                ],
+                [
+                  "architecture"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            }
+          },
+          "complete": true,
+          "natural_loads": 0,
+          "blind_loads": 7,
+          "pooled_loading": {
+            "met": 7,
+            "total": 13,
+            "rate": 0.5384615384615384,
+            "wilson95": [
+              0.29143795714506004,
+              0.7679393219046169
+            ]
+          },
+          "behavior_score": {
+            "met": 9,
+            "total": 30,
+            "rate": 0.3,
+            "wilson95": [
+              0.16664748268243793,
+              0.47875787458714947
+            ]
+          },
+          "criterion_passes": {
+            "c1": 0,
+            "c2": 6,
+            "c3": 3,
+            "c4": 0,
+            "c5": 0
+          },
+          "description": null
+        },
+        "D1-architecture": {
+          "skill": "architecture",
+          "requests": {
+            "architecture-natural": {
+              "attempts": 6,
+              "planned_attempts": 6,
+              "errors": [],
+              "complete": true,
+              "target_loads": 0,
+              "successful_target_loads": 0,
+              "skill_calls": [
+                [],
+                [],
+                [],
+                [],
+                [],
+                []
+              ],
+              "models": {
+                "claude-opus-5-5": 6
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 6,
+              "limit_errors": 0,
+              "score": {
+                "met": 11,
+                "total": 30,
+                "rate": 0.36666666666666664,
+                "wilson95": [
+                  0.21873920806100708,
+                  0.5448643634520511
+                ]
+              },
+              "criterion_passes": {
+                "c1": 0,
+                "c2": 6,
+                "c3": 5,
+                "c4": 0,
+                "c5": 0
+              }
+            },
+            "architecture-r1": {
+              "attempts": 3,
+              "planned_attempts": 3,
+              "errors": [],
+              "complete": true,
+              "target_loads": 3,
+              "successful_target_loads": 3,
+              "skill_calls": [
+                [
+                  "architecture"
+                ],
+                [
+                  "architecture"
+                ],
+                [
+                  "architecture"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 3
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 3,
+              "limit_errors": 0
+            },
+            "architecture-r2": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 2,
+              "successful_target_loads": 2,
+              "skill_calls": [
+                [
+                  "architecture"
+                ],
+                [
+                  "architecture"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            },
+            "architecture-r3": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 2,
+              "successful_target_loads": 2,
+              "skill_calls": [
+                [
+                  "architecture"
+                ],
+                [
+                  "architecture"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            }
+          },
+          "complete": true,
+          "natural_loads": 0,
+          "blind_loads": 7,
+          "pooled_loading": {
+            "met": 7,
+            "total": 13,
+            "rate": 0.5384615384615384,
+            "wilson95": [
+              0.29143795714506004,
+              0.7679393219046169
+            ]
+          },
+          "behavior_score": {
+            "met": 11,
+            "total": 30,
+            "rate": 0.36666666666666664,
+            "wilson95": [
+              0.21873920806100708,
+              0.5448643634520511
+            ]
+          },
+          "criterion_passes": {
+            "c1": 0,
+            "c2": 6,
+            "c3": 5,
+            "c4": 0,
+            "c5": 0
+          },
+          "steal_check": {
+            "plan": {
+              "neighbour_loaded": 0,
+              "candidate_skill_loaded": 0,
+              "skill_calls": [
+                []
+              ]
+            },
+            "refactor": {
+              "neighbour_loaded": 0,
+              "candidate_skill_loaded": 0,
+              "skill_calls": [
+                []
+              ]
+            }
+          },
+          "decision": {
+            "per_request_loads_D_vs_C": {
+              "natural": [
+                0,
+                0
+              ],
+              "r1": [
+                3,
+                3
+              ],
+              "r2": [
+                2,
+                2
+              ],
+              "r3": [
+                2,
+                2
+              ]
+            },
+            "no_worse_on_every_request": true,
+            "better_on_at_least_one": false,
+            "behavior_within_0_15": true,
+            "control_at_ceiling": false,
+            "keep": false,
+            "disposition": "null"
+          },
+          "d_vs_c_pooled": {
+            "delta": 0.0,
+            "newcombe95": [
+              -0.33716569045554917,
+              0.33716569045554917
+            ],
+            "fisher_two_sided_p": 1.0
+          },
+          "description": "\"Compare interface designs and find structural friction before any code moves. Use when: a change spreads across modules or a boundary is unclear. Moving code is Refactor or Plan.\""
+        },
+        "D2-architecture": {
+          "skill": "architecture",
+          "requests": {
+            "architecture-natural": {
+              "attempts": 6,
+              "planned_attempts": 6,
+              "errors": [],
+              "complete": true,
+              "target_loads": 0,
+              "successful_target_loads": 0,
+              "skill_calls": [
+                [],
+                [],
+                [],
+                [],
+                [],
+                []
+              ],
+              "models": {
+                "claude-opus-5-5": 6
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 6,
+              "limit_errors": 0,
+              "score": {
+                "met": 10,
+                "total": 30,
+                "rate": 0.3333333333333333,
+                "wilson95": [
+                  0.19230498083676134,
+                  0.5121994835545616
+                ]
+              },
+              "criterion_passes": {
+                "c1": 0,
+                "c2": 6,
+                "c3": 4,
+                "c4": 0,
+                "c5": 0
+              }
+            },
+            "architecture-r1": {
+              "attempts": 3,
+              "planned_attempts": 3,
+              "errors": [],
+              "complete": true,
+              "target_loads": 3,
+              "successful_target_loads": 3,
+              "skill_calls": [
+                [
+                  "architecture"
+                ],
+                [
+                  "architecture"
+                ],
+                [
+                  "architecture"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 3
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 3,
+              "limit_errors": 0
+            },
+            "architecture-r2": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 2,
+              "successful_target_loads": 2,
+              "skill_calls": [
+                [
+                  "architecture"
+                ],
+                [
+                  "architecture"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            },
+            "architecture-r3": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 2,
+              "successful_target_loads": 2,
+              "skill_calls": [
+                [
+                  "architecture"
+                ],
+                [
+                  "architecture"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            }
+          },
+          "complete": true,
+          "natural_loads": 0,
+          "blind_loads": 7,
+          "pooled_loading": {
+            "met": 7,
+            "total": 13,
+            "rate": 0.5384615384615384,
+            "wilson95": [
+              0.29143795714506004,
+              0.7679393219046169
+            ]
+          },
+          "behavior_score": {
+            "met": 10,
+            "total": 30,
+            "rate": 0.3333333333333333,
+            "wilson95": [
+              0.19230498083676134,
+              0.5121994835545616
+            ]
+          },
+          "criterion_passes": {
+            "c1": 0,
+            "c2": 6,
+            "c3": 4,
+            "c4": 0,
+            "c5": 0
+          },
+          "steal_check": {
+            "plan": {
+              "neighbour_loaded": 1,
+              "candidate_skill_loaded": 0,
+              "skill_calls": [
+                [
+                  "plan"
+                ]
+              ]
+            },
+            "refactor": {
+              "neighbour_loaded": 0,
+              "candidate_skill_loaded": 0,
+              "skill_calls": [
+                []
+              ]
+            }
+          },
+          "decision": {
+            "per_request_loads_D_vs_C": {
+              "natural": [
+                0,
+                0
+              ],
+              "r1": [
+                3,
+                3
+              ],
+              "r2": [
+                2,
+                2
+              ],
+              "r3": [
+                2,
+                2
+              ]
+            },
+            "no_worse_on_every_request": true,
+            "better_on_at_least_one": false,
+            "behavior_within_0_15": true,
+            "control_at_ceiling": false,
+            "keep": false,
+            "disposition": "null"
+          },
+          "d_vs_c_pooled": {
+            "delta": 0.0,
+            "newcombe95": [
+              -0.33716569045554917,
+              0.33716569045554917
+            ],
+            "fisher_two_sided_p": 1.0
+          },
+          "description": "\"Find where structure makes change costly and compare options for a new boundary. Use when: a change spreads across modules or a boundary is unclear. Code moves: Refactor or Plan.\""
+        }
+      },
+      "kept": null,
+      "dispositions": {
+        "D1-architecture": "null",
+        "D2-architecture": "null"
+      }
+    },
+    "council": {
+      "subjects": {
+        "C": {
+          "skill": "council",
+          "requests": {
+            "council-natural": {
+              "attempts": 6,
+              "planned_attempts": 6,
+              "errors": [],
+              "complete": true,
+              "target_loads": 1,
+              "successful_target_loads": 1,
+              "skill_calls": [
+                [],
+                [],
+                [
+                  "council"
+                ],
+                [],
+                [],
+                []
+              ],
+              "models": {
+                "claude-opus-5-5": 6
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 6,
+              "limit_errors": 0,
+              "score": {
+                "met": 22,
+                "total": 24,
+                "rate": 0.9166666666666666,
+                "wilson95": [
+                  0.741511978067893,
+                  0.9768411847029567
+                ]
+              },
+              "criterion_passes": {
+                "c1": 6,
+                "c2": 6,
+                "c3": 5,
+                "c4": 5
+              }
+            },
+            "council-r1": {
+              "attempts": 3,
+              "planned_attempts": 3,
+              "errors": [],
+              "complete": true,
+              "target_loads": 3,
+              "successful_target_loads": 3,
+              "skill_calls": [
+                [
+                  "council",
+                  "codex-exec",
+                  "agy-native"
+                ],
+                [
+                  "council",
+                  "codex-exec",
+                  "agy-native"
+                ],
+                [
+                  "council",
+                  "codex-exec",
+                  "agy-native"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 3
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 3,
+              "limit_errors": 0
+            },
+            "council-r2": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 2,
+              "successful_target_loads": 2,
+              "skill_calls": [
+                [
+                  "council"
+                ],
+                [
+                  "council"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            },
+            "council-r3": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 2,
+              "successful_target_loads": 2,
+              "skill_calls": [
+                [
+                  "council"
+                ],
+                [
+                  "council"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            }
+          },
+          "complete": true,
+          "natural_loads": 1,
+          "blind_loads": 7,
+          "pooled_loading": {
+            "met": 8,
+            "total": 13,
+            "rate": 0.6153846153846154,
+            "wilson95": [
+              0.355228915126657,
+              0.8229029220223743
+            ]
+          },
+          "behavior_score": {
+            "met": 22,
+            "total": 24,
+            "rate": 0.9166666666666666,
+            "wilson95": [
+              0.741511978067893,
+              0.9768411847029567
+            ]
+          },
+          "criterion_passes": {
+            "c1": 6,
+            "c2": 6,
+            "c3": 5,
+            "c4": 5
+          },
+          "description": null
+        },
+        "D1-council": {
+          "skill": "council",
+          "requests": {
+            "council-natural": {
+              "attempts": 6,
+              "planned_attempts": 6,
+              "errors": [],
+              "complete": true,
+              "target_loads": 0,
+              "successful_target_loads": 0,
+              "skill_calls": [
+                [],
+                [],
+                [],
+                [],
+                [],
+                []
+              ],
+              "models": {
+                "claude-opus-5-5": 6
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 6,
+              "limit_errors": 0,
+              "score": {
+                "met": 24,
+                "total": 24,
+                "rate": 1.0,
+                "wilson95": [
+                  0.8620237953250198,
+                  1.0
+                ]
+              },
+              "criterion_passes": {
+                "c1": 6,
+                "c2": 6,
+                "c3": 6,
+                "c4": 6
+              }
+            },
+            "council-r1": {
+              "attempts": 3,
+              "planned_attempts": 3,
+              "errors": [],
+              "complete": true,
+              "target_loads": 3,
+              "successful_target_loads": 3,
+              "skill_calls": [
+                [
+                  "council",
+                  "codex-exec",
+                  "agy-native"
+                ],
+                [
+                  "council",
+                  "agy-native"
+                ],
+                [
+                  "council",
+                  "codex-exec",
+                  "agy-native"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 3
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 3,
+              "limit_errors": 0
+            },
+            "council-r2": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 2,
+              "successful_target_loads": 2,
+              "skill_calls": [
+                [
+                  "council"
+                ],
+                [
+                  "council"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            },
+            "council-r3": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 2,
+              "successful_target_loads": 2,
+              "skill_calls": [
+                [
+                  "council"
+                ],
+                [
+                  "council"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            }
+          },
+          "complete": true,
+          "natural_loads": 0,
+          "blind_loads": 7,
+          "pooled_loading": {
+            "met": 7,
+            "total": 13,
+            "rate": 0.5384615384615384,
+            "wilson95": [
+              0.29143795714506004,
+              0.7679393219046169
+            ]
+          },
+          "behavior_score": {
+            "met": 24,
+            "total": 24,
+            "rate": 1.0,
+            "wilson95": [
+              0.8620237953250198,
+              1.0
+            ]
+          },
+          "criterion_passes": {
+            "c1": 6,
+            "c2": 6,
+            "c3": 6,
+            "c4": 6
+          },
+          "steal_check": {
+            "premortem": {
+              "neighbour_loaded": 1,
+              "candidate_skill_loaded": 0,
+              "skill_calls": [
+                [
+                  "premortem"
+                ]
+              ]
+            },
+            "review": {
+              "neighbour_loaded": 0,
+              "candidate_skill_loaded": 0,
+              "skill_calls": [
+                []
+              ]
+            }
+          },
+          "decision": {
+            "per_request_loads_D_vs_C": {
+              "natural": [
+                0,
+                1
+              ],
+              "r1": [
+                3,
+                3
+              ],
+              "r2": [
+                2,
+                2
+              ],
+              "r3": [
+                2,
+                2
+              ]
+            },
+            "no_worse_on_every_request": false,
+            "better_on_at_least_one": false,
+            "behavior_within_0_15": true,
+            "control_at_ceiling": false,
+            "keep": false,
+            "disposition": "null"
+          },
+          "d_vs_c_pooled": {
+            "delta": -0.07692307692307698,
+            "newcombe95": [
+              -0.3995443677831529,
+              0.2699789863032133
+            ],
+            "fisher_two_sided_p": 1.0
+          },
+          "description": "\"Compare independent opinions from several models or contexts without inflating agreement. Use when: wanting several separate takes, a debate, or synthesizing collected reviews.\""
+        },
+        "D2-council": {
+          "skill": "council",
+          "requests": {
+            "council-natural": {
+              "attempts": 6,
+              "planned_attempts": 6,
+              "errors": [],
+              "complete": true,
+              "target_loads": 0,
+              "successful_target_loads": 0,
+              "skill_calls": [
+                [],
+                [],
+                [],
+                [],
+                [],
+                []
+              ],
+              "models": {
+                "claude-opus-5-5": 6
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 6,
+              "limit_errors": 0,
+              "score": {
+                "met": 24,
+                "total": 24,
+                "rate": 1.0,
+                "wilson95": [
+                  0.8620237953250198,
+                  1.0
+                ]
+              },
+              "criterion_passes": {
+                "c1": 6,
+                "c2": 6,
+                "c3": 6,
+                "c4": 6
+              }
+            },
+            "council-r1": {
+              "attempts": 3,
+              "planned_attempts": 3,
+              "errors": [],
+              "complete": true,
+              "target_loads": 3,
+              "successful_target_loads": 3,
+              "skill_calls": [
+                [
+                  "council",
+                  "agy-native"
+                ],
+                [
+                  "council",
+                  "codex-exec",
+                  "agy-native"
+                ],
+                [
+                  "council"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 3
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 3,
+              "limit_errors": 0
+            },
+            "council-r2": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 2,
+              "successful_target_loads": 2,
+              "skill_calls": [
+                [
+                  "council"
+                ],
+                [
+                  "council"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            },
+            "council-r3": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 2,
+              "successful_target_loads": 2,
+              "skill_calls": [
+                [
+                  "council"
+                ],
+                [
+                  "council"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            }
+          },
+          "complete": true,
+          "natural_loads": 0,
+          "blind_loads": 7,
+          "pooled_loading": {
+            "met": 7,
+            "total": 13,
+            "rate": 0.5384615384615384,
+            "wilson95": [
+              0.29143795714506004,
+              0.7679393219046169
+            ]
+          },
+          "behavior_score": {
+            "met": 24,
+            "total": 24,
+            "rate": 1.0,
+            "wilson95": [
+              0.8620237953250198,
+              1.0
+            ]
+          },
+          "criterion_passes": {
+            "c1": 6,
+            "c2": 6,
+            "c3": 6,
+            "c4": 6
+          },
+          "steal_check": {
+            "premortem": {
+              "neighbour_loaded": 1,
+              "candidate_skill_loaded": 0,
+              "skill_calls": [
+                [
+                  "premortem"
+                ]
+              ]
+            },
+            "review": {
+              "neighbour_loaded": 0,
+              "candidate_skill_loaded": 0,
+              "skill_calls": [
+                []
+              ]
+            }
+          },
+          "decision": {
+            "per_request_loads_D_vs_C": {
+              "natural": [
+                0,
+                1
+              ],
+              "r1": [
+                3,
+                3
+              ],
+              "r2": [
+                2,
+                2
+              ],
+              "r3": [
+                2,
+                2
+              ]
+            },
+            "no_worse_on_every_request": false,
+            "better_on_at_least_one": false,
+            "behavior_within_0_15": true,
+            "control_at_ceiling": false,
+            "keep": false,
+            "disposition": "null"
+          },
+          "d_vs_c_pooled": {
+            "delta": -0.07692307692307698,
+            "newcombe95": [
+              -0.3995443677831529,
+              0.2699789863032133
+            ],
+            "fisher_two_sided_p": 1.0
+          },
+          "description": "\"Compare independent opinions without inflating agreement. Use when: asked for independent takes from several models, a debate or vote, or to synthesize reviews already collected.\""
+        }
+      },
+      "kept": null,
+      "dispositions": {
+        "D1-council": "null",
+        "D2-council": "null"
+      }
+    },
+    "domain": {
+      "subjects": {
+        "C": {
+          "skill": "domain",
+          "requests": {
+            "domain-natural": {
+              "attempts": 6,
+              "planned_attempts": 6,
+              "errors": [],
+              "complete": true,
+              "target_loads": 6,
+              "successful_target_loads": 6,
+              "skill_calls": [
+                [
+                  "domain"
+                ],
+                [
+                  "domain"
+                ],
+                [
+                  "domain"
+                ],
+                [
+                  "domain"
+                ],
+                [
+                  "domain"
+                ],
+                [
+                  "domain"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 6
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 6,
+              "limit_errors": 0,
+              "score": {
+                "met": 30,
+                "total": 30,
+                "rate": 1.0,
+                "wilson95": [
+                  0.8864866068260312,
+                  0.9999999999999999
+                ]
+              },
+              "criterion_passes": {
+                "c1": 6,
+                "c2": 6,
+                "c3": 6,
+                "c4": 6,
+                "c5": 6
+              }
+            },
+            "domain-r1": {
+              "attempts": 3,
+              "planned_attempts": 3,
+              "errors": [],
+              "complete": true,
+              "target_loads": 3,
+              "successful_target_loads": 3,
+              "skill_calls": [
+                [
+                  "domain"
+                ],
+                [
+                  "domain"
+                ],
+                [
+                  "domain"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 3
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 3,
+              "limit_errors": 0
+            },
+            "domain-r2": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 2,
+              "successful_target_loads": 2,
+              "skill_calls": [
+                [
+                  "domain"
+                ],
+                [
+                  "domain"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            },
+            "domain-r3": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 2,
+              "successful_target_loads": 2,
+              "skill_calls": [
+                [
+                  "domain"
+                ],
+                [
+                  "domain"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            }
+          },
+          "complete": true,
+          "natural_loads": 6,
+          "blind_loads": 7,
+          "pooled_loading": {
+            "met": 13,
+            "total": 13,
+            "rate": 1.0,
+            "wilson95": [
+              0.7719046276458016,
+              0.9999999999999999
+            ]
+          },
+          "behavior_score": {
+            "met": 30,
+            "total": 30,
+            "rate": 1.0,
+            "wilson95": [
+              0.8864866068260312,
+              0.9999999999999999
+            ]
+          },
+          "criterion_passes": {
+            "c1": 6,
+            "c2": 6,
+            "c3": 6,
+            "c4": 6,
+            "c5": 6
+          },
+          "description": null
+        },
+        "D1-domain": {
+          "skill": "domain",
+          "requests": {
+            "domain-natural": {
+              "attempts": 6,
+              "planned_attempts": 6,
+              "errors": [],
+              "complete": true,
+              "target_loads": 6,
+              "successful_target_loads": 6,
+              "skill_calls": [
+                [
+                  "domain"
+                ],
+                [
+                  "domain"
+                ],
+                [
+                  "domain"
+                ],
+                [
+                  "domain"
+                ],
+                [
+                  "domain"
+                ],
+                [
+                  "domain"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 6
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 6,
+              "limit_errors": 0,
+              "score": {
+                "met": 30,
+                "total": 30,
+                "rate": 1.0,
+                "wilson95": [
+                  0.8864866068260312,
+                  0.9999999999999999
+                ]
+              },
+              "criterion_passes": {
+                "c1": 6,
+                "c2": 6,
+                "c3": 6,
+                "c4": 6,
+                "c5": 6
+              }
+            },
+            "domain-r1": {
+              "attempts": 3,
+              "planned_attempts": 3,
+              "errors": [],
+              "complete": true,
+              "target_loads": 3,
+              "successful_target_loads": 3,
+              "skill_calls": [
+                [
+                  "domain"
+                ],
+                [
+                  "domain"
+                ],
+                [
+                  "domain"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 3
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 3,
+              "limit_errors": 0
+            },
+            "domain-r2": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 2,
+              "successful_target_loads": 2,
+              "skill_calls": [
+                [
+                  "domain"
+                ],
+                [
+                  "domain"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            },
+            "domain-r3": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 2,
+              "successful_target_loads": 2,
+              "skill_calls": [
+                [
+                  "domain"
+                ],
+                [
+                  "domain"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            }
+          },
+          "complete": true,
+          "natural_loads": 6,
+          "blind_loads": 7,
+          "pooled_loading": {
+            "met": 13,
+            "total": 13,
+            "rate": 1.0,
+            "wilson95": [
+              0.7719046276458016,
+              0.9999999999999999
+            ]
+          },
+          "behavior_score": {
+            "met": 30,
+            "total": 30,
+            "rate": 1.0,
+            "wilson95": [
+              0.8864866068260312,
+              0.9999999999999999
+            ]
+          },
+          "criterion_passes": {
+            "c1": 6,
+            "c2": 6,
+            "c3": 6,
+            "c4": 6,
+            "c5": 6
+          },
+          "steal_check": {
+            "plan": {
+              "neighbour_loaded": 1,
+              "candidate_skill_loaded": 0,
+              "skill_calls": [
+                [
+                  "plan"
+                ]
+              ]
+            },
+            "research": {
+              "neighbour_loaded": 0,
+              "candidate_skill_loaded": 0,
+              "skill_calls": [
+                []
+              ]
+            }
+          },
+          "decision": {
+            "per_request_loads_D_vs_C": {
+              "natural": [
+                6,
+                6
+              ],
+              "r1": [
+                3,
+                3
+              ],
+              "r2": [
+                2,
+                2
+              ],
+              "r3": [
+                2,
+                2
+              ]
+            },
+            "no_worse_on_every_request": true,
+            "better_on_at_least_one": false,
+            "behavior_within_0_15": true,
+            "control_at_ceiling": true,
+            "keep": false,
+            "disposition": "equal at ceiling"
+          },
+          "d_vs_c_pooled": {
+            "delta": 0.0,
+            "newcombe95": [
+              -0.2280953723541984,
+              0.2280953723541984
+            ],
+            "fisher_two_sided_p": 1.0
+          },
+          "description": "\"Settle what domain terms mean per context, or which repository conventions and code, data, risk or test standards apply. Use when: names disagree or a rename or rule is at issue.\""
+        }
+      },
+      "kept": null,
+      "dispositions": {
+        "D1-domain": "equal at ceiling"
+      }
+    },
+    "implement": {
+      "subjects": {
+        "C": {
+          "skill": "implement",
+          "requests": {
+            "implement-natural": {
+              "attempts": 6,
+              "planned_attempts": 6,
+              "errors": [],
+              "complete": true,
+              "target_loads": 0,
+              "successful_target_loads": 0,
+              "skill_calls": [
+                [],
+                [],
+                [],
+                [],
+                [],
+                []
+              ],
+              "models": {
+                "claude-opus-5-5": 6
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 6,
+              "limit_errors": 0,
+              "score": {
+                "met": 16,
+                "total": 24,
+                "rate": 0.6666666666666666,
+                "wilson95": [
+                  0.4670631683813174,
+                  0.8202780967270225
+                ]
+              },
+              "criterion_passes": {
+                "c1": 6,
+                "c2": 6,
+                "c3": 0,
+                "c4": 4
+              }
+            },
+            "implement-r1": {
+              "attempts": 3,
+              "planned_attempts": 3,
+              "errors": [],
+              "complete": true,
+              "target_loads": 0,
+              "successful_target_loads": 0,
+              "skill_calls": [
+                [],
+                [],
+                []
+              ],
+              "models": {
+                "claude-opus-5-5": 3
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 3,
+              "limit_errors": 0
+            },
+            "implement-r2": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 0,
+              "successful_target_loads": 0,
+              "skill_calls": [
+                [],
+                []
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            },
+            "implement-r3": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 0,
+              "successful_target_loads": 0,
+              "skill_calls": [
+                [],
+                []
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            }
+          },
+          "complete": true,
+          "natural_loads": 0,
+          "blind_loads": 0,
+          "pooled_loading": {
+            "met": 0,
+            "total": 13,
+            "rate": 0.0,
+            "wilson95": [
+              0.0,
+              0.22809537235419838
+            ]
+          },
+          "behavior_score": {
+            "met": 16,
+            "total": 24,
+            "rate": 0.6666666666666666,
+            "wilson95": [
+              0.4670631683813174,
+              0.8202780967270225
+            ]
+          },
+          "criterion_passes": {
+            "c1": 6,
+            "c2": 6,
+            "c3": 0,
+            "c4": 4
+          },
+          "description": null
+        },
+        "D1-implement": {
+          "skill": "implement",
+          "requests": {
+            "implement-natural": {
+              "attempts": 6,
+              "planned_attempts": 6,
+              "errors": [],
+              "complete": true,
+              "target_loads": 0,
+              "successful_target_loads": 0,
+              "skill_calls": [
+                [],
+                [],
+                [],
+                [],
+                [],
+                []
+              ],
+              "models": {
+                "claude-opus-5-5": 6
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 6,
+              "limit_errors": 0,
+              "score": {
+                "met": 13,
+                "total": 24,
+                "rate": 0.5416666666666666,
+                "wilson95": [
+                  0.3507486535891948,
+                  0.72108666268789
+                ]
+              },
+              "criterion_passes": {
+                "c1": 5,
+                "c2": 6,
+                "c3": 0,
+                "c4": 2
+              }
+            },
+            "implement-r1": {
+              "attempts": 3,
+              "planned_attempts": 3,
+              "errors": [],
+              "complete": true,
+              "target_loads": 3,
+              "successful_target_loads": 3,
+              "skill_calls": [
+                [
+                  "implement"
+                ],
+                [
+                  "implement"
+                ],
+                [
+                  "implement"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 3
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 3,
+              "limit_errors": 0
+            },
+            "implement-r2": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 2,
+              "successful_target_loads": 2,
+              "skill_calls": [
+                [
+                  "implement"
+                ],
+                [
+                  "implement"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            },
+            "implement-r3": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 2,
+              "successful_target_loads": 2,
+              "skill_calls": [
+                [
+                  "implement"
+                ],
+                [
+                  "implement"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            }
+          },
+          "complete": true,
+          "natural_loads": 0,
+          "blind_loads": 7,
+          "pooled_loading": {
+            "met": 7,
+            "total": 13,
+            "rate": 0.5384615384615384,
+            "wilson95": [
+              0.29143795714506004,
+              0.7679393219046169
+            ]
+          },
+          "behavior_score": {
+            "met": 13,
+            "total": 24,
+            "rate": 0.5416666666666666,
+            "wilson95": [
+              0.3507486535891948,
+              0.72108666268789
+            ]
+          },
+          "criterion_passes": {
+            "c1": 5,
+            "c2": 6,
+            "c3": 0,
+            "c4": 2
+          },
+          "steal_check": {
+            "plan": {
+              "neighbour_loaded": 1,
+              "candidate_skill_loaded": 0,
+              "skill_calls": [
+                [
+                  "plan"
+                ]
+              ]
+            },
+            "refactor": {
+              "neighbour_loaded": 0,
+              "candidate_skill_loaded": 0,
+              "skill_calls": [
+                []
+              ]
+            }
+          },
+          "decision": {
+            "per_request_loads_D_vs_C": {
+              "natural": [
+                0,
+                0
+              ],
+              "r1": [
+                3,
+                0
+              ],
+              "r2": [
+                2,
+                0
+              ],
+              "r3": [
+                2,
+                0
+              ]
+            },
+            "no_worse_on_every_request": true,
+            "better_on_at_least_one": true,
+            "behavior_within_0_15": true,
+            "control_at_ceiling": false,
+            "keep": true,
+            "disposition": "keep"
+          },
+          "d_vs_c_pooled": {
+            "delta": 0.5384615384615384,
+            "newcombe95": [
+              0.2022352030625706,
+              0.7679393219046169
+            ],
+            "fisher_two_sided_p": 0.0052173913043478265
+          },
+          "description": "'Make the code change a ticket or bug report asks for, then prove it with the repo''s own checks. Use when: told to fix, change or build something, such as \"fix this bug\".'"
+        },
+        "D2-implement": {
+          "skill": "implement",
+          "requests": {
+            "implement-natural": {
+              "attempts": 6,
+              "planned_attempts": 6,
+              "errors": [],
+              "complete": true,
+              "target_loads": 6,
+              "successful_target_loads": 6,
+              "skill_calls": [
+                [
+                  "implement"
+                ],
+                [
+                  "implement"
+                ],
+                [
+                  "implement"
+                ],
+                [
+                  "implement"
+                ],
+                [
+                  "implement"
+                ],
+                [
+                  "implement"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 6
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 6,
+              "limit_errors": 0,
+              "score": {
+                "met": 19,
+                "total": 24,
+                "rate": 0.7916666666666666,
+                "wilson95": [
+                  0.5952954674681133,
+                  0.9075517464714814
+                ]
+              },
+              "criterion_passes": {
+                "c1": 6,
+                "c2": 6,
+                "c3": 1,
+                "c4": 6
+              }
+            },
+            "implement-r1": {
+              "attempts": 3,
+              "planned_attempts": 3,
+              "errors": [],
+              "complete": true,
+              "target_loads": 0,
+              "successful_target_loads": 0,
+              "skill_calls": [
+                [],
+                [],
+                []
+              ],
+              "models": {
+                "claude-opus-5-5": 3
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 3,
+              "limit_errors": 0
+            },
+            "implement-r2": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 0,
+              "successful_target_loads": 0,
+              "skill_calls": [
+                [],
+                []
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            },
+            "implement-r3": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 1,
+              "successful_target_loads": 1,
+              "skill_calls": [
+                [],
+                [
+                  "implement"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            }
+          },
+          "complete": true,
+          "natural_loads": 6,
+          "blind_loads": 1,
+          "pooled_loading": {
+            "met": 7,
+            "total": 13,
+            "rate": 0.5384615384615384,
+            "wilson95": [
+              0.29143795714506004,
+              0.7679393219046169
+            ]
+          },
+          "behavior_score": {
+            "met": 19,
+            "total": 24,
+            "rate": 0.7916666666666666,
+            "wilson95": [
+              0.5952954674681133,
+              0.9075517464714814
+            ]
+          },
+          "criterion_passes": {
+            "c1": 6,
+            "c2": 6,
+            "c3": 1,
+            "c4": 6
+          },
+          "steal_check": {
+            "plan": {
+              "neighbour_loaded": 1,
+              "candidate_skill_loaded": 0,
+              "skill_calls": [
+                [
+                  "plan"
+                ]
+              ]
+            },
+            "refactor": {
+              "neighbour_loaded": 1,
+              "candidate_skill_loaded": 0,
+              "skill_calls": [
+                [
+                  "refactor"
+                ]
+              ]
+            }
+          },
+          "decision": {
+            "per_request_loads_D_vs_C": {
+              "natural": [
+                6,
+                0
+              ],
+              "r1": [
+                0,
+                0
+              ],
+              "r2": [
+                0,
+                0
+              ],
+              "r3": [
+                1,
+                0
+              ]
+            },
+            "no_worse_on_every_request": true,
+            "better_on_at_least_one": true,
+            "behavior_within_0_15": true,
+            "control_at_ceiling": false,
+            "keep": true,
+            "disposition": "keep"
+          },
+          "d_vs_c_pooled": {
+            "delta": 0.5384615384615384,
+            "newcombe95": [
+              0.2022352030625706,
+              0.7679393219046169
+            ],
+            "fisher_two_sided_p": 0.0052173913043478265
+          },
+          "description": "\"Fix red CI or build what a ticket calls for without loosening the test; prove it with the repo's checks. Use when: asked for a patch or a fix, or whether to relax an assert.\""
+        }
+      },
+      "kept": "D1-implement",
+      "dispositions": {
+        "D1-implement": "keep",
+        "D2-implement": "keep"
+      }
+    },
+    "security": {
+      "subjects": {
+        "C": {
+          "skill": "security",
+          "requests": {
+            "security-natural": {
+              "attempts": 6,
+              "planned_attempts": 6,
+              "errors": [],
+              "complete": true,
+              "target_loads": 6,
+              "successful_target_loads": 6,
+              "skill_calls": [
+                [
+                  "security"
+                ],
+                [
+                  "security"
+                ],
+                [
+                  "security"
+                ],
+                [
+                  "security"
+                ],
+                [
+                  "security"
+                ],
+                [
+                  "security"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 6
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 6,
+              "limit_errors": 0,
+              "score": {
+                "met": 35,
+                "total": 36,
+                "rate": 0.9722222222222222,
+                "wilson95": [
+                  0.8583028134672614,
+                  0.9950795928601897
+                ]
+              },
+              "criterion_passes": {
+                "c1": 6,
+                "c2": 6,
+                "c3": 6,
+                "c4": 5,
+                "c5": 6,
+                "c6": 6
+              }
+            },
+            "security-r1": {
+              "attempts": 3,
+              "planned_attempts": 3,
+              "errors": [],
+              "complete": true,
+              "target_loads": 0,
+              "successful_target_loads": 0,
+              "skill_calls": [
+                [],
+                [],
+                []
+              ],
+              "models": {
+                "claude-opus-5-5": 3
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 3,
+              "limit_errors": 0
+            },
+            "security-r2": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 2,
+              "successful_target_loads": 2,
+              "skill_calls": [
+                [
+                  "security"
+                ],
+                [
+                  "security"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            },
+            "security-r3": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 2,
+              "successful_target_loads": 2,
+              "skill_calls": [
+                [
+                  "security"
+                ],
+                [
+                  "security"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            }
+          },
+          "complete": true,
+          "natural_loads": 6,
+          "blind_loads": 4,
+          "pooled_loading": {
+            "met": 10,
+            "total": 13,
+            "rate": 0.7692307692307693,
+            "wilson95": [
+              0.49743624053272495,
+              0.9182047128150143
+            ]
+          },
+          "behavior_score": {
+            "met": 35,
+            "total": 36,
+            "rate": 0.9722222222222222,
+            "wilson95": [
+              0.8583028134672614,
+              0.9950795928601897
+            ]
+          },
+          "criterion_passes": {
+            "c1": 6,
+            "c2": 6,
+            "c3": 6,
+            "c4": 5,
+            "c5": 6,
+            "c6": 6
+          },
+          "description": null
+        },
+        "D1-security": {
+          "skill": "security",
+          "requests": {
+            "security-natural": {
+              "attempts": 6,
+              "planned_attempts": 6,
+              "errors": [],
+              "complete": true,
+              "target_loads": 6,
+              "successful_target_loads": 6,
+              "skill_calls": [
+                [
+                  "security"
+                ],
+                [
+                  "security"
+                ],
+                [
+                  "security"
+                ],
+                [
+                  "security"
+                ],
+                [
+                  "security"
+                ],
+                [
+                  "security"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 6
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 6,
+              "limit_errors": 0,
+              "score": {
+                "met": 34,
+                "total": 36,
+                "rate": 0.9444444444444444,
+                "wilson95": [
+                  0.8185534279135275,
+                  0.9846300133358382
+                ]
+              },
+              "criterion_passes": {
+                "c1": 6,
+                "c2": 6,
+                "c3": 6,
+                "c4": 4,
+                "c5": 6,
+                "c6": 6
+              }
+            },
+            "security-r1": {
+              "attempts": 3,
+              "planned_attempts": 3,
+              "errors": [],
+              "complete": true,
+              "target_loads": 3,
+              "successful_target_loads": 3,
+              "skill_calls": [
+                [
+                  "security"
+                ],
+                [
+                  "security"
+                ],
+                [
+                  "security"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 3
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 3,
+              "limit_errors": 0
+            },
+            "security-r2": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 1,
+              "successful_target_loads": 1,
+              "skill_calls": [
+                [
+                  "security"
+                ],
+                []
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            },
+            "security-r3": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 2,
+              "successful_target_loads": 2,
+              "skill_calls": [
+                [
+                  "security"
+                ],
+                [
+                  "security"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            }
+          },
+          "complete": true,
+          "natural_loads": 6,
+          "blind_loads": 6,
+          "pooled_loading": {
+            "met": 12,
+            "total": 13,
+            "rate": 0.9230769230769231,
+            "wilson95": [
+              0.6668604907890041,
+              0.9862895787574435
+            ]
+          },
+          "behavior_score": {
+            "met": 34,
+            "total": 36,
+            "rate": 0.9444444444444444,
+            "wilson95": [
+              0.8185534279135275,
+              0.9846300133358382
+            ]
+          },
+          "criterion_passes": {
+            "c1": 6,
+            "c2": 6,
+            "c3": 6,
+            "c4": 4,
+            "c5": 6,
+            "c6": 6
+          },
+          "steal_check": {
+            "reverse-engineer": {
+              "neighbour_loaded": 1,
+              "candidate_skill_loaded": 0,
+              "skill_calls": [
+                [
+                  "reverse-engineer"
+                ]
+              ]
+            },
+            "review": {
+              "neighbour_loaded": 0,
+              "candidate_skill_loaded": 0,
+              "skill_calls": [
+                []
+              ]
+            }
+          },
+          "decision": {
+            "per_request_loads_D_vs_C": {
+              "natural": [
+                6,
+                6
+              ],
+              "r1": [
+                3,
+                0
+              ],
+              "r2": [
+                1,
+                2
+              ],
+              "r3": [
+                2,
+                2
+              ]
+            },
+            "no_worse_on_every_request": false,
+            "better_on_at_least_one": true,
+            "behavior_within_0_15": true,
+            "control_at_ceiling": false,
+            "keep": false,
+            "disposition": "null"
+          },
+          "d_vs_c_pooled": {
+            "delta": 0.15384615384615385,
+            "newcombe95": [
+              -0.14253214502438016,
+              0.4328947260847089
+            ],
+            "fisher_two_sided_p": 0.5930434782608696
+          },
+          "description": "\"Review code, config, CI workflows and dependencies for security problems and secrets. Use when: asked if code is safe to ship, or if anything is exploitable, nasty or leaking.\""
+        },
+        "D2-security": {
+          "skill": "security",
+          "requests": {
+            "security-natural": {
+              "attempts": 6,
+              "planned_attempts": 6,
+              "errors": [],
+              "complete": true,
+              "target_loads": 4,
+              "successful_target_loads": 4,
+              "skill_calls": [
+                [],
+                [
+                  "security"
+                ],
+                [],
+                [
+                  "security"
+                ],
+                [
+                  "security"
+                ],
+                [
+                  "security"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 6
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 6,
+              "limit_errors": 0,
+              "score": {
+                "met": 30,
+                "total": 36,
+                "rate": 0.8333333333333334,
+                "wilson95": [
+                  0.6810920568872054,
+                  0.9212955240498188
+                ]
+              },
+              "criterion_passes": {
+                "c1": 6,
+                "c2": 6,
+                "c3": 4,
+                "c4": 4,
+                "c5": 4,
+                "c6": 6
+              }
+            },
+            "security-r1": {
+              "attempts": 3,
+              "planned_attempts": 3,
+              "errors": [],
+              "complete": true,
+              "target_loads": 2,
+              "successful_target_loads": 2,
+              "skill_calls": [
+                [
+                  "security"
+                ],
+                [],
+                [
+                  "security"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 3
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 3,
+              "limit_errors": 0
+            },
+            "security-r2": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 0,
+              "successful_target_loads": 0,
+              "skill_calls": [
+                [],
+                []
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            },
+            "security-r3": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 2,
+              "successful_target_loads": 2,
+              "skill_calls": [
+                [
+                  "security"
+                ],
+                [
+                  "security"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            }
+          },
+          "complete": true,
+          "natural_loads": 4,
+          "blind_loads": 4,
+          "pooled_loading": {
+            "met": 8,
+            "total": 13,
+            "rate": 0.6153846153846154,
+            "wilson95": [
+              0.355228915126657,
+              0.8229029220223743
+            ]
+          },
+          "behavior_score": {
+            "met": 30,
+            "total": 36,
+            "rate": 0.8333333333333334,
+            "wilson95": [
+              0.6810920568872054,
+              0.9212955240498188
+            ]
+          },
+          "criterion_passes": {
+            "c1": 6,
+            "c2": 6,
+            "c3": 4,
+            "c4": 4,
+            "c5": 4,
+            "c6": 6
+          },
+          "steal_check": {
+            "reverse-engineer": {
+              "neighbour_loaded": 1,
+              "candidate_skill_loaded": 0,
+              "skill_calls": [
+                [
+                  "reverse-engineer"
+                ]
+              ]
+            },
+            "review": {
+              "neighbour_loaded": 0,
+              "candidate_skill_loaded": 0,
+              "skill_calls": [
+                []
+              ]
+            }
+          },
+          "decision": {
+            "per_request_loads_D_vs_C": {
+              "natural": [
+                4,
+                6
+              ],
+              "r1": [
+                2,
+                0
+              ],
+              "r2": [
+                0,
+                2
+              ],
+              "r3": [
+                2,
+                2
+              ]
+            },
+            "no_worse_on_every_request": false,
+            "better_on_at_least_one": true,
+            "behavior_within_0_15": true,
+            "control_at_ceiling": false,
+            "keep": false,
+            "disposition": "null"
+          },
+          "d_vs_c_pooled": {
+            "delta": -0.15384615384615385,
+            "newcombe95": [
+              -0.45363645429590244,
+              0.1881130738696587
+            ],
+            "fisher_two_sided_p": 0.6727688787185354
+          },
+          "description": "\"Find what an attacker could exploit in code, config, CI workflows or dependencies and report it. Use when: asked if code is safe to ship, what is exploitable or if a secret leaked.\""
+        }
+      },
+      "kept": null,
+      "dispositions": {
+        "D1-security": "null",
+        "D2-security": "null"
+      }
+    },
+    "triage": {
+      "subjects": {
+        "C": {
+          "skill": "triage",
+          "requests": {
+            "triage-natural": {
+              "attempts": 6,
+              "planned_attempts": 6,
+              "errors": [],
+              "complete": true,
+              "target_loads": 0,
+              "successful_target_loads": 0,
+              "skill_calls": [
+                [],
+                [],
+                [],
+                [],
+                [],
+                []
+              ],
+              "models": {
+                "claude-opus-5-5": 6
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 6,
+              "limit_errors": 0,
+              "score": {
+                "met": 13,
+                "total": 30,
+                "rate": 0.43333333333333335,
+                "wilson95": [
+                  0.2737748557646652,
+                  0.6080269299918639
+                ]
+              },
+              "criterion_passes": {
+                "c1": 6,
+                "c2": 0,
+                "c3": 0,
+                "c4": 1,
+                "c5": 6
+              }
+            },
+            "triage-r1": {
+              "attempts": 3,
+              "planned_attempts": 3,
+              "errors": [],
+              "complete": true,
+              "target_loads": 3,
+              "successful_target_loads": 3,
+              "skill_calls": [
+                [
+                  "triage"
+                ],
+                [
+                  "triage"
+                ],
+                [
+                  "triage"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 3
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 3,
+              "limit_errors": 0
+            },
+            "triage-r2": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 0,
+              "successful_target_loads": 0,
+              "skill_calls": [
+                [],
+                []
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            },
+            "triage-r3": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 1,
+              "successful_target_loads": 1,
+              "skill_calls": [
+                [],
+                [
+                  "triage"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            }
+          },
+          "complete": true,
+          "natural_loads": 0,
+          "blind_loads": 4,
+          "pooled_loading": {
+            "met": 4,
+            "total": 13,
+            "rate": 0.3076923076923077,
+            "wilson95": [
+              0.12680703655710515,
+              0.5763065681945096
+            ]
+          },
+          "behavior_score": {
+            "met": 13,
+            "total": 30,
+            "rate": 0.43333333333333335,
+            "wilson95": [
+              0.2737748557646652,
+              0.6080269299918639
+            ]
+          },
+          "criterion_passes": {
+            "c1": 6,
+            "c2": 0,
+            "c3": 0,
+            "c4": 1,
+            "c5": 6
+          },
+          "description": null
+        },
+        "D1-triage": {
+          "skill": "triage",
+          "requests": {
+            "triage-natural": {
+              "attempts": 6,
+              "planned_attempts": 6,
+              "errors": [],
+              "complete": true,
+              "target_loads": 2,
+              "successful_target_loads": 2,
+              "skill_calls": [
+                [],
+                [],
+                [
+                  "triage"
+                ],
+                [],
+                [
+                  "triage"
+                ],
+                []
+              ],
+              "models": {
+                "claude-opus-5-5": 6
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 6,
+              "limit_errors": 0,
+              "score": {
+                "met": 13,
+                "total": 30,
+                "rate": 0.43333333333333335,
+                "wilson95": [
+                  0.2737748557646652,
+                  0.6080269299918639
+                ]
+              },
+              "criterion_passes": {
+                "c1": 6,
+                "c2": 1,
+                "c3": 0,
+                "c4": 0,
+                "c5": 6
+              }
+            },
+            "triage-r1": {
+              "attempts": 3,
+              "planned_attempts": 3,
+              "errors": [],
+              "complete": true,
+              "target_loads": 3,
+              "successful_target_loads": 3,
+              "skill_calls": [
+                [
+                  "triage"
+                ],
+                [
+                  "triage"
+                ],
+                [
+                  "triage"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 3
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 3,
+              "limit_errors": 0
+            },
+            "triage-r2": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 2,
+              "successful_target_loads": 2,
+              "skill_calls": [
+                [
+                  "triage"
+                ],
+                [
+                  "triage"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            },
+            "triage-r3": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 2,
+              "successful_target_loads": 2,
+              "skill_calls": [
+                [
+                  "triage"
+                ],
+                [
+                  "triage"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            }
+          },
+          "complete": true,
+          "natural_loads": 2,
+          "blind_loads": 7,
+          "pooled_loading": {
+            "met": 9,
+            "total": 13,
+            "rate": 0.6923076923076923,
+            "wilson95": [
+              0.42369343180549035,
+              0.8731929634428948
+            ]
+          },
+          "behavior_score": {
+            "met": 13,
+            "total": 30,
+            "rate": 0.43333333333333335,
+            "wilson95": [
+              0.2737748557646652,
+              0.6080269299918639
+            ]
+          },
+          "criterion_passes": {
+            "c1": 6,
+            "c2": 1,
+            "c3": 0,
+            "c4": 0,
+            "c5": 6
+          },
+          "steal_check": {
+            "navigate": {
+              "neighbour_loaded": 0,
+              "candidate_skill_loaded": 0,
+              "skill_calls": [
+                []
+              ]
+            },
+            "plan": {
+              "neighbour_loaded": 1,
+              "candidate_skill_loaded": 0,
+              "skill_calls": [
+                [
+                  "plan"
+                ]
+              ]
+            }
+          },
+          "decision": {
+            "per_request_loads_D_vs_C": {
+              "natural": [
+                2,
+                0
+              ],
+              "r1": [
+                3,
+                3
+              ],
+              "r2": [
+                2,
+                0
+              ],
+              "r3": [
+                2,
+                1
+              ]
+            },
+            "no_worse_on_every_request": true,
+            "better_on_at_least_one": true,
+            "behavior_within_0_15": true,
+            "control_at_ceiling": false,
+            "keep": true,
+            "disposition": "keep"
+          },
+          "d_vs_c_pooled": {
+            "delta": 0.3846153846153846,
+            "newcombe95": [
+              0.004737454366350979,
+              0.6404257882883225
+            ],
+            "fisher_two_sided_p": 0.11523854393015787
+          },
+          "description": "\"Decide what happens to something that just arrived: take it, park it, close as duplicate, ask for more or hand it off. Use when: a new issue, alert or outside PR needs that call.\""
+        },
+        "D2-triage": {
+          "skill": "triage",
+          "requests": {
+            "triage-natural": {
+              "attempts": 6,
+              "planned_attempts": 6,
+              "errors": [],
+              "complete": true,
+              "target_loads": 6,
+              "successful_target_loads": 6,
+              "skill_calls": [
+                [
+                  "triage"
+                ],
+                [
+                  "triage"
+                ],
+                [
+                  "triage"
+                ],
+                [
+                  "triage"
+                ],
+                [
+                  "triage"
+                ],
+                [
+                  "triage"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 6
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 6,
+              "limit_errors": 0,
+              "score": {
+                "met": 20,
+                "total": 30,
+                "rate": 0.6666666666666666,
+                "wilson95": [
+                  0.4878005164454384,
+                  0.8076950191632386
+                ]
+              },
+              "criterion_passes": {
+                "c1": 6,
+                "c2": 3,
+                "c3": 3,
+                "c4": 2,
+                "c5": 6
+              }
+            },
+            "triage-r1": {
+              "attempts": 3,
+              "planned_attempts": 3,
+              "errors": [],
+              "complete": true,
+              "target_loads": 3,
+              "successful_target_loads": 3,
+              "skill_calls": [
+                [
+                  "triage"
+                ],
+                [
+                  "triage"
+                ],
+                [
+                  "triage"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 3
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 3,
+              "limit_errors": 0
+            },
+            "triage-r2": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 2,
+              "successful_target_loads": 2,
+              "skill_calls": [
+                [
+                  "triage"
+                ],
+                [
+                  "triage"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            },
+            "triage-r3": {
+              "attempts": 2,
+              "planned_attempts": 2,
+              "errors": [],
+              "complete": true,
+              "target_loads": 2,
+              "successful_target_loads": 2,
+              "skill_calls": [
+                [
+                  "triage"
+                ],
+                [
+                  "triage"
+                ]
+              ],
+              "models": {
+                "claude-opus-5-5": 2
+              },
+              "plugin_sets": [
+                [
+                  "agentops",
+                  "cc-plugin-agents-md",
+                  "cc-plugin-plugin-authoring"
+                ]
+              ],
+              "isolated_memory_runs": 2,
+              "limit_errors": 0
+            }
+          },
+          "complete": true,
+          "natural_loads": 6,
+          "blind_loads": 7,
+          "pooled_loading": {
+            "met": 13,
+            "total": 13,
+            "rate": 1.0,
+            "wilson95": [
+              0.7719046276458016,
+              0.9999999999999999
+            ]
+          },
+          "behavior_score": {
+            "met": 20,
+            "total": 30,
+            "rate": 0.6666666666666666,
+            "wilson95": [
+              0.4878005164454384,
+              0.8076950191632386
+            ]
+          },
+          "criterion_passes": {
+            "c1": 6,
+            "c2": 3,
+            "c3": 3,
+            "c4": 2,
+            "c5": 6
+          },
+          "steal_check": {
+            "navigate": {
+              "neighbour_loaded": 0,
+              "candidate_skill_loaded": 0,
+              "skill_calls": [
+                []
+              ]
+            },
+            "plan": {
+              "neighbour_loaded": 1,
+              "candidate_skill_loaded": 0,
+              "skill_calls": [
+                [
+                  "plan"
+                ]
+              ]
+            }
+          },
+          "decision": {
+            "per_request_loads_D_vs_C": {
+              "natural": [
+                6,
+                0
+              ],
+              "r1": [
+                3,
+                3
+              ],
+              "r2": [
+                2,
+                0
+              ],
+              "r3": [
+                2,
+                1
+              ]
+            },
+            "no_worse_on_every_request": true,
+            "better_on_at_least_one": true,
+            "behavior_within_0_15": true,
+            "control_at_ceiling": false,
+            "keep": true,
+            "disposition": "keep"
+          },
+          "d_vs_c_pooled": {
+            "delta": 0.6923076923076923,
+            "newcombe95": [
+              0.33991427603186963,
+              0.8731929634428949
+            ],
+            "fisher_two_sided_p": 0.0004576659038901602
+          },
+          "description": "\"Make the call on a new bug report, issue, outside PR or alert: take it, ask for more, or close as duplicate or already fixed, each with evidence. Use when: one lands on you.\""
+        }
+      },
+      "kept": "D2-triage",
+      "dispositions": {
+        "D1-triage": "keep",
+        "D2-triage": "keep"
+      }
+    }
+  },
+  "attempts": 243,
+  "evaluator_cost_usd": 41.51700911,
+  "evaluator_versions": {
+    "2.1.309": 28
+  },
+  "graded_responses": 102,
+  "grade_errors": {},
+  "per_response_grades": {
+    "l-architecture-C.json|architecture-natural|with|0": [
+      false,
+      true,
+      false,
+      false,
+      false
+    ],
+    "l-architecture-C.json|architecture-natural|with|1": [
+      false,
+      true,
+      true,
+      false,
+      false
+    ],
+    "l-architecture-C.json|architecture-natural|with|2": [
+      false,
+      true,
+      false,
+      false,
+      false
+    ],
+    "l-architecture-C.json|architecture-natural|with|3": [
+      false,
+      true,
+      true,
+      false,
+      false
+    ],
+    "l-architecture-C.json|architecture-natural|with|4": [
+      false,
+      true,
+      true,
+      false,
+      false
+    ],
+    "l-architecture-C.json|architecture-natural|with|5": [
+      false,
+      true,
+      false,
+      false,
+      false
+    ],
+    "l-architecture-D1-architecture.json|architecture-natural|with|0": [
+      false,
+      true,
+      true,
+      false,
+      false
+    ],
+    "l-architecture-D1-architecture.json|architecture-natural|with|1": [
+      false,
+      true,
+      true,
+      false,
+      false
+    ],
+    "l-architecture-D1-architecture.json|architecture-natural|with|2": [
+      false,
+      true,
+      true,
+      false,
+      false
+    ],
+    "l-architecture-D1-architecture.json|architecture-natural|with|3": [
+      false,
+      true,
+      true,
+      false,
+      false
+    ],
+    "l-architecture-D1-architecture.json|architecture-natural|with|4": [
+      false,
+      true,
+      false,
+      false,
+      false
+    ],
+    "l-architecture-D1-architecture.json|architecture-natural|with|5": [
+      false,
+      true,
+      true,
+      false,
+      false
+    ],
+    "l-architecture-D2-architecture.json|architecture-natural|with|0": [
+      false,
+      true,
+      false,
+      false,
+      false
+    ],
+    "l-architecture-D2-architecture.json|architecture-natural|with|1": [
+      false,
+      true,
+      true,
+      false,
+      false
+    ],
+    "l-architecture-D2-architecture.json|architecture-natural|with|2": [
+      false,
+      true,
+      true,
+      false,
+      false
+    ],
+    "l-architecture-D2-architecture.json|architecture-natural|with|3": [
+      false,
+      true,
+      true,
+      false,
+      false
+    ],
+    "l-architecture-D2-architecture.json|architecture-natural|with|4": [
+      false,
+      true,
+      false,
+      false,
+      false
+    ],
+    "l-architecture-D2-architecture.json|architecture-natural|with|5": [
+      false,
+      true,
+      true,
+      false,
+      false
+    ],
+    "l-council-C.json|council-natural|with|0": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-council-C.json|council-natural|with|1": [
+      true,
+      true,
+      false,
+      false
+    ],
+    "l-council-C.json|council-natural|with|2": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-council-C.json|council-natural|with|3": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-council-C.json|council-natural|with|4": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-council-C.json|council-natural|with|5": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-council-D1-council.json|council-natural|with|0": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-council-D1-council.json|council-natural|with|1": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-council-D1-council.json|council-natural|with|2": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-council-D1-council.json|council-natural|with|3": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-council-D1-council.json|council-natural|with|4": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-council-D1-council.json|council-natural|with|5": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-council-D2-council.json|council-natural|with|0": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-council-D2-council.json|council-natural|with|1": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-council-D2-council.json|council-natural|with|2": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-council-D2-council.json|council-natural|with|3": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-council-D2-council.json|council-natural|with|4": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-council-D2-council.json|council-natural|with|5": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-domain-C.json|domain-natural|with|0": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-domain-C.json|domain-natural|with|1": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-domain-C.json|domain-natural|with|2": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-domain-C.json|domain-natural|with|3": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-domain-C.json|domain-natural|with|4": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-domain-C.json|domain-natural|with|5": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-domain-D1-domain.json|domain-natural|with|0": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-domain-D1-domain.json|domain-natural|with|1": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-domain-D1-domain.json|domain-natural|with|2": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-domain-D1-domain.json|domain-natural|with|3": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-domain-D1-domain.json|domain-natural|with|4": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-domain-D1-domain.json|domain-natural|with|5": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-implement-C.json|implement-natural|with|0": [
+      true,
+      true,
+      false,
+      true
+    ],
+    "l-implement-C.json|implement-natural|with|1": [
+      true,
+      true,
+      false,
+      true
+    ],
+    "l-implement-C.json|implement-natural|with|2": [
+      true,
+      true,
+      false,
+      false
+    ],
+    "l-implement-C.json|implement-natural|with|3": [
+      true,
+      true,
+      false,
+      true
+    ],
+    "l-implement-C.json|implement-natural|with|4": [
+      true,
+      true,
+      false,
+      false
+    ],
+    "l-implement-C.json|implement-natural|with|5": [
+      true,
+      true,
+      false,
+      true
+    ],
+    "l-implement-D1-implement.json|implement-natural|with|0": [
+      true,
+      true,
+      false,
+      false
+    ],
+    "l-implement-D1-implement.json|implement-natural|with|1": [
+      true,
+      true,
+      false,
+      true
+    ],
+    "l-implement-D1-implement.json|implement-natural|with|2": [
+      true,
+      true,
+      false,
+      false
+    ],
+    "l-implement-D1-implement.json|implement-natural|with|3": [
+      false,
+      true,
+      false,
+      false
+    ],
+    "l-implement-D1-implement.json|implement-natural|with|4": [
+      true,
+      true,
+      false,
+      true
+    ],
+    "l-implement-D1-implement.json|implement-natural|with|5": [
+      true,
+      true,
+      false,
+      false
+    ],
+    "l-implement-D2-implement.json|implement-natural|with|0": [
+      true,
+      true,
+      false,
+      true
+    ],
+    "l-implement-D2-implement.json|implement-natural|with|1": [
+      true,
+      true,
+      false,
+      true
+    ],
+    "l-implement-D2-implement.json|implement-natural|with|2": [
+      true,
+      true,
+      false,
+      true
+    ],
+    "l-implement-D2-implement.json|implement-natural|with|3": [
+      true,
+      true,
+      false,
+      true
+    ],
+    "l-implement-D2-implement.json|implement-natural|with|4": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-implement-D2-implement.json|implement-natural|with|5": [
+      true,
+      true,
+      false,
+      true
+    ],
+    "l-security-C.json|security-natural|with|0": [
+      true,
+      true,
+      true,
+      false,
+      true,
+      true
+    ],
+    "l-security-C.json|security-natural|with|1": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-security-C.json|security-natural|with|2": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-security-C.json|security-natural|with|3": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-security-C.json|security-natural|with|4": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-security-C.json|security-natural|with|5": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-security-D1-security.json|security-natural|with|0": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-security-D1-security.json|security-natural|with|1": [
+      true,
+      true,
+      true,
+      false,
+      true,
+      true
+    ],
+    "l-security-D1-security.json|security-natural|with|2": [
+      true,
+      true,
+      true,
+      false,
+      true,
+      true
+    ],
+    "l-security-D1-security.json|security-natural|with|3": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-security-D1-security.json|security-natural|with|4": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-security-D1-security.json|security-natural|with|5": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-security-D2-security.json|security-natural|with|0": [
+      true,
+      true,
+      false,
+      false,
+      false,
+      true
+    ],
+    "l-security-D2-security.json|security-natural|with|1": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-security-D2-security.json|security-natural|with|2": [
+      true,
+      true,
+      false,
+      false,
+      false,
+      true
+    ],
+    "l-security-D2-security.json|security-natural|with|3": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-security-D2-security.json|security-natural|with|4": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-security-D2-security.json|security-natural|with|5": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "l-triage-C.json|triage-natural|with|0": [
+      true,
+      false,
+      false,
+      false,
+      true
+    ],
+    "l-triage-C.json|triage-natural|with|1": [
+      true,
+      false,
+      false,
+      false,
+      true
+    ],
+    "l-triage-C.json|triage-natural|with|2": [
+      true,
+      false,
+      false,
+      false,
+      true
+    ],
+    "l-triage-C.json|triage-natural|with|3": [
+      true,
+      false,
+      false,
+      false,
+      true
+    ],
+    "l-triage-C.json|triage-natural|with|4": [
+      true,
+      false,
+      false,
+      false,
+      true
+    ],
+    "l-triage-C.json|triage-natural|with|5": [
+      true,
+      false,
+      false,
+      true,
+      true
+    ],
+    "l-triage-D1-triage.json|triage-natural|with|0": [
+      true,
+      false,
+      false,
+      false,
+      true
+    ],
+    "l-triage-D1-triage.json|triage-natural|with|1": [
+      true,
+      false,
+      false,
+      false,
+      true
+    ],
+    "l-triage-D1-triage.json|triage-natural|with|2": [
+      true,
+      false,
+      false,
+      false,
+      true
+    ],
+    "l-triage-D1-triage.json|triage-natural|with|3": [
+      true,
+      false,
+      false,
+      false,
+      true
+    ],
+    "l-triage-D1-triage.json|triage-natural|with|4": [
+      true,
+      true,
+      false,
+      false,
+      true
+    ],
+    "l-triage-D1-triage.json|triage-natural|with|5": [
+      true,
+      false,
+      false,
+      false,
+      true
+    ],
+    "l-triage-D2-triage.json|triage-natural|with|0": [
+      true,
+      false,
+      true,
+      false,
+      true
+    ],
+    "l-triage-D2-triage.json|triage-natural|with|1": [
+      true,
+      true,
+      false,
+      true,
+      true
+    ],
+    "l-triage-D2-triage.json|triage-natural|with|2": [
+      true,
+      true,
+      false,
+      true,
+      true
+    ],
+    "l-triage-D2-triage.json|triage-natural|with|3": [
+      true,
+      false,
+      true,
+      false,
+      true
+    ],
+    "l-triage-D2-triage.json|triage-natural|with|4": [
+      true,
+      true,
+      true,
+      false,
+      true
+    ],
+    "l-triage-D2-triage.json|triage-natural|with|5": [
+      true,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "execution": {
+    "generation_attempts": 243,
+    "generation_errors": [],
+    "limit_stop": false,
+    "arm_records": [
+      {
+        "label": "l-triage-C",
+        "exit": 0,
+        "costUsd": 1.5450896,
+        "attempts": 13,
+        "errors": 0,
+        "limit_hit": false,
+        "traces_copied": 13
+      },
+      {
+        "label": "l-triage-D1-triage",
+        "exit": 0,
+        "costUsd": 1.7434931,
+        "attempts": 13,
+        "errors": 0,
+        "limit_hit": false,
+        "traces_copied": 13
+      },
+      {
+        "label": "l-triage-D2-triage",
+        "exit": 0,
+        "costUsd": 1.9530470000000002,
+        "attempts": 13,
+        "errors": 0,
+        "limit_hit": false,
+        "traces_copied": 13
+      },
+      {
+        "label": "steal-triage-D1-triage",
+        "exit": 0,
+        "costUsd": 0.25623599999999996,
+        "attempts": 2,
+        "errors": 0,
+        "limit_hit": false,
+        "traces_copied": 2
+      },
+      {
+        "label": "steal-triage-D2-triage",
+        "exit": 0,
+        "costUsd": 0.2610918,
+        "attempts": 2,
+        "errors": 0,
+        "limit_hit": false,
+        "traces_copied": 2
+      },
+      {
+        "label": "l-implement-C",
+        "exit": 0,
+        "costUsd": 1.3517613,
+        "attempts": 13,
+        "errors": 0,
+        "limit_hit": false,
+        "traces_copied": 13
+      },
+      {
+        "label": "l-implement-D1-implement",
+        "exit": 0,
+        "costUsd": 1.6254721,
+        "attempts": 13,
+        "errors": 0,
+        "limit_hit": false,
+        "traces_copied": 13
+      },
+      {
+        "label": "l-implement-D2-implement",
+        "exit": 0,
+        "costUsd": 1.6657544999999998,
+        "attempts": 13,
+        "errors": 0,
+        "limit_hit": false,
+        "traces_copied": 13
+      },
+      {
+        "label": "steal-implement-D1-implement",
+        "exit": 0,
+        "costUsd": 0.2966502,
+        "attempts": 2,
+        "errors": 0,
+        "limit_hit": false,
+        "traces_copied": 2
+      },
+      {
+        "label": "steal-implement-D2-implement",
+        "exit": 0,
+        "costUsd": 0.3441706,
+        "attempts": 2,
+        "errors": 0,
+        "limit_hit": false,
+        "traces_copied": 2
+      },
+      {
+        "label": "l-security-C",
+        "exit": 0,
+        "costUsd": 2.0936858000000003,
+        "attempts": 13,
+        "errors": 0,
+        "limit_hit": false,
+        "traces_copied": 13
+      },
+      {
+        "label": "l-security-D1-security",
+        "exit": 0,
+        "costUsd": 2.1979515000000003,
+        "attempts": 13,
+        "errors": 0,
+        "limit_hit": false,
+        "traces_copied": 13
+      },
+      {
+        "label": "l-security-D2-security",
+        "exit": 0,
+        "costUsd": 1.940274,
+        "attempts": 13,
+        "errors": 0,
+        "limit_hit": false,
+        "traces_copied": 13
+      },
+      {
+        "label": "steal-security-D1-security",
+        "exit": 0,
+        "costUsd": 0.285218,
+        "attempts": 2,
+        "errors": 0,
+        "limit_hit": false,
+        "traces_copied": 2
+      },
+      {
+        "label": "steal-security-D2-security",
+        "exit": 0,
+        "costUsd": 0.3125944,
+        "attempts": 2,
+        "errors": 0,
+        "limit_hit": false,
+        "traces_copied": 2
+      },
+      {
+        "label": "l-architecture-C",
+        "exit": 0,
+        "costUsd": 1.9867579,
+        "attempts": 13,
+        "errors": 0,
+        "limit_hit": false,
+        "traces_copied": 13
+      },
+      {
+        "label": "l-architecture-D1-architecture",
+        "exit": 0,
+        "costUsd": 1.9421558,
+        "attempts": 13,
+        "errors": 0,
+        "limit_hit": false,
+        "traces_copied": 13
+      },
+      {
+        "label": "l-architecture-D2-architecture",
+        "exit": 0,
+        "costUsd": 1.9899782,
+        "attempts": 13,
+        "errors": 0,
+        "limit_hit": false,
+        "traces_copied": 13
+      },
+      {
+        "label": "l-council-C",
+        "exit": 0,
+        "costUsd": 4.356878725,
+        "attempts": 13,
+        "errors": 0,
+        "limit_hit": false,
+        "traces_copied": 13
+      },
+      {
+        "label": "l-council-D1-council",
+        "exit": 0,
+        "costUsd": 4.233775639999999,
+        "attempts": 13,
+        "errors": 0,
+        "limit_hit": false,
+        "traces_copied": 13
+      },
+      {
+        "label": "l-council-D2-council",
+        "exit": 0,
+        "costUsd": 4.2356038499999995,
+        "attempts": 13,
+        "errors": 0,
+        "limit_hit": false,
+        "traces_copied": 13
+      },
+      {
+        "label": "steal-architecture-D1-architecture",
+        "exit": 0,
+        "costUsd": 0.4991018949999999,
+        "attempts": 2,
+        "errors": 0,
+        "limit_hit": false,
+        "traces_copied": 2
+      },
+      {
+        "label": "steal-architecture-D2-architecture",
+        "exit": 0,
+        "costUsd": 0.29499559999999997,
+        "attempts": 2,
+        "errors": 0,
+        "limit_hit": false,
+        "traces_copied": 2
+      },
+      {
+        "label": "steal-council-D1-council",
+        "exit": 0,
+        "costUsd": 0.24984340000000002,
+        "attempts": 2,
+        "errors": 0,
+        "limit_hit": false,
+        "traces_copied": 2
+      },
+      {
+        "label": "steal-council-D2-council",
+        "exit": 0,
+        "costUsd": 0.2460358,
+        "attempts": 2,
+        "errors": 0,
+        "limit_hit": false,
+        "traces_copied": 2
+      },
+      {
+        "label": "l-domain-C",
+        "exit": 0,
+        "costUsd": 1.6520613000000002,
+        "attempts": 13,
+        "errors": 0,
+        "limit_hit": false,
+        "traces_copied": 13
+      },
+      {
+        "label": "l-domain-D1-domain",
+        "exit": 0,
+        "costUsd": 1.6694505,
+        "attempts": 13,
+        "errors": 0,
+        "limit_hit": false,
+        "traces_copied": 13
+      },
+      {
+        "label": "steal-domain-D1-domain",
+        "exit": 0,
+        "costUsd": 0.2878806,
+        "attempts": 2,
+        "errors": 0,
+        "limit_hit": false,
+        "traces_copied": 2
+      }
+    ],
+    "models": {
+      "claude-opus-5-5": 221
+    },
+    "cli_versions": [
+      "2.1.309"
+    ],
+    "native_result_files": 28,
+    "traces_kept": 243,
+    "unique_sandboxes": 243,
+    "trial_window_utc": [
+      "2026-10-31T17:14:58.488000+00:00",
+      "2026-10-31T17:38:29.690000+00:00"
+    ],
+    "all_original_package_hashes_unchanged": true,
+    "source_skill_inventory": 31
+  }
+}
