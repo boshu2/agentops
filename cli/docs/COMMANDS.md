@@ -5,13 +5,13 @@
 
 ## Global Flags
 
-          --config string   Config file (default: ~/.agents/ao/config.yaml)
-          --dry-run         Show what would happen without executing
-      -h, --help            help for ao
-          --json            Output as JSON (shorthand for -o json)
-      -o, --output string   Output format (json, table, yaml) (default "table")
-      -v, --verbose         Enable verbose output
-          --version         version for ao
+          --config string          Config file (default: ~/.agents/ao/config.yaml)
+          --dry-run[=true|false]   Show what would happen without executing
+      -h, --help[=true|false]      help for ao
+          --json[=true|false]      Output as JSON (shorthand for -o json)
+      -o, --output string          Output format (json, table, yaml) (default "table")
+      -v, --verbose[=true|false]   Enable verbose output
+          --version[=true|false]   version for ao
 
 ---
 
@@ -28,10 +28,10 @@ ao demo [flags]
 **Flags:**
 
 ```
-      --concepts   explain the product boundary
-  -h, --help       help for demo
-      --quick      show the compact native example (the default)
-      --rpi        show the optional full RPI workflow
+      --concepts[=true|false]   explain the product boundary
+  -h, --help[=true|false]       help for demo
+      --quick[=true|false]      show the compact native example (the default)
+      --rpi[=true|false]        show the optional full RPI workflow
 ```
 
 ---
@@ -44,6 +44,12 @@ Optional local evidence setup; native execution needs no init, skills or
 ao init [flags]
 ```
 
+**Flags:**
+
+```
+  -h, --help[=true|false]   help for init
+```
+
 ---
 
 ### `ao quick-start`
@@ -54,6 +60,12 @@ Use your native coding agent and shell to complete the accepted work.
 ao quick-start [flags]
 ```
 
+**Flags:**
+
+```
+  -h, --help[=true|false]   help for quick-start
+```
+
 ---
 
 ### `ao capabilities`
@@ -62,6 +74,12 @@ Print the machine-readable contract for the whole ao CLI as JSON.
 
 ```
 ao capabilities [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help[=true|false]   help for capabilities
 ```
 
 ---
@@ -77,19 +95,19 @@ ao doctor [command]
 **Flags:**
 
 ```
-      --dry-run           With --fix: print the plan, change nothing
-      --explain string    Expand a single finding by id
-      --fix               Apply fixers for findings (routes through mutate())
-  -h, --help              help for doctor
-      --json              Output results as JSON
-      --online            Enable network probes (default: offline-only)
-      --only strings      Scope to a subset of detectors or subsystems
-      --quick             Run only fast-path detectors (< 200ms)
-      --robot             Alias for --json with structured wrapper
-      --robot-triage      Emit the mega-command triage JSON
-      --severity string   Minimum severity to emit (P0|P1|P2|P3) (default "P3")
-      --since string      Diff findings against an earlier run
-      --skip strings      Inverse of --only
+      --dry-run[=true|false]        With --fix: print the plan, change nothing
+      --explain string              Expand a single finding by id
+      --fix[=true|false]            Apply fixers for findings (routes through mutate())
+  -h, --help[=true|false]           help for doctor
+      --json[=true|false]           Output results as JSON
+      --online[=true|false]         Enable network probes (default: offline-only)
+      --only strings                Scope to a subset of detectors or subsystems
+      --quick[=true|false]          Run only fast-path detectors (< 200ms)
+      --robot[=true|false]          Alias for --json with structured wrapper
+      --robot-triage[=true|false]   Emit the mega-command triage JSON
+      --severity string             Minimum severity to emit (P0|P1|P2|P3) (default "P3")
+      --since string                Diff findings against an earlier run
+      --skip strings                Inverse of --only
 ```
 
 **Subcommands:**
@@ -100,6 +118,12 @@ Print the machine-readable doctor contract (JSON)
 
 ```
 ao doctor capabilities [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help[=true|false]   help for capabilities
 ```
 
 #### `ao doctor diff`
@@ -113,8 +137,8 @@ ao doctor diff [flags]
 **Flags:**
 
 ```
-  -h, --help           help for diff
-      --only strings   Scope the fix-plan preview to finding ids or subsystems (comma-separated), mirroring --fix --only
+  -h, --help[=true|false]   help for diff
+      --only strings        Scope the fix-plan preview to finding ids or subsystems (comma-separated), mirroring --fix --only
 ```
 
 #### `ao doctor explain`
@@ -125,12 +149,24 @@ Expand a single finding with full evidence
 ao doctor explain <finding-id> [flags]
 ```
 
+**Flags:**
+
+```
+  -h, --help[=true|false]   help for explain
+```
+
 #### `ao doctor fix`
 
 Run detectors, then apply fixers (backs up before every mutation)
 
 ```
 ao doctor fix [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help[=true|false]   help for fix
 ```
 
 #### `ao doctor gc`
@@ -144,9 +180,9 @@ ao doctor gc [flags]
 **Flags:**
 
 ```
-      --before string   Prune runs started before this date (YYYY-MM-DD)
-  -h, --help            help for gc
-      --yes             Confirm pruning (required)
+      --before string       Prune runs started before this date (YYYY-MM-DD)
+  -h, --help[=true|false]   help for gc
+      --yes[=true|false]    Confirm pruning (required)
 ```
 
 #### `ao doctor health`
@@ -157,6 +193,12 @@ Cheap one-line liveness summary
 ao doctor health [flags]
 ```
 
+**Flags:**
+
+```
+  -h, --help[=true|false]   help for health
+```
+
 #### `ao doctor ls`
 
 List runs in .doctor/runs/
@@ -165,12 +207,24 @@ List runs in .doctor/runs/
 ao doctor ls [flags]
 ```
 
+**Flags:**
+
+```
+  -h, --help[=true|false]   help for ls
+```
+
 #### `ao doctor robot-docs`
 
 Print the paste-ready agent handbook (Markdown)
 
 ```
 ao doctor robot-docs [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help[=true|false]   help for robot-docs
 ```
 
 #### `ao doctor undo`
@@ -184,9 +238,9 @@ ao doctor undo <run-id> [flags]
 **Flags:**
 
 ```
-      --dry-run   Print the restore plan; do not execute
-  -h, --help      help for undo
-      --strict    Refuse if any backup is missing or hash-mismatched (default true)
+      --dry-run[=true|false]   Print the restore plan; do not execute
+  -h, --help[=true|false]      help for undo
+      --strict[=true|false]    Refuse if any backup is missing or hash-mismatched (default true)
 ```
 
 ---
@@ -197,6 +251,12 @@ Run ordinary deterministic repository checks.
 
 ```
 ao gate [command]
+```
+
+**Flags:**
+
+```
+  -h, --help[=true|false]   help for gate
 ```
 
 **Subcommands:**
@@ -212,16 +272,16 @@ ao gate check [flags]
 **Flags:**
 
 ```
-      --fail-fast                 stop after the first blocking check failure
-      --fast                      explicitly select the default fast changed-surface subset
-      --full                      run every registered deterministic check
-      --github-annotations        emit GitHub Actions annotations for check results
-  -h, --help                      help for check
-      --json                      emit the machine-readable JSON report
-      --require-workflow-parity   fail if the workflow references unregistered blocking scripts
-      --scope string              changed-file scope: head|staged|worktree|upstream|range:<base>..<head> (default "head")
-      --workflow-coverage         include workflow-to-registry coverage in the report
-      --workflow-path string      workflow used for optional coverage comparison (default ".github/workflows/validate.yml")
+      --fail-fast[=true|false]                 stop after the first blocking check failure
+      --fast[=true|false]                      explicitly select the default fast changed-surface subset
+      --full[=true|false]                      run every registered deterministic check
+      --github-annotations[=true|false]        emit GitHub Actions annotations for check results
+  -h, --help[=true|false]                      help for check
+      --json[=true|false]                      emit the machine-readable JSON report
+      --require-workflow-parity[=true|false]   fail if the workflow references unregistered blocking scripts
+      --scope string                           changed-file scope: head|staged|worktree|upstream|range:<base>..<head> (default "head")
+      --workflow-coverage[=true|false]         include workflow-to-registry coverage in the report
+      --workflow-path string                   workflow used for optional coverage comparison (default ".github/workflows/validate.yml")
 ```
 
 ---
@@ -232,6 +292,12 @@ Print a paste-ready, agent-targeted handbook for the whole ao CLI.
 
 ```
 ao robot-docs [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help[=true|false]   help for robot-docs
 ```
 
 ---
@@ -248,7 +314,7 @@ ao status [flags]
 
 ```
       --evidence-root string   Existing explicit non-Git evidence directory (default: working directory's .agents/ao)
-  -h, --help                   help for status
+  -h, --help[=true|false]      help for status
 ```
 
 ---
@@ -261,6 +327,12 @@ Display the version, build information, and runtime details.
 ao version [flags]
 ```
 
+**Flags:**
+
+```
+  -h, --help[=true|false]   help for version
+```
+
 ---
 
 ### `ao gc`
@@ -269,6 +341,12 @@ Prepare and qualify the stock Gas City maintainer pack without owning a pack.
 
 ```
 ao gc [command]
+```
+
+**Flags:**
+
+```
+  -h, --help[=true|false]   help for gc
 ```
 
 **Subcommands:**
@@ -287,7 +365,7 @@ ao gc check [flags]
       --city string            Gas City root directory (required)
       --codex-bin string       Codex CLI used to resolve hook trust identities (default: codex on PATH)
       --gc-bin string          Gas City 1.4 binary (default: gc on PATH)
-  -h, --help                   help for check
+  -h, --help[=true|false]      help for check
       --pack-dir string        resolved official gascity pack root (normally auto-detected)
       --rig string             rig directory inside the city (required)
       --skills-source string   AgentOps skills directory to link from (default: enclosing checkout, then installed skills root)
@@ -307,7 +385,7 @@ ao gc prepare [flags]
       --city string            Gas City root directory (required)
       --codex-bin string       Codex CLI used to resolve hook trust identities (default: codex on PATH)
       --gc-bin string          Gas City 1.4 binary (default: gc on PATH)
-  -h, --help                   help for prepare
+  -h, --help[=true|false]      help for prepare
       --pack-dir string        resolved official gascity pack root (normally auto-detected)
       --rig string             rig directory inside the city (required)
       --skills-source string   AgentOps skills directory to link from (default: enclosing checkout, then installed skills root)
@@ -324,12 +402,12 @@ ao gc recover-affinity [flags]
 **Flags:**
 
 ```
-      --apply             apply the recovery; the default is a read-only dry run
-      --city string       Gas City root directory (required)
-      --gc-bin string     Gas City 1.4 binary (default: gc on PATH)
-  -h, --help              help for recover-affinity
-      --pack-dir string   resolved official gascity pack root (normally auto-detected)
-      --rig string        rig directory inside the city (required)
+      --apply[=true|false]   apply the recovery; the default is a read-only dry run
+      --city string          Gas City root directory (required)
+      --gc-bin string        Gas City 1.4 binary (default: gc on PATH)
+  -h, --help[=true|false]    help for recover-affinity
+      --pack-dir string      resolved official gascity pack root (normally auto-detected)
+      --rig string           rig directory inside the city (required)
 ```
 
 ---
@@ -345,9 +423,9 @@ ao goals [command]
 **Flags:**
 
 ```
-      --file string   Path to goals file (auto-detects GOALS.md then GOALS.yaml)
-  -h, --help          help for goals
-      --timeout int   Check timeout in seconds (default 240)
+      --file string         Path to goals file (auto-detects GOALS.md then GOALS.yaml)
+  -h, --help[=true|false]   help for goals
+      --timeout int         Check timeout in seconds (default 240)
 ```
 
 **Subcommands:**
@@ -369,12 +447,12 @@ ao goals measure [flags]
 **Flags:**
 
 ```
-      --directives           Output directives as JSON (skip gate checks)
-      --exclude-tag string   Skip goals whose Tags include this value (e.g. long-cycle)
-      --goal string          Measure a single goal by ID
-  -h, --help                 help for measure
-      --scenarios-only       Evaluate only executable-spec scenario satisfaction; skip shell gate-command execution
-      --total-timeout int    Overall measurement timeout in seconds (0 disables)
+      --directives[=true|false]       Output directives as JSON (skip gate checks)
+      --exclude-tag string            Skip goals whose Tags include this value (e.g. long-cycle)
+      --goal string                   Measure a single goal by ID
+  -h, --help[=true|false]             help for measure
+      --scenarios-only[=true|false]   Evaluate only executable-spec scenario satisfaction; skip shell gate-command execution
+      --total-timeout int             Overall measurement timeout in seconds (0 disables)
 ```
 
 #### `ao goals validate`
@@ -391,6 +469,12 @@ ao goals validate [flags]
   validate, v
 ```
 
+**Flags:**
+
+```
+  -h, --help[=true|false]   help for validate
+```
+
 #### `ao goals drift`
 
 Compare snapshots for regressions
@@ -405,6 +489,12 @@ ao goals drift [flags]
   drift, d
 ```
 
+**Flags:**
+
+```
+  -h, --help[=true|false]   help for drift
+```
+
 #### `ao goals export`
 
 Export latest snapshot as JSON (for CI)
@@ -417,6 +507,12 @@ ao goals export [flags]
 
 ```
   export, e
+```
+
+**Flags:**
+
+```
+  -h, --help[=true|false]   help for export
 ```
 
 #### `ao goals history`
@@ -436,9 +532,9 @@ ao goals history [flags]
 **Flags:**
 
 ```
-      --goal string    Filter history to a specific goal
-  -h, --help           help for history
-      --since string   Show entries since date (YYYY-MM-DD)
+      --goal string         Filter history to a specific goal
+  -h, --help[=true|false]   help for history
+      --since string        Show entries since date (YYYY-MM-DD)
 ```
 
 #### `ao goals meta`
@@ -447,6 +543,12 @@ Run and report meta-goals only
 
 ```
 ao goals meta [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help[=true|false]   help for meta
 ```
 
 #### `ao goals render`
@@ -460,8 +562,8 @@ ao goals render [flags]
 **Flags:**
 
 ```
-  -h, --help         help for render
-      --out string   Write Gherkin to this file instead of stdout
+  -h, --help[=true|false]   help for render
+      --out string          Write Gherkin to this file instead of stdout
 ```
 
 #### `ao goals scenarios`
@@ -477,9 +579,9 @@ ao goals scenarios [flags]
 ```
       --directive int         Filter by directive display number
       --directive-id string   Filter listing to one directive by stable Directive ID
-  -h, --help                  help for scenarios
-      --lint                  Lint the directive↔scenario link graph instead of listing
-      --strict                With --lint, exit non-zero on warnings as well as errors
+  -h, --help[=true|false]     help for scenarios
+      --lint[=true|false]     Lint the directive↔scenario link graph instead of listing
+      --strict[=true|false]   With --lint, exit non-zero on warnings as well as errors
 ```
 
 ---
@@ -490,6 +592,12 @@ Inspect session evidence and maintain .agents artifacts
 
 ```
 ao session [command]
+```
+
+**Flags:**
+
+```
+  -h, --help[=true|false]   help for session
 ```
 
 **Subcommands:**
@@ -505,8 +613,8 @@ ao session bootstrap [flags]
 **Flags:**
 
 ```
-  -h, --help   help for bootstrap
-      --json   Emit JSON
+  -h, --help[=true|false]   help for bootstrap
+      --json[=true|false]   Emit JSON
 ```
 
 #### `ao session handoff`
@@ -520,11 +628,11 @@ ao session handoff [summary] [flags]
 **Flags:**
 
 ```
-      --collect               Collect best-effort read-only Git observations
-      --continuation string   Caller-supplied continuation note
-      --dry-run               Print the artifact without writing it
-      --goal string           Caller-supplied goal
-  -h, --help                  help for handoff
+      --collect[=true|false]   Collect best-effort read-only Git observations
+      --continuation string    Caller-supplied continuation note
+      --dry-run[=true|false]   Print the artifact without writing it
+      --goal string            Caller-supplied goal
+  -h, --help[=true|false]      help for handoff
 ```
 
 #### `ao session prune-agents`
@@ -538,9 +646,9 @@ ao session prune-agents [flags]
 **Flags:**
 
 ```
-      --execute   Delete the selected artifacts; the default is a read-only dry run
-  -h, --help      help for prune-agents
-      --quiet     Suppress per-path output and print only the summary
+      --execute[=true|false]   Delete the selected artifacts; the default is a read-only dry run
+  -h, --help[=true|false]      help for prune-agents
+      --quiet[=true|false]     Suppress per-path output and print only the summary
 ```
 
 #### `ao session read-source`
@@ -555,14 +663,14 @@ ao session read-source [flags]
 
 ```
       --access-policy-ref string      Independently selected context access policy JSON (required)
-      --allow-oversize                Explicitly bypass serialized profile size bound; host delivery remains unverified
+      --allow-oversize[=true|false]   Explicitly bypass serialized profile size bound; host delivery remains unverified
       --consumer-root string          Existing consumer checkout for context route verification (required)
       --destination-ref string        Expected destination identity (required)
       --expect-file-identity string   Expected prior file_before.identity, for replacement checks across calls
       --expect-prefix-sha256 string   Expected SHA-256 of all bytes before through-byte
       --file string                   Exact absolute source file path (required)
-  -h, --help                          help for read-source
-      --json                          Emit JSON (also the default; no text-only coverage view)
+  -h, --help[=true|false]             help for read-source
+      --json[=true|false]             Emit JSON (also the default; no text-only coverage view)
       --max-bytes int                 Positive maximum returned source bytes (required)
       --model-ref string              Expected model/provider identity (required)
       --native-directory string       Explicit directory for native BD source verification (required)
@@ -585,8 +693,8 @@ ao session rehydrate [flags]
 **Flags:**
 
 ```
-  -h, --help   help for rehydrate
-      --json   Emit the stored artifact as JSON
+  -h, --help[=true|false]   help for rehydrate
+      --json[=true|false]   Emit the stored artifact as JSON
 ```
 
 ---
@@ -597,6 +705,12 @@ Generate shell completion scripts for ao.
 
 ```
 ao completion [bash|zsh|fish|powershell]
+```
+
+**Flags:**
+
+```
+  -h, --help[=true|false]   help for completion
 ```
 
 ---
@@ -612,8 +726,8 @@ ao config [command]
 **Flags:**
 
 ```
-  -h, --help   help for config
-      --show   Show resolved configuration with sources
+  -h, --help[=true|false]   help for config
+      --show[=true|false]   Show resolved configuration with sources
 ```
 
 **Subcommands:**
@@ -635,13 +749,13 @@ ao config context [flags]
       --destination-ref string        Caller destination identity
       --evidence-root string          Selected existing protected non-Git evidence
       --field string                  Emit one checked root for its caller-owned consumer
-  -h, --help                          help for context
+  -h, --help[=true|false]             help for context
       --maintenance-work-ref string   Known native maintenance anchor
       --model-ref string              Caller model/provider identity
       --native-directory string       Explicit native BD source directory
       --owner-scope string            Expected separately authorized owner scope
       --project-id string             Expected native project ID
-      --recover                       Recover the same route from its native maintenance anchor
+      --recover[=true|false]          Recover the same route from its native maintenance anchor
       --source-id string              Expected canonical native beads_dir
       --staging-root string           Selected existing protected non-Git staging
       --task-ref string               Caller task identity
@@ -655,6 +769,12 @@ Append and inspect generic, evidence-backed relationships between
 
 ```
 ao provenance [command]
+```
+
+**Flags:**
+
+```
+  -h, --help[=true|false]   help for provenance
 ```
 
 **Subcommands:**
@@ -672,8 +792,8 @@ ao provenance add <from-id> <to-id> [flags]
 ```
       --evidence string     Optional evidence pointer (path, commit, CI run URL, event id)
       --from-type string    Source node type (for example decision, artifact, or observation) (default "decision")
-  -h, --help                help for add
-      --json                Emit the sealed edge as JSON
+  -h, --help[=true|false]   help for add
+      --json[=true|false]   Emit the sealed edge as JSON
       --relation string     Typed PROV-O relation (required), e.g. wasGeneratedBy
       --to-type string      Target node type (for example decision, artifact, or observation) (default "artifact")
       --trust-tier string   Trust tier (authored|inferred|mined) (default "authored")
@@ -691,10 +811,10 @@ ao provenance check-okf [flags]
 **Flags:**
 
 ```
-      --file string      Explicit Markdown concept file (required; at most 1 MiB)
-  -h, --help             help for check-okf
-      --json             Emit JSON (the default)
-      --profile string   Exact supported structural profile version (default "agentops-okf-v0.2/v1")
+      --file string         Explicit Markdown concept file (required; at most 1 MiB)
+  -h, --help[=true|false]   help for check-okf
+      --json[=true|false]   Emit JSON (the default)
+      --profile string      Exact supported structural profile version (default "agentops-okf-v0.2/v1")
 ```
 
 #### `ao provenance digest`
@@ -708,9 +828,9 @@ ao provenance digest <json-file> [flags]
 **Flags:**
 
 ```
-  -h, --help                    help for digest
+  -h, --help[=true|false]       help for digest
       --helper-version string   Require evidence helper version; incompatibility fails before mutation (default "1")
-      --json                    Emit JSON (the default for evidence operations except digest)
+      --json[=true|false]       Emit JSON (the default for evidence operations except digest)
 ```
 
 #### `ao provenance evidence-orphans`
@@ -725,7 +845,7 @@ ao provenance evidence-orphans [flags]
 
 ```
       --changed stringArray   Changed bound path; repeat to preserve input order
-  -h, --help                  help for evidence-orphans
+  -h, --help[=true|false]     help for evidence-orphans
       --root string           Explicit repository root to scan
 ```
 
@@ -740,9 +860,9 @@ ao provenance export [flags]
 **Flags:**
 
 ```
-  -h, --help     help for export
-      --json     Emit a single indented JSON array instead of JSONL
-      --verify   Verify the re-chained export and print only a one-line summary
+  -h, --help[=true|false]     help for export
+      --json[=true|false]     Emit a single indented JSON array instead of JSONL
+      --verify[=true|false]   Verify the re-chained export and print only a one-line summary
 ```
 
 #### `ao provenance list`
@@ -756,10 +876,10 @@ ao provenance list [flags]
 **Flags:**
 
 ```
-      --from-id string    Filter to edges whose from_id matches
-  -h, --help              help for list
-      --json              Emit machine-readable JSON
-      --relation string   Filter to edges with this relation
+      --from-id string      Filter to edges whose from_id matches
+  -h, --help[=true|false]   help for list
+      --json[=true|false]   Emit machine-readable JSON
+      --relation string     Filter to edges with this relation
 ```
 
 #### `ao provenance manifest`
@@ -778,10 +898,10 @@ ao provenance manifest [flags]
       --exclude stringArray            Excluded path or fnmatch pattern (repeatable)
       --exclude-git-root stringArray   Caller-known existing Git storage root to exclude (repeatable); unresolved roots fail before writes
       --git-metadata-json string       Descriptive string/null metadata object; excluded from identity
-  -h, --help                           help for manifest
+  -h, --help[=true|false]              help for manifest
       --helper-version string          Require evidence helper version; incompatibility fails before mutation (default "1")
       --include stringArray            Declared relative path (repeatable)
-      --json                           Emit JSON (the default for evidence operations except digest)
+      --json[=true|false]              Emit JSON (the default for evidence operations except digest)
       --out string                     Optional relative output path inside evidence root
       --root string                    Explicit subject directory
 ```
@@ -798,8 +918,8 @@ ao provenance mine-session --file <session.jsonl> [flags]
 
 ```
       --file string            Path to the session transcript (.jsonl) to mine (required)
-  -h, --help                   help for mine-session
-      --json                   Emit events as JSONL on stdout (default true)
+  -h, --help[=true|false]      help for mine-session
+      --json[=true|false]      Emit events as JSONL on stdout (default true)
       --max-bytes int          Excerpts only: maximum source-window bytes (default 65536)
       --max-output-bytes int   Excerpts only: maximum serialized JSON bytes, including newline (default 131072)
       --max-records int        Excerpts only: maximum emitted records (default 20)
@@ -820,8 +940,8 @@ ao provenance position [flags]
 **Flags:**
 
 ```
-  -h, --help   help for position
-      --json   Emit machine-readable JSON
+  -h, --help[=true|false]   help for position
+      --json[=true|false]   Emit machine-readable JSON
 ```
 
 #### `ao provenance show`
@@ -835,8 +955,8 @@ ao provenance show <node-id> [flags]
 **Flags:**
 
 ```
-  -h, --help   help for show
-      --json   Emit machine-readable JSON
+  -h, --help[=true|false]   help for show
+      --json[=true|false]   Emit machine-readable JSON
 ```
 
 #### `ao provenance snapshot-intent`
@@ -852,9 +972,9 @@ ao provenance snapshot-intent [flags]
 ```
       --evidence-root string           Existing explicit non-Git evidence directory
       --exclude-git-root stringArray   Caller-known existing Git storage root to exclude (repeatable); unresolved roots fail before writes
-  -h, --help                           help for snapshot-intent
+  -h, --help[=true|false]              help for snapshot-intent
       --helper-version string          Require evidence helper version; incompatibility fails before mutation (default "1")
-      --json                           Emit JSON (the default for evidence operations except digest)
+      --json[=true|false]              Emit JSON (the default for evidence operations except digest)
       --source string                  Intent file, or - for stdin
 ```
 
@@ -876,10 +996,10 @@ ao provenance store-verdict [flags]
       --exclude-git-root stringArray   Caller-known existing Git storage root to exclude (repeatable); unresolved roots fail before writes
       --freshness-attester-id string   Freshness attester identity
       --freshness-source string        runtime or caller
-  -h, --help                           help for store-verdict
+  -h, --help[=true|false]              help for store-verdict
       --helper-version string          Require evidence helper version; incompatibility fails before mutation (default "1")
       --intent-source string           Independently supplied immutable intent file
-      --json                           Emit JSON (the default for evidence operations except digest)
+      --json[=true|false]              Emit JSON (the default for evidence operations except digest)
       --root string                    Explicit subject directory
       --scope-result string            Runtime-derived PASS, FAIL or NOT_PROVEN scope fact
       --subject-manifest string        Runtime-derived manifest
@@ -897,11 +1017,11 @@ ao provenance trace [flags]
 **Flags:**
 
 ```
-      --graph string   Path to the JSONL trace-graph to audit (required)
-  -h, --help           help for trace
-      --json           Emit each finding as one JSON object per line
-      --orphans        Audit for artifact nodes with no inbound provenance edge
-      --strict         Exit non-zero when any orphan exists
+      --graph string           Path to the JSONL trace-graph to audit (required)
+  -h, --help[=true|false]      help for trace
+      --json[=true|false]      Emit each finding as one JSON object per line
+      --orphans[=true|false]   Audit for artifact nodes with no inbound provenance edge
+      --strict[=true|false]    Exit non-zero when any orphan exists
 ```
 
 #### `ao provenance verify`
@@ -915,8 +1035,8 @@ ao provenance verify [flags]
 **Flags:**
 
 ```
-  -h, --help   help for verify
-      --json   Emit the machine-readable verify result as JSON
+  -h, --help[=true|false]   help for verify
+      --json[=true|false]   Emit the machine-readable verify result as JSON
 ```
 
 #### `ao provenance verify-judgments`
@@ -934,10 +1054,10 @@ ao provenance verify-judgments [flags]
       --author-context-id string       Independent native author context identity
       --base-manifest string           Base manifest for deletions
       --evidence-root string           Explicit private non-Git root for receipts, transcripts and verdicts
-  -h, --help                           help for verify-judgments
+  -h, --help[=true|false]              help for verify-judgments
       --helper-version string          Required evidence helper version (default "1")
       --intent string                  Independent expected immutable acceptance file
-      --json                           Emit JSON (the default)
+      --json[=true|false]              Emit JSON (the default)
       --manifest string                Expected subject-manifest.v1 file
       --required-profiles string       Independent JSON object containing the required profiles array
       --root string                    Explicit subject directory
@@ -956,9 +1076,9 @@ ao provenance verify-manifest [flags]
 
 ```
       --base-manifest string    Base manifest required for deletion identity
-  -h, --help                    help for verify-manifest
+  -h, --help[=true|false]       help for verify-manifest
       --helper-version string   Require evidence helper version; incompatibility fails before mutation (default "1")
-      --json                    Emit JSON (the default for evidence operations except digest)
+      --json[=true|false]       Emit JSON (the default for evidence operations except digest)
       --manifest string         subject-manifest.v1 file
       --root string             Explicit subject directory
 ```
@@ -975,10 +1095,10 @@ ao provenance verify-subject [flags]
 
 ```
       --base-manifest string    Base manifest required for deletion identity
-  -h, --help                    help for verify-subject
+  -h, --help[=true|false]       help for verify-subject
       --helper-version string   Require evidence helper version; incompatibility fails before mutation (default "1")
       --intent string           Independent expected immutable acceptance file
-      --json                    Emit JSON (the default for evidence operations except digest)
+      --json[=true|false]       Emit JSON (the default for evidence operations except digest)
       --manifest string         subject-manifest.v1 file
       --root string             Explicit subject directory
       --verdict string          Content-addressed supplied verdict.v2 PASS
@@ -995,9 +1115,9 @@ ao provenance verify-verdict [flags]
 **Flags:**
 
 ```
-  -h, --help                    help for verify-verdict
+  -h, --help[=true|false]       help for verify-verdict
       --helper-version string   Require evidence helper version; incompatibility fails before mutation (default "1")
-      --json                    Emit JSON (the default for evidence operations except digest)
+      --json[=true|false]       Emit JSON (the default for evidence operations except digest)
       --verdict string          Content-addressed verdict.v2 file
 ```
 
@@ -1009,6 +1129,12 @@ Tooling for the skills/ source-of-truth, the one tree every runtime
 
 ```
 ao skills [command]
+```
+
+**Flags:**
+
+```
+  -h, --help[=true|false]   help for skills
 ```
 
 **Subcommands:**
@@ -1024,11 +1150,11 @@ ao skills audit <package> [flags]
 **Flags:**
 
 ```
-  -h, --help             help for audit
-      --json string      Write a new report in an existing external non-Git directory instead of stdout
-      --profile string   Static profile: canonical, portable or external-observation; inferred from target location
-      --repo string      Repository used to select canonical or portable applicability (default ".")
-      --strict           Compatibility flag; only concrete conformance failures gate, never authoring suspicions
+  -h, --help[=true|false]     help for audit
+      --json string           Write a new report in an existing external non-Git directory instead of stdout
+      --profile string        Static profile: canonical, portable or external-observation; inferred from target location
+      --repo string           Repository used to select canonical or portable applicability (default ".")
+      --strict[=true|false]   Compatibility flag; only concrete conformance failures gate, never authoring suspicions
 ```
 
 #### `ao skills build`
@@ -1042,11 +1168,11 @@ ao skills build <from-scratch|from-template|absorb-external> <slug> [flags]
 **Flags:**
 
 ```
-  -h, --help            help for build
-      --init-only       Create the scaffold without projections
-      --repo string     Repository containing canonical skills (default ".")
-      --report string   Optional new report in an existing external non-Git directory; default stdout only
-      --source string   Template slug or external input path (structure only)
+  -h, --help[=true|false]        help for build
+      --init-only[=true|false]   Create the scaffold without projections
+      --repo string              Repository containing canonical skills (default ".")
+      --report string            Optional new report in an existing external non-Git directory; default stdout only
+      --source string            Template slug or external input path (structure only)
 ```
 
 #### `ao skills check`
@@ -1060,10 +1186,10 @@ ao skills check [flags]
 **Flags:**
 
 ```
-  -h, --help           help for check
-      --json           Emit machine-readable JSON
-      --skill string   Restrict the audit to a single skill name
-      --strict         Exit non-zero on any finding (CI mode)
+  -h, --help[=true|false]     help for check
+      --json[=true|false]     Emit machine-readable JSON
+      --skill string          Restrict the audit to a single skill name
+      --strict[=true|false]   Exit non-zero on any finding (CI mode)
 ```
 
 #### `ao skills check-source`
@@ -1077,9 +1203,9 @@ ao skills check-source <skills/slug>... [flags]
 **Flags:**
 
 ```
-  -h, --help          help for check-source
-      --repo string   Repository containing canonical skills (default ".")
-      --strict        Return nonzero for structural or explicit scaffold findings
+  -h, --help[=true|false]     help for check-source
+      --repo string           Repository containing canonical skills (default ".")
+      --strict[=true|false]   Return nonzero for structural or explicit scaffold findings
 ```
 
 #### `ao skills consumers`
@@ -1093,8 +1219,8 @@ ao skills consumers <skill> [flags]
 **Flags:**
 
 ```
-  -h, --help   help for consumers
-      --json   Emit machine-readable JSON
+  -h, --help[=true|false]   help for consumers
+      --json[=true|false]   Emit machine-readable JSON
 ```
 
 #### `ao skills find`
@@ -1108,9 +1234,9 @@ ao skills find <intent> [flags]
 **Flags:**
 
 ```
-  -h, --help        help for find
-      --json        Emit machine-readable JSON on stdout
-      --limit int   Maximum number of results to return (default 5)
+  -h, --help[=true|false]   help for find
+      --json[=true|false]   Emit machine-readable JSON on stdout
+      --limit int           Maximum number of results to return (default 5)
 ```
 
 #### `ao skills graph`
@@ -1124,8 +1250,8 @@ ao skills graph [flags]
 **Flags:**
 
 ```
-      --format string   Graph output format (mermaid|json) (default "mermaid")
-  -h, --help            help for graph
+      --format string       Graph output format (mermaid|json) (default "mermaid")
+  -h, --help[=true|false]   help for graph
 ```
 
 #### `ao skills link`
@@ -1140,8 +1266,8 @@ ao skills link [flags]
 
 ```
       --dest string         Link into this single dir instead of the auto-detected roots (default: ~/.agents plus every installed runtime)
-  -h, --help                help for link
-      --json                Emit machine-readable JSON
+  -h, --help[=true|false]   help for link
+      --json[=true|false]   Emit machine-readable JSON
       --skill stringArray   Install only this skill; repeat for more names (default: all skills)
 ```
 
@@ -1157,8 +1283,8 @@ ao skills list [flags]
 
 ```
       --consumes string         Filter to skills that consume this port/sibling
-  -h, --help                    help for list
-      --json                    Emit machine-readable JSON
+  -h, --help[=true|false]       help for list
+      --json[=true|false]       Emit machine-readable JSON
       --practice string         Filter to skills that apply this practice
       --produces string         Filter to skills that produce this port/artifact
       --role string             Filter by hexagonal_role (domain, driving-adapter, ...)
@@ -1176,8 +1302,8 @@ ao skills producers <output> [flags]
 **Flags:**
 
 ```
-  -h, --help   help for producers
-      --json   Emit machine-readable JSON
+  -h, --help[=true|false]   help for producers
+      --json[=true|false]   Emit machine-readable JSON
 ```
 
 #### `ao skills resolve`
@@ -1191,9 +1317,9 @@ ao skills resolve [flags]
 **Flags:**
 
 ```
-  -h, --help     help for resolve
-      --json     Emit machine-readable JSON
-      --strict   Exit non-zero when ME overlaps are found (CI dedup gate)
+  -h, --help[=true|false]     help for resolve
+      --json[=true|false]     Emit machine-readable JSON
+      --strict[=true|false]   Exit non-zero when ME overlaps are found (CI dedup gate)
 ```
 
 #### `ao skills unlink`
@@ -1207,9 +1333,9 @@ ao skills unlink [flags]
 **Flags:**
 
 ```
-      --dest string   Sweep this single dir instead of the auto-detected roots (default: ~/.agents plus every installed runtime)
-  -h, --help          help for unlink
-      --json          Emit machine-readable JSON
+      --dest string         Sweep this single dir instead of the auto-detected roots (default: ~/.agents plus every installed runtime)
+  -h, --help[=true|false]   help for unlink
+      --json[=true|false]   Emit machine-readable JSON
 ```
 
 ---
@@ -1220,6 +1346,12 @@ Help provides help for any command in the application.
 
 ```
 ao help [command] [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help[=true|false]   help for help
 ```
 
 ---
