@@ -14,7 +14,7 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 | Skill | Use it for |
 |---|---|
 | [plan](https://github.com/boshu2/agentops/blob/main/skills/plan/SKILL.md) | Shape a request into one end-to-end slice with observable behavior; review write scope and reversible decisions. Use when: planning, breaking down or scoping a change. |
-| [implement](https://github.com/boshu2/agentops/blob/main/skills/implement/SKILL.md) | Change or repair code, config or services without weakening tests; report what ran and what did not. Use when: implementing a change or fixing a defect. |
+| [implement](https://github.com/boshu2/agentops/blob/main/skills/implement/SKILL.md) | Make the code change a ticket or bug report asks for, then prove it with the repo's own checks. Use when: told to fix, change or build something, such as "fix this bug". |
 | [review](https://github.com/boshu2/agentops/blob/main/skills/review/SKILL.md) | Give advisory feedback on a plan, design or code change. Use when: asked for an opinion or a look-over, even informally. Not for acceptance; use Validate. |
 | [validate](https://github.com/boshu2/agentops/blob/main/skills/validate/SKILL.md) | Freshly judge whether a finished change and its claims meet original acceptance: PASS, FAIL or NOT_PROVEN. Use when: asked for a go/no-go, sign-off or independent verdict. |
 | [orchestrate](https://github.com/boshu2/agentops/blob/main/skills/orchestrate/SKILL.md) | Coordinate several workers: what idle agents do next, which finished work gets checked first, how to recover a dead one. Use when: managing multiple agents. |
@@ -35,7 +35,7 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 | [skill-builder](https://github.com/boshu2/agentops/blob/main/skills/skill-builder/SKILL.md) | Create, repair, audit or consolidate agent skills (SKILL.md packages). Use when: writing or fixing a skill, its description or structure. Not for one-off lessons; use Memory. |
 | [skill-eval](https://github.com/boshu2/agentops/blob/main/skills/skill-eval/SKILL.md) | Measure whether a skill helps by comparing runs with and without it. Use when: reading skill A/B results or deciding to keep, revise or remove one. |
 | [test](https://github.com/boshu2/agentops/blob/main/skills/test/SKILL.md) | Write or assess tests that prove behavior and would fail without the fix. Use when: writing tests, TDD, or asked whether a green test is enough. |
-| [triage](https://github.com/boshu2/agentops/blob/main/skills/triage/SKILL.md) | Turn incoming reports, external PRs and alerts into evidence-based decisions and agent-ready briefs. Use when: intake arrives. For accepted work, use Plan. |
+| [triage](https://github.com/boshu2/agentops/blob/main/skills/triage/SKILL.md) | Make the call on a new bug report, issue, outside PR or alert: take it, ask for more, or close as duplicate or already fixed, each with evidence. Use when: one lands on you. |
 
 ## Deliberate planning and review strategies
 
