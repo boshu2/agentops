@@ -1,6 +1,8 @@
 # Volume 6: Actionable AgentOps Upgrade Specification & Implementation Roadmap
 
 > **Scope:** Concrete integration blueprint mapping Volumes 1–5 directly into **AgentOps (`~/dev/agentops/`)** across `PRACTICE-REGISTRY.md`, `docs/contracts/`, `cli/cmd/ao/`, `skills/`, and `docs/patterns/`.
+>
+> **Status (2026-11-08):** superseded on ordering and target by [Volume 7](07-design-review-lessons-applied-and-revised-roadmap.md). AgentOps' product boundary excludes Git landing, cherry-pick integration and leases (`PRODUCT.md`), and its maintainer decided in October 2026 to retire the Go CLI (recorded in working notes, not yet landed in the repository), so the `ao` verbs below are not where this work lands. The mechanisms are right; the home is the pi harness. The slug and contract proposals in §1 and §2 are parked (Vol. 7 §5).
 
 ---
 
@@ -38,7 +40,7 @@ Complements `subject-manifest.v1` and `verdict.v2` by proving that required chec
   "head_sha": "e5f60718...",
   "tree_sha": "99887766...",
   "contract_digest": "sha256:4f3c...",
-  "subject_Clean_before": true,
+  "subject_clean_before": true,
   "subject_clean_after": true,
   "protected_oracles_preserved": true,
   "per_commit_oracle_audit": "passed",

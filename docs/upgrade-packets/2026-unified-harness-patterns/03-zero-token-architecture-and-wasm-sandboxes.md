@@ -37,7 +37,7 @@ flowchart LR
 Instead of multi-turn polling, a single tool call (`mr_validate` + `pal validate`) binds all state to an immutable **6-part Kung-Robinson snapshot**:
 $$S = (\text{target\_project\_id},\, \text{source\_project\_id},\, \text{mr\_iid},\, \text{diff\_base\_sha},\, \text{head\_sha},\, \text{target\_tip\_sha})$$
 - **Merged-Result Parentage Proof:** When a pipeline runs on `refs/merge-requests/<iid>/merge`, the kernel fetches the merge commit's `parent_ids` and verifies that `head_sha` is one parent while binding the other parent as `target_tip_sha` (`change-preflight.ts:34-96`).
-- **Two-Tier Incremental Equivalence-Class Join (`136x` Speedup):** When checking key/value parity across sibling environments (`staging`, `prod`, etc.), instead of parsing all YAML files in every environment on every run, the checker computes a `rel_filter` over **changed and deleted relative paths** in the diff and evaluates only the touched equivalence classes—cutting runtime from `98,318ms` to `720ms`.
+- **Two-Tier Incremental Equivalence-Class Join (`136x` Speedup):** When checking key/value parity across sibling environments (`staging`, `prod`, etc.), instead of parsing all YAML files in every environment on every run, the checker computes a `rel_filter` over **changed and deleted relative paths** in the diff and evaluates only the touched equivalence classes—cutting runtime from `98,318ms` to `720ms` in the one run recorded (repository size, cache state and run count not stated; see Vol. 7 §4).
 - **Bracketed TOCTOU Verification:** After all local static gates and remote CI fault-tree traversals finish, the broker re-fetches the MR metadata from the server (`change-preflight.ts:214-289`). If `head_sha` or `diff_base_sha` moved during the check window, `stale_subject: true` is set and any `PASS` verdict is deterministically downgraded to `NOT_PROVEN`.
 
 #### Stage 2: Zero-Token Write (Preimage-Bound `SuggestedFix` & Rosie Shards)
@@ -51,7 +51,7 @@ $$S = (\text{target\_project\_id},\, \text{source\_project\_id},\, \text{mr\_iid
 - `executePrecomputedDeterministicWave` (`precomputed-wave.ts:32-248`) accepts up to $N$ precomputed shard plans (e.g., 10 shards modifying 20 files), verifies global Kung-Robinson read/write-set serializability, applies all replacements in an isolated scratch Git worktree, runs `bwrap`-confined managed checks once over the union tree, mints a `Symbol`-branded `TrustedManagedCheckReceipt`, and cherry-picks into the target repo—**executing an entire multi-shard wave with 0 LLM subagent turns**.
 
 #### Stage 4: Zero-Token Graduation (Empirical Trajectory Crystallization)
-- Across 427 production sessions (`59,725` tool events), `coach report` (`report.rs:2566-2623`) mines recurring 3-step domain tool n-grams (`windows(3)`) and ranks high-friction multi-tool sequences so maintainers can crystallize them into new 1-call composite tools.
+- Across 427 production sessions (`59,725` tool events; how many 3-grams became tools is not yet recorded, see Vol. 7 §4), `coach report` (`report.rs:2566-2623`) mines recurring 3-step domain tool n-grams (`windows(3)`) and ranks high-friction multi-tool sequences so maintainers can crystallize them into new 1-call composite tools.
 
 ---
 
