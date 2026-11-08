@@ -23,6 +23,11 @@
       "minimumReleaseAge": "3 days"
     },
     {
+      "matchManagers": ["gomod"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "go modules"
+    },
+    {
       "matchDepNames": ["go", "golang"],
       "matchDatasources": ["golang-version", "docker"],
       "groupName": "go toolchain",
