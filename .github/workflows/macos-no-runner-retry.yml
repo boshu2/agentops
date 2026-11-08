@@ -1,0 +1,70 @@
+# Retry main-branch runs whose only failures are macOS jobs GitHub never
+# assigned a runner to ("The job was not acquired by Runner of type hosted even
+# after multiple attempts" — macOS arm64 capacity). GitHub retries acquisition
+# every 5 minutes and gives up after the third attempt, so those jobs end
+# cancelled ~15 minutes in with zero steps and runner_id 0, and turn main red
+# without any test having run. The run itself concludes "failure".
+#
+# Retries only when EVERY failed/cancelled job in the run is such a no-runner
+# macOS job (scripts/macos-no-runner-classify.sh). Any job that actually ran
+# steps and failed (any OS) leaves the run red and is never retried.
+#
+# Shortages last longer than one acquisition window (2026-11-04: 16:18 to at
+# least 17:39 UTC), so it reruns up to 3 times (attempts 1-3 trigger, attempt 4
+# is final) and waits 5/10/15 minutes before each rerun. That covers roughly
+# 90 minutes of shortage before main stays red.
+
+name: macos-no-runner-retry
+
+on:
+  workflow_run:
+    workflows: [install-e2e, fresh-install-conformance]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  retry:
+    if: >-
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.run_attempt < 4 &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: scripts/macos-no-runner-classify.sh
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Rerun if the only failures are macOS jobs that never got a runner
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          RUN_NAME: ${{ github.event.workflow_run.name }}
+        run: |
+          set -euo pipefail
+          jobs="$(gh api "repos/$REPO/actions/runs/$RUN_ID/jobs?per_page=100")"
+          if ! summary="$(bash scripts/macos-no-runner-classify.sh <<<"$jobs")"; then
+            echo "$summary"
+            echo "$RUN_NAME run $RUN_ID attempt $RUN_ATTEMPT has real failures (or none); not retrying."
+            exit 0
+          fi
+          echo "$summary"
+          delay=$((300 * RUN_ATTEMPT))
+          echo "::warning::$RUN_NAME run $RUN_ID attempt $RUN_ATTEMPT: macOS job(s) never got a runner: $(jq -r '.no_runner | join(", ")' <<<"$summary"). Rerunning failed jobs in ${delay}s."
+          sleep "$delay"
+          current="$(gh api "repos/$REPO/actions/runs/$RUN_ID" --jq '.run_attempt')"
+          if [[ "$current" != "$RUN_ATTEMPT" ]]; then
+            echo "$RUN_NAME run $RUN_ID is already on attempt $current; not rerunning."
+            exit 0
+          fi
+          gh api -X POST "repos/$REPO/actions/runs/$RUN_ID/rerun-failed-jobs"
