@@ -2,7 +2,7 @@
 
 > **Scope:** Concrete integration blueprint mapping Volumes 1–5 directly into **AgentOps (`~/dev/agentops/`)** across `PRACTICE-REGISTRY.md`, `docs/contracts/`, `cli/cmd/ao/`, `skills/`, and `docs/patterns/`.
 >
-> **Status (2026-11-08):** superseded on ordering and target by [Volume 7](07-design-review-lessons-applied-and-revised-roadmap.md). AgentOps' product boundary excludes Git landing, cherry-pick integration and leases (`PRODUCT.md`), and its maintainer decided in October 2026 to retire the Go CLI (recorded in working notes, not yet landed in the repository), so the `ao` verbs below are not where this work lands. The mechanisms are right; the home is the pi harness. The slug and contract proposals in §1 and §2 are parked (Vol. 7 §5).
+> **Status (2026-11-08):** superseded on ordering and target by [Volume 7](07-design-review-lessons-applied-and-revised-roadmap.md). AgentOps' product boundary excludes Git landing, cherry-pick integration and leases (`PRODUCT.md`), and its maintainer decided in October 2026 to retire the Go CLI (recorded in working notes, not yet landed in the repository), so the `ao` verbs below are not where this work lands. The mechanisms are right; the home is the pi harness. The slug and contract proposals in §1 and §2 are parked (Vol. 7 §5). Command names below were rewritten from `ao` to the harness CLI `pal` on 2026-11-08 so this document does not cite AgentOps commands that do not exist.
 
 ---
 
@@ -13,14 +13,14 @@ To maintain `scripts/validate-practice-citations.sh` integrity in `~/dev/agentop
 | Proposed Slug | Lineage & Canonical Source | AgentOps Mechanical Consumer |
 | --- | --- | --- |
 | **`three-locus-capability-broker`** | Capability-Based Security (Levy 1984); OS Process/Namespace Sandboxing (`bwrap` / Seatbelt) | `docs/ARCHITECTURE.md`, `cli/internal/sandbox/`, host extension adapters |
-| **`proof-carrying-check-receipts`** | Proof-Carrying Code (Necula, POPL 1997) | `docs/contracts/check-receipt.v1.md`, `ao gate verify-receipt`, `skills/validate/SKILL.md` |
-| **`kung-robinson-wave-serializability`** | Optimistic Concurrency Control (Kung & Robinson, ACM TODS 1981); Google Rosie (CACM 2016) | `ao codemod shard`, `ao factory check-wave`, `docs/software-factory.md` |
-| **`tricorder-fingerprint-ratchet`** | Google Tricorder Static Analysis Platform (Sadowski et al., CACM 2018) | `ao preflight --diff`, `ao validate`, `.baseline-fingerprints.json` |
-| **`systems-data-layout-sys01-05`** | Data-Oriented Design (Acton 2014); SIMD Automaton Filtering (`Aho-Corasick` / `memchr`) | `ao coach`, `ao graph`, `skills/architecture/SKILL.md`, `skills/review/SKILL.md` |
-| **`volatile-log-template-compaction`** | Drain Log Template Miner (He et al., ICWS 2017) | `cli/internal/sqz/`, `ao session compact-logs`, `hooks/` |
-| **`two-horizon-walking-skeleton`** | Walking Skeleton (Cockburn 2004); *Programming as Theory Building* (Naur 1985); *Tidy First?* (Beck 2023) | `skills/plan/SKILL.md`, `skills/implement/SKILL.md`, `ao gate packet-shape` |
+| **`proof-carrying-check-receipts`** | Proof-Carrying Code (Necula, POPL 1997) | `docs/contracts/check-receipt.v1.md`, `pal gate verify-receipt`, `skills/validate/SKILL.md` |
+| **`kung-robinson-wave-serializability`** | Optimistic Concurrency Control (Kung & Robinson, ACM TODS 1981); Google Rosie (CACM 2016) | `pal codemod shard`, `pal factory check-wave`, `docs/software-factory.md` |
+| **`tricorder-fingerprint-ratchet`** | Google Tricorder Static Analysis Platform (Sadowski et al., CACM 2018) | `pal preflight --diff`, `pal validate`, `.baseline-fingerprints.json` |
+| **`systems-data-layout-sys01-05`** | Data-Oriented Design (Acton 2014); SIMD Automaton Filtering (`Aho-Corasick` / `memchr`) | `pal coach`, `pal graph`, `skills/architecture/SKILL.md`, `skills/review/SKILL.md` |
+| **`volatile-log-template-compaction`** | Drain Log Template Miner (He et al., ICWS 2017) | `cli/internal/sqz/`, `pal session compact-logs`, `hooks/` |
+| **`two-horizon-walking-skeleton`** | Walking Skeleton (Cockburn 2004); *Programming as Theory Building* (Naur 1985); *Tidy First?* (Beck 2023) | `skills/plan/SKILL.md`, `skills/implement/SKILL.md`, `pal gate packet-shape` |
 | **`cross-plane-evidence-invariants`** | MacroBase / BubbleUp Cohort Explanation (Bailis et al., SIGMOD 2017) | `docs/patterns/cross-plane-observability.md`, telemetry output-contract validators |
-| **`descriptor-pinned-safe-read`** | Capability-Relative Filesystem Traversal (`openat2` / `O_NOFOLLOW`, Linux Kernel / `rustix`) | `cli/internal/saferead/`, `ao gate`, `ao lint` |
+| **`descriptor-pinned-safe-read`** | Capability-Relative Filesystem Traversal (`openat2` / `O_NOFOLLOW`, Linux Kernel / `rustix`) | `cli/internal/saferead/`, `pal gate`, `pal lint` |
 | **`cold-read-state-card`** | Generation Effect & Desirable Difficulties (Bjork 1994) | `skills/reverse-engineer/SKILL.md`, `skills/research/SKILL.md` |
 
 ---
@@ -102,12 +102,12 @@ flowchart TD
     W1 --> W6
 ```
 
-### Slice 1 — Practice Registry, Code-Anchored Corpus (`ao corpus`) & Adversarial Skill Proof
+### Slice 1 — Practice Registry, Code-Anchored Corpus (`pal corpus`) & Adversarial Skill Proof
 - **Write Scope:** `PRACTICE-REGISTRY.md`, `cli/cmd/ao/corpus.go`, `cli/internal/corpus/`, `docs/contracts/corpus-entry.v1.md`
 - **Acceptance (Given/When/Then + Negative Invariant):**
   - **Given** a `.agents/corpus/{domains,topics,decisions}/*.md` file declaring `paths[]` and `anchors[]` (`path:symbol`),
-  - **When** `ao corpus verify --json` runs,
-  - **Then** it verifies every anchored file and symbol exists at `HEAD` (exit `0` when verified, exit `3` with `STALE (N)` when an anchor was renamed/deleted) and verifies every `SKILL.md` CLI citation against `ao capabilities --json` **without** mutating any repository file or accepting a corpus page missing `Rule`, `Evidence`, `Counterexample`, or `Invalidation` (exit `4`).
+  - **When** `pal corpus verify --json` runs,
+  - **Then** it verifies every anchored file and symbol exists at `HEAD` (exit `0` when verified, exit `3` with `STALE (N)` when an anchor was renamed/deleted) and verifies every `SKILL.md` CLI citation against `pal capabilities --json` **without** mutating any repository file or accepting a corpus page missing `Rule`, `Evidence`, `Counterexample`, or `Invalidation` (exit `4`).
 - **Verify Command:** `go test ./cli/... && ./scripts/validate-practice-citations.sh`
 
 ### Slice 2 — Descriptor-Pinned `saferead` & Process-Group Subprocess Reaper
@@ -115,14 +115,14 @@ flowchart TD
 - **Acceptance:**
   - **Given** an untrusted file path or external check command executed by `ao`,
   - **When** opened via `saferead.ReadRegularBounded` or executed via `procgroup.RunBounded`,
-  - **Then** symlinks, FIFOs, sibling-prefix escapes (`/root-evil`), mid-read file swaps, shell executables, and leaked grandchild processes holding `stdout` open are deterministically rejected (`exit 4`) **without** hanging or silently truncating output (`OutputLimitExceeded` on overflow).
+  - **Then** symlinks, FIFOs, sibling-prefix escapes (`/root-evil/`), mid-read file swaps, shell executables, and leaked grandchild processes holding `stdout` open are deterministically rejected (`exit 4`) **without** hanging or silently truncating output (`OutputLimitExceeded` on overflow).
 - **Verify Command:** `go test -v ./cli/internal/saferead/... ./cli/internal/procgroup/...`
 
 ### Slice 3 — Proof-Carrying Check Receipts (`check-receipt.v1`) & Per-Commit Oracle Gate
 - **Write Scope:** `docs/contracts/check-receipt.v1.md`, `schemas/check-receipt.v1.schema.json`, `cli/internal/gate/oracle.go`, `cli/internal/gate/receipt.go`
 - **Acceptance:**
   - **Given** a candidate branch `base_ref..head_ref` and declared `write_scope[]` + `check_commands[]`,
-  - **When** `ao gate run-checks` and `ao gate audit-oracles` run,
+  - **When** `pal gate run-checks` and `pal gate audit-oracles` run,
   - **Then** `ao` audits **every individual commit** in `base_ref..head_ref` for protected-oracle edits, net assertion drops, new skips/suppressions, and out-of-scope writes, executes checks in a sandboxed process group, and emits a SHA-256 `contract_digest`-bound `check-receipt.v1` **without** trusting prose claims or allowing an intermediate assertion deletion restored in a later commit (`exit 4`).
 - **Verify Command:** `go test -v ./cli/internal/gate/...`
 
@@ -130,7 +130,7 @@ flowchart TD
 - **Write Scope:** `cli/cmd/ao/codemod.go`, `cli/internal/codemod/`, `docs/software-factory.md`
 - **Acceptance:**
   - **Given** a structural rewrite or multi-slice wave packet,
-  - **When** `ao codemod plan|diff|apply|shard` or `ao gate check-wave` runs,
+  - **When** `pal codemod plan|diff|apply|shard` or `pal gate check-wave` runs,
   - **Then** it enforces Protected-Oracle Deny Policy, verifies symbol-collision absence and post-image idempotency, checks `preimage_sha256` across all files before atomic staging, and verifies pairwise disjoint `write_scope[]` + Kung-Robinson read/write-set serializability ($\text{ReadSet}(S_i) \cap \text{WriteSet}(S_j) = \emptyset$) **without** spawning workers when any scope overlaps (`exit 4`).
 - **Verify Command:** `go test -v ./cli/internal/codemod/...`
 
@@ -138,7 +138,7 @@ flowchart TD
 - **Write Scope:** `cli/internal/sqz/`, `cli/cmd/ao/session_coach.go`, `docs/patterns/log-template-compaction.md`
 - **Acceptance:**
   - **Given** multi-megabyte session JSONL transcripts or noisy build/test logs,
-  - **When** `ao session coach` or the `sqz` filter runs,
+  - **When** `pal session coach` or the `sqz` filter runs,
   - **Then** it redacts secrets first, collapses `>= 3` volatile progress/test-pass templates and `>= 10` repeated tail blocks while preserving SHAs/UUIDs/diffs/errors, indexes JSONL via raw-slice pre-filtering (`SYS-02`) + single-pass fold (`SYS-03`) + atomic temp+rename with file & parent-dir `fsync` (`SYS-04`) + $O(1)$ `stat` `(dev, ino, size, nlink==1)` resume (`SYS-05`), and mines 3-step domain tool n-grams **without** corrupting valid JSON outputs.
 - **Verify Command:** `go test -v ./cli/internal/sqz/...`
 
@@ -147,5 +147,5 @@ flowchart TD
 - **Acceptance:**
   - **Given** canonical skills in `skills/`,
   - **When** refactored to root `SKILL.md <= 120` lines + on-demand `modes/<mode>/mode.md` and enriched with the **7 Architectural Lenses**, **4 Adversarial Review Lenses (with 3-Pass Convergence)**, **4-Part Creation Gate**, **Two-Horizon Walking Skeleton**, and **Cold-Read Variable State Card**,
-  - **Then** root skill token footprint drops by `> 60%` while `ao skills graph` and `scripts/validate-practice-citations.sh` pass with zero broken links or unverified commands (`exit 0`).
+  - **Then** root skill token footprint drops by `> 60%` while `pal skills graph` and `scripts/validate-practice-citations.sh` pass with zero broken links or unverified commands (`exit 0`).
 - **Verify Command:** `make validate`

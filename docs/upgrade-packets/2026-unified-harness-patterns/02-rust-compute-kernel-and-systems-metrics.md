@@ -18,7 +18,7 @@ The CLI workspace is split into a pure domain/analysis library (`core` crate) an
 
 ### 2.1 Validated Newtypes (`newtypes.rs` & `types/*.rs`)
 To eliminate stringly-typed bugs and CWE-22 path traversal at compile time:
-- **`ConfinedPath(Utf8PathBuf)`:** `#[repr(transparent)]` wrapper with a **private inner field** and **no `Deserialize` implementation**. Untrusted JSON/YAML cannot construct a `ConfinedPath` directly; callers must invoke `ConfinedPath::try_new(root, candidate)`, which canonicalizes both paths and performs component-aware prefix verification (blocking sibling-prefix bypasses such as `/workspace-evil` matching `/workspace`).
+- **`ConfinedPath(Utf8PathBuf)`:** `#[repr(transparent)]` wrapper with a **private inner field** and **no `Deserialize` implementation**. Untrusted JSON/YAML cannot construct a `ConfinedPath` directly; callers must invoke `ConfinedPath::try_new(root, candidate)`, which canonicalizes both paths and performs component-aware prefix verification (blocking sibling-prefix bypasses such as `/workspace-evil/` matching `/workspace/`).
 - **`BeadId(SmolStr)` & `PrimitiveId(SmolStr)`:** Inline-allocated small strings (up to 23 bytes on stack without heap allocation) whose private constructors reject empty/whitespace strings—making the type itself proof of non-emptiness.
 - **`FileId(pub u32)` & `NodeId(pub u32)`:** Zero-cost `#[repr(transparent)]`, `Copy` integer handles.
 - **Fail-Closed Domain Enums:**
