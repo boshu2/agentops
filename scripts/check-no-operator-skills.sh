@@ -18,7 +18,7 @@
 #
 # SCOPE: only unambiguous operator-personal-IDENTITY slugs are denied. General
 # craft skills (de-slopify, teacher-mode, etc.) are product skills and are NOT
-# on this list. Substrate skills (agent-native, swarm) are legitimate product
+# on this list. Substrate skills (orchestrate, swarm) are legitimate product
 # skills, not operator-personal — also NOT denied.
 #
 # Usage:

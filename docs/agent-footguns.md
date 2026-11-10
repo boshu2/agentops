@@ -2,7 +2,7 @@
 
 Reference doc to include in agent dispatch prompts. Prevents agents from rediscovering known issues.
 
-See also: `skills/agent-native/SKILL.md` for explicit runtime dispatch and disjoint worker scopes.
+See also: `skills/orchestrate/SKILL.md` for explicit runtime dispatch and disjoint worker scopes.
 
 ## Go / Cobra CLI
 

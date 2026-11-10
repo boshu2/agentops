@@ -108,7 +108,7 @@ absence of a withdrawal; child closure and deletion cannot clear an anchor fact.
 
 Default to the native agent runtime and the local shell; other runtimes only on
 explicit request. Bounded cross-family judgment follows
-[model-dispatch](skills/agent-native/references/model-dispatch.md) and actual host
+[model-dispatch](skills/validate/references/model-dispatch.md) and actual host
 authorization. `ao` is a repository tool, not a session ritual.
 
 ## Federated source authority
@@ -206,7 +206,7 @@ becomes a core dependency or lifecycle authority.
 
 Operate a selected factory only through its own doors (coordinator, doctor,
 supervisor); dispatch through its coordinator, and never create, scale or repair
-its sessions by hand ([using-gc](skills/using-gc/SKILL.md)).
+its sessions by hand.
 
 ## Concurrency
 

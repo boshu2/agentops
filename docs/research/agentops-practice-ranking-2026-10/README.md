@@ -119,7 +119,7 @@ fix it; see [decisions.md](decisions.md).
 | 7 | Product identity still sells always-fresh judgment | Text unchanged by #1221 | GOALS.md:5-18; PRODUCT.md:54-72; `.codex-plugin/plugin.json`:9,17-18; `.claude-plugin/marketplace.json`:8,14 | Owner |
 | 8 | Installed binaries print the retired review rule | Latest release v3.10.0 (2026-10-05) predates #1221 | GitHub releases API | Owner: ship a release |
 | 9 | The rpi behavior eval grades the retired rule | Criterion c3 still requires fresh sign-off | `evals/plugin-eval/behavior/rpi/case.yaml` | Owner, before the next paid run |
-| 10 | Reviewer and eval grader default to the author's model family | Text unchanged | `skills/validate/SKILL.md:144`; `evals/plugin-eval/grade.py` | Open; cross-family is opt-in per [model-dispatch](../../../skills/agent-native/references/model-dispatch.md) |
+| 10 | Reviewer and eval grader default to the author's model family | Text unchanged | `skills/validate/SKILL.md:144`; `evals/plugin-eval/grade.py` | Open; cross-family is opt-in per [model-dispatch](../../../skills/validate/references/model-dispatch.md) |
 | 11 | 21 grandfathered blocking script gates have no negative witness (unproven, not shown unable to fail) | 21 non-comment lines | `scripts/.gate-negative-witness-grandfather` | Open |
 | 12 | No hook protects tests from the author; the policy hook fails open without jq or its registry | 6 policies, none on tests | `hooks/guards/policies/policies.json`; `hooks/guards/hooks/policy-dispatch.sh:48-49` | Decision: red-test-first check rejected; fail-open is documented design |
 | 13 | Two removed-verb references remain in Go | grep | `cli/internal/quality/stale_refs.go:49`; `cli/internal/constraintindex/constraintindex.go:222` | Open follow-up from #1218 |

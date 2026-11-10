@@ -99,7 +99,7 @@ fits the declared wave budget; no budget means one bead. Prefer an early
 falsifier.
 
 Hand each build bead to native execution, or to one RPI when the goal or
-caller selects it: through Orchestrate or Agent Native when delegation is
+caller selects it: through Orchestrate when delegation is
 authorized, one bead per worker, otherwise the caller's runtime. Its checks
 and CI are its result; it gets one fresh, author-distinct Validate only on
 [Validate's triggers](../validate/SKILL.md#when-a-fresh-judgment-is-worth-it),

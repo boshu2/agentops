@@ -150,7 +150,7 @@ defines a literal `<skill-dir>` once before first use and runs scripts as
 `bash "<skill-dir>/scripts/x.sh"`; references and schemas use relative links;
 repository-root material is labeled "AgentOps source checkout only" and linked
 by GitHub URL
-([skill structure](https://github.com/boshu2/agentops/blob/main/skills/domain/references/standards/skill-structure.md)).
+([Codex parity](https://github.com/boshu2/agentops/blob/main/skills/skill-builder/references/codex-parity.md)).
 
 ---
 

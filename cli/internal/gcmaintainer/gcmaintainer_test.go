@@ -437,7 +437,7 @@ func TestPrepare_RefusesForeignCheckWrapper(t *testing.T) {
 
 func TestPrepare_RefusesForeignRequiredSkill(t *testing.T) {
 	f := newFixture(t)
-	foreign := filepath.Join(f.city, ".codex", "skills", "using-gc", "SKILL.md")
+	foreign := filepath.Join(f.city, ".codex", "skills", "plan", "SKILL.md")
 	mustWrite(t, foreign, "# foreign\n")
 	_, err := f.run(t, Prepare, nil)
 	wantErrContaining(t, err, "does not resolve to the active skills source")

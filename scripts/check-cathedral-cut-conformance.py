@@ -24,7 +24,6 @@ ROOT = Path(__file__).resolve().parents[1]
 CORE_SCHEMAS = (
     "subject-manifest.v1.schema.json",
     "verdict.v2.schema.json",
-    "rpi-report.v1.schema.json",
 )
 COMPATIBILITY_SCHEMAS = (
     "plan-packet.v1.schema.json",
@@ -63,6 +62,12 @@ REMOVED_SKILLS = {
     "learn", "toil-mining", "bootstrap", "handoff", "scaffold", "workflow-builder",
     "automation-shape-routing", "crank", "converter", "operationalize", "standards",
     "fitness", "status", "route", "human-only-skills", "swarm",
+    # 2026-11-10 (3.12): no ledger row, no measured gain; evidence rules moved to Research.
+    "reverse-engineer",
+    # 2026-11-10 (3.12): factory adapter; the ledger lists the in-repo factory under Did not survive.
+    "using-gc",
+    # 2026-11-10 (3.12): packet dispatch merged into orchestrate.
+    "agent-native",
     # 2026-10-23: Reality Check folded into Research's claimed-state audit.
     "reality-check",
 }

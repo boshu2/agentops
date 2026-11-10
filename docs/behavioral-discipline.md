@@ -102,4 +102,3 @@ The [implementation contract](https://github.com/boshu2/agentops/blob/main/skill
 - [`README.md`](https://github.com/boshu2/agentops/blob/main/README.md) gives the front-door version.
 - [`skills/implement/SKILL.md`](skills/implement.md) requires an execution frame before editing.
 - [`skills/validate/SKILL.md`](skills/validate.md) (`--mode=pr`, which absorbed the retired `/review`) checks for hidden assumptions, speculative abstractions, and weak proof.
-- [Common standards](https://github.com/boshu2/agentops/blob/main/skills/domain/references/standards/common-standards.md) provides the shared coding reference.

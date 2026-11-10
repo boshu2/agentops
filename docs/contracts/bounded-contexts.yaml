@@ -40,5 +40,5 @@ bounded_contexts:
     name: Dispatch
     product_layer: "Optional factory adapters"
     responsibility: "Dispatch explicit disjoint packets once and return per-packet facts."
-    center_of_gravity: [swarm, agent-native]
+    center_of_gravity: [swarm, orchestrate]
     ports: [DispatchOncePort, MessagePort]

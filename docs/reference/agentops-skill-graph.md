@@ -4,7 +4,6 @@
 
 ```mermaid
 graph LR
-  agent_native["agent-native"]
   agy_native["agy-native"]
   architecture["architecture"]
   claude_exec["claude-exec"]
@@ -25,7 +24,6 @@ graph LR
   premortem["premortem"]
   refactor["refactor"]
   research["research"]
-  reverse_engineer["reverse-engineer"]
   review["review"]
   rpi["rpi"]
   security["security"]
@@ -33,7 +31,6 @@ graph LR
   skill_eval["skill-eval"]
   test["test"]
   triage["triage"]
-  using_gc["using-gc"]
   validate["validate"]
   rpi --> implement
   rpi --> plan

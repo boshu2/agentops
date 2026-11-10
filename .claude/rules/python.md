@@ -5,12 +5,12 @@ paths:
 
 # Python Conventions
 
-> Canonical source with full examples: `skills/domain/references/standards/python.md`
+> Longer examples: `docs/standards/python-style-guide.md`
 > This file is kept self-contained for sessions that don't invoke skills.
 
 ## Formatting and Linting
 
-- **Formatting:** `ruff format` (or Black) at the line length the repository configures; this repository configures none, so keep a file's existing style. See `skills/domain/references/standards/python.md`.
+- **Formatting:** `ruff format` (or Black) at the line length the repository configures; this repository configures none, so keep a file's existing style.
 - **ruff** linter (`ruff check` must pass).
 - **mypy** for type checking.
 
@@ -34,7 +34,7 @@ paths:
 
 ## Testing (Risk-Based)
 
-**Pick the test by risk, not by level.** Start from the acceptance behavior and write the narrowest test that fails when it is wrong: L1 unit for dense logic and edge cases, L2 integration when a boundary (module entry point, file or network I/O) is likely to hide the defect. Add a level only for a distinct risk; L2 is not required by default. See `skills/domain/references/standards/test-pyramid.md` for the selection questions.
+**Pick the test by risk, not by level.** Start from the acceptance behavior and write the narrowest test that fails when it is wrong: L1 unit for dense logic and edge cases, L2 integration when a boundary (module entry point, file or network I/O) is likely to hide the defect. Add a level only for a distinct risk; L2 is not required by default.
 
 - Assert exact expected values (`== expected`), not just `!= wrong`.
 - Mock external services, not internal code.

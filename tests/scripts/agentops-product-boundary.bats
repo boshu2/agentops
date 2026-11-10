@@ -119,11 +119,11 @@ cut.check_core_schemas()
 
 doc = root / "docs" / "SCHEMAS.md"
 text = doc.read_text()
-row = "rpi-report.v1.schema.json"
+row = "verdict.v2.schema.json"
 assert row in text
 lines = text.split("\n")
 at = next(i for i, line in enumerate(lines) if row in line)
-lines.insert(at + 1, lines[at].replace("rpi-report.v1", "plan-packet.v1"))
+lines.insert(at + 1, lines[at].replace("verdict.v2", "plan-packet.v1"))
 doc.write_text("\n".join(lines))
 try:
     cut.check_schema_index_docs()

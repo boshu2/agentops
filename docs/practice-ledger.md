@@ -163,7 +163,7 @@ method, DORA.
 | Test-driven development | Test first, always | A test that fails without the fix, then refactor |
 | Memory across sessions | A pipeline that extracts and injects lessons | Short notes a person wrote and checked |
 | Several agents | A swarm by default | One agent and one writer, with parallel work only where the pieces are independent |
-| A skill library | More than 150 skills at the peak | 31, named when you want one applied |
+| A skill library | More than 150 skills at the peak | 28, named when you want one applied |
 
 **Independent review.** Mandatory review never converged here. A reviewer asked
 to find problems finds one every time, and each repair started another round.

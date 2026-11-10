@@ -14,9 +14,6 @@
 
 | Source | Kind | Target |
 |---|---|---|
-| `agent-native` | `customer-of` | `agy-native` |
-| `agent-native` | `customer-of` | `claude-exec` |
-| `agent-native` | `customer-of` | `codex-exec` |
 | `agy-native` | `separate-ways` | `codex-exec` |
 | `architecture` | `partnership` | `domain` |
 | `architecture` | `supplier-to` | `plan` |
@@ -33,6 +30,9 @@
 | `interview` | `supplier-to` | `craft-goal` |
 | `navigate` | `customer-of` | `craft-goal` |
 | `navigate` | `supplier-to` | `orchestrate` |
+| `orchestrate` | `customer-of` | `agy-native` |
+| `orchestrate` | `customer-of` | `claude-exec` |
+| `orchestrate` | `customer-of` | `codex-exec` |
 | `premortem` | `supplier-to` | `plan` |
 | `research` | `supplier-to` | `plan` |
 | `rpi` | `customer-of` | `implement` |
@@ -41,7 +41,6 @@
 | `security` | `supplier-to` | `validate` |
 | `skill-eval` | `supplier-to` | `skill-builder` |
 | `triage` | `supplier-to` | `plan` |
-| `using-gc` | `supplier-to` | `orchestrate` |
 | `validate` | `customer-of` | `implement` |
 | `validate` | `customer-of` | `plan` |
 
@@ -49,10 +48,6 @@
 
 | Skill | Direction | Artifact |
 |---|---|---|
-| `agent-native` | consumes | `explicit-role-packets` |
-| `agent-native` | produces | `runtime-evidence` |
-| `agent-native` | produces | `worker-handoff` |
-| `agent-native` | produces | `per-packet-results` |
 | `agy-native` | consumes | `explicit-packet` |
 | `agy-native` | produces | `agy-run-evidence` |
 | `architecture` | consumes | `repo-context` |
@@ -96,8 +91,11 @@
 | `orchestrate` | consumes | `accepted-intent` |
 | `orchestrate` | consumes | `native-work-state` |
 | `orchestrate` | consumes | `candidate-evidence` |
+| `orchestrate` | consumes | `explicit-role-packets` |
 | `orchestrate` | produces | `native-handoffs` |
 | `orchestrate` | produces | `reconciled-feedback` |
+| `orchestrate` | produces | `runtime-evidence` |
+| `orchestrate` | produces | `per-packet-results` |
 | `postmortem` | produces | `postmortem-analysis` |
 | `premortem` | produces | `premortem-plan-review.v1` |
 | `refactor` | consumes | `repo-context` |
@@ -110,11 +108,9 @@
 | `research` | produces | `reality-check-report.v1` |
 | `research` | produces | `goal-measurement-report` |
 | `research` | produces | `native-status-snapshot` |
-| `reverse-engineer` | produces | `.agents/scratch/reverse-engineer/*/` |
 | `rpi` | consumes | `plan` |
 | `rpi` | consumes | `implement` |
 | `rpi` | consumes | `validate` |
-| `rpi` | produces | `rpi-report.v1` |
 | `security` | consumes | `repo-context` |
 | `security` | produces | `security-gate-summary.json` |
 | `security` | produces | `suite-summary.json` |
@@ -133,8 +129,6 @@
 | `triage` | consumes | `native-source-evidence` |
 | `triage` | produces | `triage-outcome` |
 | `triage` | produces | `agent-ready-brief` |
-| `using-gc` | consumes | `accepted-intent` |
-| `using-gc` | produces | `gas-city-runtime-evidence` |
 | `validate` | consumes | `subject-manifest.v1` |
 | `validate` | produces | `subject-manifest.v1` |
 | `validate` | produces | `validation-result` |

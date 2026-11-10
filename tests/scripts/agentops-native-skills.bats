@@ -461,7 +461,7 @@ run_recon_race() {
   assert_rejects "$v" '{"schema_version":"pattern-mining.v1","outcome":"hypothesis","exemplars":["a.go:1","b.go:2"],"invariants":[],"variations":[],"incidental":[],"holdout":{"source":"","result":"not-run"},"back_application":"not-run","route":"no-action","shape":"gate","cost":"INC-42"}'
 }
 
-@test "agent-native packet helper retains one-shot dispatch and overlap refusal" {
+@test "orchestrate packet helper retains one-shot dispatch and overlap refusal" {
   run env PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s "$REPO_ROOT/tests/swarm" -p 'test_*.py'
   [ "$status" -eq 0 ]
 }
