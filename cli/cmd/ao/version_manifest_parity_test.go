@@ -203,3 +203,47 @@ func TestVersion_ReadmeUpgradeSectionLinksCurrentNotes(t *testing.T) {
 		t.Errorf("README.md has no %q upgrade heading for version %s", "Upgrading to "+minor, version)
 	}
 }
+
+// TestReadme_SkillCountMatchesCatalog guards the README's stated skill count
+// against the skills directory. The count is written by hand ("The 28 skills
+// are a starting point") and went stale across two releases while skills were
+// added and removed; no doc gate reads it.
+func TestReadme_SkillCountMatchesCatalog(t *testing.T) {
+	root := findReleaseManifestRoot(t)
+	if root == "" {
+		t.Skip("not running inside an AgentOps checkout; no README to read")
+	}
+
+	entries, err := os.ReadDir(filepath.Join(root, "skills"))
+	if err != nil {
+		t.Fatalf("read skills directory: %v", err)
+	}
+	want := 0
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		if _, err := os.Stat(filepath.Join(root, "skills", entry.Name(), "SKILL.md")); err == nil {
+			want++
+		}
+	}
+	if want == 0 {
+		t.Fatal("found no skills/<name>/SKILL.md; the count check would pass vacuously")
+	}
+
+	raw, err := os.ReadFile(filepath.Join(root, "README.md"))
+	if err != nil {
+		t.Fatalf("read README.md: %v", err)
+	}
+	match := regexp.MustCompile(`The (\d+) skills are a starting point`).FindSubmatch(raw)
+	if match == nil {
+		t.Fatal(`README.md no longer contains "The <N> skills are a starting point"; update this test with the sentence that states the count`)
+	}
+	got, err := strconv.Atoi(string(match[1]))
+	if err != nil {
+		t.Fatalf("parse README skill count %q: %v", match[1], err)
+	}
+	if got != want {
+		t.Errorf("README.md says %d skills; skills/ holds %d", got, want)
+	}
+}
