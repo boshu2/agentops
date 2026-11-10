@@ -15,7 +15,7 @@ import pathlib, sys, tomllib
 root = pathlib.Path(sys.argv[1])
 config = tomllib.loads((root / '.codex/config.toml').read_text())
 for name in ('bulk-reader', 'code-writer'):
-    source = root / 'skills/agent-native/agents' / (name + '.toml')
+    source = root / 'skills/orchestrate/agents' / (name + '.toml')
     project = root / '.codex/agents' / (name + '.toml')
     assert project.resolve() == source.resolve()
     registered = root / '.codex' / config['agents'][name]['config_file']
@@ -33,8 +33,8 @@ PY
   require_codex
   run bash "$ROOT/scripts/install-codex-context-agents.sh"
   [ "$status" -eq 0 ]
-  cmp "$CODEX_HOME/agents/bulk-reader.toml" "$ROOT/skills/agent-native/agents/bulk-reader.toml"
-  cmp "$CODEX_HOME/agents/code-writer.toml" "$ROOT/skills/agent-native/agents/code-writer.toml"
+  cmp "$CODEX_HOME/agents/bulk-reader.toml" "$ROOT/skills/orchestrate/agents/bulk-reader.toml"
+  cmp "$CODEX_HOME/agents/code-writer.toml" "$ROOT/skills/orchestrate/agents/code-writer.toml"
   [ ! -e "$CODEX_HOME/hooks.json" ]
   [ -f "$CODEX_HOME/config.toml" ]
   python3 - "$CODEX_HOME/config.toml" <<'PY'

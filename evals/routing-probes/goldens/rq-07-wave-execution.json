@@ -13,10 +13,10 @@
     "validate"
   ],
   "forbidden_leaks": [
-    "^(rpi|agent-native|crank|swarm)$"
+    "^(rpi|orchestrate|agent-native|crank|swarm)$"
   ],
   "min_provenance_density": 1.0,
   "max_tokens": 90,
-  "rationale": "Implement now owns executing caller-authorized work, including a supplied wave and its per-lane checks. A finished-change validation request is different; rpi requires explicit traversal selection, while agent-native owns runtime packet dispatch rather than the implementation outcome.",
+  "rationale": "Implement now owns executing caller-authorized work, including a supplied wave and its per-lane checks. A finished-change validation request is different; rpi requires explicit traversal selection, while orchestrate owns runtime packet dispatch rather than the implementation outcome.",
   "notes": "Owner migrated from the retired crank wrapper. This remains an execution request over supplied work, with per-lane evidence; it does not authorize a scheduler or a new aggregate controller."
 }

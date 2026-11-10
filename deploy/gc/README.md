@@ -4,7 +4,7 @@
 AgentOps now recommends the upstream
 [`gascity` build pack](https://github.com/gastownhall/gascity-packs/tree/main/gascity)
 and contributes skills through the provider runtime instead of owning formulas
-or roles. See [`using-gc`](../../skills/using-gc/SKILL.md).
+or roles. The `using-gc` skill was removed in 3.12; follow the factory's own operator documentation.
 
 The scripts and notes below are retained temporarily as migration and test
 evidence for the former prototype. They do not define current product behavior.
@@ -222,7 +222,7 @@ Four observability layers; each lies in its own way, so cycle all four:
   metabolism, not any specific work's progress.
 
 Robot state lies by omission; pane capture is ground truth — when they disagree,
-trust the pane. Full discipline: the `using-gc` skill.
+trust the pane. Full discipline: the factory's own operator documentation.
 
 ## Teardown
 

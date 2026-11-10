@@ -3,8 +3,8 @@
 # Load regular source files directly: native role loading rejects symlinks.
 [agents.bulk-reader]
 description = "Read bounded slices; return line-referenced findings only."
-config_file = "../skills/agent-native/agents/bulk-reader.toml"
+config_file = "../skills/orchestrate/agents/bulk-reader.toml"
 
 [agents.code-writer]
 description = "Write one target from a required reference; return a receipt only."
-config_file = "../skills/agent-native/agents/code-writer.toml"
+config_file = "../skills/orchestrate/agents/code-writer.toml"

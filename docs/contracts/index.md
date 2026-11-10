@@ -4,7 +4,6 @@ The current public loop contracts are:
 
 - [`subject-manifest.v1`](https://github.com/boshu2/agentops/blob/main/schemas/subject-manifest.v1.schema.json)
 - [`verdict.v2`](https://github.com/boshu2/agentops/blob/main/schemas/verdict.v2.schema.json)
-- [`rpi-report.v1`](https://github.com/boshu2/agentops/blob/main/schemas/rpi-report.v1.schema.json)
 
 Deprecated compatibility contracts remain available for reading historical
 artifacts only:

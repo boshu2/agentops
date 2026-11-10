@@ -2,24 +2,7 @@
 
 ## Skills Integration
 
-Agent-facing versions of these standards ship with the Domain skill:
-
-```
-skills/domain/references/standards/
-├── common-standards.md
-├── python.md
-├── go.md
-├── typescript.md
-├── javascript.md
-├── shell.md
-├── yaml.md
-├── json.md
-├── rust.md
-├── markdown.md
-└── test-pyramid.md (+ risk checklists and skill structure)
-```
-
-`/domain` looks up the language-specific standard for a change, and `/test` uses its test pyramid.
+The Domain skill sends an agent to a repository's own convention owners (instruction files, path-scoped rules, linter and formatter config, CI) and ships no language guides of its own. In this repository those owners are `.claude/rules/` and the guides in this directory.
 
 ---
 

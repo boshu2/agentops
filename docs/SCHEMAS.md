@@ -6,7 +6,6 @@
 |---|---|
 | [`subject-manifest.v1`](https://github.com/boshu2/agentops/blob/main/schemas/subject-manifest.v1.schema.json) | Deterministic content identity without Git |
 | [`verdict.v2`](https://github.com/boshu2/agentops/blob/main/schemas/verdict.v2.schema.json) | Independent `PASS`, `FAIL`, or `NOT_PROVEN` judgment |
-| [`rpi-report.v1`](https://github.com/boshu2/agentops/blob/main/schemas/rpi-report.v1.schema.json) | Single-pass phase report |
 
 ## Legacy compatibility
 
