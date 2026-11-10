@@ -7,7 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.12.0] - 2026-11-10
+
 ### Added
+
+- The [practice ledger](https://github.com/boshu2/agentops/blob/main/docs/practice-ledger.md):
+  which software engineering practices held up when agents did the work, which
+  hold in a different shape, which did not survive and which are still being
+  tested, each with its evidence. README, PRODUCT.md, GOALS.md and the docs
+  index open with the identity it supports: software engineering practice,
+  re-tested for AI agents.
+- Skill Builder's authoring doctrine has a "Shape the body" section (open on the
+  core move, order by reach, mistakes first, a stated sign of success, one name
+  per concept) and says which of its scripts need `ao`.
+- The [2026-10-26 harder-case results](https://github.com/boshu2/agentops/blob/main/docs/evals/2026-10-26-wave3-opus-5-5.md)
+  and the 2026-10-31 description trial readout.
 
 - The [2026-10-22 plugin evaluation report](https://github.com/boshu2/agentops/blob/main/docs/evals/2026-10-22-plugin-eval-opus-5-5.md):
   five rounds of `claude plugin eval` on Claude Opus 5.5 against AgentOps 3.11,
@@ -16,6 +30,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   against 3.10. Its scorecards are in `evals/plugin-eval/scorecards/`.
 
 ### Changed
+
+- The catalog was audited against the practice ledger and goes from 31 skills
+  to 28. Twenty-four skills changed; no evaluation was re-run on them.
+  [The release notes](https://github.com/boshu2/agentops/blob/main/docs/releases/2026-11-10-v3.12.0-notes.md)
+  list the changes by skill.
+- Orchestrate absorbs Agent Native: the packet check, launch and observation,
+  and the per-packet result with a `not_as_briefed` line. Cross-model dispatch
+  rules and judgment receipts move to Validate. Orchestrate's description
+  changed to cover launching and is unmeasured.
+- Domain sends an agent to the repository's own convention owners and ships no
+  language standards.
+- Test accepts either order for a test and its fix; the proof is that the test
+  fails without the change. Refactor states that restructuring under green is
+  the step that held.
+- Validate, Council and Premortem no longer imply repeated review rounds or a
+  re-review after a repair. Premortem's first check fires only for a costly
+  unit verified by nothing but its author's checks.
+- Memory saves a note on the person's approval and reports a draft it could not
+  save. Idea Genie returns inline unless given a destination. Codex Exec keeps
+  the session file when a validator's receipt is required.
+- Triage and Implement have description lines from a measured trial: Triage
+  loaded in 13 of 13 unnamed requests and Implement in 7 of 13.
+- Three repair waves fixed the defects a per-skill review confirmed in every
+  skill, gave each rule one owning skill and made shipped paths work from a
+  plugin install.
+- Validate runs on every push to main.
 
 - Security, asked whether to ship, merge or deploy, reports findings and
   coverage and says in one line that the go/no-go is the caller's; recommending
@@ -33,7 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   as answering it on the caller's behalf. On a new harder eval case, retyping
   the disguised decision went from 1 of 3 runs to 2 of 3 and leaving the
   caller's question open from 0 of 3 to 3 of 3.
-- Agent Native compares a lane's content with the integration target as it
+- Orchestrate (then Agent Native) compares a lane's content with the integration target as it
   stands now before removing it, not with the commit that was merged. On a new
   harder eval case that check went from 1 of 3 runs to 2 of 3.
 - The plugin-eval suite covers every skill: behavior and routing cases for
@@ -56,6 +96,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   become 31.
 
 ### Removed
+
+- Reverse Engineer (no measured gain, no ledger row; its evidence rules moved to
+  Research), Using GC (an adapter for a factory setup the ledger lists under
+  "Did not survive"; `ao gc` no longer requires it) and Agent Native (merged
+  into Orchestrate). `docs/MIGRATION.md` records each.
+- The `rpi-report.v1` schema and RPI's optional report file. Nothing read it.
+- Domain's `references/standards/` library, four generic Test references and
+  about half of Doc's references.
 
 - The AgentOps Claude Code workflows. The plugin no longer ships Workflow tool
   scripts, and the canonical `workflows/` directory is gone with all nine

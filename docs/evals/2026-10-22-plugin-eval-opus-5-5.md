@@ -332,8 +332,8 @@ consistency only, never to claim a gain.
 
 ## Round 5: the consolidation candidate
 
-Subjects run concurrently in the same time windows: main at 0c30caf (3.11 plus
-#1233) and the #1235 candidate at e8638dfa2 (no workflow entries; `rpi`,
+Subjects run concurrently in the same time windows: main at 0c30caf (3.11
+plus #1233) and the #1235 candidate at e8638dfa2 (no workflow entries; `rpi`,
 `postmortem`, `interview` and `craft-goal` loadable by name; Reality Check
 folded into Research). Loading only, read from each run's Skill calls. 168
 runs.
