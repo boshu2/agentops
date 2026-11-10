@@ -2,10 +2,12 @@
 
 ## Product outcome
 
-AgentOps helps coding agents implement the behavior the caller requested,
-validate it independently, and leave reusable engineering improvements behind.
-As the operations layer for agentic engineering, it connects that work to the
-consumer's existing tools and delivery policy.
+AgentOps tests software engineering practices against AI coding agents and
+ships the ones that hold up as optional skills, with the evidence for each in
+the [practice ledger](docs/practice-ledger.md). The skills help an agent
+implement the behavior the caller requested, validate it independently, and
+leave reusable engineering improvements behind, inside the consumer's existing
+tools and delivery policy.
 
 The canonical outcome is:
 

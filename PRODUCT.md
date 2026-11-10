@@ -4,16 +4,17 @@ last_reviewed: 2026-09-16
 
 # AgentOps
 
-**Agent work you can verify and build on.**
+**Software engineering practice, re-tested for AI agents.**
 
-**AgentOps means agent operations:** applying years of DevOps experience to how
-coding agents plan, implement, validate, and hand off work.
+**AgentOps means agent operations:** taking the practices that make software
+delivery dependable and testing which of them still work when the engineer is
+an AI coding agent.
 
-AgentOps helps developers using Claude Code and Codex turn a requested behavior
-into an independently checked change. It applies established engineering
-practices through optional skills and supporting CLI tools: behavior-driven
-planning, shared domain language, implementation checks, and fresh review of
-the actual result.
+The product is a set of optional skills that carry the practices that held up,
+a [practice ledger](docs/practice-ledger.md) that records the evidence for each
+one, and eval cases a user can run on their own model. The skills cover
+behavior-driven planning, shared domain language, implementation checks and a
+fresh review of the actual result. Supporting CLI tools are optional.
 
 The product aims to make engineering effort leave reusable improvements behind.
 A repair can add a regression test; a tool can remove repeated work; a recorded

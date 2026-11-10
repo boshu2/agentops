@@ -4,7 +4,7 @@
 
 # AgentOps
 
-**DevOps discipline for AI coding agents.**
+**Software engineering practice, re-tested for AI agents.**
 
 [![Validate](https://github.com/boshu2/agentops/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/boshu2/agentops/actions/workflows/validate.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
@@ -18,34 +18,35 @@
 
 </div>
 
-DevOps makes software delivery repeatable through shared practices, automated
-checks and feedback. AgentOps brings that discipline to agentic coding sessions:
-paved paths your agents can follow from intent to checked results, with memory
-to carry useful context into the next task.
+Fifty years of software engineering produced practices that work for human
+teams: state the behavior first, work in small slices, keep the checker separate
+from the author, isolate concurrent work. AgentOps runs those practices against
+AI coding agents and keeps the ones that hold up.
 
-Those paths combine [skills](docs/SKILL-ROUTER.md) with the [`ao` CLI](#optional-ao-cli)
-and your existing engineering tools. [Plan](skills/plan/SKILL.md) clarifies the
-expected behavior; [Test](skills/test/SKILL.md) helps check it;
-[Validate](skills/validate/SKILL.md) adds independent judgment where needed.
-Skills guide the agent's decisions; executable gates check specific contracts.
-[Beads](https://github.com/gastownhall/beads) preserves the work graph, decisions,
-results and project memories. [Memory](skills/memory/SKILL.md) curates supported
-findings into linked project knowledge, connecting lessons to the work and
-sources behind them. The next session can use that record instead of starting over.
+You get three things:
 
-The skills are a kit, and you are expected to change it. Each skill is one
-Markdown file of instructions. Keep the ones that fit how you work, rewrite the
-ones that almost fit, delete the rest, and add skills you write yourself or find
-in other libraries. What you end up with is your own operating model for agents,
-which is the reason this project exists. [Make it yours](#make-it-yours) shows
-how.
+- **[Skills](docs/SKILL-ROUTER.md).** Each one is a Markdown file that carries
+  one engineering practice into an agent session: [Plan](skills/plan/SKILL.md)
+  to state the expected behavior, [Implement](skills/implement/SKILL.md) to
+  change code without weakening its tests, [Validate](skills/validate/SKILL.md)
+  for an independent judgment where a mistake would be costly.
+- **[The practice ledger](docs/practice-ledger.md).** It says which practices
+  held, which changed shape, which did not survive, and which are still being
+  tested, with the evidence for each.
+- **[Eval cases](evals/plugin-eval/README.md).** Run them on your own model
+  before you trust a skill. Results change with the model and the harness.
 
-Use these paths with Claude Code, Codex, Cursor, OpenCode, Gemini CLI, Pi and
-other coding agents, or personal assistants such as OpenClaw and Grok Bot.
-Start with [one useful task](#try-it); follow the [operational loop](#the-operational-loop)
-for a change or the [goal workflow](#goals) for work across sessions. When you
-need a larger software factory, [extend the same practices](#beyond-agentops)
-with Gas City or tools from the Agentic Coding Flywheel.
+The skills are a kit, and you are expected to change it. Keep the ones that fit
+how you work, rewrite the ones that almost fit, delete the rest, and add skills
+you write yourself or find in other libraries. [Make it yours](#make-it-yours)
+shows how.
+
+Every measurement here was taken with Claude Code. The skills are plain
+Markdown and also install in Codex, Cursor, OpenCode, Gemini CLI and Pi, where
+they are untested. Start with [one useful task](#try-it); follow the
+[operational loop](#the-operational-loop) for a change or the
+[goal workflow](#goals) for work across sessions. The [`ao` CLI](#optional-ao-cli)
+and [Beads](https://github.com/gastownhall/beads) are optional.
 
 <a id="why-these-skills-exist"></a>
 
@@ -413,8 +414,10 @@ Read the limits before you quote these numbers:
   [coding pilot](PRODUCT.md#evidence-and-claim-limits) found no end-to-end
   difference.
 - Loading is the weak point. 3.11 loads its skills less often than 3.10 did,
-  and Implement and Research never load on their own. Four tested causes do not
-  explain it. Name the skill when you want its rules applied: RPI, Postmortem,
+  and in that run Implement and Research never loaded on their own. Four tested
+  causes do not explain it. A [later trial](docs/evals/2026-10-31-description-trial-opus-5-5.md)
+  rewrote two descriptions, after which Triage loaded on 13 of 13 runs and
+  Implement on 7 of 13. Name the skill when you want its rules applied: RPI, Postmortem,
   Interview and Craft Goal loaded on 22 of 24 requests that named them.
 
 The [full report](docs/evals/2026-10-22-plugin-eval-opus-5-5.md) has every case,
@@ -613,8 +616,8 @@ automatic knowledge compounding. See [product evidence and limits](PRODUCT.md).
 
 No. Start with one coding agent and a skill such as Research, Test or Refactor.
 Use checks and CI for ordinary changes. Obtain one fresh, author-distinct
-judgment when requested, hard to undo, or uncovered by a deterministic check. The Validate skill
-requires `ao`; native independent review does not.
+judgment when requested, hard to undo, or uncovered by a deterministic check. Validate works
+without `ao`; with it, the verdict is bound to a content manifest of the change.
 
 **Must the reviewer use another model provider?**
 
