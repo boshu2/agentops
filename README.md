@@ -482,18 +482,18 @@ With Go installed: `go install github.com/boshu2/agentops/cli/cmd/ao@latest`.
 <a id="upgrading-to-38"></a>
 <a id="upgrading-to-37"></a>
 
-Version 3.12 removes three skill names. [`orchestrate`](skills/orchestrate/SKILL.md)
+Version 3.12 removes four skill names. [`orchestrate`](skills/orchestrate/SKILL.md)
 now does what `agent-native` did, [`research`](skills/research/SKILL.md) carries
-the adoption rules from `reverse-engineer`, and `using-gc` is gone. The other 28
-skills keep their names; 24 of them changed in an audit that is not measured yet.
+`reality-check` and the adoption rules from `reverse-engineer`, and `using-gc`
+is gone. The other 28 skills keep their names; 24 of them changed in an audit that is not measured yet.
 Read the [3.12 release notes](docs/releases/2026-11-10-v3.12.0-notes.md). Use the
 [plugin update instructions](docs/install-day2-ops.md#install-and-update-runtime-plugins)
 or, for npx installs, `npx skills@latest update` ([update notes](docs/install-day2-ops.md#update)).
 For Homebrew: `brew update && brew upgrade agentops`. In a source checkout, run
-`git pull --ff-only`, then rerun `ao skills link` with the selectors you used
-before; without selectors it links every skill. Start a new session afterward.
-New installs do not remove obsolete copies, so delete the three old skill
-directories from your agent's skills folder if they are still there.
+`git pull --ff-only`, then rerun `ao skills link` with the same `--skill` and
+`--dest` flags you used before; without them it links every skill into every
+installed runtime. Start a new session afterward. New installs do not remove
+obsolete copies, so delete the four old skill directories from your agent's skills folder if they are still there.
 
 **Upgrading from 3.8 or earlier:** version 3.9 removed ten bundled external tool
 skills, retired three delivery workflows, deleted the old curl installers and

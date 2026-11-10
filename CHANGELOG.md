@@ -32,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - The catalog was audited against the practice ledger and goes from 31 skills
-  to 28. Twenty-four skills changed; no evaluation was re-run on them.
+  to 28 (3.11 shipped 32; Reality Check was folded into Research first). Twenty-four skills changed; no evaluation was re-run on them.
   [The release notes](https://github.com/boshu2/agentops/blob/main/docs/releases/2026-11-10-v3.12.0-notes.md)
   list the changes by skill.
 - Orchestrate absorbs Agent Native: the packet check, launch and observation,
