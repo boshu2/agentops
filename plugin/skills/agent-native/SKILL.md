@@ -175,5 +175,12 @@ engagement:       observable evidence the worker started, else unobserved
 last_activity:    time and kind of the last observed tool call, output or file change, else unobserved
 terminal_status:  exit or terminal state | running | launch failed | not launched
 result:           candidate <ref> | evidence <ref> | out of authority <action> | error <verbatim>
+not_as_briefed:   worker-reported steps refused, held, worked around or unverified | none reported
 gaps:             recording failures and unknowns
 ```
+
+Ask for `not_as_briefed` in the packet: a summary of what the worker did leaves
+out what it did not do. It is the worker's claim. Where the adapter returns its
+own denial record (`permission_denials`, `denied_actions`), read that too and
+list a mismatch under `gaps`. An observed change outside scope is `out of
+authority` in `result`; an open choice stays under `gaps`.

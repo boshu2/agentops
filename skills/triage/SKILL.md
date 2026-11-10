@@ -32,7 +32,8 @@ operational alert, support message), or a small batch, into a supported
 decision and, for accepted or likely-accepted work, a brief an agent can act
 on without this conversation. Triage is intake, before planning. It
 recommends; the maintainer decides. [Plan](../plan/SKILL.md) shapes accepted
-work into a slice; [Security](../security/SKILL.md#triage) owns scanner
+work into a slice; [Implement](../implement/SKILL.md) makes an accepted fix;
+[Security](../security/SKILL.md#triage) owns scanner
 findings.
 
 ## Rules an unaided triage misses

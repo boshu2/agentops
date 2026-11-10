@@ -30,7 +30,8 @@ records, and never edits acceptance, dispatches, judges or closes:
 dispatches, native execution (the caller's coding agent and shell) or an
 optional [RPI](../rpi/SKILL.md) run builds, [Validate](../validate/SKILL.md)
 judges, and Craft Goal owns the prompt and HOLD (the goal's stop on a
-declared trigger, so the cause can be examined before more work runs).
+declared trigger, so the cause can be examined before more work runs). What
+to build when no epic exists yet is [Idea Genie](../idea-genie/SKILL.md)'s.
 
 **One pass**, when a person asks what is next on an epic: steps 1 and 2 plus
 [hygiene](#hygiene), returning the wave in the step 4 shape instead of handing

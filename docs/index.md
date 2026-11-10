@@ -1,11 +1,14 @@
 # AgentOps
 
-**Agent work you can verify and build on.**
+**Software engineering practice, re-tested for AI agents.**
 
-AgentOps gives Claude Code and Codex engineering guidance for defining the
-behavior you need, implementing it in your domain's language, and independently
-checking the result. Optional skills and supporting CLI tools apply established
-practices while your repository keeps its tests, tracker, and delivery workflow.
+AgentOps runs established engineering practices against AI coding agents and
+ships the ones that hold up as optional skills. The
+[practice ledger](practice-ledger.md) records which practices held, which
+changed shape, which did not survive and which are still being tested. The
+skills help an agent define the behavior you need, implement it in your
+domain's language and check the result independently, while your repository
+keeps its tests, tracker and delivery workflow.
 
 ## Start with the behavior
 
