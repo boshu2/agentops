@@ -77,7 +77,7 @@ Whenever a new rule, workflow, or tool is proposed, five ordered questions decid
   1. **Drain Before Starting:** Cap external review WIP at `1–2` open PRs per pair; free capacity drains existing review/check/repair queues before starting new slices.
   2. **Parallel Reconnaissance:** Fan out `>= 3` distinct `explore` scopes in one parallel call for decomposable research.
   3. **Zero-Token Read $\to$ Write Budget:** Workers read `<= 3` files before making their first edit + test run.
-  4. **Strict 1->5 Phase Transitions:** (1) Continue in-place $\to$ (2) Clear/reset $\to$ (3) 4-line portable handoff $\to$ (4) Delegate to subagent $\to$ (5) `/compact` before `150k` tokens (preventing `170k–200k` gateway drops).
+  4. **Strict 1->5 Phase Transitions:** (1) Continue in-place $\to$ (2) Clear/reset $\to$ (3) 4-line portable handoff $\to$ (4) Delegate to subagent $\to$ (5) `compact` before `150k` tokens (preventing `170k–200k` gateway drops).
 
 #### 7. `cdlc` (Complete Development Lifecycle · Tier: `orchestration` · Role: `driving-adapter`)
 - **Folded Modes:**
