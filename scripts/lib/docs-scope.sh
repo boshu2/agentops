@@ -30,6 +30,7 @@ docs_scope_live_files() {
       -not -path 'docs/evidence/*' -not -path 'docs/releases/*' -not -path 'docs/convergence/*' \
       -not -path 'docs/rescope/*' -not -path 'docs/reduction/*' -not -path 'docs/migration-trackers/*' \
       -not -path 'docs/sovereignty-proof/*' -not -path 'docs/rfcs/*' -not -path 'docs/code-map/*' \
+      -not -path 'docs/upgrade-packets/*' \
       | sort )
 }
 
