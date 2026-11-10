@@ -72,7 +72,7 @@ Every code/config diff is audited across four orthogonal adversarial lenses, fol
    - Exact parity between `Makefile` `help:` target descriptions and actual recipe behavior.
    - Exact parity between `README.md` / `SKILL.md` flag claims (`--doctor` read-only vs `--doctor --fix`) and compiled CLI `--help` / `capabilities --json`.
 3. **`security`:**
-   - **CWE-22 Sibling-Prefix Bypass:** Rejects `path.startswith(root_prefix)` and `os.path.commonprefix` (where `/repo-evil` matches `/repo`); requires component-aware `Path.resolve().is_relative_to(root)` in Python, `clean + "/"` in TS/Go, or `ConfinedPath` + `O_NOFOLLOW` in Rust.
+   - **CWE-22 Sibling-Prefix Bypass:** Rejects `path.startswith(root_prefix)` and `os.path.commonprefix` (where `/repo-evil/` matches `/repo/`); requires component-aware `Path.resolve().is_relative_to(root)` in Python, `clean + "/"` in TS/Go, or `ConfinedPath` + `O_NOFOLLOW` in Rust.
    - **Untrusted JSON Root Validation:** Rejects `JSON.parse` / `json.loads` assumed to be an object without checking `isinstance(cfg, dict)` (since `"true"`, `123`, or `[]` are valid JSON roots).
    - **Token-on-Stdin:** Forbids passing bearer tokens or passwords on command-line argv (`curl -H "Authorization: ..."` exposes secrets in `/proc/<pid>/cmdline`); requires `curl --config -` over `stdin`.
 4. **`test-signal`:**
@@ -87,7 +87,7 @@ When auditing an engineering spike or design proposal before team adoption, 15 r
 
 | Lens | Rule IDs & Severity | What It Detects |
 | --- | --- | --- |
-| **Lens 1: Validated-vs-Asserted *(Load-Bearing; Run First)*** | `VA-1` (`BLOCK`), `VA-2` (`BLOCK`), `VA-3` (`WARN`), `VA-4` (`WARN`) | `VA-1` mechanically blocks words like *"proven / validated / confirmed / works"* when backed by zero execution receipts or validation rungs. `VA-2` blocks unverified isolated-network/network/credential assumptions presented as fact. `VA-4` quarantines "multi-model duel agreement" hype out of team issues. |
+| **Lens 1: Validated-vs-Asserted *(Load-Bearing; Run First)*** | `VA-1` (`BLOCK`), `VA-2` (`BLOCK`), `VA-3` (`WARN`), `VA-4` (`WARN`) | `VA-1` mechanically blocks words like *"proven / validated / confirmed / works"* when backed by zero execution receipts or validation rungs. *(Vol. 7 E6 replaces the word list with a receipt-citation check: wording gates do not converge.)* `VA-2` blocks unverified isolated-network/network/credential assumptions presented as fact. `VA-4` quarantines "multi-model duel agreement" hype out of team issues. |
 | **Lens 2: Snippet Accuracy = Facts Accuracy** | `SA-1` (`BLOCK`), `SA-2` (`BLOCK`), `SA-3` (`WARN`) | `SA-1` blocks HCL/Rego/Ansible/Bash/Python snippets that do not parse or match real provider schemas. `SA-2` blocks references to undefined variables/outputs. `SA-3` requires every snippet to be labeled `grounded (file:line)` vs `illustrative/greenfield`. |
 | **Lens 3: Decision Quality** | `DQ-1` (`BLOCK`), `DQ-2` (`WARN`) | Ensures irreversible one-way-door trade-offs name rejected alternatives, concrete failure modes, and the probe that would overturn the choice. |
 | **Lens 4: Shape & Canon** | `SC-1..4` (`BLOCK` / `WARN`) | Enforces 15-second cold-read structure, `<details>` progressive disclosure for deep evidence, and ubiquitous language alignment. |
