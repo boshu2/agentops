@@ -19,7 +19,7 @@
 
 **Detection:**
 ```bash
-grep -rn 'password\s*=\s*"[^"]\+"\|api_key\s*=\s*"[^"]\+"\|secret\s*=\s*"[^"]\+"\|token\s*=\s*"[^"]\+' --include='*.go' --include='*.py' --include='*.ts' --include='*.js' . | grep -v _test | grep -v test_ | grep -v vendor/
+grep -rn 'password\s*=\s*"[^"]\+"\|api_key\s*=\s*"[^"]\+"\|secret\s*=\s*"[^"]\+"\|token\s*=\s*"[^"]\+' --include='*.go' --include='*.py' --include='*.ts' --include='*.js' . | grep -v _test | grep -v test_ | grep -v vendor/ | cut -d: -f1-2  # file:line only; never print the matched value
 ```
 
 ### 2. Input Validation
@@ -128,6 +128,6 @@ The offline redteam scan (`prompt_redteam.py scan`) checks repo-owned prompt and
 ### With CI
 ```bash
 # Minimum: secrets + dependencies
-grep -rn 'password\|secret\|api_key' --include='*.go' --include='*.py' . | grep -v test
+grep -rn 'password\|secret\|api_key' --include='*.go' --include='*.py' . | grep -v test | cut -d: -f1-2  # file:line only
 govulncheck ./...  # or npm audit / pip audit
 ```

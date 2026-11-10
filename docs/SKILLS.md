@@ -41,7 +41,7 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 
 | Skill | Use it for |
 |---|---|
-| [council](https://github.com/boshu2/agentops/blob/main/skills/council/SKILL.md) | Compare independent opinions from several models or contexts without inflating agreement. Use when: wanting a second opinion or debate, or summarizing several reviewers' results. |
+| [council](https://github.com/boshu2/agentops/blob/main/skills/council/SKILL.md) | Compare independent opinions from several models or contexts without inflating agreement. Use when: wanting several opinions or a debate, or summarizing several reviewers' results. |
 | [craft-goal](https://github.com/boshu2/agentops/blob/main/skills/craft-goal/SKILL.md) | Draft or lint a bounded long-running goal prompt with a finish line and hard limits. Use when: asked to craft or lint a goal (a /goal prompt); one change goes to Plan. |
 | [idea-genie](https://github.com/boshu2/agentops/blob/main/skills/idea-genie/SKILL.md) | Brainstorm evidence-backed options for what to build, or stress-test an idea. Use when: deciding what to build next, comparing options or testing an idea. |
 | [interview](https://github.com/boshu2/agentops/blob/main/skills/interview/SKILL.md) | Interview you one question at a time, each choice with a recommendation, to settle a big outcome before agents work alone. Use when: asked to interview you about a goal or plan. |

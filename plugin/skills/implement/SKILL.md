@@ -29,7 +29,8 @@ metadata:
 # Implement
 
 Implement the accepted outcome. Repair ordinary known defects directly. Use the
-existing intent; a clear edit needs no Plan first. Implement owns source changes
+existing intent; a clear edit needs no Plan first. An incoming report nobody
+has accepted yet goes to [Triage](../triage/SKILL.md) first. Implement owns source changes
 and factual checks. Read changed paths from Git (`git status --porcelain`,
 `git diff --name-only <base>`), never from memory;
 `ao provenance manifest --root <repo>` with one `--include <path>` per declared
@@ -147,7 +148,7 @@ author:    <runtime session/subagent/thread ID, "ID (supplied)" or "unknown">; w
 checks:    <exact command> -> <result>, one per line; before and after for a behavioral change
 not run:   <check> -> <reason>; "none" only when every relevant check ran
 consumers: <file:line> -> <covering check, or "uncovered">
-gaps:      <missing or truncated evidence, known failures, scope amendments needed>
+gaps:      <missing or truncated evidence, known failures, steps refused, held, worked around or unverified, scope amendments needed>
 cause:     <defect repairs only: trigger -> mechanism -> symptom at file:line; sites left as follow-up>
 ```
 

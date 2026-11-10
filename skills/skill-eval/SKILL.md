@@ -52,6 +52,17 @@ and its native results own the measurements.
   arms run by run, swap which goes first in each pair and rerun a dead run in
   its own slot; one whole arm and then the other turns load, rate limits and
   time of day into an apparent skill effect.
+- **Shape the case as the caller does.** For a skill another skill or a
+  standing instruction invokes, word the task as that caller passes it, put
+  pre-existing items of the same kind in the files the run touches, and have
+  the grader fail work outside the asked scope: unrequested edits, new files,
+  commits. A looser task credits the skill with the agent's own extras, and a
+  clean tree lets "touch only the current work" pass trivially.
+- **Locate the change against what the harness fixes.** A replayed transcript,
+  pinned stub or frozen upstream output hides any change made before that
+  point; report it as not measured. A defect that appears only after compaction
+  or resume needs a case holding only what survives; a full-context run can
+  pass both arms.
 - **Confirm the skill loaded.** Before reading a zero or small delta as no
   benefit, check each treatment run for the skill actually being loaded or
   injected. A run where it never loaded measures routing, not content. When the
