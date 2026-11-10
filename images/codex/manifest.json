@@ -1,13 +1,8 @@
 {
   "image": "codex",
   "schema_version": "skill-image.v1",
-  "skill_count": 31,
+  "skill_count": 28,
   "skills": [
-    {
-      "disposition": "keep_optional_adapter",
-      "path": "skills/agent-native/",
-      "slug": "agent-native"
-    },
     {
       "disposition": "keep_optional_adapter",
       "path": "skills/agy-native/",
@@ -109,11 +104,6 @@
       "slug": "research"
     },
     {
-      "disposition": "keep_specialist",
-      "path": "skills/reverse-engineer/",
-      "slug": "reverse-engineer"
-    },
-    {
       "disposition": "keep",
       "path": "skills/review/",
       "slug": "review"
@@ -147,11 +137,6 @@
       "disposition": "keep_specialist",
       "path": "skills/triage/",
       "slug": "triage"
-    },
-    {
-      "disposition": "keep_optional_adapter",
-      "path": "skills/using-gc/",
-      "slug": "using-gc"
     },
     {
       "disposition": "keep",

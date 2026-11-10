@@ -3,42 +3,6 @@
   "capabilities": [
     {
       "driven_by_skills": [
-        "agent-native"
-      ],
-      "id": "skill:agent-native:role_dispatch",
-      "name": "role_dispatch",
-      "path": "skills/agent-native/SKILL.md",
-      "type": "skill"
-    },
-    {
-      "driven_by_skills": [
-        "agent-native"
-      ],
-      "id": "skill:agent-native:observe_workers",
-      "name": "observe_workers",
-      "path": "skills/agent-native/SKILL.md",
-      "type": "skill"
-    },
-    {
-      "driven_by_skills": [
-        "agent-native"
-      ],
-      "id": "skill:agent-native:handoff",
-      "name": "handoff",
-      "path": "skills/agent-native/SKILL.md",
-      "type": "skill"
-    },
-    {
-      "driven_by_skills": [
-        "agent-native"
-      ],
-      "id": "skill:agent-native:dispatch_once",
-      "name": "dispatch_once",
-      "path": "skills/agent-native/SKILL.md",
-      "type": "skill"
-    },
-    {
-      "driven_by_skills": [
         "agy-native"
       ],
       "id": "skill:agy-native:dispatch_explicit_packet",
@@ -426,6 +390,33 @@
     },
     {
       "driven_by_skills": [
+        "orchestrate"
+      ],
+      "id": "skill:orchestrate:role_dispatch",
+      "name": "role_dispatch",
+      "path": "skills/orchestrate/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "orchestrate"
+      ],
+      "id": "skill:orchestrate:observe_workers",
+      "name": "observe_workers",
+      "path": "skills/orchestrate/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
+        "orchestrate"
+      ],
+      "id": "skill:orchestrate:dispatch_once",
+      "name": "dispatch_once",
+      "path": "skills/orchestrate/SKILL.md",
+      "type": "skill"
+    },
+    {
+      "driven_by_skills": [
         "plan"
       ],
       "id": "skill:plan:shape_intent",
@@ -539,15 +530,6 @@
       "id": "skill:research:report_native_status",
       "name": "report_native_status",
       "path": "skills/research/SKILL.md",
-      "type": "skill"
-    },
-    {
-      "driven_by_skills": [
-        "reverse-engineer"
-      ],
-      "id": "skill:reverse-engineer:reverse_engineer",
-      "name": "reverse_engineer",
-      "path": "skills/reverse-engineer/SKILL.md",
       "type": "skill"
     },
     {
@@ -732,33 +714,6 @@
     },
     {
       "driven_by_skills": [
-        "using-gc"
-      ],
-      "id": "skill:using-gc:observe_gc_runtime",
-      "name": "observe_gc_runtime",
-      "path": "skills/using-gc/SKILL.md",
-      "type": "skill"
-    },
-    {
-      "driven_by_skills": [
-        "using-gc"
-      ],
-      "id": "skill:using-gc:inspect_pack_registries",
-      "name": "inspect_pack_registries",
-      "path": "skills/using-gc/SKILL.md",
-      "type": "skill"
-    },
-    {
-      "driven_by_skills": [
-        "using-gc"
-      ],
-      "id": "skill:using-gc:drive_mayor_door",
-      "name": "drive_mayor_door",
-      "path": "skills/using-gc/SKILL.md",
-      "type": "skill"
-    },
-    {
-      "driven_by_skills": [
         "validate"
       ],
       "id": "skill:validate:compute_subject_identity",
@@ -798,19 +753,19 @@
     "cli_commands": 0,
     "gates": 0,
     "reference_impls": 0,
-    "skills": 88,
-    "total": 88
+    "skills": 83,
+    "total": 83
   },
   "cli_top_level_commands": [],
   "schema_version": 3,
   "summary": {
-    "capabilities": 88,
+    "capabilities": 83,
     "cli_commands": 0,
     "eval_files": 0,
     "hooks": 0,
     "job_types": 0,
     "knowledge_stores": 0,
-    "skills": 31,
+    "skills": 28,
     "workflows": 0
   },
   "surfaces": {
@@ -821,25 +776,6 @@
     "knowledge_stores": [],
     "schedules": [],
     "skills": [
-      {
-        "capabilities": [
-          "role_dispatch",
-          "observe_workers",
-          "handoff",
-          "dispatch_once"
-        ],
-        "disposition": "keep_optional_adapter",
-        "effects": [
-          "manage_runtime_sessions",
-          "invoke_selected_executor"
-        ],
-        "has_references": true,
-        "has_skill_md": true,
-        "name": "agent-native",
-        "path": "skills/agent-native/",
-        "reference_count": 6,
-        "tier": "meta"
-      },
       {
         "capabilities": [
           "dispatch_explicit_packet",
@@ -952,7 +888,7 @@
         "has_skill_md": true,
         "name": "doc",
         "path": "skills/doc/",
-        "reference_count": 14,
+        "reference_count": 10,
         "tier": "product"
       },
       {
@@ -969,7 +905,7 @@
         "has_skill_md": true,
         "name": "domain",
         "path": "skills/domain/",
-        "reference_count": 3,
+        "reference_count": 2,
         "tier": "knowledge"
       },
       {
@@ -1003,7 +939,7 @@
         "has_skill_md": true,
         "name": "idea-genie",
         "path": "skills/idea-genie/",
-        "reference_count": 3,
+        "reference_count": 4,
         "tier": "execution"
       },
       {
@@ -1083,18 +1019,23 @@
         "capabilities": [
           "coordinate_native_work",
           "recover_assignments",
-          "reconcile_feedback"
+          "reconcile_feedback",
+          "role_dispatch",
+          "observe_workers",
+          "dispatch_once"
         ],
         "disposition": "keep",
         "effects": [
           "dispatch_authorized_workers",
-          "update_native_handoffs"
+          "update_native_handoffs",
+          "manage_runtime_sessions",
+          "invoke_selected_executor"
         ],
         "has_references": true,
         "has_skill_md": true,
         "name": "orchestrate",
         "path": "skills/orchestrate/",
-        "reference_count": 1,
+        "reference_count": 6,
         "tier": "execution"
       },
       {
@@ -1142,7 +1083,7 @@
         "has_skill_md": true,
         "name": "premortem",
         "path": "skills/premortem/",
-        "reference_count": 1,
+        "reference_count": 2,
         "tier": "judgment"
       },
       {
@@ -1183,23 +1124,6 @@
         "name": "research",
         "path": "skills/research/",
         "reference_count": 6,
-        "tier": "execution"
-      },
-      {
-        "capabilities": [
-          "reverse_engineer"
-        ],
-        "disposition": "keep_specialist",
-        "effects": [
-          "clone_upstream_repo",
-          "authorized_binary_execution",
-          "write_teardown_artifacts"
-        ],
-        "has_references": true,
-        "has_skill_md": true,
-        "name": "reverse-engineer",
-        "path": "skills/reverse-engineer/",
-        "reference_count": 3,
         "tier": "execution"
       },
       {
@@ -1305,7 +1229,7 @@
         "has_skill_md": true,
         "name": "test",
         "path": "skills/test/",
-        "reference_count": 10,
+        "reference_count": 6,
         "tier": "execution"
       },
       {
@@ -1320,29 +1244,11 @@
         "effects": [
           "write_authorized_tracker_updates"
         ],
-        "has_references": false,
+        "has_references": true,
         "has_skill_md": true,
         "name": "triage",
         "path": "skills/triage/",
-        "reference_count": 0,
-        "tier": "execution"
-      },
-      {
-        "capabilities": [
-          "observe_gc_runtime",
-          "inspect_pack_registries",
-          "drive_mayor_door"
-        ],
-        "disposition": "keep_optional_adapter",
-        "effects": [
-          "operate_gas_city",
-          "configure_codex_trust"
-        ],
-        "has_references": true,
-        "has_skill_md": true,
-        "name": "using-gc",
-        "path": "skills/using-gc/",
-        "reference_count": 2,
+        "reference_count": 1,
         "tier": "execution"
       },
       {
@@ -1360,7 +1266,7 @@
         "has_skill_md": true,
         "name": "validate",
         "path": "skills/validate/",
-        "reference_count": 2,
+        "reference_count": 4,
         "tier": "judgment"
       }
     ],

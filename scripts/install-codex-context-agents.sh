@@ -18,8 +18,8 @@ esac
 [ "$#" -eq 0 ] || { echo 'Unexpected arguments' >&2; exit 2; }
 
 # Install the source-owned role templates, the same files the Codex plugin
-# ships: skills/agent-native/agents/*.toml.
-source_dir="$REPO_ROOT/skills/agent-native/agents"
+# ships: skills/orchestrate/agents/*.toml.
+source_dir="$REPO_ROOT/skills/orchestrate/agents"
 for role in bulk-reader code-writer; do
   [ -f "$source_dir/$role.toml" ] || {
     echo "Missing role template $source_dir/$role.toml" >&2; exit 1;

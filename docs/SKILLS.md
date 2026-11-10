@@ -17,7 +17,7 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 | [implement](https://github.com/boshu2/agentops/blob/main/skills/implement/SKILL.md) | Make the code change a ticket or bug report asks for, then prove it with the repo's own checks. Use when: told to fix, change or build something, such as "fix this bug". |
 | [review](https://github.com/boshu2/agentops/blob/main/skills/review/SKILL.md) | Give advisory feedback on a plan, design or code change. Use when: asked for an opinion or a look-over, even informally. Not for acceptance; use Validate. |
 | [validate](https://github.com/boshu2/agentops/blob/main/skills/validate/SKILL.md) | Freshly judge whether a finished change and its claims meet original acceptance: PASS, FAIL or NOT_PROVEN. Use when: asked for a go/no-go, sign-off or independent verdict. |
-| [orchestrate](https://github.com/boshu2/agentops/blob/main/skills/orchestrate/SKILL.md) | Coordinate several workers: what idle agents do next, which finished work gets checked first, how to recover a dead one. Use when: managing multiple agents. |
+| [orchestrate](https://github.com/boshu2/agentops/blob/main/skills/orchestrate/SKILL.md) | Dispatch independent tasks to parallel workers without write collisions, decide what each does next, and recover dead ones. Use when: running or managing two or more agents. |
 | [memory](https://github.com/boshu2/agentops/blob/main/skills/memory/SKILL.md) | Find or curate supported lessons and agent rules. Use when: asked to remember, trace a corrected claim, audit instructions or write an agent rule. |
 
 ## Engineering specialists
@@ -30,7 +30,6 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 | [ergonomics](https://github.com/boshu2/agentops/blob/main/skills/ergonomics/SKILL.md) | Audit CLI, API, MCP or SDK discovery, first use and error recovery. Use when: designing an agent-facing tool or investigating misuse, including one command. |
 | [refactor](https://github.com/boshu2/agentops/blob/main/skills/refactor/SKILL.md) | Restructure or clean up code with no behavior change, proved by before-and-after checks. Use when: asked to clean up, extract, dedupe or simplify, even one function. |
 | [research](https://github.com/boshu2/agentops/blob/main/skills/research/SKILL.md) | Answer one cited question on code, history, claims or patterns. Use when: asked how it works, why it changed, if a claim or done/shipped report holds, or a pattern warrants a rule. |
-| [reverse-engineer](https://github.com/boshu2/agentops/blob/main/skills/reverse-engineer/SKILL.md) | Tear down a competitor's repo or product into a feature inventory and adoption choices. Use when: comparing us to another tool or asking what to steal. |
 | [security](https://github.com/boshu2/agentops/blob/main/skills/security/SKILL.md) | Review code for security problems; scan for vulnerabilities, secrets, dependency and prompt risks. Use when: asked whether code is safe to ship, even one small handler. |
 | [skill-builder](https://github.com/boshu2/agentops/blob/main/skills/skill-builder/SKILL.md) | Create, repair, audit or consolidate agent skills (SKILL.md packages). Use when: writing or fixing a skill, its description or structure. Not for one-off lessons; use Memory. |
 | [skill-eval](https://github.com/boshu2/agentops/blob/main/skills/skill-eval/SKILL.md) | Measure whether a skill helps by comparing runs with and without it. Use when: reading skill A/B results or deciding to keep, revise or remove one. |
@@ -41,7 +40,7 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 
 | Skill | Use it for |
 |---|---|
-| [council](https://github.com/boshu2/agentops/blob/main/skills/council/SKILL.md) | Compare independent opinions from several models or contexts without inflating agreement. Use when: wanting several opinions or a debate, or summarizing several reviewers' results. |
+| [council](https://github.com/boshu2/agentops/blob/main/skills/council/SKILL.md) | Compare independent opinions from models or contexts without inflating agreement. Use when: wanting several opinions or a debate, or summarizing several reviewers' results. |
 | [craft-goal](https://github.com/boshu2/agentops/blob/main/skills/craft-goal/SKILL.md) | Draft or lint a bounded long-running goal prompt with a finish line and hard limits. Use when: asked to craft or lint a goal (a /goal prompt); one change goes to Plan. |
 | [idea-genie](https://github.com/boshu2/agentops/blob/main/skills/idea-genie/SKILL.md) | Brainstorm evidence-backed options for what to build, or stress-test an idea. Use when: deciding what to build next, comparing options or testing an idea. |
 | [interview](https://github.com/boshu2/agentops/blob/main/skills/interview/SKILL.md) | Interview you one question at a time, each choice with a recommendation, to settle a big outcome before agents work alone. Use when: asked to interview you about a goal or plan. |
@@ -54,17 +53,14 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 
 | Skill | Use it for |
 |---|---|
-| [agent-native](https://github.com/boshu2/agentops/blob/main/skills/agent-native/SKILL.md) | Dispatch independent tasks to parallel workers or subagents without write collisions. Use when: running or planning agents in parallel, even two; check scopes before any launch. |
 | [agy-native](https://github.com/boshu2/agentops/blob/main/skills/agy-native/SKILL.md) | Run a supplied task in headless AGY (Antigravity, Gemini) and collect its result. Use when: AGY, Antigravity or Gemini is requested by name; never a fallback. |
 | [claude-exec](https://github.com/boshu2/agentops/blob/main/skills/claude-exec/SKILL.md) | Run one prompt through headless Claude with scoped permissions and a time bound. Use when: scripting or automating a `claude -p` call, even a simple one. |
 | [codex-exec](https://github.com/boshu2/agentops/blob/main/skills/codex-exec/SKILL.md) | Run one prompt through headless Codex and capture the result. Use when: wanting a one-shot `codex exec` run or CI step. Not for batches or retries. |
-| [using-gc](https://github.com/boshu2/agentops/blob/main/skills/using-gc/SKILL.md) | Operate Gas City through its own doors: Mayor, doctor and native run state. Use when: Gas City is selected or a gc run looks stuck. |
 
 ## Complete inventory
 
 | Skill | Tier | Disposition | Hard dependencies | Capabilities | Effects |
 |---|---|---|---|---|---|
-| `agent-native` | meta | `keep_optional_adapter` | - | `role_dispatch`, `observe_workers`, `handoff`, `dispatch_once` | `manage_runtime_sessions`, `invoke_selected_executor` |
 | `agy-native` | cross-vendor | `keep_optional_adapter` | - | `dispatch_explicit_packet`, `provide_fresh_context` | `start_agy_session` |
 | `architecture` | judgment | `keep_specialist` | - | `locate_change_friction`, `compare_interface_designs`, `propose_module_boundaries` | - |
 | `claude-exec` | orchestration | `keep_optional_adapter` | - | `claude_exec` | `run_claude_process`, `permission_tiered_workspace_effects` |
@@ -79,13 +75,12 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 | `interview` | execution | `keep_strategy` | - | `interview_caller`, `settle_caller_choices`, `write_acceptance_examples`, `settle_domain_terms` | `update_intent_source` |
 | `memory` | execution | `keep_off_path` | - | `recall_applicable_context`, `mine_supported_observations`, `curate_topic_pages`, `toil_mining` | `write_protected_drafts`, `update_authorized_topic_pages`, `write_requested_toil_report` |
 | `navigate` | execution | `keep_strategy` | - | `observe_work_graph`, `select_next_wave`, `ratchet_work_graph`, `report_graph_hygiene` | `update_native_graph` |
-| `orchestrate` | execution | `keep` | - | `coordinate_native_work`, `recover_assignments`, `reconcile_feedback` | `dispatch_authorized_workers`, `update_native_handoffs` |
+| `orchestrate` | execution | `keep` | - | `coordinate_native_work`, `recover_assignments`, `reconcile_feedback`, `role_dispatch`, `observe_workers`, `dispatch_once` | `dispatch_authorized_workers`, `update_native_handoffs`, `manage_runtime_sessions`, `invoke_selected_executor` |
 | `plan` | execution | `keep` | - | `shape_intent`, `define_acceptance`, `bound_write_scope`, `resume_discovery` | `update_intent_source` |
 | `postmortem` | judgment | `keep_strategy` | - | `postmortem` | `write_requested_postmortem_report` |
 | `premortem` | judgment | `keep_strategy` | - | `challenge_plan` | `write_advisory_plan_review` |
 | `refactor` | execution | `keep_specialist` | - | `refactor` | `modify_source_files` |
 | `research` | execution | `keep_specialist` | - | `research`, `codebase_recon`, `pattern_mining`, `compare_claim_to_evidence`, `measure_declared_goals`, `report_native_status` | `write_research_report`, `write_recon_pack`, `write_pattern_evidence`, `write_advisory_gap_report`, `write_goal_snapshot`, `write_requested_rendered_spec` |
-| `reverse-engineer` | execution | `keep_specialist` | - | `reverse_engineer` | `clone_upstream_repo`, `authorized_binary_execution`, `write_teardown_artifacts` |
 | `review` | judgment | `keep` | - | `review_advisory`, `identify_supported_findings`, `report_review_gaps` | - |
 | `rpi` | meta | `keep_strategy` | `plan`, `implement`, `validate` | `own_authorized_outcome`, `report` | `modify_authorized_subject`, `dispatch_conditional_validator` |
 | `security` | product | `keep_specialist` | - | `security` | `write_scan_artifacts` |
@@ -93,5 +88,4 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 | `skill-eval` | meta | `keep_specialist` | - | `evaluate_skill_decision`, `select_skill_measurement`, `read_skill_ab_results`, `author_seeded_probe` | `write_probe_package`, `dispatch_authorized_trials` |
 | `test` | execution | `keep_specialist` | - | `test` | `write_test_files`, `write_test_evidence`, `modify_source_files` |
 | `triage` | execution | `keep_specialist` | - | `observe_reported_behavior`, `find_duplicates_and_prior_decisions`, `classify_with_evidence`, `write_agent_ready_brief`, `reconcile_batch_by_id` | `write_authorized_tracker_updates` |
-| `using-gc` | execution | `keep_optional_adapter` | - | `observe_gc_runtime`, `inspect_pack_registries`, `drive_mayor_door` | `operate_gas_city`, `configure_codex_trust` |
 | `validate` | judgment | `keep` | - | `compute_subject_identity`, `judge_acceptance`, `return_validation_result`, `persist_verdict` | `write_verdict_artifact` |

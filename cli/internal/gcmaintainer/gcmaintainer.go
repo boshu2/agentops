@@ -31,7 +31,7 @@ const (
 
 // requiredSkills are the AgentOps skills that must be visible to provider
 // sessions in the city and rig Codex sinks.
-var requiredSkills = []string{"using-gc", "plan", "implement", "test", "validate"}
+var requiredSkills = []string{"plan", "implement", "test", "validate"}
 
 // Options carries the caller-supplied inputs for one maintainer operation.
 type Options struct {

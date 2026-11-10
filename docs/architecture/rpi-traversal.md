@@ -90,7 +90,7 @@ Default to a fresh reviewer from the author's model family. `--cross-model
 not an AO command flag. An explicitly required leg remains required until the
 caller changes it; unavailable diversity yields `diversity_unsatisfied` /
 NOT_PROVEN. Risk deepens inspection rather than automatically adding families
-or specialists. Use [model-dispatch](../../skills/agent-native/references/model-dispatch.md)
+or specialists. Use [model-dispatch](../../skills/validate/references/model-dispatch.md)
 with caller/native bounds, no fixed ten-minute cap and no renewed allowance.
 
 The fresh reviewer derives subject identity at the beginning and end, confirms intent
@@ -152,8 +152,7 @@ future outcomes. Objective text is no proof of stop or budget enforcement.
 Return the outcome, exact changed subject, strongest checks and material unchecked
 acceptance. `NOT_PLANNED` and `NOT_BUILT` are progress statuses, not verdicts.
 Do not report incomplete capability as complete. Interactive prose is sufficient;
-`rpi-report.v1` and durable verdicts are optional unless a declared consumer needs
-them. No new status ledger, process packet or lifecycle command is introduced.
+a durable verdict is optional unless a declared consumer needs it. No new status ledger, process packet or lifecycle command is introduced.
 
 ## Optional Memory and specialists
 

@@ -106,7 +106,7 @@ The catalog itself contains no pricing; no account-specific charge is claimed.
 
 ## Three layers
 
-Delegation source: `skills/agent-native/agents/bulk-reader.toml` and
+Delegation source: `skills/orchestrate/agents/bulk-reader.toml` and
 `code-writer.toml`, shipped as part of the `skills/` tree the Codex plugin
 loads. `.codex/agents/` points to those sources, and `.codex/config.toml`
 registers both names for checkout use.
@@ -125,7 +125,7 @@ wired; no invented Read/read_file mapping. Rule scope and known fail-open cases
 are the shared shell guard's contract. This can refuse covered shell calls,
 but it is not comprehensive protection against arbitrary reads.
 
-Advisory: `skills/agent-native/SKILL.md` and its
+Advisory: `skills/orchestrate/SKILL.md` and its
 `references/context-budget-delegation.md` explain when/how to delegate, slices,
 required references, fresh contexts and receipts. Reader read-only and writer
 workspace-write are role defaults; parent live overrides can supersede them.

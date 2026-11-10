@@ -105,7 +105,7 @@ authority.
 | Intent interview | Settle caller choices one question at a time before autonomous work | `interview` | Decisions in the caller's intent source; next step Craft Goal, RPI or Plan |
 | Graph walk | Pick a goal's next wave and keep its bead graph honest | `navigate` | Wave checkpoint to caller or Goal |
 | Goal observation | Report durable state without steering | `status`, `handoff` | Facts to caller or Goal |
-| Intent evidence | Reduce uncertainty before one experiment is frozen | `research`, `codebase-recon`, `domain`, `standards`, `reverse-engineer` | Cited facts to Goal or Plan |
+| Intent evidence | Reduce uncertainty before one experiment is frozen | `research`, `domain` | Cited facts to Goal or Plan |
 | Option shaping | Generate, challenge, or route candidate hypotheses | `idea-genie`, `research` (claimed-state audit), `automation-shape-routing` | Advisory options, gaps, or semantic route to caller, Goal, or Plan |
 | Plan review | Challenge a frozen experiment intent (write-scope review is Plan's own step) | `premortem` | Findings to caller or Goal |
 | Implement method | Produce the candidate or focused factual evidence | `test`, `refactor`, `doc`, `scaffold`, `converter`, `skill-builder`, `workflow-builder` | Subject changes and receipts to Implement |
@@ -113,7 +113,7 @@ authority.
 | Judgment strategy | Add independent perspectives without writing the verdict | `council` | Advisory report to Plan or Validate |
 | Post-verdict analysis | Analyze recurrence or causality without changing outcomes | `learn`, `postmortem` | Observations or hypotheses to caller or Goal |
 | Capability evolution | Find repeated toil/patterns and propose reusable behavior | `toil-mining`, `pattern-mining`, `operationalize` | Proposal to a later Plan |
-| Runtime transport | Execute supplied packets or coordinate explicit actors | `agent-native`, `agy-native`, `claude-exec`, `codex-exec`, `swarm`, `using-gc` | Candidate, evidence, or runtime error |
+| Runtime transport | Execute supplied packets or coordinate explicit actors | `orchestrate`, `agy-native`, `claude-exec`, `codex-exec` | Candidate, evidence, or runtime error |
 | Cross-cutting support | Prepare or protect the environment without steering | `bootstrap` | Factual result to the invoking owner |
 
 An optional strategy that finds a material defect cannot silently edit its

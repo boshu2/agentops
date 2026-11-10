@@ -121,7 +121,7 @@ outer goal may authorize a new experiment within its accepted envelope; RPI
 itself neither replans nor owns native budgets, stops, queues or delivery.
 
 Replace Decision 3's NTM-only and blanket headless-Claude ban with the single
-[authorized bounded model-dispatch recipe](../../skills/agent-native/references/model-dispatch.md).
+[authorized bounded model-dispatch recipe](../../skills/validate/references/model-dispatch.md).
 Both fresh and required cross-family exact-subject legs remain, with independent
 initial inputs and actual model/context receipts. Caller-required
 unavailable diversity stays `diversity_unsatisfied` / `NOT_PROVEN`; no preferred

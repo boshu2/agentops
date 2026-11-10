@@ -16,14 +16,6 @@
 # (docs/adr/ADR-0016-state-tiers.md, "Amendment 2026-07-25"), not by omission.
 #
 # Enforced by: scripts/check-skill-python-ratchet.sh
-skills/reverse-engineer/scripts/binary/extract_embedded_archives.py
-skills/reverse-engineer/scripts/binary/list_embedded_archives.py
-skills/reverse-engineer/scripts/fetch_url.py
-skills/reverse-engineer/scripts/generate_feature_catalog_md.py
-skills/reverse-engineer/scripts/generate_feature_inventory_md.py
-skills/reverse-engineer/scripts/reverse_engineer.py
-skills/reverse-engineer/scripts/scaffold_feature_registry.py
-skills/reverse-engineer/scripts/validate_feature_registry.py
 skills/security/scripts/prompt_redteam.py
 skills/security/scripts/security_suite.py
 skills/skill-builder/scripts/authoring_scan.py

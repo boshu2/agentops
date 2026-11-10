@@ -133,6 +133,6 @@ PY
 
 @test "model-dispatch reference documents real codex/ntm dispatch commands" {
   run grep -E 'codex exec|command -v ntm|command -v codex' \
-    "$REPO_ROOT/skills/agent-native/references/model-dispatch.md"
+    "$REPO_ROOT/skills/validate/references/model-dispatch.md"
   [ "$status" -eq 0 ]
 }

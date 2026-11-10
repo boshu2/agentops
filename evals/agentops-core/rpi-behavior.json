@@ -104,7 +104,7 @@
       "runtime": "shell",
       "inputs": {
         "cwd": "../..",
-        "shell": "grep -q NOT_PROVEN schemas/verdict.v2.schema.json && ! grep -q NOT_BUILT schemas/verdict.v2.schema.json && grep -q NOT_BUILT schemas/rpi-report.v1.schema.json"
+        "shell": "grep -q NOT_PROVEN schemas/verdict.v2.schema.json && ! grep -q NOT_BUILT schemas/verdict.v2.schema.json"
       },
       "expectations": [
         {

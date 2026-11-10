@@ -139,6 +139,6 @@ main --draft`).
 
 ## See also
 
-- `skills/agent-native/SKILL.md` — isolate concurrent writers and declare disjoint write scopes.
+- `skills/orchestrate/SKILL.md` — isolate concurrent writers and declare disjoint write scopes.
 - The repository's own contribution and CI documentation for checks required
   before opening a PR. AgentOps does not own the push or PR transition.
