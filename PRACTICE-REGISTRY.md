@@ -175,7 +175,10 @@ Discovery, planning, implementation and review do not each need a new artifact.
 
 ## What does NOT change
 
-- The practices listed above were correct before AI; they are correct after.
+- Most of the practices listed above were correct before AI and are correct
+  after. Some hold only in a different shape, and a few did not transfer. The
+  [practice ledger](docs/practice-ledger.md) records which is which, with the
+  evidence.
 - TDD/BDD didn't fail because of agents; it failed because teams didn't keep
   specs and code in sync. Agents make that failure mode louder, not new.
 - Pragmatic engineering is still pragmatic. We do not ship perfection; we

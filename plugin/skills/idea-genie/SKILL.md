@@ -27,7 +27,8 @@ output_contract: idea-portfolio.v1 JSON validated by this skill's scripts/valida
 One canonical root for idea work: elicit an evidence-grounded portfolio of
 options, or challenge a consequential idea with sealed independent
 perspectives. Both modes explore and advise; neither selects, schedules,
-tracks, implements, or validates work.
+tracks, implements, or validates work. The next item in an existing epic or
+bead graph is [Navigate](../navigate/SKILL.md)'s.
 
 ## Modes
 

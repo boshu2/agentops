@@ -79,7 +79,7 @@ request to turn an incident into a rule for an instruction file:
 ### <one-line claim>
 - Applies when: <the conditions the evidence covered>
 - Action: <the check or step to take>
-- Support: <cited sources; number of independent occurrences>
+- Support: <cited sources, each with the commit or date observed; number of independent occurrences>
 - Limits: <where it is untested or may not hold>
 - Invalidate when: <the change or contrary evidence that retires it, and how to check it>
 ```

@@ -34,6 +34,11 @@ acceptance and records verdicts.
 - **Finished is not done.** Exit 0, a pushed branch, a closed tracker item or a
   worker saying "done" makes a candidate. It still owes its checks, integration
   and, when one is owed, a fresh judgment.
+- **A held step keeps the task open.** When a worker reports a step refused,
+  held, worked around or unverified, the task is not complete. Retry the step
+  yourself only within your authority and the caller's limits, never by the
+  route the worker was denied. Otherwise integrate the finished part only if it
+  stands alone, and report the open step as a blocker.
 - **Drain before starting.** While candidates wait on checks, repair,
   integration or an owed judgment, free capacity goes there first: candidates
   that unblock held dependents, then the oldest. A free slot alone is not a
@@ -84,7 +89,14 @@ dispatch, since a short prompt in a forked session still carries the history
 cleared summary or resumed author context is not fresh. Pass the accepted
 examples, applicable constraints, exact starting content, usable prerequisites,
 authorized write/output scope, source pointers, required checks, integration
-responsibility and real remaining bounds; brevity cannot omit a constraint. A
+responsibility and real remaining bounds; brevity cannot omit a constraint.
+State what a blocked step means: when the runtime refuses an action or a step
+cannot run in the worker's environment, it holds that step and whatever depends
+on it, does not reach the same refused effect by another route, leaves
+finished edits in place, completes the independent parts and reports; an
+authorized safer alternative stays allowed
+([change safety](../implement/references/change-safety.md#a-safety-control-refuses-the-operation)).
+A bare "stop and report" throws away finished work over one refused step. A
 pointer counts only if the worker can open it: a link relative to a skill's own
 folder, or a file outside the worker's workspace, does not resolve there, so
 pass a path it can read or paste the rule itself. Record the worker's observed
@@ -94,7 +106,8 @@ identity at startup through Agent Native's
 [Implement](../implement/SKILL.md) owns the complete change, meaningful checks
 and direct repair; it is optional guidance for that worker, not a compulsory
 stage. The handoff returns candidate identity, changed scope, check facts,
-discoveries and gaps; prompt delivery proves neither engagement
+discoveries, gaps and what did not go as briefed (steps refused, held, worked
+around or unverified); prompt delivery proves neither engagement
 ([Agent Native](../agent-native/SKILL.md#before-launch-and-while-running)) nor
 acceptance.
 
@@ -177,7 +190,7 @@ existing consumer needs one.
 assignments: <worker/context id> -> <task>, state as observed (how); last activity <time, kind> | unobserved
 candidates:  <task> -> <exact ref>; checks <result>; judgment <ref | owed | not owed>
 next:        <free capacity> -> <dispatch>, because <observed bottleneck>
-held:        <task>, blocked by <prerequisite gap>
+held:        <task>, blocked by <prerequisite gap | step its worker reported refused, held or unverified>
 handoffs:    <affected work updated, and where>
 gaps:        <unobserved state, unknown identities, unresolved dissent>
 ```

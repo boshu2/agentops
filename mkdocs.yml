@@ -175,6 +175,7 @@ nav:
   - Getting Started:
       - getting-started/index.md
       - "First-Value Path": first-value-path.md
+      - Practice Ledger: practice-ledger.md
       - Newcomer Guide: newcomer-guide.md
       - FAQ: FAQ.md
       - Migration Guide: MIGRATION.md
