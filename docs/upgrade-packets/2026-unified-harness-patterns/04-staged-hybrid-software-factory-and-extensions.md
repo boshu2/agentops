@@ -1,6 +1,6 @@
 # Volume 4: Staged Hybrid Software Factory & Host Capability-Broker Extensions
 
-> **Scope:** Source-level engineering breakdown of the four primary host-broker extensions: **Staged Hybrid Software Factory**, **Git & Merge-Request Fault-Tree Workbench**, **Read-Only Cluster & Observability Broker**, and **Polyglot Autonomy Workbench**.
+> **Scope:** Source-level engineering breakdown of the four primary host-broker extensions: **Staged Hybrid Software Factory**, **Git & Merge-Request Fault-Tree Workbench**, **Read-Only Cluster & Observability Broker**, and **Polyglot Robotics Workbench**.
 
 ---
 
@@ -99,18 +99,18 @@ Every cluster tool response passes through TypeBox `Value.Check(Schema, payload)
 `istio_gitlab_diagnose` executes 3 bounded server-side LogQL queries in parallel:
 - **Plane 1 (Ingress Gateway):** Envoy access logs filtered for `5xx`, `0 DC`, `0 DR`, `UH`, `UC`, `UF`, `UO`, `URX`.
 - **Plane 2 (Application Services):** Webservice/Workhorse/Sidekiq logs filtered for HTTP `>= 500` and `exceptions_json`.
-- **Plane 3 (Mesh Transport / ztunnel):** Ambient mesh HBONE proxy logs filtered for protocol errors and zero-byte stalls (`bytes_sent=0 bytes_recv=0`).
-- **Benign Noise Suppression & Correlation Join:** Automatically suppresses known benign conditions (HTTP `421` Lua connection coalescing, client `499` cancels, WebSocket `101` closes, post-transfer ztunnel closes) into `benignSuppressed` counters, while joining Workhorse `5xx` records to Rails `exceptions_json` stack traces via shared `correlation_id`.
+- **Plane 3 (Mesh Transport / node proxy):** Ambient mesh node-proxy tunnel logs filtered for protocol errors and zero-byte stalls (`bytes_sent=0 bytes_recv=0`).
+- **Benign Noise Suppression & Correlation Join:** Automatically suppresses known benign conditions (HTTP `421` Lua connection coalescing, client `499` cancels, WebSocket `101` closes, post-transfer node-proxy closes) into `benignSuppressed` counters, while joining Workhorse `5xx` records to Rails `exceptions_json` stack traces via shared `correlation_id`.
 
 ---
 
-## 4. Polyglot Autonomy Workbench (`pi-autonomy-workbench`)
+## 4. Polyglot Robotics Workbench (`pi-robotics-workbench`)
 
-### 4.1 Single-Pass `RepoFileIndex` & 16-Hex Diff-Scoped Fingerprint Ratchet (`autonomy_check.py`)
-1. **`RepoFileIndex` (`autonomy_check.py:55-151`):** Enumerates tracked repository files once via Git and lazily memoizes raw bytes, UTF-8 text, line offsets, and parsed Python `ast.AST` trees so 20+ static checkers run in a single pass without redundant disk I/O.
-2. **16-Hex Finding Fingerprints (`autonomy_check.py:154-277, 1931-1984`):**
+### 4.1 Single-Pass `RepoFileIndex` & 16-Hex Diff-Scoped Fingerprint Ratchet (`robotics_check.py`)
+1. **`RepoFileIndex` (`robotics_check.py:55-151`):** Enumerates tracked repository files once via Git and lazily memoizes raw bytes, UTF-8 text, line offsets, and parsed Python `ast.AST` trees so 20+ static checkers run in a single pass without redundant disk I/O.
+2. **16-Hex Finding Fingerprints (`robotics_check.py:154-277, 1931-1984`):**
    $$\text{fingerprint} = \text{SHA256}(\text{rule\_id} \;\|\; \text{rel\_path} \;\|\; \text{normalized\_symbol\_or\_snippet})[0..16]$$
-   - Suppresses findings outside touched diff files and findings whose 16-hex fingerprint appears in `.autonomy-lint-baseline.json`.
+   - Suppresses findings outside touched diff files and findings whose 16-hex fingerprint appears in `.robotics-lint-baseline.json`.
 
 ### 4.2 The Complete Polyglot Rule Catalog (`BA101..BA602`)
 
@@ -118,16 +118,16 @@ Every cluster tool response passes through TypeBox `Value.Check(Schema, payload)
 | --- | --- | --- | --- |
 | **`BA101`** | C++17 | Identical `if / else` branches or duplicate boolean conditions | `ast-grep` structural pattern (`rules/ast_grep_rules.yml`) |
 | **`BA102`** | C++17 | Unsafe `std::stoi/stod/stol`, throwing destructors, exception slicing (`catch (std::exception e)` by value), manual `mtx.lock()`, dangling `std::string_view` / local ref return, `erase()` iterator invalidation, `std::move` on `const` | `ast-grep` structural AST rules |
-| **`BA103`** | C++17 (Real-Time) | Asymmetric mutex locking across callbacks/timers or re-entrant non-recursive mutex lock deadlocks | CFG/call-graph mutex lock-symmetry analyzer (`autonomy_check.py`) |
-| **`BA104`** | C++17 (Real-Time) | Uninitialized primitive/pointer class members in constructors | `cppcheck` with custom middleware macro header (`edgeos_cppcheck_macros.h`) |
+| **`BA103`** | C++17 (Real-Time) | Asymmetric mutex locking across callbacks/timers or re-entrant non-recursive mutex lock deadlocks | CFG/call-graph mutex lock-symmetry analyzer (`robotics_check.py`) |
+| **`BA104`** | C++17 (Real-Time) | Uninitialized primitive/pointer class members in constructors | `cppcheck` with custom middleware macro header (`middleware_cppcheck_macros.h`) |
 | **`BA105`** | C++ / CMake | Orphan `.cpp` source files not registered in any `CMakeLists.txt` target | `RepoFileIndex` vs. CMake target source closure |
 | **`BA106`** | C++ Headers | `using namespace ...;` inside `.h` / `.hpp` header files (namespace pollution) | `ast-grep` header rule |
-| **`BA107/108`** | IDL / Middleware | `.eos` schema syntax/field-numbering errors and missing constructor port registration | Schema & macro cross-checker |
+| **`BA107/108`** | IDL / Middleware | `.idl` schema syntax/field-numbering errors and missing constructor port registration | Schema & macro cross-checker |
 | **`BA201/202`** | CUE Config | CUE syntax/unification errors and concrete base values blocking overlay overrides | `cue vet` + default-unification (`*val \| type`) AST check |
 | **`BA203`** | CUE Overlays | Asymmetric keys across the 5 platform overlays | Multi-overlay key-set equivalence join |
-| **`BA204`** | C++ $\leftrightarrow$ CUE | Port name/type mismatch between C++ `EDGEOS_*_PORTS` macros, `.eos` IDL, and CUE wiring | 3-way cross-language symbol table join |
+| **`BA204`** | C++ $\leftrightarrow$ CUE | Port name/type mismatch between C++ `<FRAMEWORK>_*_PORTS` macros, `.idl` IDL, and CUE wiring | 3-way cross-language symbol table join |
 | **`BA301`** | Python | Identical branches, `eval()`, bare `raise` outside except, literal `is` comparison, bare `except:`, unsafe `yaml.load()`, `shell=True`, `requests.*` without `timeout=` | `ast-grep` + `ast.NodeVisitor` |
-| **`BA302`** | Python Ontology | Mixing legacy `C2Table` classes with modern `ModernC2Table` domain types in the same module | Import & symbol-origin taint checker |
+| **`BA302`** | Python Ontology | Mixing legacy `LegacyTable` classes with modern `ModernTable` domain types in the same module | Import & symbol-origin taint checker |
 | **`BA303`** | Python Packaging | Reverse dependency leak from new delivery package back into deprecated legacy delivery package | Strangler-fig one-way import boundary check |
 | **`BA304..306`** | Python / Docker | Ruff/Mypy parity, missing runtime imports in production multi-stage `Dockerfile` (`COPY` closure), and mutable default args | Multi-stage `Dockerfile` `COPY` vs. Python import graph closure |
 | **`BA401..403`** | K8s Batch / CUE | K8s Indexed Job name `> 41` chars (`DNS-1123` overflow after suffix), retry/backoff budget violations, and chart/app version drift | Static length + YAML/CUE schema evaluator |
@@ -135,7 +135,7 @@ Every cluster tool response passes through TypeBox `Value.Check(Schema, payload)
 | **`BA602`** | GitLab CI | Unpinned container tags, missing `interruptible: true`, or broken `needs:` references | CI DAG & job hygiene analyzer |
 
 ### 4.3 Six-Plane Cross-Layer Contract Dossier (`extract_four_seam_dossier`)
-`autonomy_check.py:2296-2442` (`mode="mr_validate"`) synthesizes a **6-plane engineering dossier** plus a 100% changed-file coverage ledger in one call:
+`robotics_check.py:2296-2442` (`mode="mr_validate"`) synthesizes a **6-plane engineering dossier** plus a 100% changed-file coverage ledger in one call:
 1. **Plane 1:** Deterministic Exit Gates (`BA101..BA602` summary)
 2. **Plane 2:** C++ $\leftrightarrow$ IDL $\leftrightarrow$ CUE Port-Contract Parity
 3. **Plane 3:** Python Domain & Ontology Seam Integrity
