@@ -262,8 +262,8 @@ and Agy Native's plain case were run on the repaired tree itself.
 `orchestrate-packets-harder` has no headroom (12 of 15 without the plugin), so
 its two-criterion difference is not a regression under the rule. On the
 repaired tree no routing request loaded Orchestrate in place of its own skill,
-and no skill lost two or more routing loads; Refactor lost one (1 of 3 to 0 of
-3) and Plan and Test each gained one.
+and no skill lost two or more routing loads; Refactor lost one (1 of 3 to
+0 of 3) and Plan and Test each gained one.
 
 ## Accounting
 
