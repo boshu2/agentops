@@ -16,7 +16,7 @@
   "model": "claude-fable-5-2",
   "method": "grade.py judge call, one per response, blind to arm and version; mapping opened after grading",
   "calibration": "34 of 34 hand-written wave-3 answers graded as expected",
-  "graded_responses": 945,
+  "graded_responses": 969,
   "ungraded": 0,
   "stored_3.11_responses_left_out": 36
  },
@@ -2213,10 +2213,58 @@
     ]
    },
    "blind_scores": {}
+  },
+  "t4-P311-t4-navigate-byname": {
+   "cost_usd": 0.9677,
+   "loads": {
+    "navigate-hard": [
+     0,
+     6
+    ]
+   },
+   "blind_scores": {
+    "navigate-hard|with": "20/30"
+   }
+  },
+  "t4-P311-t4-skill-builder": {
+   "cost_usd": 0.7469,
+   "loads": {
+    "skill-builder": [
+     5,
+     6
+    ]
+   },
+   "blind_scores": {
+    "skill-builder|with": "23/30"
+   }
+  },
+  "t4-P312-t4-navigate-byname": {
+   "cost_usd": 0.922,
+   "loads": {
+    "navigate-hard": [
+     0,
+     6
+    ]
+   },
+   "blind_scores": {
+    "navigate-hard|with": "22/30"
+   }
+  },
+  "t4-P312-t4-skill-builder": {
+   "cost_usd": 0.799,
+   "loads": {
+    "skill-builder": [
+     6,
+     6
+    ]
+   },
+   "blind_scores": {
+    "skill-builder|with": "26/30"
+   }
   }
  },
- "attempts": 798,
- "evaluator_cost_usd": 111.47,
+ "attempts": 822,
+ "evaluator_cost_usd": 114.91,
  "per_response_grades": {
   "full-forced-plain|agy-native-harder|with|0": [
    true,
@@ -8459,6 +8507,174 @@
   ],
   "t3-PFIX-natural-plain-agy-native|agy-native|with|2": [
    false,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t4-P311-t4-navigate-byname|navigate-hard|with|0": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "t4-P311-t4-navigate-byname|navigate-hard|with|1": [
+   true,
+   false,
+   true,
+   true,
+   false
+  ],
+  "t4-P311-t4-navigate-byname|navigate-hard|with|2": [
+   true,
+   false,
+   false,
+   true,
+   false
+  ],
+  "t4-P311-t4-navigate-byname|navigate-hard|with|3": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "t4-P311-t4-navigate-byname|navigate-hard|with|4": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "t4-P311-t4-navigate-byname|navigate-hard|with|5": [
+   true,
+   false,
+   false,
+   true,
+   true
+  ],
+  "t4-P311-t4-skill-builder|skill-builder|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t4-P311-t4-skill-builder|skill-builder|with|1": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "t4-P311-t4-skill-builder|skill-builder|with|2": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "t4-P311-t4-skill-builder|skill-builder|with|3": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "t4-P311-t4-skill-builder|skill-builder|with|4": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "t4-P311-t4-skill-builder|skill-builder|with|5": [
+   false,
+   true,
+   false,
+   true,
+   false
+  ],
+  "t4-P312-t4-navigate-byname|navigate-hard|with|0": [
+   true,
+   true,
+   false,
+   true,
+   true
+  ],
+  "t4-P312-t4-navigate-byname|navigate-hard|with|1": [
+   true,
+   false,
+   false,
+   true,
+   true
+  ],
+  "t4-P312-t4-navigate-byname|navigate-hard|with|2": [
+   true,
+   false,
+   false,
+   true,
+   true
+  ],
+  "t4-P312-t4-navigate-byname|navigate-hard|with|3": [
+   true,
+   true,
+   false,
+   true,
+   true
+  ],
+  "t4-P312-t4-navigate-byname|navigate-hard|with|4": [
+   true,
+   true,
+   false,
+   true,
+   true
+  ],
+  "t4-P312-t4-navigate-byname|navigate-hard|with|5": [
+   true,
+   true,
+   false,
+   true,
+   true
+  ],
+  "t4-P312-t4-skill-builder|skill-builder|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t4-P312-t4-skill-builder|skill-builder|with|1": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "t4-P312-t4-skill-builder|skill-builder|with|2": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "t4-P312-t4-skill-builder|skill-builder|with|3": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "t4-P312-t4-skill-builder|skill-builder|with|4": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "t4-P312-t4-skill-builder|skill-builder|with|5": [
+   true,
    true,
    true,
    true,

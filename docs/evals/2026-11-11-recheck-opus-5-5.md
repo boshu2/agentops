@@ -61,7 +61,7 @@ responses from the 2026-10-22 and 2026-10-26 runs, graded against the current
 criteria of the case with the identical request. That is the same-judge 3.11
 result used below. Thirty-six stored responses were left out because no current
 case has their request (the old Interview request, Skill Builder's changed
-request, and the two removed skills). In all, 945 responses were graded and
+request, and the two removed skills). In all, 969 responses were graded and
 none was left ungraded.
 
 On the 336 stored responses whose criteria are unchanged, the Fable grades
@@ -192,6 +192,14 @@ Implement is covered below.
 | Agy Native, loading on its harder case | 1 of 3 loads; 9/15 against a same-judge 12/15 | 3.11 text as a same-day third arm, 6 runs, run twice | 3.11 text 10 of 12; 3.12.0 4 of 12 | confirmed |
 | Implement, by name | 10/12 against a same-judge 12/12 from stored responses, which meets the score rule; one criterion missed in 2 of 3 runs | 3.11 text as a same-day third arm, 6 runs | 24/24 on both | not reproduced; no change made |
 
+Twelve of the 40 case-and-arm rows with headroom have no stored 3.11
+response. Eight of them score 0.87 or higher on 3.12.0, so no 3.11 score can
+exceed them by more than 0.15, and two (Craft Goal and RPI by name) repeat a
+request already compared as typed. The last two were run on the 3.11 text and
+on 3.12.0 the same day, six runs each: `navigate-hard` by name scored 20/30 on
+the 3.11 text and 22/30 on 3.12.0, and `skill-builder` as typed scored 23/30
+and 26/30. Neither is a regression.
+
 Three other cases were flagged only because a by-name run missed a criterion
 in two of three runs (`navigate-hard`, `research-claim-check-harder`,
 `security`). Each scores at or above its same-judge 3.11 result, so none is a
@@ -273,9 +281,10 @@ and no skill lost two or more routing loads; Refactor lost one (1 of 3 to
 | Targeted 1: 3.11 text, 3.12.0, D1, D2; Implement; Agy Native; the cut Validate run | 145 | $18.23 |
 | Targeted 2: D3, D4; Agy Native on five subjects | 90 | $11.65 |
 | Targeted 3: repaired tree, routing and Agy Native's plain case | 96 | $17.09 |
+| Targeted 4: Navigate's harder case by name and Skill Builder's case, 3.11 text and 3.12.0 | 24 | $3.44 |
 
-That is 798 attempts with no errored run and $111.47 as the evaluator reports
-it, not a verified invoice. The 945 judge calls and 34 calibration calls are
+That is 822 attempts with no errored run and $114.91 as the evaluator reports
+it, not a verified invoice. The 969 judge calls and 34 calibration calls are
 not in that figure; `grade.py` does not report their spend.
 
 The [scorecard](../../evals/plugin-eval/scorecards/2026-11-11-recheck-opus-5-5.json)
@@ -299,8 +308,8 @@ session identities and local paths are excluded.
   the pre-audit subject was run only for Agy Native.
 - The description candidates were written after seeing these requests, so the
   loading counts are in-sample for the adopted line.
-- Skill Builder's request changed after 3.11, so it has no same-judge 3.11
-  result. It scores 12/15 as typed and 15/15 by name.
+- Skill Builder's request changed after 3.11, so it has no stored 3.11
+  response; its comparison is the same-day run above.
 - Doc, Navigate, Research, Review, Security and Validate did not load on their
   routing request on either version. That is unchanged from 3.11.0 and was not
   in scope here.
