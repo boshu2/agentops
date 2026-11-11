@@ -1,0 +1,8468 @@
+{
+ "schema_version": 1,
+ "run": "2026-11-11 recheck of AgentOps 3.12.0 after the catalog audit (bead age-n3cv.13)",
+ "subject": {
+  "tag": "v3.12.0",
+  "commit": "5221ed81b1d8fd03532809910de884a687080c79",
+  "plugin_tree": "e1dc4723aaa0c6f8e9b45f6cdac2835425f57a50"
+ },
+ "runner": {
+  "claude_code": "2.1.309",
+  "model": "claude-opus-5-5",
+  "effort": "medium requested by environment variable; not recorded in traces",
+  "runs_per_case": 3
+ },
+ "judge": {
+  "model": "claude-fable-5-2",
+  "method": "grade.py judge call, one per response, blind to arm and version; mapping opened after grading",
+  "calibration": "34 of 34 hand-written wave-3 answers graded as expected",
+  "graded_responses": 945,
+  "ungraded": 0,
+  "stored_3.11_responses_left_out": 36
+ },
+ "rules": {
+  "score": "share of judge criteria met, pooled over a case's runs in one arm",
+  "headroom": "without-skill score of the case is 0.70 or below (wave 3's registered informative bar)",
+  "suspect_score": "a case with headroom whose 3.12 with-skill score (forced, or natural) is below the stored 3.11 Opus-graded score of the same arm and request by more than 0.15, or any case with headroom on a reshaped skill where a forced run misses a criterion in at least 2 of 3 runs",
+  "suspect_loading": "a skill whose loads (routing plus natural behavior runs) are at least 2 fewer than the stored 3.11 count on the same requests",
+  "confirm_score": "same-judge: Fable 5.2 regrades the stored 3.11 transcripts of the same request and arm with the current criteria, blind and mixed with the 3.12 responses; where the request or criteria changed since 3.11, or no stored transcript exists, the 3.11 text runs as a same-day third arm. Confirmed when same-judge 3.11 minus 3.12 exceeds 0.15 on a case with headroom.",
+  "confirm_loading": "same-day 3.11-text arm against 3.12 on the same requests, 6 runs per request; confirmed when the 3.12 rate is lower by 0.33 or more",
+  "repair_bar": "re-run of the repaired skill's cases meets or exceeds the same-judge 3.11 score (and loading rate where loading regressed)",
+  "no_fix": "no fix for a skill whose only finding is no headroom; no description-line change without a same-day measured trial"
+ },
+ "cases": [
+  {
+   "skill": "agy-native",
+   "case": "agy-native",
+   "criteria": 5,
+   "headroom": false,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "11/15",
+   "311_fable_without": "12/15",
+   "311_opus_without": "12/15",
+   "312_natural": "14/15",
+   "311_fable_natural": "25/30",
+   "311_opus_natural": "23/30",
+   "312_forced": "15/15",
+   "311_fable_forced": "-",
+   "311_opus_forced": "-",
+   "312_natural_loads": "3/3",
+   "311_natural_loads": "6/6",
+   "suspect": []
+  },
+  {
+   "skill": "agy-native",
+   "case": "agy-native-harder",
+   "criteria": 5,
+   "headroom": true,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "6/15",
+   "311_fable_without": "5/15",
+   "311_opus_without": "6/15",
+   "312_natural": "9/15",
+   "311_fable_natural": "12/15",
+   "311_opus_natural": "9/15",
+   "312_forced": "15/15",
+   "311_fable_forced": "15/15",
+   "311_opus_forced": "15/15",
+   "312_natural_loads": "1/3",
+   "311_natural_loads": "2/3",
+   "suspect": []
+  },
+  {
+   "skill": "architecture",
+   "case": "architecture",
+   "criteria": 5,
+   "headroom": true,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "3/15",
+   "311_fable_without": "4/15",
+   "311_opus_without": "4/15",
+   "312_natural": "4/15",
+   "311_fable_natural": "9/30",
+   "311_opus_natural": "10/30",
+   "312_forced": "15/15",
+   "311_fable_forced": "15/15",
+   "311_opus_forced": "15/15",
+   "312_natural_loads": "0/3",
+   "311_natural_loads": "0/6",
+   "suspect": []
+  },
+  {
+   "skill": "claude-exec",
+   "case": "claude-exec",
+   "criteria": 5,
+   "headroom": true,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "4/15",
+   "311_fable_without": "5/15",
+   "311_opus_without": "3/15",
+   "312_natural": "14/15",
+   "311_fable_natural": "29/30",
+   "311_opus_natural": "29/30",
+   "312_forced": "15/15",
+   "311_fable_forced": "-",
+   "311_opus_forced": "-",
+   "312_natural_loads": "3/3",
+   "311_natural_loads": "6/6",
+   "suspect": []
+  },
+  {
+   "skill": "codex-exec",
+   "case": "codex-exec",
+   "criteria": 4,
+   "headroom": false,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "9/12",
+   "311_fable_without": "8/12",
+   "311_opus_without": "9/12",
+   "312_natural": "12/12",
+   "311_fable_natural": "21/24",
+   "311_opus_natural": "20/24",
+   "312_forced": "12/12",
+   "311_fable_forced": "-",
+   "311_opus_forced": "-",
+   "312_natural_loads": "3/3",
+   "311_natural_loads": "6/6",
+   "suspect": []
+  },
+  {
+   "skill": "codex-exec",
+   "case": "codex-exec-harder",
+   "criteria": 4,
+   "headroom": false,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "9/12",
+   "311_fable_without": "9/12",
+   "311_opus_without": "9/12",
+   "312_natural": "9/12",
+   "311_fable_natural": "9/12",
+   "311_opus_natural": "9/12",
+   "312_forced": "12/12",
+   "311_fable_forced": "12/12",
+   "311_opus_forced": "12/12",
+   "312_natural_loads": "0/3",
+   "311_natural_loads": "0/3",
+   "suspect": []
+  },
+  {
+   "skill": "council",
+   "case": "council",
+   "criteria": 4,
+   "headroom": false,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "9/12",
+   "311_fable_without": "9/12",
+   "311_opus_without": "9/12",
+   "312_natural": "12/12",
+   "311_fable_natural": "24/24",
+   "311_opus_natural": "24/24",
+   "312_forced": "12/12",
+   "311_fable_forced": "12/12",
+   "311_opus_forced": "12/12",
+   "312_natural_loads": "0/3",
+   "311_natural_loads": "0/6",
+   "suspect": []
+  },
+  {
+   "skill": "council",
+   "case": "council-vote-tally",
+   "criteria": 4,
+   "headroom": false,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "9/12",
+   "311_fable_without": "9/12",
+   "311_opus_without": "9/12",
+   "312_natural": "9/12",
+   "311_fable_natural": "10/12",
+   "311_opus_natural": "10/12",
+   "312_forced": "12/12",
+   "311_fable_forced": "12/12",
+   "311_opus_forced": "12/12",
+   "312_natural_loads": "0/3",
+   "311_natural_loads": "1/3",
+   "suspect": []
+  },
+  {
+   "skill": "craft-goal",
+   "case": "craft-goal",
+   "criteria": 4,
+   "headroom": true,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "4/12",
+   "311_fable_without": "6/12",
+   "311_opus_without": "5/12",
+   "312_natural": "12/12",
+   "311_fable_natural": "24/24",
+   "311_opus_natural": "24/24",
+   "312_forced": "12/12",
+   "311_fable_forced": "-",
+   "311_opus_forced": "-",
+   "312_natural_loads": "n/a (by name)",
+   "311_natural_loads": "-",
+   "suspect": []
+  },
+  {
+   "skill": "doc",
+   "case": "doc",
+   "criteria": 4,
+   "headroom": false,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "9/12",
+   "311_fable_without": "7/12",
+   "311_opus_without": "8/12",
+   "312_natural": "12/12",
+   "311_fable_natural": "24/24",
+   "311_opus_natural": "19/24",
+   "312_forced": "12/12",
+   "311_fable_forced": "-",
+   "311_opus_forced": "-",
+   "312_natural_loads": "3/3",
+   "311_natural_loads": "6/6",
+   "suspect": []
+  },
+  {
+   "skill": "domain",
+   "case": "domain",
+   "criteria": 5,
+   "headroom": false,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "12/15",
+   "311_fable_without": "12/15",
+   "311_opus_without": "12/15",
+   "312_natural": "15/15",
+   "311_fable_natural": "30/30",
+   "311_opus_natural": "30/30",
+   "312_forced": "15/15",
+   "311_fable_forced": "-",
+   "311_opus_forced": "-",
+   "312_natural_loads": "3/3",
+   "311_natural_loads": "6/6",
+   "suspect": []
+  },
+  {
+   "skill": "ergonomics",
+   "case": "ergonomics",
+   "criteria": 5,
+   "headroom": true,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "6/15",
+   "311_fable_without": "4/15",
+   "311_opus_without": "3/15",
+   "312_natural": "15/15",
+   "311_fable_natural": "21/30",
+   "311_opus_natural": "18/30",
+   "312_forced": "15/15",
+   "311_fable_forced": "-",
+   "311_opus_forced": "-",
+   "312_natural_loads": "3/3",
+   "311_natural_loads": "6/6",
+   "suspect": []
+  },
+  {
+   "skill": "idea-genie",
+   "case": "idea-genie",
+   "criteria": 5,
+   "headroom": true,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "7/15",
+   "311_fable_without": "9/15",
+   "311_opus_without": "8/15",
+   "312_natural": "15/15",
+   "311_fable_natural": "29/30",
+   "311_opus_natural": "29/30",
+   "312_forced": "15/15",
+   "311_fable_forced": "-",
+   "311_opus_forced": "-",
+   "312_natural_loads": "3/3",
+   "311_natural_loads": "6/6",
+   "suspect": []
+  },
+  {
+   "skill": "implement",
+   "case": "implement",
+   "criteria": 4,
+   "headroom": true,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "5/12",
+   "311_fable_without": "5/12",
+   "311_opus_without": "5/12",
+   "312_natural": "6/12",
+   "311_fable_natural": "13/24",
+   "311_opus_natural": "12/24",
+   "312_forced": "10/12",
+   "311_fable_forced": "12/12",
+   "311_opus_forced": "12/12",
+   "312_natural_loads": "0/3",
+   "311_natural_loads": "0/6",
+   "suspect": [
+    "forced 10/12 vs stored 3.11 Opus-graded 12/12",
+    "forced misses c3 in 2+ of 3 runs"
+   ]
+  },
+  {
+   "skill": "interview",
+   "case": "interview",
+   "criteria": 4,
+   "headroom": true,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "5/12",
+   "311_fable_without": "4/12",
+   "311_opus_without": "13/24",
+   "312_natural": "12/12",
+   "311_fable_natural": "12/12",
+   "311_opus_natural": "36/36",
+   "312_forced": "12/12",
+   "311_fable_forced": "-",
+   "311_opus_forced": "-",
+   "312_natural_loads": "n/a (by name)",
+   "311_natural_loads": "-",
+   "suspect": []
+  },
+  {
+   "skill": "memory",
+   "case": "memory",
+   "criteria": 5,
+   "headroom": true,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "3/15",
+   "311_fable_without": "4/15",
+   "311_opus_without": "3/15",
+   "312_natural": "11/15",
+   "311_fable_natural": "15/30",
+   "311_opus_natural": "17/30",
+   "312_forced": "14/15",
+   "311_fable_forced": "14/15",
+   "311_opus_forced": "14/15",
+   "312_natural_loads": "2/3",
+   "311_natural_loads": "2/6",
+   "suspect": []
+  },
+  {
+   "skill": "navigate",
+   "case": "navigate",
+   "criteria": 5,
+   "headroom": false,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "15/15",
+   "311_fable_without": "15/15",
+   "311_opus_without": "15/15",
+   "312_natural": "15/15",
+   "311_fable_natural": "30/30",
+   "311_opus_natural": "30/30",
+   "312_forced": "15/15",
+   "311_fable_forced": "-",
+   "311_opus_forced": "-",
+   "312_natural_loads": "3/3",
+   "311_natural_loads": "6/6",
+   "suspect": []
+  },
+  {
+   "skill": "navigate",
+   "case": "navigate-hard",
+   "criteria": 5,
+   "headroom": true,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "5/15",
+   "311_fable_without": "4/15",
+   "311_opus_without": "3/15",
+   "312_natural": "12/15",
+   "311_fable_natural": "16/30",
+   "311_opus_natural": "15/30",
+   "312_forced": "10/15",
+   "311_fable_forced": "-",
+   "311_opus_forced": "-",
+   "312_natural_loads": "0/3",
+   "311_natural_loads": "0/3",
+   "suspect": [
+    "forced misses c2,c3 in 2+ of 3 runs"
+   ]
+  },
+  {
+   "skill": "orchestrate",
+   "case": "orchestrate",
+   "criteria": 5,
+   "headroom": true,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "8/15",
+   "311_fable_without": "9/15",
+   "311_opus_without": "10/12",
+   "312_natural": "9/15",
+   "311_fable_natural": "27/30",
+   "311_opus_natural": "20/24",
+   "312_forced": "13/15",
+   "311_fable_forced": "-",
+   "311_opus_forced": "-",
+   "312_natural_loads": "0/3",
+   "311_natural_loads": "6/6",
+   "suspect": [
+    "natural 9/15 vs stored 3.11 Opus-graded 20/24",
+    "forced misses c2 in 2+ of 3 runs"
+   ]
+  },
+  {
+   "skill": "orchestrate",
+   "case": "orchestrate-packets",
+   "criteria": 5,
+   "headroom": false,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "15/15",
+   "311_fable_without": "14/15",
+   "311_opus_without": "15/15",
+   "312_natural": "15/15",
+   "311_fable_natural": "30/30",
+   "311_opus_natural": "30/30",
+   "312_forced": "15/15",
+   "311_fable_forced": "15/15",
+   "311_opus_forced": "15/15",
+   "312_natural_loads": "0/3",
+   "311_natural_loads": "3/6",
+   "suspect": []
+  },
+  {
+   "skill": "orchestrate",
+   "case": "orchestrate-packets-harder",
+   "criteria": 5,
+   "headroom": false,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "12/15",
+   "311_fable_without": "12/15",
+   "311_opus_without": "11/15",
+   "312_natural": "12/15",
+   "311_fable_natural": "11/15",
+   "311_opus_natural": "10/15",
+   "312_forced": "10/15",
+   "311_fable_forced": "12/15",
+   "311_opus_forced": "10/15",
+   "312_natural_loads": "0/3",
+   "311_natural_loads": "0/3",
+   "suspect": []
+  },
+  {
+   "skill": "plan",
+   "case": "plan",
+   "criteria": 5,
+   "headroom": true,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "5/15",
+   "311_fable_without": "4/15",
+   "311_opus_without": "4/15",
+   "312_natural": "14/15",
+   "311_fable_natural": "26/30",
+   "311_opus_natural": "26/30",
+   "312_forced": "15/15",
+   "311_fable_forced": "-",
+   "311_opus_forced": "-",
+   "312_natural_loads": "3/3",
+   "311_natural_loads": "5/6",
+   "suspect": []
+  },
+  {
+   "skill": "postmortem",
+   "case": "postmortem",
+   "criteria": 4,
+   "headroom": false,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "12/12",
+   "311_fable_without": "12/12",
+   "311_opus_without": "12/12",
+   "312_natural": "12/12",
+   "311_fable_natural": "24/24",
+   "311_opus_natural": "24/24",
+   "312_forced": "12/12",
+   "311_fable_forced": "-",
+   "311_opus_forced": "-",
+   "312_natural_loads": "n/a (by name)",
+   "311_natural_loads": "-",
+   "suspect": []
+  },
+  {
+   "skill": "postmortem",
+   "case": "postmortem-harder",
+   "criteria": 5,
+   "headroom": false,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "11/15",
+   "311_fable_without": "12/15",
+   "311_opus_without": "12/15",
+   "312_natural": "15/15",
+   "311_fable_natural": "15/15",
+   "311_opus_natural": "15/15",
+   "312_forced": "15/15",
+   "311_fable_forced": "15/15",
+   "311_opus_forced": "15/15",
+   "312_natural_loads": "3/3",
+   "311_natural_loads": "3/3",
+   "suspect": []
+  },
+  {
+   "skill": "premortem",
+   "case": "premortem",
+   "criteria": 4,
+   "headroom": false,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "12/12",
+   "311_fable_without": "10/12",
+   "311_opus_without": "10/12",
+   "312_natural": "12/12",
+   "311_fable_natural": "24/24",
+   "311_opus_natural": "24/24",
+   "312_forced": "12/12",
+   "311_fable_forced": "-",
+   "311_opus_forced": "-",
+   "312_natural_loads": "3/3",
+   "311_natural_loads": "6/6",
+   "suspect": []
+  },
+  {
+   "skill": "premortem",
+   "case": "premortem-harder",
+   "criteria": 4,
+   "headroom": true,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "6/12",
+   "311_fable_without": "7/12",
+   "311_opus_without": "7/12",
+   "312_natural": "12/12",
+   "311_fable_natural": "11/12",
+   "311_opus_natural": "11/12",
+   "312_forced": "12/12",
+   "311_fable_forced": "11/12",
+   "311_opus_forced": "11/12",
+   "312_natural_loads": "3/3",
+   "311_natural_loads": "3/3",
+   "suspect": []
+  },
+  {
+   "skill": "refactor",
+   "case": "refactor",
+   "criteria": 4,
+   "headroom": true,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "8/12",
+   "311_fable_without": "9/12",
+   "311_opus_without": "9/12",
+   "312_natural": "12/12",
+   "311_fable_natural": "23/24",
+   "311_opus_natural": "24/24",
+   "312_forced": "12/12",
+   "311_fable_forced": "12/12",
+   "311_opus_forced": "12/12",
+   "312_natural_loads": "3/3",
+   "311_natural_loads": "3/6",
+   "suspect": []
+  },
+  {
+   "skill": "research",
+   "case": "research",
+   "criteria": 4,
+   "headroom": false,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "12/12",
+   "311_fable_without": "12/12",
+   "311_opus_without": "12/12",
+   "312_natural": "12/12",
+   "311_fable_natural": "24/24",
+   "311_opus_natural": "24/24",
+   "312_forced": "12/12",
+   "311_fable_forced": "12/12",
+   "311_opus_forced": "12/12",
+   "312_natural_loads": "0/3",
+   "311_natural_loads": "0/6",
+   "suspect": []
+  },
+  {
+   "skill": "research",
+   "case": "research-absence-proof",
+   "criteria": 4,
+   "headroom": false,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "9/12",
+   "311_fable_without": "9/12",
+   "311_opus_without": "9/12",
+   "312_natural": "9/12",
+   "311_fable_natural": "9/12",
+   "311_opus_natural": "9/12",
+   "312_forced": "12/12",
+   "311_fable_forced": "12/12",
+   "311_opus_forced": "12/12",
+   "312_natural_loads": "0/3",
+   "311_natural_loads": "0/3",
+   "suspect": []
+  },
+  {
+   "skill": "research",
+   "case": "research-claim-check",
+   "criteria": 5,
+   "headroom": false,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "15/15",
+   "311_fable_without": "15/15",
+   "311_opus_without": "15/15",
+   "312_natural": "15/15",
+   "311_fable_natural": "30/30",
+   "311_opus_natural": "30/30",
+   "312_forced": "15/15",
+   "311_fable_forced": "15/15",
+   "311_opus_forced": "15/15",
+   "312_natural_loads": "0/3",
+   "311_natural_loads": "2/6",
+   "suspect": []
+  },
+  {
+   "skill": "research",
+   "case": "research-claim-check-harder",
+   "criteria": 4,
+   "headroom": true,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "8/12",
+   "311_fable_without": "8/12",
+   "311_opus_without": "8/12",
+   "312_natural": "9/12",
+   "311_fable_natural": "9/12",
+   "311_opus_natural": "9/12",
+   "312_forced": "9/12",
+   "311_fable_forced": "9/12",
+   "311_opus_forced": "9/12",
+   "312_natural_loads": "0/3",
+   "311_natural_loads": "0/3",
+   "suspect": [
+    "forced misses c4 in 2+ of 3 runs"
+   ]
+  },
+  {
+   "skill": "review",
+   "case": "review",
+   "criteria": 4,
+   "headroom": false,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "12/12",
+   "311_fable_without": "12/12",
+   "311_opus_without": "11/12",
+   "312_natural": "12/12",
+   "311_fable_natural": "24/24",
+   "311_opus_natural": "23/24",
+   "312_forced": "12/12",
+   "311_fable_forced": "12/12",
+   "311_opus_forced": "12/12",
+   "312_natural_loads": "0/3",
+   "311_natural_loads": "0/6",
+   "suspect": []
+  },
+  {
+   "skill": "review",
+   "case": "review-merge-base",
+   "criteria": 5,
+   "headroom": false,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "11/15",
+   "311_fable_without": "12/15",
+   "311_opus_without": "11/15",
+   "312_natural": "15/15",
+   "311_fable_natural": "13/15",
+   "311_opus_natural": "13/15",
+   "312_forced": "14/15",
+   "311_fable_forced": "15/15",
+   "311_opus_forced": "15/15",
+   "312_natural_loads": "3/3",
+   "311_natural_loads": "2/3",
+   "suspect": []
+  },
+  {
+   "skill": "rpi",
+   "case": "rpi",
+   "criteria": 5,
+   "headroom": true,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "9/15",
+   "311_fable_without": "7/15",
+   "311_opus_without": "9/15",
+   "312_natural": "15/15",
+   "311_fable_natural": "30/30",
+   "311_opus_natural": "27/30",
+   "312_forced": "15/15",
+   "311_fable_forced": "-",
+   "311_opus_forced": "-",
+   "312_natural_loads": "n/a (by name)",
+   "311_natural_loads": "-",
+   "suspect": []
+  },
+  {
+   "skill": "security",
+   "case": "security",
+   "criteria": 6,
+   "headroom": true,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "9/18",
+   "311_fable_without": "9/18",
+   "311_opus_without": "6/15",
+   "312_natural": "17/18",
+   "311_fable_natural": "29/36",
+   "311_opus_natural": "22/30",
+   "312_forced": "16/18",
+   "311_fable_forced": "-",
+   "311_opus_forced": "-",
+   "312_natural_loads": "3/3",
+   "311_natural_loads": "6/6",
+   "suspect": [
+    "forced misses c4 in 2+ of 3 runs"
+   ]
+  },
+  {
+   "skill": "skill-builder",
+   "case": "skill-builder",
+   "criteria": 5,
+   "headroom": true,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "8/15",
+   "311_fable_without": "-",
+   "311_opus_without": "1/12",
+   "312_natural": "12/15",
+   "311_fable_natural": "-",
+   "311_opus_natural": "18/24",
+   "312_forced": "15/15",
+   "311_fable_forced": "-",
+   "311_opus_forced": "-",
+   "312_natural_loads": "3/3",
+   "311_natural_loads": "6/6",
+   "suspect": []
+  },
+  {
+   "skill": "skill-eval",
+   "case": "skill-eval",
+   "criteria": 5,
+   "headroom": false,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "12/15",
+   "311_fable_without": "12/15",
+   "311_opus_without": "12/15",
+   "312_natural": "15/15",
+   "311_fable_natural": "29/30",
+   "311_opus_natural": "29/30",
+   "312_forced": "15/15",
+   "311_fable_forced": "-",
+   "311_opus_forced": "-",
+   "312_natural_loads": "3/3",
+   "311_natural_loads": "4/6",
+   "suspect": []
+  },
+  {
+   "skill": "test",
+   "case": "test",
+   "criteria": 4,
+   "headroom": false,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "12/12",
+   "311_fable_without": "12/12",
+   "311_opus_without": "12/12",
+   "312_natural": "12/12",
+   "311_fable_natural": "24/24",
+   "311_opus_natural": "24/24",
+   "312_forced": "12/12",
+   "311_fable_forced": "12/12",
+   "311_opus_forced": "12/12",
+   "312_natural_loads": "1/3",
+   "311_natural_loads": "1/6",
+   "suspect": []
+  },
+  {
+   "skill": "test",
+   "case": "test-isolated-revert",
+   "criteria": 4,
+   "headroom": false,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "10/12",
+   "311_fable_without": "10/12",
+   "311_opus_without": "10/12",
+   "312_natural": "12/12",
+   "311_fable_natural": "10/12",
+   "311_opus_natural": "10/12",
+   "312_forced": "12/12",
+   "311_fable_forced": "12/12",
+   "311_opus_forced": "12/12",
+   "312_natural_loads": "1/3",
+   "311_natural_loads": "0/3",
+   "suspect": []
+  },
+  {
+   "skill": "triage",
+   "case": "triage",
+   "criteria": 5,
+   "headroom": true,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "6/15",
+   "311_fable_without": "6/15",
+   "311_opus_without": "6/15",
+   "312_natural": "11/15",
+   "311_fable_natural": "12/30",
+   "311_opus_natural": "12/30",
+   "312_forced": "14/15",
+   "311_fable_forced": "15/15",
+   "311_opus_forced": "14/15",
+   "312_natural_loads": "3/3",
+   "311_natural_loads": "0/6",
+   "suspect": []
+  },
+  {
+   "skill": "validate",
+   "case": "validate",
+   "criteria": 4,
+   "headroom": false,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "12/12",
+   "311_fable_without": "12/12",
+   "311_opus_without": "12/12",
+   "312_natural": "12/12",
+   "311_fable_natural": "24/24",
+   "311_opus_natural": "24/24",
+   "312_forced": "12/12",
+   "311_fable_forced": "-",
+   "311_opus_forced": "-",
+   "312_natural_loads": "3/3",
+   "311_natural_loads": "6/6",
+   "suspect": []
+  },
+  {
+   "skill": "validate",
+   "case": "validate-mutating-check",
+   "criteria": 4,
+   "headroom": true,
+   "runs": {
+    "without": 3,
+    "natural": 3,
+    "forced": 3
+   },
+   "312_without": "7/12",
+   "311_fable_without": "6/12",
+   "311_opus_without": "9/12",
+   "312_natural": "12/12",
+   "311_fable_natural": "11/12",
+   "311_opus_natural": "11/12",
+   "312_forced": "12/12",
+   "311_fable_forced": "12/12",
+   "311_opus_forced": "12/12",
+   "312_natural_loads": "3/3",
+   "311_natural_loads": "3/3",
+   "suspect": []
+  }
+ ],
+ "skills": {
+  "agy-native": {
+   "behavior_cases": 2,
+   "behavior_cases_graded": 2,
+   "routing_cases": 1,
+   "routing_cases_run": 1,
+   "routing_loads": [
+    3,
+    3
+   ],
+   "routing_loads_repaired": [
+    3,
+    3
+   ],
+   "without": [
+    17,
+    30
+   ],
+   "natural": [
+    23,
+    30
+   ],
+   "forced": [
+    30,
+    30
+   ]
+  },
+  "architecture": {
+   "behavior_cases": 1,
+   "behavior_cases_graded": 1,
+   "routing_cases": 1,
+   "routing_cases_run": 1,
+   "routing_loads": [
+    3,
+    3
+   ],
+   "routing_loads_repaired": [
+    3,
+    3
+   ],
+   "without": [
+    3,
+    15
+   ],
+   "natural": [
+    4,
+    15
+   ],
+   "forced": [
+    15,
+    15
+   ]
+  },
+  "claude-exec": {
+   "behavior_cases": 1,
+   "behavior_cases_graded": 1,
+   "routing_cases": 1,
+   "routing_cases_run": 1,
+   "routing_loads": [
+    3,
+    3
+   ],
+   "routing_loads_repaired": [
+    3,
+    3
+   ],
+   "without": [
+    4,
+    15
+   ],
+   "natural": [
+    14,
+    15
+   ],
+   "forced": [
+    15,
+    15
+   ]
+  },
+  "codex-exec": {
+   "behavior_cases": 2,
+   "behavior_cases_graded": 2,
+   "routing_cases": 1,
+   "routing_cases_run": 1,
+   "routing_loads": [
+    3,
+    3
+   ],
+   "routing_loads_repaired": [
+    3,
+    3
+   ],
+   "without": [
+    18,
+    24
+   ],
+   "natural": [
+    21,
+    24
+   ],
+   "forced": [
+    24,
+    24
+   ]
+  },
+  "council": {
+   "behavior_cases": 2,
+   "behavior_cases_graded": 2,
+   "routing_cases": 1,
+   "routing_cases_run": 1,
+   "routing_loads": [
+    3,
+    3
+   ],
+   "routing_loads_repaired": [
+    3,
+    3
+   ],
+   "without": [
+    18,
+    24
+   ],
+   "natural": [
+    21,
+    24
+   ],
+   "forced": [
+    24,
+    24
+   ]
+  },
+  "craft-goal": {
+   "behavior_cases": 1,
+   "behavior_cases_graded": 1,
+   "routing_cases": 1,
+   "routing_cases_run": 1,
+   "routing_loads": [
+    3,
+    3
+   ],
+   "routing_loads_repaired": [
+    3,
+    3
+   ],
+   "without": [
+    4,
+    12
+   ],
+   "natural": [
+    12,
+    12
+   ],
+   "forced": [
+    12,
+    12
+   ]
+  },
+  "doc": {
+   "behavior_cases": 1,
+   "behavior_cases_graded": 1,
+   "routing_cases": 1,
+   "routing_cases_run": 1,
+   "routing_loads": [
+    0,
+    3
+   ],
+   "routing_loads_repaired": [
+    0,
+    3
+   ],
+   "without": [
+    9,
+    12
+   ],
+   "natural": [
+    12,
+    12
+   ],
+   "forced": [
+    12,
+    12
+   ]
+  },
+  "domain": {
+   "behavior_cases": 1,
+   "behavior_cases_graded": 1,
+   "routing_cases": 1,
+   "routing_cases_run": 1,
+   "routing_loads": [
+    3,
+    3
+   ],
+   "routing_loads_repaired": [
+    3,
+    3
+   ],
+   "without": [
+    12,
+    15
+   ],
+   "natural": [
+    15,
+    15
+   ],
+   "forced": [
+    15,
+    15
+   ]
+  },
+  "ergonomics": {
+   "behavior_cases": 1,
+   "behavior_cases_graded": 1,
+   "routing_cases": 1,
+   "routing_cases_run": 1,
+   "routing_loads": [
+    3,
+    3
+   ],
+   "routing_loads_repaired": [
+    3,
+    3
+   ],
+   "without": [
+    6,
+    15
+   ],
+   "natural": [
+    15,
+    15
+   ],
+   "forced": [
+    15,
+    15
+   ]
+  },
+  "idea-genie": {
+   "behavior_cases": 1,
+   "behavior_cases_graded": 1,
+   "routing_cases": 1,
+   "routing_cases_run": 1,
+   "routing_loads": [
+    3,
+    3
+   ],
+   "routing_loads_repaired": [
+    3,
+    3
+   ],
+   "without": [
+    7,
+    15
+   ],
+   "natural": [
+    15,
+    15
+   ],
+   "forced": [
+    15,
+    15
+   ]
+  },
+  "implement": {
+   "behavior_cases": 1,
+   "behavior_cases_graded": 1,
+   "routing_cases": 1,
+   "routing_cases_run": 1,
+   "routing_loads": [
+    3,
+    3
+   ],
+   "routing_loads_repaired": [
+    3,
+    3
+   ],
+   "without": [
+    5,
+    12
+   ],
+   "natural": [
+    6,
+    12
+   ],
+   "forced": [
+    10,
+    12
+   ]
+  },
+  "interview": {
+   "behavior_cases": 1,
+   "behavior_cases_graded": 1,
+   "routing_cases": 1,
+   "routing_cases_run": 1,
+   "routing_loads": [
+    3,
+    3
+   ],
+   "routing_loads_repaired": [
+    3,
+    3
+   ],
+   "without": [
+    5,
+    12
+   ],
+   "natural": [
+    12,
+    12
+   ],
+   "forced": [
+    12,
+    12
+   ]
+  },
+  "memory": {
+   "behavior_cases": 1,
+   "behavior_cases_graded": 1,
+   "routing_cases": 1,
+   "routing_cases_run": 1,
+   "routing_loads": [
+    3,
+    3
+   ],
+   "routing_loads_repaired": [
+    3,
+    3
+   ],
+   "without": [
+    3,
+    15
+   ],
+   "natural": [
+    11,
+    15
+   ],
+   "forced": [
+    14,
+    15
+   ]
+  },
+  "navigate": {
+   "behavior_cases": 2,
+   "behavior_cases_graded": 2,
+   "routing_cases": 1,
+   "routing_cases_run": 1,
+   "routing_loads": [
+    0,
+    3
+   ],
+   "routing_loads_repaired": [
+    0,
+    3
+   ],
+   "without": [
+    20,
+    30
+   ],
+   "natural": [
+    27,
+    30
+   ],
+   "forced": [
+    25,
+    30
+   ]
+  },
+  "orchestrate": {
+   "behavior_cases": 3,
+   "behavior_cases_graded": 3,
+   "routing_cases": 2,
+   "routing_cases_run": 2,
+   "routing_loads": [
+    3,
+    6
+   ],
+   "routing_loads_repaired": [
+    6,
+    6
+   ],
+   "without": [
+    35,
+    45
+   ],
+   "natural": [
+    36,
+    45
+   ],
+   "forced": [
+    38,
+    45
+   ]
+  },
+  "plan": {
+   "behavior_cases": 1,
+   "behavior_cases_graded": 1,
+   "routing_cases": 1,
+   "routing_cases_run": 1,
+   "routing_loads": [
+    2,
+    3
+   ],
+   "routing_loads_repaired": [
+    3,
+    3
+   ],
+   "without": [
+    5,
+    15
+   ],
+   "natural": [
+    14,
+    15
+   ],
+   "forced": [
+    15,
+    15
+   ]
+  },
+  "postmortem": {
+   "behavior_cases": 2,
+   "behavior_cases_graded": 2,
+   "routing_cases": 1,
+   "routing_cases_run": 1,
+   "routing_loads": [
+    3,
+    3
+   ],
+   "routing_loads_repaired": [
+    3,
+    3
+   ],
+   "without": [
+    23,
+    27
+   ],
+   "natural": [
+    27,
+    27
+   ],
+   "forced": [
+    27,
+    27
+   ]
+  },
+  "premortem": {
+   "behavior_cases": 2,
+   "behavior_cases_graded": 2,
+   "routing_cases": 1,
+   "routing_cases_run": 1,
+   "routing_loads": [
+    3,
+    3
+   ],
+   "routing_loads_repaired": [
+    3,
+    3
+   ],
+   "without": [
+    18,
+    24
+   ],
+   "natural": [
+    24,
+    24
+   ],
+   "forced": [
+    24,
+    24
+   ]
+  },
+  "refactor": {
+   "behavior_cases": 1,
+   "behavior_cases_graded": 1,
+   "routing_cases": 1,
+   "routing_cases_run": 1,
+   "routing_loads": [
+    1,
+    3
+   ],
+   "routing_loads_repaired": [
+    0,
+    3
+   ],
+   "without": [
+    8,
+    12
+   ],
+   "natural": [
+    12,
+    12
+   ],
+   "forced": [
+    12,
+    12
+   ]
+  },
+  "research": {
+   "behavior_cases": 4,
+   "behavior_cases_graded": 4,
+   "routing_cases": 2,
+   "routing_cases_run": 2,
+   "routing_loads": [
+    0,
+    6
+   ],
+   "routing_loads_repaired": [
+    0,
+    6
+   ],
+   "without": [
+    44,
+    51
+   ],
+   "natural": [
+    45,
+    51
+   ],
+   "forced": [
+    48,
+    51
+   ]
+  },
+  "review": {
+   "behavior_cases": 2,
+   "behavior_cases_graded": 2,
+   "routing_cases": 1,
+   "routing_cases_run": 1,
+   "routing_loads": [
+    0,
+    3
+   ],
+   "routing_loads_repaired": [
+    0,
+    3
+   ],
+   "without": [
+    23,
+    27
+   ],
+   "natural": [
+    27,
+    27
+   ],
+   "forced": [
+    26,
+    27
+   ]
+  },
+  "rpi": {
+   "behavior_cases": 1,
+   "behavior_cases_graded": 1,
+   "routing_cases": 1,
+   "routing_cases_run": 1,
+   "routing_loads": [
+    3,
+    3
+   ],
+   "routing_loads_repaired": [
+    3,
+    3
+   ],
+   "without": [
+    9,
+    15
+   ],
+   "natural": [
+    15,
+    15
+   ],
+   "forced": [
+    15,
+    15
+   ]
+  },
+  "security": {
+   "behavior_cases": 1,
+   "behavior_cases_graded": 1,
+   "routing_cases": 1,
+   "routing_cases_run": 1,
+   "routing_loads": [
+    0,
+    3
+   ],
+   "routing_loads_repaired": [
+    0,
+    3
+   ],
+   "without": [
+    9,
+    18
+   ],
+   "natural": [
+    17,
+    18
+   ],
+   "forced": [
+    16,
+    18
+   ]
+  },
+  "skill-builder": {
+   "behavior_cases": 1,
+   "behavior_cases_graded": 1,
+   "routing_cases": 1,
+   "routing_cases_run": 1,
+   "routing_loads": [
+    3,
+    3
+   ],
+   "routing_loads_repaired": [
+    3,
+    3
+   ],
+   "without": [
+    8,
+    15
+   ],
+   "natural": [
+    12,
+    15
+   ],
+   "forced": [
+    15,
+    15
+   ]
+  },
+  "skill-eval": {
+   "behavior_cases": 1,
+   "behavior_cases_graded": 1,
+   "routing_cases": 1,
+   "routing_cases_run": 1,
+   "routing_loads": [
+    3,
+    3
+   ],
+   "routing_loads_repaired": [
+    3,
+    3
+   ],
+   "without": [
+    12,
+    15
+   ],
+   "natural": [
+    15,
+    15
+   ],
+   "forced": [
+    15,
+    15
+   ]
+  },
+  "test": {
+   "behavior_cases": 2,
+   "behavior_cases_graded": 2,
+   "routing_cases": 1,
+   "routing_cases_run": 1,
+   "routing_loads": [
+    2,
+    3
+   ],
+   "routing_loads_repaired": [
+    3,
+    3
+   ],
+   "without": [
+    22,
+    24
+   ],
+   "natural": [
+    24,
+    24
+   ],
+   "forced": [
+    24,
+    24
+   ]
+  },
+  "triage": {
+   "behavior_cases": 1,
+   "behavior_cases_graded": 1,
+   "routing_cases": 1,
+   "routing_cases_run": 1,
+   "routing_loads": [
+    3,
+    3
+   ],
+   "routing_loads_repaired": [
+    3,
+    3
+   ],
+   "without": [
+    6,
+    15
+   ],
+   "natural": [
+    11,
+    15
+   ],
+   "forced": [
+    14,
+    15
+   ]
+  },
+  "validate": {
+   "behavior_cases": 2,
+   "behavior_cases_graded": 2,
+   "routing_cases": 1,
+   "routing_cases_run": 1,
+   "routing_loads": [
+    0,
+    3
+   ],
+   "routing_loads_repaired": [
+    0,
+    3
+   ],
+   "without": [
+    19,
+    24
+   ],
+   "natural": [
+    24,
+    24
+   ],
+   "forced": [
+    24,
+    24
+   ]
+  }
+ },
+ "targeted": {
+  "t1-D1-t1-load-behavior": {
+   "cost_usd": 1.9626,
+   "loads": {
+    "orchestrate": [
+     6,
+     6
+    ],
+    "orchestrate-packets": [
+     0,
+     6
+    ],
+    "orchestrate-packets-harder": [
+     0,
+     6
+    ]
+   },
+   "blind_scores": {
+    "orchestrate|with": "25/30",
+    "orchestrate-packets|with": "27/30",
+    "orchestrate-packets-harder|with": "25/30"
+   }
+  },
+  "t1-D1-t1-load-routing": {
+   "cost_usd": 1.7545,
+   "loads": {
+    "orchestrate": [
+     6,
+     6
+    ],
+    "orchestrate-packets": [
+     0,
+     6
+    ]
+   },
+   "blind_scores": {}
+  },
+  "t1-D2-t1-load-behavior": {
+   "cost_usd": 1.9801,
+   "loads": {
+    "orchestrate": [
+     6,
+     6
+    ],
+    "orchestrate-packets": [
+     0,
+     6
+    ],
+    "orchestrate-packets-harder": [
+     0,
+     6
+    ]
+   },
+   "blind_scores": {
+    "orchestrate|with": "26/30",
+    "orchestrate-packets|with": "28/30",
+    "orchestrate-packets-harder|with": "24/30"
+   }
+  },
+  "t1-D2-t1-load-routing": {
+   "cost_usd": 1.7095,
+   "loads": {
+    "orchestrate": [
+     6,
+     6
+    ],
+    "orchestrate-packets": [
+     0,
+     6
+    ]
+   },
+   "blind_scores": {}
+  },
+  "t1-P311-t1-agy": {
+   "cost_usd": 0.743,
+   "loads": {
+    "agy-native-harder": [
+     5,
+     6
+    ]
+   },
+   "blind_scores": {
+    "agy-native-harder|with": "17/30"
+   }
+  },
+  "t1-P311-t1-implement": {
+   "cost_usd": 0.9178,
+   "loads": {
+    "implement": [
+     0,
+     6
+    ]
+   },
+   "blind_scores": {
+    "implement|with": "24/24"
+   }
+  },
+  "t1-P311-t1-load-behavior": {
+   "cost_usd": 2.2409,
+   "loads": {
+    "orchestrate": [
+     6,
+     6
+    ],
+    "orchestrate-packets": [
+     3,
+     6
+    ],
+    "orchestrate-packets-harder": [
+     0,
+     6
+    ]
+   },
+   "blind_scores": {
+    "orchestrate|with": "23/30",
+    "orchestrate-packets|with": "27/30",
+    "orchestrate-packets-harder|with": "25/30"
+   }
+  },
+  "t1-P311-t1-load-routing": {
+   "cost_usd": 2.0225,
+   "loads": {
+    "orchestrate": [
+     6,
+     6
+    ],
+    "orchestrate-packets": [
+     6,
+     6
+    ]
+   },
+   "blind_scores": {}
+  },
+  "t1-P312-t1-agy": {
+   "cost_usd": 0.6289,
+   "loads": {
+    "agy-native-harder": [
+     2,
+     6
+    ]
+   },
+   "blind_scores": {
+    "agy-native-harder|with": "18/30"
+   }
+  },
+  "t1-P312-t1-implement": {
+   "cost_usd": 0.8226,
+   "loads": {
+    "implement": [
+     0,
+     6
+    ]
+   },
+   "blind_scores": {
+    "implement|with": "24/24"
+   }
+  },
+  "t1-P312-t1-load-behavior": {
+   "cost_usd": 1.6621,
+   "loads": {
+    "orchestrate": [
+     0,
+     6
+    ],
+    "orchestrate-packets": [
+     0,
+     6
+    ],
+    "orchestrate-packets-harder": [
+     0,
+     6
+    ]
+   },
+   "blind_scores": {
+    "orchestrate|with": "19/30",
+    "orchestrate-packets|with": "29/30",
+    "orchestrate-packets-harder|with": "24/30"
+   }
+  },
+  "t1-P312-t1-load-routing": {
+   "cost_usd": 1.6964,
+   "loads": {
+    "orchestrate": [
+     6,
+     6
+    ],
+    "orchestrate-packets": [
+     0,
+     6
+    ]
+   },
+   "blind_scores": {}
+  },
+  "t1-P312-t1-validate": {
+   "cost_usd": 0.0866,
+   "loads": {
+    "validate": [
+     0,
+     1
+    ]
+   },
+   "blind_scores": {}
+  },
+  "t2-D3-t1-agy": {
+   "cost_usd": 0.7334,
+   "loads": {
+    "agy-native-harder": [
+     5,
+     6
+    ]
+   },
+   "blind_scores": {
+    "agy-native-harder|with": "27/30"
+   }
+  },
+  "t2-D3-t1-load-behavior": {
+   "cost_usd": 2.0559,
+   "loads": {
+    "orchestrate": [
+     6,
+     6
+    ],
+    "orchestrate-packets": [
+     2,
+     6
+    ],
+    "orchestrate-packets-harder": [
+     0,
+     6
+    ]
+   },
+   "blind_scores": {
+    "orchestrate|with": "27/30",
+    "orchestrate-packets|with": "27/30",
+    "orchestrate-packets-harder|with": "25/30"
+   }
+  },
+  "t2-D3-t1-load-routing": {
+   "cost_usd": 1.7443,
+   "loads": {
+    "orchestrate": [
+     6,
+     6
+    ],
+    "orchestrate-packets": [
+     1,
+     6
+    ]
+   },
+   "blind_scores": {}
+  },
+  "t2-D4-t1-agy": {
+   "cost_usd": 0.7568,
+   "loads": {
+    "agy-native-harder": [
+     6,
+     6
+    ]
+   },
+   "blind_scores": {
+    "agy-native-harder|with": "30/30"
+   }
+  },
+  "t2-D4-t1-load-behavior": {
+   "cost_usd": 2.2329,
+   "loads": {
+    "orchestrate": [
+     6,
+     6
+    ],
+    "orchestrate-packets": [
+     5,
+     6
+    ],
+    "orchestrate-packets-harder": [
+     1,
+     6
+    ]
+   },
+   "blind_scores": {
+    "orchestrate|with": "25/30",
+    "orchestrate-packets|with": "30/30",
+    "orchestrate-packets-harder|with": "23/30"
+   }
+  },
+  "t2-D4-t1-load-routing": {
+   "cost_usd": 1.9718,
+   "loads": {
+    "orchestrate": [
+     6,
+     6
+    ],
+    "orchestrate-packets": [
+     4,
+     6
+    ]
+   },
+   "blind_scores": {}
+  },
+  "t2-P311-t1-agy": {
+   "cost_usd": 0.7531,
+   "loads": {
+    "agy-native-harder": [
+     5,
+     6
+    ]
+   },
+   "blind_scores": {
+    "agy-native-harder|with": "17/30"
+   }
+  },
+  "t2-P312-t1-agy": {
+   "cost_usd": 0.6088,
+   "loads": {
+    "agy-native-harder": [
+     2,
+     6
+    ]
+   },
+   "blind_scores": {
+    "agy-native-harder|with": "19/30"
+   }
+  },
+  "t2-PPRE-t1-agy": {
+   "cost_usd": 0.7887,
+   "loads": {
+    "agy-native-harder": [
+     6,
+     6
+    ]
+   },
+   "blind_scores": {
+    "agy-native-harder|with": "30/30"
+   }
+  },
+  "t3-PFIX-natural-plain-agy-native": {
+   "cost_usd": 0.7679,
+   "loads": {
+    "agy-native": [
+     3,
+     3
+    ]
+   },
+   "blind_scores": {
+    "agy-native|with": "13/15",
+    "agy-native|without": "9/15"
+   }
+  },
+  "t3-routing": {
+   "cost_usd": 16.3241,
+   "loads": {
+    "agy-native": [
+     3,
+     3
+    ],
+    "architecture": [
+     3,
+     3
+    ],
+    "claude-exec": [
+     3,
+     3
+    ],
+    "codex-exec": [
+     3,
+     3
+    ],
+    "council": [
+     3,
+     3
+    ],
+    "craft-goal": [
+     3,
+     3
+    ],
+    "doc": [
+     0,
+     3
+    ],
+    "domain": [
+     3,
+     3
+    ],
+    "ergonomics": [
+     3,
+     3
+    ],
+    "idea-genie": [
+     3,
+     3
+    ],
+    "implement": [
+     3,
+     3
+    ],
+    "interview": [
+     3,
+     3
+    ],
+    "memory": [
+     3,
+     3
+    ],
+    "navigate": [
+     0,
+     3
+    ],
+    "orchestrate": [
+     3,
+     3
+    ],
+    "orchestrate-packets": [
+     3,
+     3
+    ],
+    "plan": [
+     3,
+     3
+    ],
+    "postmortem": [
+     3,
+     3
+    ],
+    "premortem": [
+     3,
+     3
+    ],
+    "refactor": [
+     0,
+     3
+    ],
+    "research": [
+     0,
+     3
+    ],
+    "research-claim-check": [
+     0,
+     3
+    ],
+    "review": [
+     0,
+     3
+    ],
+    "rpi": [
+     3,
+     3
+    ],
+    "security": [
+     0,
+     3
+    ],
+    "skill-builder": [
+     3,
+     3
+    ],
+    "skill-eval": [
+     3,
+     3
+    ],
+    "test": [
+     3,
+     3
+    ],
+    "triage": [
+     3,
+     3
+    ],
+    "validate": [
+     0,
+     3
+    ]
+   },
+   "blind_scores": {}
+  }
+ },
+ "attempts": 798,
+ "evaluator_cost_usd": 111.47,
+ "per_response_grades": {
+  "full-forced-plain|agy-native-harder|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|agy-native-harder|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|agy-native-harder|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|agy-native|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|agy-native|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|agy-native|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|architecture|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|architecture|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|architecture|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|claude-exec|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|claude-exec|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|claude-exec|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|codex-exec-harder|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|codex-exec-harder|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|codex-exec-harder|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|codex-exec|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|codex-exec|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|codex-exec|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|council-vote-tally|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|council-vote-tally|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|council-vote-tally|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|council|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|council|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|council|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|craft-goal|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|craft-goal|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|craft-goal|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|doc|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|doc|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|doc|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|domain|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|domain|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|domain|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|ergonomics|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|ergonomics|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|ergonomics|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|idea-genie|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|idea-genie|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|idea-genie|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|implement|with|0": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "full-forced-plain|implement|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|implement|with|2": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "full-forced-plain|interview|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|interview|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|interview|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|memory|with|0": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "full-forced-plain|memory|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|memory|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|navigate-hard|with|0": [
+   true,
+   false,
+   false,
+   true,
+   true
+  ],
+  "full-forced-plain|navigate-hard|with|1": [
+   true,
+   false,
+   false,
+   true,
+   true
+  ],
+  "full-forced-plain|navigate-hard|with|2": [
+   true,
+   true,
+   false,
+   true,
+   true
+  ],
+  "full-forced-plain|navigate|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|navigate|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|navigate|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|orchestrate-packets-harder|with|0": [
+   true,
+   true,
+   false,
+   false,
+   true
+  ],
+  "full-forced-plain|orchestrate-packets-harder|with|1": [
+   true,
+   true,
+   false,
+   true,
+   true
+  ],
+  "full-forced-plain|orchestrate-packets-harder|with|2": [
+   true,
+   true,
+   false,
+   false,
+   true
+  ],
+  "full-forced-plain|orchestrate-packets|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|orchestrate-packets|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|orchestrate-packets|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|orchestrate|with|0": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|orchestrate|with|1": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|orchestrate|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|plan|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|plan|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|plan|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|postmortem-harder|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|postmortem-harder|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|postmortem-harder|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|postmortem|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|postmortem|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|postmortem|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|premortem-harder|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|premortem-harder|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|premortem-harder|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|premortem|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|premortem|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|premortem|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|refactor|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|refactor|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|refactor|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|research-claim-check-harder|with|0": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-forced-plain|research-claim-check-harder|with|1": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-forced-plain|research-claim-check-harder|with|2": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-forced-plain|research-claim-check|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|research-claim-check|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|research-claim-check|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|research|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|research|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|research|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|review|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|review|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|review|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|rpi|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|rpi|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|rpi|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|security|with|0": [
+   true,
+   true,
+   true,
+   false,
+   true,
+   true
+  ],
+  "full-forced-plain|security|with|1": [
+   true,
+   true,
+   true,
+   false,
+   true,
+   true
+  ],
+  "full-forced-plain|security|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|skill-builder|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|skill-builder|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|skill-builder|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|skill-eval|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|skill-eval|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|skill-eval|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|test|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|test|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|test|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|triage|with|0": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "full-forced-plain|triage|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|triage|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|validate|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|validate|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-plain|validate|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-seeded|research-absence-proof|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-seeded|research-absence-proof|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-seeded|research-absence-proof|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-seeded|review-merge-base|with|0": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "full-forced-seeded|review-merge-base|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-seeded|review-merge-base|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-seeded|test-isolated-revert|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-seeded|test-isolated-revert|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-seeded|test-isolated-revert|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-seeded|validate-mutating-check|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-seeded|validate-mutating-check|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-forced-seeded|validate-mutating-check|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|agy-native-harder|without|0": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "full-natural-plain|agy-native-harder|without|1": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "full-natural-plain|agy-native-harder|without|2": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "full-natural-plain|agy-native-harder|with|0": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "full-natural-plain|agy-native-harder|with|1": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "full-natural-plain|agy-native-harder|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|agy-native|without|0": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|agy-native|without|1": [
+   true,
+   false,
+   true,
+   false,
+   true
+  ],
+  "full-natural-plain|agy-native|without|2": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|agy-native|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|agy-native|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|agy-native|with|2": [
+   false,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|architecture|without|0": [
+   false,
+   true,
+   false,
+   false,
+   false
+  ],
+  "full-natural-plain|architecture|without|1": [
+   false,
+   true,
+   false,
+   false,
+   false
+  ],
+  "full-natural-plain|architecture|without|2": [
+   false,
+   true,
+   false,
+   false,
+   false
+  ],
+  "full-natural-plain|architecture|with|0": [
+   false,
+   true,
+   false,
+   false,
+   false
+  ],
+  "full-natural-plain|architecture|with|1": [
+   false,
+   true,
+   false,
+   false,
+   false
+  ],
+  "full-natural-plain|architecture|with|2": [
+   false,
+   true,
+   true,
+   false,
+   false
+  ],
+  "full-natural-plain|claude-exec|without|0": [
+   true,
+   false,
+   false,
+   true,
+   false
+  ],
+  "full-natural-plain|claude-exec|without|1": [
+   false,
+   false,
+   false,
+   false,
+   true
+  ],
+  "full-natural-plain|claude-exec|without|2": [
+   false,
+   false,
+   false,
+   true,
+   false
+  ],
+  "full-natural-plain|claude-exec|with|0": [
+   true,
+   true,
+   false,
+   true,
+   true
+  ],
+  "full-natural-plain|claude-exec|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|claude-exec|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|codex-exec-harder|without|0": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "full-natural-plain|codex-exec-harder|without|1": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "full-natural-plain|codex-exec-harder|without|2": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "full-natural-plain|codex-exec-harder|with|0": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "full-natural-plain|codex-exec-harder|with|1": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "full-natural-plain|codex-exec-harder|with|2": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "full-natural-plain|codex-exec|without|0": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "full-natural-plain|codex-exec|without|1": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "full-natural-plain|codex-exec|without|2": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "full-natural-plain|codex-exec|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|codex-exec|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|codex-exec|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|council-vote-tally|without|0": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-plain|council-vote-tally|without|1": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-plain|council-vote-tally|without|2": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-plain|council-vote-tally|with|0": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-plain|council-vote-tally|with|1": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-plain|council-vote-tally|with|2": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-plain|council|without|0": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-plain|council|without|1": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-plain|council|without|2": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-plain|council|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|council|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|council|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|craft-goal|without|0": [
+   false,
+   false,
+   false,
+   true
+  ],
+  "full-natural-plain|craft-goal|without|1": [
+   false,
+   false,
+   true,
+   true
+  ],
+  "full-natural-plain|craft-goal|without|2": [
+   false,
+   false,
+   false,
+   true
+  ],
+  "full-natural-plain|craft-goal|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|craft-goal|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|craft-goal|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|doc|without|0": [
+   false,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|doc|without|1": [
+   false,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|doc|without|2": [
+   false,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|doc|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|doc|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|doc|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|domain|without|0": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-plain|domain|without|1": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-plain|domain|without|2": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-plain|domain|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|domain|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|domain|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|ergonomics|without|0": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "full-natural-plain|ergonomics|without|1": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "full-natural-plain|ergonomics|without|2": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "full-natural-plain|ergonomics|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|ergonomics|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|ergonomics|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|idea-genie|without|0": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "full-natural-plain|idea-genie|without|1": [
+   false,
+   true,
+   false,
+   false,
+   false
+  ],
+  "full-natural-plain|idea-genie|without|2": [
+   false,
+   true,
+   true,
+   false,
+   false
+  ],
+  "full-natural-plain|idea-genie|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|idea-genie|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|idea-genie|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|implement|without|0": [
+   true,
+   true,
+   false,
+   false
+  ],
+  "full-natural-plain|implement|without|1": [
+   true,
+   true,
+   false,
+   false
+  ],
+  "full-natural-plain|implement|without|2": [
+   false,
+   true,
+   false,
+   false
+  ],
+  "full-natural-plain|implement|with|0": [
+   true,
+   true,
+   false,
+   false
+  ],
+  "full-natural-plain|implement|with|1": [
+   true,
+   true,
+   false,
+   false
+  ],
+  "full-natural-plain|implement|with|2": [
+   true,
+   true,
+   false,
+   false
+  ],
+  "full-natural-plain|interview|without|0": [
+   false,
+   false,
+   false,
+   true
+  ],
+  "full-natural-plain|interview|without|1": [
+   false,
+   false,
+   true,
+   true
+  ],
+  "full-natural-plain|interview|without|2": [
+   false,
+   false,
+   true,
+   true
+  ],
+  "full-natural-plain|interview|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|interview|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|interview|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|memory|without|0": [
+   false,
+   true,
+   false,
+   false,
+   false
+  ],
+  "full-natural-plain|memory|without|1": [
+   false,
+   false,
+   false,
+   false,
+   false
+  ],
+  "full-natural-plain|memory|without|2": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "full-natural-plain|memory|with|0": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "full-natural-plain|memory|with|1": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-plain|memory|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|navigate-hard|without|0": [
+   false,
+   false,
+   false,
+   true,
+   true
+  ],
+  "full-natural-plain|navigate-hard|without|1": [
+   true,
+   false,
+   false,
+   false,
+   false
+  ],
+  "full-natural-plain|navigate-hard|without|2": [
+   true,
+   false,
+   false,
+   false,
+   true
+  ],
+  "full-natural-plain|navigate-hard|with|0": [
+   true,
+   true,
+   false,
+   true,
+   true
+  ],
+  "full-natural-plain|navigate-hard|with|1": [
+   true,
+   true,
+   false,
+   true,
+   true
+  ],
+  "full-natural-plain|navigate-hard|with|2": [
+   true,
+   true,
+   false,
+   true,
+   true
+  ],
+  "full-natural-plain|navigate|without|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|navigate|without|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|navigate|without|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|navigate|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|navigate|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|navigate|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|orchestrate-packets-harder|without|0": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "full-natural-plain|orchestrate-packets-harder|without|1": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "full-natural-plain|orchestrate-packets-harder|without|2": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "full-natural-plain|orchestrate-packets-harder|with|0": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "full-natural-plain|orchestrate-packets-harder|with|1": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "full-natural-plain|orchestrate-packets-harder|with|2": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "full-natural-plain|orchestrate-packets|without|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|orchestrate-packets|without|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|orchestrate-packets|without|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|orchestrate-packets|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|orchestrate-packets|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|orchestrate-packets|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|orchestrate|without|0": [
+   true,
+   false,
+   true,
+   false,
+   false
+  ],
+  "full-natural-plain|orchestrate|without|1": [
+   true,
+   true,
+   true,
+   false,
+   false
+  ],
+  "full-natural-plain|orchestrate|without|2": [
+   true,
+   true,
+   true,
+   false,
+   false
+  ],
+  "full-natural-plain|orchestrate|with|0": [
+   true,
+   false,
+   true,
+   true,
+   false
+  ],
+  "full-natural-plain|orchestrate|with|1": [
+   true,
+   true,
+   true,
+   false,
+   false
+  ],
+  "full-natural-plain|orchestrate|with|2": [
+   true,
+   false,
+   true,
+   true,
+   false
+  ],
+  "full-natural-plain|plan|without|0": [
+   false,
+   false,
+   true,
+   false,
+   false
+  ],
+  "full-natural-plain|plan|without|1": [
+   false,
+   false,
+   true,
+   false,
+   true
+  ],
+  "full-natural-plain|plan|without|2": [
+   false,
+   false,
+   true,
+   false,
+   true
+  ],
+  "full-natural-plain|plan|with|0": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "full-natural-plain|plan|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|plan|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|postmortem-harder|without|0": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "full-natural-plain|postmortem-harder|without|1": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "full-natural-plain|postmortem-harder|without|2": [
+   true,
+   true,
+   true,
+   false,
+   false
+  ],
+  "full-natural-plain|postmortem-harder|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|postmortem-harder|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|postmortem-harder|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|postmortem|without|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|postmortem|without|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|postmortem|without|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|postmortem|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|postmortem|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|postmortem|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|premortem-harder|without|0": [
+   false,
+   true,
+   true,
+   false
+  ],
+  "full-natural-plain|premortem-harder|without|1": [
+   false,
+   true,
+   true,
+   false
+  ],
+  "full-natural-plain|premortem-harder|without|2": [
+   false,
+   true,
+   true,
+   false
+  ],
+  "full-natural-plain|premortem-harder|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|premortem-harder|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|premortem-harder|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|premortem|without|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|premortem|without|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|premortem|without|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|premortem|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|premortem|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|premortem|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|refactor|without|0": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-plain|refactor|without|1": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "full-natural-plain|refactor|without|2": [
+   true,
+   true,
+   false,
+   false
+  ],
+  "full-natural-plain|refactor|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|refactor|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|refactor|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|research-claim-check-harder|without|0": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-plain|research-claim-check-harder|without|1": [
+   true,
+   true,
+   false,
+   false
+  ],
+  "full-natural-plain|research-claim-check-harder|without|2": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-plain|research-claim-check-harder|with|0": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-plain|research-claim-check-harder|with|1": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-plain|research-claim-check-harder|with|2": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-plain|research-claim-check|without|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|research-claim-check|without|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|research-claim-check|without|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|research-claim-check|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|research-claim-check|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|research-claim-check|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|research|without|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|research|without|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|research|without|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|research|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|research|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|research|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|review|without|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|review|without|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|review|without|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|review|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|review|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|review|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|rpi|without|0": [
+   true,
+   true,
+   false,
+   true,
+   false
+  ],
+  "full-natural-plain|rpi|without|1": [
+   true,
+   true,
+   false,
+   true,
+   false
+  ],
+  "full-natural-plain|rpi|without|2": [
+   true,
+   true,
+   false,
+   true,
+   false
+  ],
+  "full-natural-plain|rpi|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|rpi|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|rpi|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|security|without|0": [
+   true,
+   true,
+   false,
+   false,
+   false,
+   true
+  ],
+  "full-natural-plain|security|without|1": [
+   true,
+   true,
+   false,
+   false,
+   false,
+   true
+  ],
+  "full-natural-plain|security|without|2": [
+   true,
+   true,
+   false,
+   false,
+   false,
+   true
+  ],
+  "full-natural-plain|security|with|0": [
+   true,
+   true,
+   true,
+   false,
+   true,
+   true
+  ],
+  "full-natural-plain|security|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|security|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|skill-builder|without|0": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-plain|skill-builder|without|1": [
+   false,
+   true,
+   false,
+   true,
+   false
+  ],
+  "full-natural-plain|skill-builder|without|2": [
+   false,
+   true,
+   false,
+   true,
+   false
+  ],
+  "full-natural-plain|skill-builder|with|0": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-plain|skill-builder|with|1": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-plain|skill-builder|with|2": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-plain|skill-eval|without|0": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|skill-eval|without|1": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|skill-eval|without|2": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|skill-eval|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|skill-eval|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|skill-eval|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|test|without|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|test|without|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|test|without|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|test|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|test|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|test|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|triage|without|0": [
+   true,
+   false,
+   false,
+   false,
+   true
+  ],
+  "full-natural-plain|triage|without|1": [
+   true,
+   false,
+   false,
+   false,
+   true
+  ],
+  "full-natural-plain|triage|without|2": [
+   true,
+   false,
+   false,
+   false,
+   true
+  ],
+  "full-natural-plain|triage|with|0": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|triage|with|1": [
+   true,
+   true,
+   false,
+   false,
+   true
+  ],
+  "full-natural-plain|triage|with|2": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|validate|without|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|validate|without|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|validate|without|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|validate|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|validate|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-plain|validate|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-seeded|research-absence-proof|without|0": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-seeded|research-absence-proof|without|1": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-seeded|research-absence-proof|without|2": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-seeded|research-absence-proof|with|0": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-seeded|research-absence-proof|with|1": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-seeded|research-absence-proof|with|2": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-seeded|review-merge-base|without|0": [
+   true,
+   true,
+   true,
+   false,
+   false
+  ],
+  "full-natural-seeded|review-merge-base|without|1": [
+   false,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-seeded|review-merge-base|without|2": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-seeded|review-merge-base|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-seeded|review-merge-base|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-seeded|review-merge-base|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-seeded|test-isolated-revert|without|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-seeded|test-isolated-revert|without|1": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "full-natural-seeded|test-isolated-revert|without|2": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "full-natural-seeded|test-isolated-revert|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-seeded|test-isolated-revert|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-seeded|test-isolated-revert|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-seeded|validate-mutating-check|without|0": [
+   true,
+   false,
+   true,
+   false
+  ],
+  "full-natural-seeded|validate-mutating-check|without|1": [
+   true,
+   false,
+   true,
+   false
+  ],
+  "full-natural-seeded|validate-mutating-check|without|2": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "full-natural-seeded|validate-mutating-check|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-seeded|validate-mutating-check|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "full-natural-seeded|validate-mutating-check|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:agent-native.A|orchestrate-packets|without|0": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:agent-native.A|orchestrate-packets|without|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:agent-native.A|orchestrate-packets|without|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:agent-native.A|orchestrate-packets|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:agent-native.A|orchestrate-packets|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:agent-native.A|orchestrate-packets|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:agent-native.B|orchestrate-packets|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:agent-native.B|orchestrate-packets|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:agent-native.B|orchestrate-packets|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:agent-native.F|orchestrate-packets|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:agent-native.F|orchestrate-packets|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:agent-native.F|orchestrate-packets|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:agy-native.A|agy-native|without|0": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:agy-native.A|agy-native|without|1": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:agy-native.A|agy-native|without|2": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:agy-native.A|agy-native|with|0": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:agy-native.A|agy-native|with|1": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:agy-native.A|agy-native|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:agy-native.B|agy-native|with|0": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:agy-native.B|agy-native|with|1": [
+   true,
+   true,
+   false,
+   true,
+   true
+  ],
+  "stored-3.11:agy-native.B|agy-native|with|2": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:architecture.A|architecture|without|0": [
+   false,
+   true,
+   true,
+   false,
+   false
+  ],
+  "stored-3.11:architecture.A|architecture|without|1": [
+   false,
+   true,
+   false,
+   false,
+   false
+  ],
+  "stored-3.11:architecture.A|architecture|without|2": [
+   false,
+   true,
+   false,
+   false,
+   false
+  ],
+  "stored-3.11:architecture.A|architecture|with|0": [
+   false,
+   true,
+   false,
+   false,
+   false
+  ],
+  "stored-3.11:architecture.A|architecture|with|1": [
+   false,
+   true,
+   false,
+   false,
+   false
+  ],
+  "stored-3.11:architecture.A|architecture|with|2": [
+   false,
+   true,
+   false,
+   false,
+   false
+  ],
+  "stored-3.11:architecture.B|architecture|with|0": [
+   false,
+   true,
+   true,
+   false,
+   false
+  ],
+  "stored-3.11:architecture.B|architecture|with|1": [
+   false,
+   true,
+   true,
+   false,
+   false
+  ],
+  "stored-3.11:architecture.B|architecture|with|2": [
+   false,
+   true,
+   true,
+   false,
+   false
+  ],
+  "stored-3.11:architecture.F|architecture|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:architecture.F|architecture|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:architecture.F|architecture|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:claude-exec.A|claude-exec|without|0": [
+   true,
+   true,
+   false,
+   true,
+   true
+  ],
+  "stored-3.11:claude-exec.A|claude-exec|without|1": [
+   false,
+   false,
+   false,
+   false,
+   false
+  ],
+  "stored-3.11:claude-exec.A|claude-exec|without|2": [
+   false,
+   false,
+   false,
+   true,
+   false
+  ],
+  "stored-3.11:claude-exec.A|claude-exec|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:claude-exec.A|claude-exec|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:claude-exec.A|claude-exec|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:claude-exec.B|claude-exec|with|0": [
+   true,
+   true,
+   false,
+   true,
+   true
+  ],
+  "stored-3.11:claude-exec.B|claude-exec|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:claude-exec.B|claude-exec|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:codex-exec.A|codex-exec|without|0": [
+   false,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:codex-exec.A|codex-exec|without|1": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:codex-exec.A|codex-exec|without|2": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:codex-exec.A|codex-exec|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:codex-exec.A|codex-exec|with|1": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:codex-exec.A|codex-exec|with|2": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:codex-exec.B|codex-exec|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:codex-exec.B|codex-exec|with|1": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:codex-exec.B|codex-exec|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:council.A|council|without|0": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:council.A|council|without|1": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:council.A|council|without|2": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:council.A|council|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:council.A|council|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:council.A|council|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:council.B|council|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:council.B|council|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:council.B|council|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:council.F|council|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:council.F|council|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:council.F|council|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:craft-goal.A|craft-goal|without|0": [
+   false,
+   false,
+   true,
+   true
+  ],
+  "stored-3.11:craft-goal.A|craft-goal|without|1": [
+   false,
+   false,
+   true,
+   true
+  ],
+  "stored-3.11:craft-goal.A|craft-goal|without|2": [
+   false,
+   false,
+   true,
+   true
+  ],
+  "stored-3.11:craft-goal.A|craft-goal|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:craft-goal.A|craft-goal|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:craft-goal.A|craft-goal|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:craft-goal.B|craft-goal|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:craft-goal.B|craft-goal|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:craft-goal.B|craft-goal|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:doc.A|doc|without|0": [
+   false,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:doc.A|doc|without|1": [
+   false,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:doc.A|doc|without|2": [
+   false,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:doc.A|doc|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:doc.A|doc|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:doc.A|doc|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:doc.B|doc|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:doc.B|doc|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:doc.B|doc|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:domain.A|domain|without|0": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:domain.A|domain|without|1": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:domain.A|domain|without|2": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:domain.A|domain|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:domain.A|domain|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:domain.A|domain|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:domain.B|domain|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:domain.B|domain|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:domain.B|domain|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:ergonomics.A|ergonomics|without|0": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "stored-3.11:ergonomics.A|ergonomics|without|1": [
+   true,
+   false,
+   false,
+   false,
+   false
+  ],
+  "stored-3.11:ergonomics.A|ergonomics|without|2": [
+   true,
+   false,
+   false,
+   false,
+   false
+  ],
+  "stored-3.11:ergonomics.A|ergonomics|with|0": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:ergonomics.A|ergonomics|with|1": [
+   true,
+   true,
+   true,
+   false,
+   false
+  ],
+  "stored-3.11:ergonomics.A|ergonomics|with|2": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:ergonomics.B|ergonomics|with|0": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "stored-3.11:ergonomics.B|ergonomics|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:ergonomics.B|ergonomics|with|2": [
+   true,
+   true,
+   false,
+   true,
+   false
+  ],
+  "stored-3.11:h-agent-native-harder-forced|orchestrate-packets-harder|with|0": [
+   true,
+   true,
+   false,
+   true,
+   true
+  ],
+  "stored-3.11:h-agent-native-harder-forced|orchestrate-packets-harder|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-agent-native-harder-forced|orchestrate-packets-harder|with|2": [
+   true,
+   true,
+   false,
+   true,
+   false
+  ],
+  "stored-3.11:h-agent-native-harder-natural|orchestrate-packets-harder|without|0": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:h-agent-native-harder-natural|orchestrate-packets-harder|without|1": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:h-agent-native-harder-natural|orchestrate-packets-harder|without|2": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:h-agent-native-harder-natural|orchestrate-packets-harder|with|0": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:h-agent-native-harder-natural|orchestrate-packets-harder|with|1": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:h-agent-native-harder-natural|orchestrate-packets-harder|with|2": [
+   true,
+   true,
+   false,
+   false,
+   true
+  ],
+  "stored-3.11:h-agy-native-harder-forced|agy-native-harder|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-agy-native-harder-forced|agy-native-harder|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-agy-native-harder-forced|agy-native-harder|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-agy-native-harder-natural|agy-native-harder|without|0": [
+   false,
+   true,
+   false,
+   false,
+   false
+  ],
+  "stored-3.11:h-agy-native-harder-natural|agy-native-harder|without|1": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "stored-3.11:h-agy-native-harder-natural|agy-native-harder|without|2": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "stored-3.11:h-agy-native-harder-natural|agy-native-harder|with|0": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "stored-3.11:h-agy-native-harder-natural|agy-native-harder|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-agy-native-harder-natural|agy-native-harder|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-codex-exec-harder-forced|codex-exec-harder|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-codex-exec-harder-forced|codex-exec-harder|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-codex-exec-harder-forced|codex-exec-harder|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-codex-exec-harder-natural|codex-exec-harder|without|0": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:h-codex-exec-harder-natural|codex-exec-harder|without|1": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:h-codex-exec-harder-natural|codex-exec-harder|without|2": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:h-codex-exec-harder-natural|codex-exec-harder|with|0": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:h-codex-exec-harder-natural|codex-exec-harder|with|1": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:h-codex-exec-harder-natural|codex-exec-harder|with|2": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:h-council-vote-tally-forced|council-vote-tally|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-council-vote-tally-forced|council-vote-tally|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-council-vote-tally-forced|council-vote-tally|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-council-vote-tally-natural|council-vote-tally|without|0": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:h-council-vote-tally-natural|council-vote-tally|without|1": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:h-council-vote-tally-natural|council-vote-tally|without|2": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:h-council-vote-tally-natural|council-vote-tally|with|0": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:h-council-vote-tally-natural|council-vote-tally|with|1": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:h-council-vote-tally-natural|council-vote-tally|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-navigate-natural|navigate-hard|with|0": [
+   false,
+   false,
+   false,
+   false,
+   true
+  ],
+  "stored-3.11:h-navigate-natural|navigate-hard|with|1": [
+   false,
+   false,
+   false,
+   true,
+   false
+  ],
+  "stored-3.11:h-navigate-natural|navigate-hard|with|2": [
+   true,
+   true,
+   false,
+   true,
+   true
+  ],
+  "stored-3.11:h-navigate-original|navigate-hard|without|0": [
+   false,
+   false,
+   false,
+   false,
+   true
+  ],
+  "stored-3.11:h-navigate-original|navigate-hard|without|1": [
+   false,
+   false,
+   false,
+   false,
+   true
+  ],
+  "stored-3.11:h-navigate-original|navigate-hard|without|2": [
+   false,
+   true,
+   false,
+   false,
+   true
+  ],
+  "stored-3.11:h-navigate-original|navigate-hard|with|0": [
+   true,
+   true,
+   false,
+   true,
+   false
+  ],
+  "stored-3.11:h-navigate-original|navigate-hard|with|1": [
+   true,
+   false,
+   false,
+   true,
+   true
+  ],
+  "stored-3.11:h-navigate-original|navigate-hard|with|2": [
+   true,
+   true,
+   false,
+   true,
+   true
+  ],
+  "stored-3.11:h-postmortem-harder-forced|postmortem-harder|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-postmortem-harder-forced|postmortem-harder|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-postmortem-harder-forced|postmortem-harder|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-postmortem-harder-natural|postmortem-harder|without|0": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:h-postmortem-harder-natural|postmortem-harder|without|1": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:h-postmortem-harder-natural|postmortem-harder|without|2": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:h-postmortem-harder-natural|postmortem-harder|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-postmortem-harder-natural|postmortem-harder|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-postmortem-harder-natural|postmortem-harder|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-premortem-harder-forced|premortem-harder|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-premortem-harder-forced|premortem-harder|with|1": [
+   false,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-premortem-harder-forced|premortem-harder|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-premortem-harder-natural|premortem-harder|without|0": [
+   false,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-premortem-harder-natural|premortem-harder|without|1": [
+   false,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:h-premortem-harder-natural|premortem-harder|without|2": [
+   false,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:h-premortem-harder-natural|premortem-harder|with|0": [
+   false,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-premortem-harder-natural|premortem-harder|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-premortem-harder-natural|premortem-harder|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-research-absence-proof-forced|research-absence-proof|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-research-absence-proof-forced|research-absence-proof|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-research-absence-proof-forced|research-absence-proof|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-research-absence-proof-natural|research-absence-proof|without|0": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:h-research-absence-proof-natural|research-absence-proof|without|1": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:h-research-absence-proof-natural|research-absence-proof|without|2": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:h-research-absence-proof-natural|research-absence-proof|with|0": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:h-research-absence-proof-natural|research-absence-proof|with|1": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:h-research-absence-proof-natural|research-absence-proof|with|2": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:h-research-claim-check-harder-forced|research-claim-check-harder|with|0": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:h-research-claim-check-harder-forced|research-claim-check-harder|with|1": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:h-research-claim-check-harder-forced|research-claim-check-harder|with|2": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:h-research-claim-check-harder-natural|research-claim-check-harder|without|0": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:h-research-claim-check-harder-natural|research-claim-check-harder|without|1": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:h-research-claim-check-harder-natural|research-claim-check-harder|without|2": [
+   true,
+   true,
+   false,
+   false
+  ],
+  "stored-3.11:h-research-claim-check-harder-natural|research-claim-check-harder|with|0": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:h-research-claim-check-harder-natural|research-claim-check-harder|with|1": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:h-research-claim-check-harder-natural|research-claim-check-harder|with|2": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:h-review-merge-base-forced|review-merge-base|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-review-merge-base-forced|review-merge-base|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-review-merge-base-forced|review-merge-base|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-review-merge-base-natural|review-merge-base|without|0": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:h-review-merge-base-natural|review-merge-base|without|1": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:h-review-merge-base-natural|review-merge-base|without|2": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:h-review-merge-base-natural|review-merge-base|with|0": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:h-review-merge-base-natural|review-merge-base|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-review-merge-base-natural|review-merge-base|with|2": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:h-test-isolated-revert-forced|test-isolated-revert|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-test-isolated-revert-forced|test-isolated-revert|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-test-isolated-revert-forced|test-isolated-revert|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-test-isolated-revert-natural|test-isolated-revert|without|0": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:h-test-isolated-revert-natural|test-isolated-revert|without|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-test-isolated-revert-natural|test-isolated-revert|without|2": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:h-test-isolated-revert-natural|test-isolated-revert|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-test-isolated-revert-natural|test-isolated-revert|with|1": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:h-test-isolated-revert-natural|test-isolated-revert|with|2": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:h-validate-mutating-check-forced|validate-mutating-check|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-validate-mutating-check-forced|validate-mutating-check|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-validate-mutating-check-forced|validate-mutating-check|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-validate-mutating-check-natural|validate-mutating-check|without|0": [
+   true,
+   false,
+   true,
+   false
+  ],
+  "stored-3.11:h-validate-mutating-check-natural|validate-mutating-check|without|1": [
+   true,
+   false,
+   true,
+   false
+  ],
+  "stored-3.11:h-validate-mutating-check-natural|validate-mutating-check|without|2": [
+   true,
+   false,
+   true,
+   false
+  ],
+  "stored-3.11:h-validate-mutating-check-natural|validate-mutating-check|with|0": [
+   true,
+   false,
+   true,
+   true
+  ],
+  "stored-3.11:h-validate-mutating-check-natural|validate-mutating-check|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:h-validate-mutating-check-natural|validate-mutating-check|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:idea-genie.A|idea-genie|without|0": [
+   false,
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:idea-genie.A|idea-genie|without|1": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:idea-genie.A|idea-genie|without|2": [
+   false,
+   true,
+   false,
+   false,
+   true
+  ],
+  "stored-3.11:idea-genie.A|idea-genie|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:idea-genie.A|idea-genie|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:idea-genie.A|idea-genie|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:idea-genie.B|idea-genie|with|0": [
+   true,
+   true,
+   false,
+   true,
+   true
+  ],
+  "stored-3.11:idea-genie.B|idea-genie|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:idea-genie.B|idea-genie|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:implement.A|implement|without|0": [
+   true,
+   true,
+   false,
+   false
+  ],
+  "stored-3.11:implement.A|implement|without|1": [
+   false,
+   true,
+   false,
+   false
+  ],
+  "stored-3.11:implement.A|implement|without|2": [
+   true,
+   true,
+   false,
+   false
+  ],
+  "stored-3.11:implement.A|implement|with|0": [
+   false,
+   true,
+   false,
+   false
+  ],
+  "stored-3.11:implement.A|implement|with|1": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:implement.A|implement|with|2": [
+   true,
+   true,
+   false,
+   false
+  ],
+  "stored-3.11:implement.B|implement|with|0": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:implement.B|implement|with|1": [
+   false,
+   true,
+   false,
+   false
+  ],
+  "stored-3.11:implement.B|implement|with|2": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:implement.F|implement|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:implement.F|implement|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:implement.F|implement|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:interview-new|interview|without|0": [
+   false,
+   false,
+   true,
+   true
+  ],
+  "stored-3.11:interview-new|interview|without|1": [
+   false,
+   false,
+   false,
+   true
+  ],
+  "stored-3.11:interview-new|interview|without|2": [
+   false,
+   false,
+   false,
+   true
+  ],
+  "stored-3.11:interview-new|interview|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:interview-new|interview|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:interview-new|interview|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:memory.A|memory|without|0": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "stored-3.11:memory.A|memory|without|1": [
+   false,
+   false,
+   false,
+   false,
+   false
+  ],
+  "stored-3.11:memory.A|memory|without|2": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "stored-3.11:memory.A|memory|with|0": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "stored-3.11:memory.A|memory|with|1": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:memory.A|memory|with|2": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "stored-3.11:memory.B|memory|with|0": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:memory.B|memory|with|1": [
+   false,
+   true,
+   false,
+   false,
+   false
+  ],
+  "stored-3.11:memory.B|memory|with|2": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "stored-3.11:memory.F|memory|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:memory.F|memory|with|1": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:memory.F|memory|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:navigate.A|navigate|without|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:navigate.A|navigate|without|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:navigate.A|navigate|without|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:navigate.A|navigate|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:navigate.A|navigate|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:navigate.A|navigate|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:navigate.B|navigate|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:navigate.B|navigate|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:navigate.B|navigate|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:orchestrate.A|orchestrate|without|0": [
+   true,
+   false,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:orchestrate.A|orchestrate|without|1": [
+   false,
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:orchestrate.A|orchestrate|without|2": [
+   true,
+   false,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:orchestrate.A|orchestrate|with|0": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:orchestrate.A|orchestrate|with|1": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:orchestrate.A|orchestrate|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:orchestrate.B|orchestrate|with|0": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:orchestrate.B|orchestrate|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:orchestrate.B|orchestrate|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:plan.A|plan|without|0": [
+   false,
+   false,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:plan.A|plan|without|1": [
+   false,
+   false,
+   true,
+   false,
+   false
+  ],
+  "stored-3.11:plan.A|plan|without|2": [
+   false,
+   false,
+   true,
+   false,
+   false
+  ],
+  "stored-3.11:plan.A|plan|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:plan.A|plan|with|1": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:plan.A|plan|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:plan.B|plan|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:plan.B|plan|with|1": [
+   false,
+   false,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:plan.B|plan|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:postmortem.A|postmortem|without|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:postmortem.A|postmortem|without|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:postmortem.A|postmortem|without|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:postmortem.A|postmortem|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:postmortem.A|postmortem|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:postmortem.A|postmortem|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:postmortem.B|postmortem|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:postmortem.B|postmortem|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:postmortem.B|postmortem|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:premortem.A|premortem|without|0": [
+   false,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:premortem.A|premortem|without|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:premortem.A|premortem|without|2": [
+   false,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:premortem.A|premortem|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:premortem.A|premortem|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:premortem.A|premortem|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:premortem.B|premortem|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:premortem.B|premortem|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:premortem.B|premortem|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:reality-check.A|research-claim-check|without|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:reality-check.A|research-claim-check|without|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:reality-check.A|research-claim-check|without|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:reality-check.A|research-claim-check|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:reality-check.A|research-claim-check|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:reality-check.A|research-claim-check|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:reality-check.B|research-claim-check|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:reality-check.B|research-claim-check|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:reality-check.B|research-claim-check|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:reality-check.F|research-claim-check|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:reality-check.F|research-claim-check|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:reality-check.F|research-claim-check|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:refactor.A|refactor|without|0": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:refactor.A|refactor|without|1": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:refactor.A|refactor|without|2": [
+   true,
+   true,
+   true,
+   false
+  ],
+  "stored-3.11:refactor.A|refactor|with|0": [
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:refactor.A|refactor|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:refactor.A|refactor|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:refactor.B|refactor|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:refactor.B|refactor|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:refactor.B|refactor|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:refactor.F|refactor|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:refactor.F|refactor|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:refactor.F|refactor|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:research.A|research|without|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:research.A|research|without|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:research.A|research|without|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:research.A|research|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:research.A|research|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:research.A|research|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:research.B|research|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:research.B|research|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:research.B|research|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:research.F|research|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:research.F|research|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:research.F|research|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:review.A|review|without|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:review.A|review|without|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:review.A|review|without|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:review.A|review|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:review.A|review|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:review.A|review|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:review.B|review|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:review.B|review|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:review.B|review|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:review.F|review|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:review.F|review|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:review.F|review|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:rpi.A|rpi|without|0": [
+   true,
+   true,
+   false,
+   true,
+   false
+  ],
+  "stored-3.11:rpi.A|rpi|without|1": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "stored-3.11:rpi.A|rpi|without|2": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "stored-3.11:rpi.A|rpi|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:rpi.A|rpi|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:rpi.A|rpi|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:rpi.B|rpi|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:rpi.B|rpi|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:rpi.B|rpi|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:security.A|security|without|0": [
+   true,
+   true,
+   false,
+   false,
+   false,
+   true
+  ],
+  "stored-3.11:security.A|security|without|1": [
+   true,
+   true,
+   false,
+   false,
+   false,
+   true
+  ],
+  "stored-3.11:security.A|security|without|2": [
+   true,
+   true,
+   false,
+   false,
+   false,
+   true
+  ],
+  "stored-3.11:security.A|security|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:security.A|security|with|1": [
+   true,
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:security.A|security|with|2": [
+   true,
+   true,
+   true,
+   false,
+   false,
+   true
+  ],
+  "stored-3.11:security.B|security|with|0": [
+   true,
+   true,
+   true,
+   false,
+   false,
+   true
+  ],
+  "stored-3.11:security.B|security|with|1": [
+   true,
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:security.B|security|with|2": [
+   true,
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "stored-3.11:skill-eval.A|skill-eval|without|0": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:skill-eval.A|skill-eval|without|1": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:skill-eval.A|skill-eval|without|2": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:skill-eval.A|skill-eval|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:skill-eval.A|skill-eval|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:skill-eval.A|skill-eval|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:skill-eval.B|skill-eval|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:skill-eval.B|skill-eval|with|1": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:skill-eval.B|skill-eval|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:test.A|test|without|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:test.A|test|without|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:test.A|test|without|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:test.A|test|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:test.A|test|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:test.A|test|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:test.B|test|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:test.B|test|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:test.B|test|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:test.F|test|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:test.F|test|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:test.F|test|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:triage.A|triage|without|0": [
+   true,
+   false,
+   false,
+   false,
+   true
+  ],
+  "stored-3.11:triage.A|triage|without|1": [
+   true,
+   false,
+   false,
+   false,
+   true
+  ],
+  "stored-3.11:triage.A|triage|without|2": [
+   true,
+   false,
+   false,
+   false,
+   true
+  ],
+  "stored-3.11:triage.A|triage|with|0": [
+   true,
+   false,
+   false,
+   false,
+   true
+  ],
+  "stored-3.11:triage.A|triage|with|1": [
+   true,
+   false,
+   false,
+   false,
+   true
+  ],
+  "stored-3.11:triage.A|triage|with|2": [
+   true,
+   false,
+   false,
+   false,
+   true
+  ],
+  "stored-3.11:triage.B|triage|with|0": [
+   true,
+   false,
+   false,
+   false,
+   true
+  ],
+  "stored-3.11:triage.B|triage|with|1": [
+   true,
+   false,
+   false,
+   false,
+   true
+  ],
+  "stored-3.11:triage.B|triage|with|2": [
+   true,
+   false,
+   false,
+   false,
+   true
+  ],
+  "stored-3.11:triage.F|triage|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:triage.F|triage|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:triage.F|triage|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:validate.A|validate|without|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:validate.A|validate|without|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:validate.A|validate|without|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:validate.A|validate|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:validate.A|validate|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:validate.A|validate|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:validate.B|validate|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:validate.B|validate|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "stored-3.11:validate.B|validate|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-D1-t1-load-behavior|orchestrate-packets-harder|with|0": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-D1-t1-load-behavior|orchestrate-packets-harder|with|1": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-D1-t1-load-behavior|orchestrate-packets-harder|with|2": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-D1-t1-load-behavior|orchestrate-packets-harder|with|3": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-D1-t1-load-behavior|orchestrate-packets-harder|with|4": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-D1-t1-load-behavior|orchestrate-packets-harder|with|5": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-D1-t1-load-behavior|orchestrate-packets|with|0": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-D1-t1-load-behavior|orchestrate-packets|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-D1-t1-load-behavior|orchestrate-packets|with|2": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-D1-t1-load-behavior|orchestrate-packets|with|3": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-D1-t1-load-behavior|orchestrate-packets|with|4": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-D1-t1-load-behavior|orchestrate-packets|with|5": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-D1-t1-load-behavior|orchestrate|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-D1-t1-load-behavior|orchestrate|with|1": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "t1-D1-t1-load-behavior|orchestrate|with|2": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "t1-D1-t1-load-behavior|orchestrate|with|3": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "t1-D1-t1-load-behavior|orchestrate|with|4": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "t1-D1-t1-load-behavior|orchestrate|with|5": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "t1-D2-t1-load-behavior|orchestrate-packets-harder|with|0": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-D2-t1-load-behavior|orchestrate-packets-harder|with|1": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-D2-t1-load-behavior|orchestrate-packets-harder|with|2": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-D2-t1-load-behavior|orchestrate-packets-harder|with|3": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-D2-t1-load-behavior|orchestrate-packets-harder|with|4": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-D2-t1-load-behavior|orchestrate-packets-harder|with|5": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-D2-t1-load-behavior|orchestrate-packets|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-D2-t1-load-behavior|orchestrate-packets|with|1": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-D2-t1-load-behavior|orchestrate-packets|with|2": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-D2-t1-load-behavior|orchestrate-packets|with|3": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-D2-t1-load-behavior|orchestrate-packets|with|4": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-D2-t1-load-behavior|orchestrate-packets|with|5": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-D2-t1-load-behavior|orchestrate|with|0": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "t1-D2-t1-load-behavior|orchestrate|with|1": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "t1-D2-t1-load-behavior|orchestrate|with|2": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "t1-D2-t1-load-behavior|orchestrate|with|3": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-D2-t1-load-behavior|orchestrate|with|4": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-D2-t1-load-behavior|orchestrate|with|5": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "t1-P311-t1-agy|agy-native-harder|with|0": [
+   false,
+   true,
+   false,
+   true,
+   true
+  ],
+  "t1-P311-t1-agy|agy-native-harder|with|1": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "t1-P311-t1-agy|agy-native-harder|with|2": [
+   false,
+   true,
+   false,
+   true,
+   true
+  ],
+  "t1-P311-t1-agy|agy-native-harder|with|3": [
+   false,
+   true,
+   false,
+   true,
+   true
+  ],
+  "t1-P311-t1-agy|agy-native-harder|with|4": [
+   false,
+   true,
+   false,
+   true,
+   true
+  ],
+  "t1-P311-t1-agy|agy-native-harder|with|5": [
+   false,
+   true,
+   false,
+   true,
+   true
+  ],
+  "t1-P311-t1-implement|implement|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-P311-t1-implement|implement|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-P311-t1-implement|implement|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-P311-t1-implement|implement|with|3": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-P311-t1-implement|implement|with|4": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-P311-t1-implement|implement|with|5": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-P311-t1-load-behavior|orchestrate-packets-harder|with|0": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-P311-t1-load-behavior|orchestrate-packets-harder|with|1": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-P311-t1-load-behavior|orchestrate-packets-harder|with|2": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-P311-t1-load-behavior|orchestrate-packets-harder|with|3": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-P311-t1-load-behavior|orchestrate-packets-harder|with|4": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-P311-t1-load-behavior|orchestrate-packets-harder|with|5": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-P311-t1-load-behavior|orchestrate-packets|with|0": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-P311-t1-load-behavior|orchestrate-packets|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-P311-t1-load-behavior|orchestrate-packets|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-P311-t1-load-behavior|orchestrate-packets|with|3": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-P311-t1-load-behavior|orchestrate-packets|with|4": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-P311-t1-load-behavior|orchestrate-packets|with|5": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-P311-t1-load-behavior|orchestrate|with|0": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "t1-P311-t1-load-behavior|orchestrate|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-P311-t1-load-behavior|orchestrate|with|2": [
+   true,
+   false,
+   true,
+   false,
+   true
+  ],
+  "t1-P311-t1-load-behavior|orchestrate|with|3": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "t1-P311-t1-load-behavior|orchestrate|with|4": [
+   true,
+   false,
+   true,
+   false,
+   true
+  ],
+  "t1-P311-t1-load-behavior|orchestrate|with|5": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "t1-P312-t1-agy|agy-native-harder|with|0": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "t1-P312-t1-agy|agy-native-harder|with|1": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "t1-P312-t1-agy|agy-native-harder|with|2": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "t1-P312-t1-agy|agy-native-harder|with|3": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-P312-t1-agy|agy-native-harder|with|4": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "t1-P312-t1-agy|agy-native-harder|with|5": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-P312-t1-implement|implement|with|0": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-P312-t1-implement|implement|with|1": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-P312-t1-implement|implement|with|2": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-P312-t1-implement|implement|with|3": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-P312-t1-implement|implement|with|4": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-P312-t1-implement|implement|with|5": [
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-P312-t1-load-behavior|orchestrate-packets-harder|with|0": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-P312-t1-load-behavior|orchestrate-packets-harder|with|1": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-P312-t1-load-behavior|orchestrate-packets-harder|with|2": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-P312-t1-load-behavior|orchestrate-packets-harder|with|3": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-P312-t1-load-behavior|orchestrate-packets-harder|with|4": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-P312-t1-load-behavior|orchestrate-packets-harder|with|5": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-P312-t1-load-behavior|orchestrate-packets|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-P312-t1-load-behavior|orchestrate-packets|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-P312-t1-load-behavior|orchestrate-packets|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-P312-t1-load-behavior|orchestrate-packets|with|3": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-P312-t1-load-behavior|orchestrate-packets|with|4": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t1-P312-t1-load-behavior|orchestrate-packets|with|5": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t1-P312-t1-load-behavior|orchestrate|with|0": [
+   true,
+   false,
+   true,
+   true,
+   false
+  ],
+  "t1-P312-t1-load-behavior|orchestrate|with|1": [
+   true,
+   false,
+   true,
+   true,
+   false
+  ],
+  "t1-P312-t1-load-behavior|orchestrate|with|2": [
+   true,
+   false,
+   true,
+   false,
+   false
+  ],
+  "t1-P312-t1-load-behavior|orchestrate|with|3": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "t1-P312-t1-load-behavior|orchestrate|with|4": [
+   true,
+   false,
+   true,
+   true,
+   false
+  ],
+  "t1-P312-t1-load-behavior|orchestrate|with|5": [
+   true,
+   true,
+   true,
+   true,
+   false
+  ],
+  "t2-D3-t1-agy|agy-native-harder|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-D3-t1-agy|agy-native-harder|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-D3-t1-agy|agy-native-harder|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-D3-t1-agy|agy-native-harder|with|3": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-D3-t1-agy|agy-native-harder|with|4": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "t2-D3-t1-agy|agy-native-harder|with|5": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-D3-t1-load-behavior|orchestrate-packets-harder|with|0": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t2-D3-t1-load-behavior|orchestrate-packets-harder|with|1": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t2-D3-t1-load-behavior|orchestrate-packets-harder|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-D3-t1-load-behavior|orchestrate-packets-harder|with|3": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t2-D3-t1-load-behavior|orchestrate-packets-harder|with|4": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t2-D3-t1-load-behavior|orchestrate-packets-harder|with|5": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t2-D3-t1-load-behavior|orchestrate-packets|with|0": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t2-D3-t1-load-behavior|orchestrate-packets|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-D3-t1-load-behavior|orchestrate-packets|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-D3-t1-load-behavior|orchestrate-packets|with|3": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t2-D3-t1-load-behavior|orchestrate-packets|with|4": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-D3-t1-load-behavior|orchestrate-packets|with|5": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t2-D3-t1-load-behavior|orchestrate|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-D3-t1-load-behavior|orchestrate|with|1": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "t2-D3-t1-load-behavior|orchestrate|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-D3-t1-load-behavior|orchestrate|with|3": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "t2-D3-t1-load-behavior|orchestrate|with|4": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "t2-D3-t1-load-behavior|orchestrate|with|5": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-D4-t1-agy|agy-native-harder|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-D4-t1-agy|agy-native-harder|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-D4-t1-agy|agy-native-harder|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-D4-t1-agy|agy-native-harder|with|3": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-D4-t1-agy|agy-native-harder|with|4": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-D4-t1-agy|agy-native-harder|with|5": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-D4-t1-load-behavior|orchestrate-packets-harder|with|0": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t2-D4-t1-load-behavior|orchestrate-packets-harder|with|1": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t2-D4-t1-load-behavior|orchestrate-packets-harder|with|2": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t2-D4-t1-load-behavior|orchestrate-packets-harder|with|3": [
+   true,
+   true,
+   true,
+   false,
+   false
+  ],
+  "t2-D4-t1-load-behavior|orchestrate-packets-harder|with|4": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t2-D4-t1-load-behavior|orchestrate-packets-harder|with|5": [
+   true,
+   true,
+   true,
+   false,
+   true
+  ],
+  "t2-D4-t1-load-behavior|orchestrate-packets|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-D4-t1-load-behavior|orchestrate-packets|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-D4-t1-load-behavior|orchestrate-packets|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-D4-t1-load-behavior|orchestrate-packets|with|3": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-D4-t1-load-behavior|orchestrate-packets|with|4": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-D4-t1-load-behavior|orchestrate-packets|with|5": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-D4-t1-load-behavior|orchestrate|with|0": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "t2-D4-t1-load-behavior|orchestrate|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-D4-t1-load-behavior|orchestrate|with|2": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "t2-D4-t1-load-behavior|orchestrate|with|3": [
+   true,
+   false,
+   true,
+   false,
+   true
+  ],
+  "t2-D4-t1-load-behavior|orchestrate|with|4": [
+   true,
+   false,
+   true,
+   true,
+   true
+  ],
+  "t2-D4-t1-load-behavior|orchestrate|with|5": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-P311-t1-agy|agy-native-harder|with|0": [
+   false,
+   true,
+   false,
+   true,
+   true
+  ],
+  "t2-P311-t1-agy|agy-native-harder|with|1": [
+   false,
+   true,
+   false,
+   true,
+   true
+  ],
+  "t2-P311-t1-agy|agy-native-harder|with|2": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "t2-P311-t1-agy|agy-native-harder|with|3": [
+   false,
+   true,
+   false,
+   true,
+   true
+  ],
+  "t2-P311-t1-agy|agy-native-harder|with|4": [
+   false,
+   true,
+   false,
+   true,
+   true
+  ],
+  "t2-P311-t1-agy|agy-native-harder|with|5": [
+   false,
+   true,
+   false,
+   true,
+   true
+  ],
+  "t2-P312-t1-agy|agy-native-harder|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-P312-t1-agy|agy-native-harder|with|1": [
+   true,
+   true,
+   false,
+   true,
+   false
+  ],
+  "t2-P312-t1-agy|agy-native-harder|with|2": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "t2-P312-t1-agy|agy-native-harder|with|3": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-P312-t1-agy|agy-native-harder|with|4": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "t2-P312-t1-agy|agy-native-harder|with|5": [
+   true,
+   true,
+   false,
+   false,
+   false
+  ],
+  "t2-PPRE-t1-agy|agy-native-harder|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-PPRE-t1-agy|agy-native-harder|with|1": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-PPRE-t1-agy|agy-native-harder|with|2": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-PPRE-t1-agy|agy-native-harder|with|3": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-PPRE-t1-agy|agy-native-harder|with|4": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t2-PPRE-t1-agy|agy-native-harder|with|5": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t3-PFIX-natural-plain-agy-native|agy-native|without|0": [
+   true,
+   false,
+   false,
+   true,
+   true
+  ],
+  "t3-PFIX-natural-plain-agy-native|agy-native|without|1": [
+   true,
+   false,
+   false,
+   true,
+   true
+  ],
+  "t3-PFIX-natural-plain-agy-native|agy-native|without|2": [
+   true,
+   false,
+   true,
+   false,
+   true
+  ],
+  "t3-PFIX-natural-plain-agy-native|agy-native|with|0": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t3-PFIX-natural-plain-agy-native|agy-native|with|1": [
+   false,
+   true,
+   true,
+   true,
+   true
+  ],
+  "t3-PFIX-natural-plain-agy-native|agy-native|with|2": [
+   false,
+   true,
+   true,
+   true,
+   true
+  ]
+ }
+}
