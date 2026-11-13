@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "trial": "2026-10-31 description trial (bead age-pv2j.103)",
-  "source_commit": "73cbeae8be281b970389d8b2ea5636cfa972a9fa",
+  "source_commit": "68624b927a434b32192dc16f9c109c2e73e5a1af",
   "plugin_tree": "455faa6cfeb22caa3f95b3c3d1816191f25bafc4",
   "registration": "evals/plugin-eval/plans/2026-10-31-description-trial.md",
   "adopted_variants": [

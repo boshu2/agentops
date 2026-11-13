@@ -121,7 +121,7 @@ remain explicitly invocable. Native work requires zero mandatory skills, and
 selecting Orchestrate does not require a skill chain.
 
 This is the literal disposition of all 34 canonical roots at migration baseline
-`3842ea0e0040ddc06ee4d45c98b9fc8c0eeffb6a`, derived from their
+`d0460bc0dddaf4f9cf8b7b90c48136a76f91cb20`, derived from their
 `skills/<name>/SKILL.md` contracts. Each linked contract remains the method owner.
 The [generated catalog](https://github.com/boshu2/agentops/blob/main/skills/catalog.json) and [router](SKILL-ROUTER.md)
 describe the current inventory; fewer roots or improved discovery is not claimed.

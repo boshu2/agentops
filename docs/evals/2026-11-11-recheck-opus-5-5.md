@@ -16,7 +16,7 @@ either direction are inside the noise bar.
 ## Subject and method
 
 The subject is `plugin/` at tag `v3.12.0`, commit
-`5221ed81b1d8fd03532809910de884a687080c79`, Git tree
+`a5cda4888198c824827855285b3c771a233c7293`, Git tree
 `e1dc4723aaa0c6f8e9b45f6cdac2835425f57a50`; its `skills/` directory was compared
 with the installed 3.12.0 plugin and is identical. The runner was Claude Code
 2.1.309 with `claude-opus-5-5`, publishing disabled, raw output kept outside

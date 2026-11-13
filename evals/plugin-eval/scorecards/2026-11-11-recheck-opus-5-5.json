@@ -3,7 +3,7 @@
  "run": "2026-11-11 recheck of AgentOps 3.12.0 after the catalog audit (bead age-n3cv.13)",
  "subject": {
   "tag": "v3.12.0",
-  "commit": "5221ed81b1d8fd03532809910de884a687080c79",
+  "commit": "a5cda4888198c824827855285b3c771a233c7293",
   "plugin_tree": "e1dc4723aaa0c6f8e9b45f6cdac2835425f57a50"
  },
  "runner": {
