@@ -17,7 +17,7 @@ Advisory review does not replace Validate's fresh acceptance judgment.
 | [implement](https://github.com/boshu2/agentops/blob/main/skills/implement/SKILL.md) | Make the code change a ticket or bug report asks for, then prove it with the repo's own checks. Use when: told to fix, change or build something, such as "fix this bug". |
 | [review](https://github.com/boshu2/agentops/blob/main/skills/review/SKILL.md) | Give advisory feedback on a plan, design or code change. Use when: asked for an opinion or a look-over, even informally. Not for acceptance; use Validate. |
 | [validate](https://github.com/boshu2/agentops/blob/main/skills/validate/SKILL.md) | Freshly judge whether a finished change and its claims meet original acceptance: PASS, FAIL or NOT_PROVEN. Use when: asked for a go/no-go, sign-off or independent verdict. |
-| [orchestrate](https://github.com/boshu2/agentops/blob/main/skills/orchestrate/SKILL.md) | Dispatch independent tasks to parallel workers without write collisions, decide what each does next, and recover dead ones. Use when: running or managing two or more agents. |
+| [orchestrate](https://github.com/boshu2/agentops/blob/main/skills/orchestrate/SKILL.md) | Dispatch parallel workers without write collisions and decide what idle or finished ones do next. Use when: managing agents, or running or planning agents in parallel, even two. |
 | [memory](https://github.com/boshu2/agentops/blob/main/skills/memory/SKILL.md) | Find or curate supported lessons and agent rules. Use when: asked to remember, trace a corrected claim, audit instructions or write an agent rule. |
 
 ## Engineering specialists

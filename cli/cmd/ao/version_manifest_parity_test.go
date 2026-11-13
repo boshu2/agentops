@@ -247,3 +247,30 @@ func TestReadme_SkillCountMatchesCatalog(t *testing.T) {
 		t.Errorf("README.md says %d skills; skills/ holds %d", got, want)
 	}
 }
+
+// TestReadme_EvalReportLinksExist guards the README's evidence section: every
+// docs/evals/ report it links must be a file in the checkout. The section is
+// rewritten by hand when a new measurement replaces an old one, and a renamed
+// or unwritten report would ship as a dead link on the front page.
+func TestReadme_EvalReportLinksExist(t *testing.T) {
+	root := findReleaseManifestRoot(t)
+	if root == "" {
+		t.Skip("not running inside an AgentOps checkout; no README to read")
+	}
+
+	raw, err := os.ReadFile(filepath.Join(root, "README.md"))
+	if err != nil {
+		t.Fatalf("read README.md: %v", err)
+	}
+	linkRe := regexp.MustCompile(`\]\((docs/evals/[^)#\s]+\.md)(?:#[^)]*)?\)`)
+	matches := linkRe.FindAllSubmatch(raw, -1)
+	if len(matches) == 0 {
+		t.Fatal("README.md links no docs/evals/ report; the evidence section lost its source")
+	}
+	for _, match := range matches {
+		rel := string(match[1])
+		if _, err := os.Stat(filepath.Join(root, filepath.FromSlash(rel))); err != nil {
+			t.Errorf("README.md links %s, which does not exist: %v", rel, err)
+		}
+	}
+}
