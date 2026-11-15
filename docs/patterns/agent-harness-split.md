@@ -71,8 +71,10 @@ receipt records that. *Lives in:* a CLI check and the receipt.
 
 **Review where a mistake is costly.** For an ordinary change, the checks
 and CI are enough. Ask for one fresh review, by a context that did not write
-the change, when the change cannot be cheaply undone: a release, a security
-boundary, deleted data, a removed check. One round, one question. The author
+the change, in three cases: the caller asks for one; the change cannot be
+cheaply undone (a release, a security boundary, deleted data, a removed
+check); or no deterministic check covers the changed behavior, so green CI
+says nothing about it. One round, one question. The author
 never grades its own work. AgentOps records why in
 [ADR-0017](../adr/ADR-0017-loop-as-control-flow-not-knowledge.md).
 *Lives in:* the review skills.
