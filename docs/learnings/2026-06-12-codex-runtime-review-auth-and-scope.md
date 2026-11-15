@@ -142,7 +142,7 @@ core implementation bug.
 ## Source Artifacts
 
 - Parent epic: `ag-codex-runtime-enhancement-o0nds`
-- Main source head reviewed: `6168a66c9d1f8816b92b6c9848efccb07b431589`
+- Main source head reviewed: `8ee5dc252c6d85e131cb6025eaf43fe168a067cb`
 - Tracker close commit: `_beads` `33e3654e509ea71a085389676a64bee6de6a8720`
 - Fable approval:
   `/Users/bo/dev/agentops-wt-codex-fanout-discovery/.agents/council/2026-06-12-fable-approval-codex-fanout-discovery-gate.md`

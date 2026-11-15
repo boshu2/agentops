@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.12.1] - 2026-11-11
+
+### Fixed
+
+- Orchestrate's description. The line the 3.12.0 audit wrote loaded Orchestrate
+  on 6 of 30 runs where the 3.11 text loaded its skill on 21 of 30, and it cut
+  Agy Native's loading from 10 of 12 runs to 4 of 12. The new line, chosen in a
+  same-day trial of four candidates, loads Orchestrate on 22 of 30 runs and Agy
+  Native on 6 of 6. The skill body is unchanged.
+
+### Added
+
+- The [2026-11-11 recheck](https://github.com/boshu2/agentops/blob/main/docs/evals/2026-11-11-recheck-opus-5-5.md)
+  of 3.12.0 on Claude Opus 5.5: all 28 skills with and without the plugin,
+  graded blind by Claude Fable 5.2, with the stored 3.11 responses regraded by
+  the same judge. No other skill fell more than 0.15 below its 3.11 score on a
+  case with headroom, except Implement when named (10/12 against 12/12), which
+  a same-day re-run did not reproduce. Its scorecard is in
+  `evals/plugin-eval/scorecards/`.
+- A test that every `docs/evals/` report the README links to exists.
+
+### Changed
+
+- README, the practice ledger and the eval suite README carry the 3.12 figures:
+  89% of practice criteria met with the plugin against 65% without.
+- The Go toolchain is 1.27.4.
+
 ## [3.12.0] - 2026-11-10
 
 ### Added

@@ -3,14 +3,15 @@
 These cases measure whether an agent with the AgentOps plugin installed behaves
 differently from one without it. They run with Claude Code's own evaluator,
 `claude plugin eval`. Results from the last full run are in
-[the 2026-10-22 report](../../docs/evals/2026-10-22-plugin-eval-opus-5-5.md);
-the [2026-10-05 report](../../docs/evals/2026-10-05-plugin-eval-opus-5-5.md)
+[the 2026-11-11 recheck](../../docs/evals/2026-11-11-recheck-opus-5-5.md) of
+3.12.0; [the 2026-10-22 report](../../docs/evals/2026-10-22-plugin-eval-opus-5-5.md)
+records 3.11, and the [2026-10-05 report](../../docs/evals/2026-10-05-plugin-eval-opus-5-5.md)
 records 3.9.0 against 3.10.
 
 | Suite | Cases | Question | Arms |
 |---|---|---|---|
-| `behavior/` | 44, covering 31 skills | Does the answer follow the practice the skill teaches? Each case has 4 to 6 criteria and also records whether the skill loaded. | with the plugin and without it |
-| `routing/` | 32, covering 31 skills | Does the matching skill load on a request a user would type? | plugin only |
+| `behavior/` | 42, covering 28 skills | Does the answer follow the practice the skill teaches? Each case has 4 to 6 criteria and also records whether the skill loaded. | with the plugin and without it |
+| `routing/` | 30, covering 28 skills | Does the matching skill load on a request a user would type? | plugin only |
 
 Research has two cases in each suite: `research` and `research-claim-check`,
 the case Reality Check had before it folded into Research on 2026-10-23. Its
@@ -78,7 +79,9 @@ by Git.
 
 Every run is a full Claude Code session on your account. On Claude Opus 5.5 a
 run cost about $0.13 to generate (168 runs for $21.25 on 2026-10-04). The
-behavior suite is 264 runs at the default three per case; routing is 96.
+behavior suite is 252 runs at the default three per case; routing is 90. On
+2026-11-11 the three-arm behavior suite plus routing (467 runs) cost $64.51 as
+the evaluator reports it, about $0.14 a run.
 
 ## Grade
 

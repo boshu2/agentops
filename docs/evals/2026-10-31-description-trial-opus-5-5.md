@@ -16,7 +16,7 @@ every variant it tried failed the budget as serialized, so none could land.
 
 ## Subject and method
 
-The subject is `plugin/` at commit `73cbeae8be281b970389d8b2ea5636cfa972a9fa`, Git tree
+The subject is `plugin/` at commit `68624b927a434b32192dc16f9c109c2e73e5a1af`, Git tree
 `455faa6cfeb22caa3f95b3c3d1816191f25bafc4`, after wave 2.5. All 243 package files were hashed before
 launch and re-hashed after the last run. Copies were kept outside Git. The control C is unchanged;
 each D subject is C with exactly one skill's `description:` replaced, so a candidate can neither help

@@ -7,7 +7,7 @@ description = "Repair an observed Go gate error without broadening its inputs."
 
 [metadata]
 family = "small-go-repair"
-source_commit = "8a9a01a70abcb4f6325de32e7d17fcd942c40fcb"
+source_commit = "5347216b02b743a00df3a61cd39df4c9d01224b0"
 source_path = "cli/internal/gates/checks/native_inline.go"
 visibility = "development"
 historical_fix_seen_by_task_author = true

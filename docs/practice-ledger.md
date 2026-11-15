@@ -205,9 +205,12 @@ average in the first version of one benchmark, and 16 of 84 tasks got worse
 ([SkillsBench v1](https://arxiv.org/abs/2602.12670v1)). In a
 vendor's evaluation the agent never invoked an available skill in 56% of cases
 ([Vercel](https://vercel.com/blog/agents-md-outperforms-skills-in-our-agent-evals),
-January 2026). Here, the agent met 91% of practice criteria with the skills
-against 68% without, and skills named in the request loaded on 22 of 24 runs
-(plugin eval).
+January 2026). Here, the agent met 89% of practice criteria with the skills
+against 65% without, and 96% when the request named the skill
+([recheck](https://github.com/boshu2/agentops/blob/main/docs/evals/2026-11-11-recheck-opus-5-5.md),
+November 2026). In October, skills named in the request loaded on 22 of 24 runs
+(plugin eval). A rewritten description stopped one skill loading and cut
+another's loading until a measured line replaced it.
 
 ## Did not survive
 
@@ -222,9 +225,11 @@ against 68% without, and skills named in the request loaded on 22 of 24 runs
 
 ## Still testing
 
-- **Do the core loop skills help?** Validate, Test, Research and Orchestrate
-  score the same with and without the skill, because the unaided agent already
-  passes the cases. They need harder cases.
+- **Do the core loop skills help?** Test and Research score within 0.08 with
+  and without the skill, because the unaided agent already passes most of
+  their cases; Validate gains only on its harder case. They need harder cases.
+  Orchestrate's score in 3.12.0 was flat because the skill did not load; with
+  the 3.12.1 description its own case scored 25/30 against 19/30.
 - **Does any of this hold on another model or harness?** Every gain measured
   here is on Claude Opus 5.5.
 - **Why do skills not load unless you name them?** Four tested causes did not
