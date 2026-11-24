@@ -21,6 +21,9 @@ type Report struct {
 	Results      []CheckResult
 	Skipped      []SkippedCheck
 	Coverage     *WorkflowCoverage
+	// OutsideScope names uncommitted worktree paths the fast run's routing did
+	// not consider; nil when there are none or the run was full mode.
+	OutsideScope *OutsideScope
 	// ForeignRepo is true when the run root is not the agentops repository.
 	// Human suppresses per-check agentops-internal detail there (the
 	// not-applicable rows and the routing-skip wall name backing scripts that
@@ -106,6 +109,9 @@ type jsonRun struct {
 	ElapsedMs         int64   `json:"elapsed_ms"`
 	ChangedFilesCount int     `json:"changed_files_count"`
 	Summary           Summary `json:"summary"`
+	// UncommittedOutsideScope is present only when uncommitted paths fell outside
+	// the routing scope, or could not be listed.
+	UncommittedOutsideScope *jsonOutsideScope `json:"uncommitted_outside_scope,omitempty"`
 }
 
 type jsonGate struct {
@@ -142,6 +148,8 @@ func (r *Report) JSON() ([]byte, error) {
 			ElapsedMs:         r.Elapsed.Milliseconds(),
 			ChangedFilesCount: r.ChangedCount,
 			Summary:           r.Summary(),
+
+			UncommittedOutsideScope: r.OutsideScope.wire(),
 		},
 		Gates: make([]jsonGate, 0, len(r.Results)),
 	}
@@ -258,6 +266,9 @@ func (r *Report) Human(w io.Writer) {
 	if len(r.Skipped) > 0 {
 		fmt.Fprintf(w, "not run: %d gates (routing/tier/fail-fast)\n", len(r.Skipped))
 	}
+	// A green summary must not read as covering edits the routing scope never
+	// saw: name them on their own line, right under the counts.
+	r.OutsideScope.human(w, r.Scope)
 	if r.Coverage != nil {
 		fmt.Fprintf(w, "workflow coverage: %d workflow scripts, %d registry scripts, %d missing (%d blocking, %d advisory, %d deferred), %d registry-only\n",
 			r.Coverage.WorkflowScriptCount,

@@ -67,6 +67,9 @@ func (o *Orchestrator) Run(ctx context.Context, opts RunOptions) (*Report, error
 		return nil, err
 	}
 	rc := RunContext{RepoRoot: o.repoRoot, ChangedFiles: changed, Mode: opts.Mode}
+	// Read the worktree before any check runs: a check that regenerates a file
+	// would otherwise show up as an edit the caller never made.
+	outside := o.outsideScope(ctx, opts, changed)
 
 	results := make([]CheckResult, 0, len(selected))
 	for i, plan := range selected {
@@ -101,6 +104,7 @@ func (o *Orchestrator) Run(ctx context.Context, opts RunOptions) (*Report, error
 		Elapsed:      o.now().Sub(started),
 		Results:      results,
 		Skipped:      skipped,
+		OutsideScope: outside,
 		ForeignRepo:  !IsAgentOpsRepo(o.repoRoot),
 	}, nil
 }
