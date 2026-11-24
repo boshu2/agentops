@@ -140,7 +140,11 @@ func (s *OutsideScope) human(w io.Writer, scope Scope) {
 		remedy = append(remedy, "--scope worktree routes on modified paths")
 	}
 	if len(s.Untracked) > 0 {
-		remedy = append(remedy, "git add untracked paths to route on them")
+		if scopeReadsIndex(scope) {
+			remedy = append(remedy, "git add untracked paths to route on them")
+		} else {
+			remedy = append(remedy, "git add untracked paths and use --scope worktree to route on them")
+		}
 	}
 	total, noun := len(s.Modified)+len(s.Untracked), "paths"
 	if total == 1 {
@@ -153,6 +157,14 @@ func (s *OutsideScope) human(w io.Writer, scope Scope) {
 		line += "; " + strings.Join(remedy, "; ")
 	}
 	fmt.Fprintln(w, line)
+}
+
+// scopeReadsIndex reports whether a scope's change set includes staged paths,
+// so that `git add` alone brings an untracked path into it. The head, upstream
+// and range scopes compare commits: a staged path stays outside them until it
+// is committed, so their remedy has to name a scope that reads the index.
+func scopeReadsIndex(scope Scope) bool {
+	return scope == ScopeStaged || scope == ScopeWorktree
 }
 
 func quoteAll(paths []string) []string {

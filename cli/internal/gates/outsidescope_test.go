@@ -134,7 +134,7 @@ func TestOrchestratorOutsideScope_RealRepo(t *testing.T) {
 	if got, want := dirty.OutsideScope.Untracked, []string{"notes.txt"}; !reflect.DeepEqual(got, want) {
 		t.Errorf("Untracked = %v, want %v", got, want)
 	}
-	wantLine := `not considered by routing: 2 uncommitted paths outside scope head (1 modified, 1 untracked), first: "README.md", "notes.txt"; --scope worktree routes on modified paths; git add untracked paths to route on them` + "\n"
+	wantLine := `not considered by routing: 2 uncommitted paths outside scope head (1 modified, 1 untracked), first: "README.md", "notes.txt"; --scope worktree routes on modified paths; git add untracked paths and use --scope worktree to route on them` + "\n"
 	if out := humanOf(dirty); !strings.Contains(out, wantLine) {
 		t.Errorf("human report lacks the routing note.\nwant line: %sgot:\n%s", wantLine, out)
 	}
@@ -167,10 +167,94 @@ func TestOrchestratorOutsideScope_RealRepo(t *testing.T) {
 		t.Errorf("full mode: OutsideScope = %+v, want nil (every check runs)", full.OutsideScope)
 	}
 
+	// The remedy printed on scope head has two parts, and both are needed.
+	// Staging alone leaves the new file outside a scope that compares commits.
 	runDiscoveryGit(t, root, "add", "notes.txt")
+	staged := run(Fast, ScopeHead)
+	if staged.OutsideScope == nil {
+		t.Fatal("scope head after git add: OutsideScope = nil, want the staged file still outside")
+	}
+	if got, want := staged.OutsideScope.Modified, []string{"README.md", "notes.txt"}; !sameStrings(got, want) {
+		t.Errorf("scope head after git add: Modified = %v, want %v", got, want)
+	}
+	if len(staged.OutsideScope.Untracked) != 0 {
+		t.Errorf("scope head after git add: Untracked = %v, want none", staged.OutsideScope.Untracked)
+	}
+	// Staging and scope worktree together route on it.
 	if covered := run(Fast, ScopeWorktree); covered.OutsideScope != nil {
 		t.Errorf("scope worktree after git add: OutsideScope = %+v, want nil", covered.OutsideScope)
 	}
+}
+
+// TestOutsideScopeUntrackedRemedyByScope pins the remedy to what each scope
+// reads. `git add` alone routes an untracked path only on the scopes that read
+// the index; the scopes that compare commits must also name a scope that does.
+func TestOutsideScopeUntrackedRemedyByScope(t *testing.T) {
+	const addOnly = `; git add untracked paths to route on them` + "\n"
+	const addAndScope = `; git add untracked paths and use --scope worktree to route on them` + "\n"
+	cases := []struct {
+		scope Scope
+		want  string
+	}{
+		{ScopeHead, addAndScope},
+		{ScopeUpstream, addAndScope},
+		{Scope("range:origin/main..HEAD"), addAndScope},
+		{ScopeStaged, addOnly},
+		{ScopeWorktree, addOnly},
+	}
+	for _, tc := range cases {
+		t.Run(string(tc.scope), func(t *testing.T) {
+			var buf bytes.Buffer
+			(&OutsideScope{Untracked: []string{"notes.txt"}}).human(&buf, tc.scope)
+			if got := buf.String(); !strings.HasSuffix(got, tc.want) {
+				t.Errorf("note for scope %s = %q, want it to end with %q", tc.scope, got, tc.want)
+			}
+		})
+	}
+}
+
+// TestUntrackedRemedyRoutesOnStagedScope proves the short remedy is true where
+// it is printed: on scope staged, `git add` alone brings the path into routing.
+func TestUntrackedRemedyRoutesOnStagedScope(t *testing.T) {
+	root := initRepoWithHead(t, "cli/new.go")
+	orch := testOrch(t, sampleRegistry(t), NewGitChangedFiles(root), outsideScopePassVerdicts)
+	writeRepoFile(t, root, "notes.txt", "scratch\n")
+	run := func() *Report {
+		t.Helper()
+		rep, err := orch.Run(context.Background(), RunOptions{Mode: Fast, Scope: ScopeStaged})
+		if err != nil {
+			t.Fatalf("Run: %v", err)
+		}
+		return rep
+	}
+	before := run()
+	if before.OutsideScope == nil || !sameStrings(before.OutsideScope.Untracked, []string{"notes.txt"}) {
+		t.Fatalf("scope staged before git add: OutsideScope = %+v, want notes.txt untracked", before.OutsideScope)
+	}
+	runDiscoveryGit(t, root, "add", "notes.txt")
+	if after := run(); after.OutsideScope != nil {
+		t.Errorf("scope staged after git add: OutsideScope = %+v, want nil", after.OutsideScope)
+	}
+}
+
+// sameStrings compares two path lists ignoring order.
+func sameStrings(got, want []string) bool {
+	if len(got) != len(want) {
+		return false
+	}
+	seen := map[string]int{}
+	for _, s := range got {
+		seen[s]++
+	}
+	for _, s := range want {
+		seen[s]--
+	}
+	for _, n := range seen {
+		if n != 0 {
+			return false
+		}
+	}
+	return true
 }
 
 // TestOrchestratorOutsideScope_UnbornHead proves the note works before the

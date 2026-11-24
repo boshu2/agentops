@@ -14,8 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`--scope head`) over uncommitted edits printed a green summary while the
   checks for those edits never ran. The summary, the dry-run plan and `--json`
   now name the uncommitted paths outside the scope and how to route on them
-  (`--scope worktree` for modified paths, `git add` for untracked ones). Exit
-  codes, the default scope and check selection are unchanged.
+  (`--scope worktree` for modified paths; `git add` for untracked ones, plus
+  `--scope worktree` when the scope compares commits). Exit codes, the default
+  scope and check selection are unchanged.
 
 ### Changed
 
