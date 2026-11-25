@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `ao gate check` says when its routing left uncommitted work out. A fast run
+  selects checks from the scope's changed files, so a default run
+  (`--scope head`) over uncommitted edits printed a green summary while the
+  checks for those edits never ran. The summary, the dry-run plan and `--json`
+  now name the uncommitted paths outside the scope and how to route on them
+  (`--scope worktree` for modified paths; `git add` for untracked ones, plus
+  `--scope worktree` when the scope compares commits). Exit codes, the default
+  scope and check selection are unchanged.
+
+### Changed
+
+- Orchestrate's packet contract is a fenced template with one field per line
+  instead of one sentence listing 17 fields. The fields and the "launch none"
+  rule are unchanged.
+- The headless Claude judgment example in Validate's model-dispatch reference
+  takes the caller's model ID from a variable instead of naming a model.
+
 ## [3.12.1] - 2026-11-11
 
 ### Fixed

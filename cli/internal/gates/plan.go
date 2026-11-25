@@ -56,6 +56,9 @@ type Plan struct {
 	ChangedCount int
 	Selected     []PlanCheck
 	Skipped      []PlanCheck
+	// OutsideScope names uncommitted worktree paths the planned routing did not
+	// consider, exactly as a real run would report them.
+	OutsideScope *OutsideScope
 	// ForeignRepo is true when the run root is not the agentops repository. Human
 	// suppresses the per-check skip wall there (it names agentops-internal
 	// backing scripts that do not exist in the user's repo); JSON always carries
@@ -80,6 +83,7 @@ func (o *Orchestrator) Plan(ctx context.Context, opts RunOptions) (*Plan, error)
 		ChangedCount: len(changed),
 		Selected:     make([]PlanCheck, 0, len(selected)),
 		Skipped:      make([]PlanCheck, 0, len(skipped)),
+		OutsideScope: o.outsideScope(ctx, opts, changed),
 		ForeignRepo:  !IsAgentOpsRepo(o.repoRoot),
 	}
 	for _, sel := range selected {
@@ -108,6 +112,8 @@ type jsonPlanRun struct {
 	ChangedFilesCount int    `json:"changed_files_count"`
 	SelectedCount     int    `json:"selected_count"`
 	SkippedCount      int    `json:"skipped_count"`
+	// UncommittedOutsideScope mirrors the run report's field of the same name.
+	UncommittedOutsideScope *jsonOutsideScope `json:"uncommitted_outside_scope,omitempty"`
 }
 
 type jsonPlanCheck struct {
@@ -132,6 +138,8 @@ func (p *Plan) JSON() ([]byte, error) {
 			ChangedFilesCount: p.ChangedCount,
 			SelectedCount:     len(p.Selected),
 			SkippedCount:      len(p.Skipped),
+
+			UncommittedOutsideScope: p.OutsideScope.wire(),
 		},
 		Selected: jsonPlanChecks(p.Selected),
 	}
@@ -178,6 +186,10 @@ func (p *Plan) Human(w io.Writer) {
 	}
 	if len(p.Skipped) > 0 && p.ForeignRepo {
 		fmt.Fprintf(w, "\nwould skip %d checks (routing/tier)\n", len(p.Skipped))
+	}
+	if p.OutsideScope != nil {
+		fmt.Fprintln(w)
+		p.OutsideScope.human(w, p.Scope)
 	}
 }
 
