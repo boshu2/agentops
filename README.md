@@ -482,8 +482,9 @@ With Go installed: `go install github.com/boshu2/agentops/cli/cmd/ao@latest`.
 ## Updating and advanced setup
 
 <details>
-<summary><strong>Upgrading to 3.12</strong></summary>
+<summary><strong>Upgrading to 3.13</strong></summary>
 
+<a id="upgrading-to-313"></a>
 <a id="upgrading-to-312"></a>
 <a id="upgrading-to-311"></a>
 <a id="upgrading-to-310"></a>
@@ -491,10 +492,15 @@ With Go installed: `go install github.com/boshu2/agentops/cli/cmd/ao@latest`.
 <a id="upgrading-to-38"></a>
 <a id="upgrading-to-37"></a>
 
-Version 3.12.1 changes one line: Orchestrate's description, which in 3.12.0
+Version 3.13 renames and removes nothing. `ao gate check` now names the
+uncommitted paths its routing left out, and Orchestrate's packet contract is a
+template. Read the [3.13.0 release notes](docs/releases/2026-11-26-v3.13.0-notes.md);
+from 3.12 there is nothing to do beyond updating, rebuilding `ao` in a source
+checkout and starting a new session.
+
+Version 3.12.1 changed one line: Orchestrate's description, which in 3.12.0
 kept Orchestrate and Agy Native from loading. Read the
-[3.12.1 release notes](docs/releases/2026-11-11-v3.12.1-notes.md); from 3.12.0
-there is nothing to do beyond updating and starting a new session.
+[3.12.1 release notes](docs/releases/2026-11-11-v3.12.1-notes.md).
 
 Version 3.12 removes four skill names. [`orchestrate`](skills/orchestrate/SKILL.md)
 now does what `agent-native` did, [`research`](skills/research/SKILL.md) carries
