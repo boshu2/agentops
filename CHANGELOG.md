@@ -22,15 +22,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `ao gate check --json` carries `run.uncommitted_outside_scope` when a fast
-  run leaves uncommitted paths outside its routing scope: `modified_count`,
-  `untracked_count`, up to three `examples` and `error`. The key is omitted
-  when nothing is outside the scope, so existing output is unchanged.
+- `ao gate check --json` carries `uncommitted_outside_scope` when a fast run
+  leaves uncommitted paths outside its routing scope: `modified_count`,
+  `untracked_count`, up to three `examples` and `error`. The key sits under
+  `run` for a real run and under `plan` for `--dry-run`. It is omitted when
+  nothing is outside the scope, so existing output is unchanged.
 - [Estate ablation sweep 5](https://github.com/boshu2/agentops/blob/main/evals/estate-ablation/SURVIVORS.md):
   48 runs on Claude Opus 5.5 that cross the operating contract placed in the
   request with the RPI skill loaded by name, on the four trap tasks. All four
-  arms scored the same (hidden test passes on 9 of 12 runs, false PASS on 3 of
-  12), so neither text changed an outcome on these tasks. Three of the tasks
+  arms had the same task outcomes (hidden test passes on 9 of 12 runs, false
+  PASS on 3 of 12), so neither text changed an outcome on these tasks. Three of the tasks
   are at ceiling and one fails in every arm, so the result does not show the
   texts have no effect elsewhere. `SURVIVORS.md` also gains a section-by-section
   table for the current contract; no contract text is removed.
