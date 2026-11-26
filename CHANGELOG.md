@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.13.0] - 2026-11-26
+
 ### Fixed
 
 - `ao gate check` says when its routing left uncommitted work out. A fast run
@@ -18,6 +20,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `--scope worktree` when the scope compares commits). Exit codes, the default
   scope and check selection are unchanged.
 
+### Added
+
+- `ao gate check --json` carries `uncommitted_outside_scope` when a fast run
+  leaves uncommitted paths outside its routing scope: `modified_count`,
+  `untracked_count`, up to three `examples` and `error`. The key sits under
+  `run` for a real run and under `plan` for `--dry-run`. It is omitted when
+  nothing is outside the scope, so existing output is unchanged.
+- [Estate ablation sweep 5](https://github.com/boshu2/agentops/blob/main/evals/estate-ablation/SURVIVORS.md):
+  48 runs on Claude Opus 5.5 that cross the operating contract placed in the
+  request with the RPI skill loaded by name, on the four trap tasks. All four
+  arms had the same task outcomes (hidden test passes on 9 of 12 runs, false
+  PASS on 3 of 12), so neither text changed an outcome on these tasks. Three of the tasks
+  are at ceiling and one fails in every arm, so the result does not show the
+  texts have no effect elsewhere. `SURVIVORS.md` also gains a section-by-section
+  table for the current contract; no contract text is removed.
+- A pattern page,
+  [a three-part agent harness](https://github.com/boshu2/agentops/blob/main/docs/patterns/agent-harness-split.md):
+  skills for judgment, a deterministic CLI for facts and host extensions for
+  capabilities and governance. It is a proposed design, not a measured result.
+- A test that the curated release notes and the changelog section for the
+  current version use absolute links. Both become the GitHub release body,
+  where a relative link is dead.
+
 ### Changed
 
 - Orchestrate's packet contract is a fenced template with one field per line
@@ -25,6 +50,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rule are unchanged.
 - The headless Claude judgment example in Validate's model-dispatch reference
   takes the caller's model ID from a variable instead of naming a model.
+- CI and the release workflow build with Go 1.27.4, the toolchain `go.mod`
+  already names, and `actions/setup-go` 7.1.0.
+- The docs-site and eval-readout Python dependencies are updated.
+
+### Removed
+
+- The `docs/upgrade-packets/2026-unified-harness-patterns/` packet (eight
+  files). The pattern page above replaces it.
 
 ## [3.12.1] - 2026-11-11
 

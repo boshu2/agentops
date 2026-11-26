@@ -274,3 +274,146 @@ func TestReadme_EvalReportLinksExist(t *testing.T) {
 		}
 	}
 }
+
+// markdownLinkTargetRe captures the target of a Markdown inline link, without
+// an optional title.
+var markdownLinkTargetRe = regexp.MustCompile(`\]\(([^)\s]+)[^)]*\)`)
+
+// relativeLinkTargets returns the link targets in text that resolve against the
+// file's own location: everything except absolute URLs, mail addresses, in-page
+// anchors and the targets named in rewritten.
+func relativeLinkTargets(text string, rewritten ...string) []string {
+	allowed := make(map[string]bool, len(rewritten))
+	for _, target := range rewritten {
+		allowed[target] = true
+	}
+	var relative []string
+	for _, match := range markdownLinkTargetRe.FindAllStringSubmatch(text, -1) {
+		target := match[1]
+		absolute := strings.HasPrefix(target, "https://") || strings.HasPrefix(target, "http://") ||
+			strings.HasPrefix(target, "mailto:") || strings.HasPrefix(target, "#")
+		if absolute || allowed[target] {
+			continue
+		}
+		relative = append(relative, target)
+	}
+	return relative
+}
+
+// changelogSection returns the "## [version]" section of a Keep a Changelog
+// file, up to the next "## [" heading, or "" when the file has no such section.
+func changelogSection(changelog, version string) string {
+	heading := "## [" + version + "]"
+	start := strings.Index("\n"+changelog, "\n"+heading)
+	if start < 0 {
+		return ""
+	}
+	section := changelog[start:]
+	if end := strings.Index(section, "\n## ["); end >= 0 {
+		return section[:end]
+	}
+	return section
+}
+
+func TestRelativeLinkTargets(t *testing.T) {
+	cases := []struct {
+		name      string
+		text      string
+		rewritten []string
+		want      []string
+	}{
+		{name: "absolute URL", text: "[notes](https://github.com/boshu2/agentops/blob/main/docs/x.md)"},
+		{name: "in-page anchor", text: "[limits](#limits)"},
+		{name: "mail address", text: "[mail](mailto:someone@example.com)"},
+		{name: "repo-relative path", text: "[ledger](docs/practice-ledger.md)", want: []string{"docs/practice-ledger.md"}},
+		{name: "relative path with anchor", text: "[rules](skills/memory/SKILL.md#access)", want: []string{"skills/memory/SKILL.md#access"}},
+		{name: "relative path with title", text: `[page](docs/x.md "A page")`, want: []string{"docs/x.md"}},
+		{name: "parent changelog without rewrite", text: "[Full changelog](../CHANGELOG.md)", want: []string{"../CHANGELOG.md"}},
+		{name: "parent changelog with rewrite", text: "[Full changelog](../CHANGELOG.md)", rewritten: []string{"../CHANGELOG.md"}},
+		{
+			name: "mixed",
+			text: "[a](https://example.com) and [b](docs/b.md), then [c](#c) and [d](../d.md)",
+			want: []string{"docs/b.md", "../d.md"},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := relativeLinkTargets(tc.text, tc.rewritten...)
+			if strings.Join(got, "\n") != strings.Join(tc.want, "\n") {
+				t.Errorf("relativeLinkTargets(%q) = %q, want %q", tc.text, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestChangelogSection(t *testing.T) {
+	changelog := "# Changelog\n\n## [Unreleased]\n\n## [2.1.0] - 2026-01-02\n\n- new [page](docs/new.md)\n\n## [2.0.0] - 2026-01-01\n\n- old [page](docs/old.md)\n"
+	cases := []struct {
+		version string
+		want    string
+	}{
+		{version: "2.1.0", want: "## [2.1.0] - 2026-01-02\n\n- new [page](docs/new.md)\n"},
+		{version: "2.0.0", want: "## [2.0.0] - 2026-01-01\n\n- old [page](docs/old.md)\n"},
+		{version: "9.9.9", want: ""},
+		// A version that is only a prefix of a heading must not match it.
+		{version: "2.1", want: ""},
+	}
+	for _, tc := range cases {
+		if got := changelogSection(changelog, tc.version); got != tc.want {
+			t.Errorf("changelogSection(%q) = %q, want %q", tc.version, got, tc.want)
+		}
+	}
+	if got := changelogSection("## [1.0.0] - 2026-01-01\n\n- first\n", "1.0.0"); got != "## [1.0.0] - 2026-01-01\n\n- first\n" {
+		t.Errorf("a section on the first line was not found: got %q", got)
+	}
+}
+
+// TestVersion_ReleaseBodyUsesAbsoluteLinks guards the two hand-written texts
+// that become the GitHub release body for the checked-in `version` fallback:
+// the curated notes and the version's CHANGELOG.md section.
+//
+// A release page is not in the repository tree, so a link written relative to
+// the file is dead there. `scripts/extract-release-notes.sh` rewrites only
+// `../CHANGELOG.md` and `../../CHANGELOG.md`, and only in the curated notes;
+// it embeds the changelog section as written. The doc gates check that links
+// resolve from the file, so a relative link passes them and still ships dead.
+func TestVersion_ReleaseBodyUsesAbsoluteLinks(t *testing.T) {
+	if strings.Contains(version, "-g") || strings.HasSuffix(version, "-dirty") {
+		t.Skipf("version %q is an ldflags-injected build-describe string, not the checked-in fallback", version)
+	}
+
+	root := findReleaseManifestRoot(t)
+	if root == "" {
+		t.Skip("not running inside an AgentOps checkout; no release body to read")
+	}
+
+	const fix = "use https://github.com/boshu2/agentops/blob/main/<path>"
+
+	pattern := filepath.Join("docs", "releases", "*-v"+version+"-notes.md")
+	matches, err := filepath.Glob(filepath.Join(root, pattern))
+	if err != nil {
+		t.Fatalf("glob %s: %v", pattern, err)
+	}
+	if len(matches) != 1 {
+		t.Fatalf("found %d curated release-notes files matching %s, want exactly 1", len(matches), pattern)
+	}
+	notes, err := os.ReadFile(matches[0])
+	if err != nil {
+		t.Fatalf("read %s: %v", matches[0], err)
+	}
+	if relative := relativeLinkTargets(string(notes), "../CHANGELOG.md", "../../CHANGELOG.md"); len(relative) > 0 {
+		t.Errorf("%s has link targets that are dead in the release body: %q; %s", filepath.Base(matches[0]), relative, fix)
+	}
+
+	changelog, err := os.ReadFile(filepath.Join(root, "CHANGELOG.md"))
+	if err != nil {
+		t.Fatalf("read CHANGELOG.md: %v", err)
+	}
+	section := changelogSection(string(changelog), version)
+	if section == "" {
+		t.Fatalf("CHANGELOG.md has no \"## [%s]\" section", version)
+	}
+	if relative := relativeLinkTargets(section); len(relative) > 0 {
+		t.Errorf("CHANGELOG.md section [%s] has link targets that are dead in the release body: %q; %s", version, relative, fix)
+	}
+}
